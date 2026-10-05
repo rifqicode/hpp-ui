@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -101,8 +102,8 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     }
   }, [token, isSetupStoreRoute, navigate])
 
-  // Submit Step 1: Register Account
-  async function handleRegisterAccount(e: React.FormEvent) {
+  // Step 1: Validate Account and go to Step 2 (client-side only)
+  function handleContinueToStore(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !password) {
       setError("Nama lengkap, email, dan kata sandi wajib diisi.")
@@ -124,23 +125,12 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       return
     }
 
-    setLoading(true)
     setError("")
-
-    try {
-      const res = await authService.register({ name, email, password })
-      setAuth(res.user, res.token)
-      setStep(2)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Pendaftaran gagal. Silakan coba kembali."
-      setError(msg)
-    } finally {
-      setLoading(false)
-    }
+    setStep(2)
   }
 
-  // Submit Step 2: Create First Store
-  async function handleCreateStore(e: React.FormEvent) {
+  // Step 2: Submit Bulk Registration or Create First Store
+  async function handleSubmitRegistration(e: React.FormEvent) {
     e.preventDefault()
     if (!storeName.trim()) {
       setError("Nama toko atau unit usaha wajib diisi.")
@@ -155,24 +145,60 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     setLoading(true)
     setError("")
 
+    // Scenario A: User is already logged in on /setup-store
+    if (isSetupStoreRoute && token) {
+      try {
+        const newStore = await settingsService.createStore({
+          name: storeName.trim(),
+          category,
+          location: storeLocation.trim(),
+          phone: phone.trim(),
+          description: description.trim(),
+        })
+
+        setActiveStoreId(newStore.id)
+        setStep(3)
+        setTimeout(() => {
+          navigate("/dashboard", { replace: true })
+        }, 1500)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal menyimpan data toko. Silakan coba kembali."
+        setError(msg)
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    // Scenario B: Bulk registration (User + Store)
     try {
-      const newStore = await settingsService.createStore({
-        name: storeName.trim(),
-        category,
-        location: storeLocation.trim(),
-        phone: phone.trim(),
-        description: description.trim(),
+      const res = await authService.register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        store: {
+          name: storeName.trim(),
+          category,
+          location: storeLocation.trim(),
+          address: storeLocation.trim(),
+          phone: phone.trim(),
+          description: description.trim(),
+        },
       })
 
-      setActiveStoreId(newStore.id)
-      setStep(3)
+      setAuth(res.user, res.token)
+      if (res.active_store_id) {
+        setActiveStoreId(res.active_store_id)
+      } else if (res.store?.id) {
+        setActiveStoreId(res.store.id)
+      }
 
-      // Auto redirect to dashboard after 1.5 seconds celebration
+      setStep(3)
       setTimeout(() => {
         navigate("/dashboard", { replace: true })
       }, 1500)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyimpan data toko. Silakan coba kembali."
+      const msg = err instanceof Error ? err.message : "Pendaftaran gagal. Silakan coba kembali."
       setError(msg)
     } finally {
       setLoading(false)
@@ -346,7 +372,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 </CardDescription>
               </CardHeader>
 
-              <form onSubmit={handleRegisterAccount} className="space-y-3.5">
+              <form onSubmit={handleContinueToStore} className="space-y-3.5">
                 <div className="space-y-1">
                   <Label htmlFor="reg-name" className="text-xs font-semibold text-foreground">
                     Nama Lengkap <span className="text-destructive">*</span>
@@ -439,18 +465,9 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   </label>
                 </div>
 
-                <Button type="submit" className="w-full rounded-xl h-10 shadow-sm mt-3 font-semibold" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Mendaftarkan Akun...
-                    </>
-                  ) : (
-                    <>
-                      Lanjut ke Setup Toko
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
-                  )}
+                <Button type="submit" className="w-full rounded-xl h-10 shadow-sm mt-3 font-semibold">
+                  Lanjut ke Setup Usaha
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
 
@@ -479,7 +496,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 </CardDescription>
               </CardHeader>
 
-              <form onSubmit={handleCreateStore} className="space-y-3.5">
+              <form onSubmit={handleSubmitRegistration} className="space-y-3.5">
                 <div className="space-y-1">
                   <Label htmlFor="store-name" className="text-xs font-semibold text-foreground">
                     Nama Toko / Bisnis <span className="text-destructive">*</span>
@@ -587,19 +604,36 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   </span>
                 </div>
 
-                <Button type="submit" className="w-full rounded-xl h-10 shadow-sm mt-3 font-semibold" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Menyiapkan Toko Anda...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Selesaikan & Buka Dashboard
-                    </>
+                <div className="flex items-center gap-3 mt-3">
+                  {!isSetupStoreRoute && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setError("")
+                        setStep(1)
+                      }}
+                      className="rounded-xl h-10 font-semibold"
+                      disabled={loading}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Kembali
+                    </Button>
                   )}
-                </Button>
+                  <Button type="submit" className="flex-1 rounded-xl h-10 shadow-sm font-semibold" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Mendaftarkan Akun & Toko...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Selesaikan & Buka Dashboard
+                      </>
+                    )}
+                  </Button>
+                </div>
               </form>
 
               {/* Option to logout if arrived here accidentally */}

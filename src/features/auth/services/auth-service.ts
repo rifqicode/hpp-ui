@@ -49,6 +49,11 @@ export const authService = {
           role: "OWNER",
         },
         token: `mock-token-${Date.now()}`,
+        active_store_id: `str-${Date.now()}`,
+        store: {
+          id: `str-${Date.now()}`,
+          name: credentials.store?.name || "Toko Utama",
+        },
       };
     }
   },

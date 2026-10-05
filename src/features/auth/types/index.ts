@@ -17,6 +17,12 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
+  active_store_id?: string;
+  permissions?: string[];
+  store?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface LoginCredentials {
@@ -24,8 +30,18 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface RegisterStoreCredentials {
+  name: string;
+  category?: string;
+  location?: string;
+  address?: string;
+  phone?: string;
+  description?: string;
+}
+
 export interface RegisterCredentials {
   name: string;
   email: string;
   password: string;
+  store: RegisterStoreCredentials;
 }

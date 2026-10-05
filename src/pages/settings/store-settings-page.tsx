@@ -1,3 +1,4 @@
+import * as React from "react"
 import { useSearchParams } from "react-router-dom"
 import {
   Store,
@@ -18,9 +19,6 @@ import {
   Sparkles,
   Shield,
   Layers,
-  CheckSquare,
-  Square,
-  Eye,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -111,6 +109,14 @@ export default function StoreSettingsPage() {
 
   const handleTabChange = (val: string) => {
     setSearchParams({ tab: val }, { replace: true })
+  }
+
+  const [expandedRoleIds, setExpandedRoleIds] = React.useState<string[]>([])
+
+  const toggleExpandRole = (roleId: string) => {
+    setExpandedRoleIds((prev) =>
+      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
+    )
   }
 
   const {
@@ -233,7 +239,11 @@ export default function StoreSettingsPage() {
           {TABS.map((tab) => {
             const Icon = tab.icon
             return (
-              <TabsTrigger key={tab.id} value={tab.id} className="rounded-lg text-xs font-semibold py-2">
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold"
+              >
                 <Icon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{tab.label}</span>
               </TabsTrigger>
@@ -623,102 +633,221 @@ export default function StoreSettingsPage() {
                   </Button>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {rolesList.map((r) => {
-                    const rolePerms = r.permissions || []
-                    const activeGroups = Array.from(new Set(rolePerms.map((p) => p.group)))
+                <div className="rounded-xl border border-border overflow-hidden bg-card shadow-xs">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
+                        <TableHead className="font-bold text-foreground text-xs py-3.5 pl-4">
+                          Peran & Deskripsi
+                        </TableHead>
+                        <TableHead className="font-bold text-foreground text-xs">Tipe Peran</TableHead>
+                        <TableHead className="font-bold text-foreground text-xs">Izin Aktif</TableHead>
+                        <TableHead className="font-bold text-foreground text-xs">Cakupan Modul</TableHead>
+                        <TableHead className="w-[140px] text-right font-bold text-foreground text-xs pr-4">
+                          Rincian
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rolesList.map((r) => {
+                        const isExpanded = expandedRoleIds.includes(r.id)
+                        const rolePerms = r.permissions || []
+                        const activeGroups = Array.from(new Set(rolePerms.map((p) => p.group)))
 
-                    return (
-                      <Card
-                        key={r.id}
-                        className="rounded-xl border border-border/80 bg-card hover:border-primary/40 transition-all flex flex-col justify-between"
-                      >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <CardTitle className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                                  <Shield className="h-4 w-4 text-primary shrink-0" />
-                                  <span>{r.displayName}</span>
-                                </CardTitle>
-                              </div>
-                              <p className="text-[11px] font-mono text-muted-foreground">
-                                ID: {r.name}
-                              </p>
-                            </div>
-
-                            {r.isSystem ? (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-muted/60 text-muted-foreground border-border shrink-0"
-                              >
-                                Bawaan Sistem
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="default"
-                                className="text-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-semibold shrink-0"
-                              >
-                                Peran Kustom
-                              </Badge>
-                            )}
-                          </div>
-                          <CardDescription className="text-xs line-clamp-2 pt-1">
-                            {r.description || "Tidak ada deskripsi tambahan untuk peran ini."}
-                          </CardDescription>
-                        </CardHeader>
-
-                        <CardContent className="space-y-3 pt-0 pb-4">
-                          <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-2">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground font-medium flex items-center gap-1">
-                                <Layers className="h-3.5 w-3.5 text-primary" />
-                                Cakupan Hak Akses:
-                              </span>
-                              <Badge variant="secondary" className="text-[10px] font-mono">
-                                {rolePerms.length} Izin Aktif
-                              </Badge>
-                            </div>
-
-                            {activeGroups.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {activeGroups.map((grp) => {
-                                  const groupInfo = PERMISSION_GROUP_INFO[grp]
-                                  return (
-                                    <span
-                                      key={grp}
-                                      className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-background border border-border text-foreground/80"
-                                    >
-                                      {groupInfo?.label || grp}
-                                    </span>
-                                  )
-                                })}
-                              </div>
-                            ) : (
-                              <span className="text-[11px] text-muted-foreground italic">
-                                Belum ada izin yang terhubung
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="pt-1 flex items-center justify-between">
-                            <span className="text-[11px] text-muted-foreground">
-                              {r.createdAt ? `Dibuat: ${formatDate(r.createdAt)}` : "Tersedia secara global"}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedRoleDetail(r)}
-                              className="rounded-lg text-xs h-7 gap-1 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                        return (
+                          <React.Fragment key={r.id}>
+                            {/* Main Clickable Row */}
+                            <TableRow
+                              onClick={() => toggleExpandRole(r.id)}
+                              className={`cursor-pointer transition-colors border-b border-border/70 ${
+                                isExpanded ? "bg-muted/40 font-medium" : "hover:bg-muted/30"
+                              }`}
                             >
-                              <Eye className="h-3.5 w-3.5" />
-                              Lihat Rincian Izin
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
+                              {/* Nama Peran & Deskripsi */}
+                              <TableCell className="py-4 pl-4 align-top">
+                                <div className="flex items-start gap-3">
+                                  <div
+                                    className={`p-2 rounded-xl shrink-0 mt-0.5 transition-colors ${
+                                      isExpanded
+                                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                                        : "bg-primary/10 text-primary"
+                                    }`}
+                                  >
+                                    <Shield className="h-4 w-4" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="font-bold text-sm text-foreground flex items-center gap-2 leading-tight">
+                                      <span>{r.displayName}</span>
+                                    </p>
+                                    <p className="text-xs text-foreground/80 leading-relaxed max-w-md">
+                                      {r.description || "Tidak ada deskripsi tambahan untuk peran ini."}
+                                    </p>
+                                    <span className="inline-block font-mono text-[10px] text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50">
+                                      ID: {r.name}
+                                    </span>
+                                  </div>
+                                </div>
+                              </TableCell>
+
+                              {/* Tipe Peran */}
+                              <TableCell className="align-top py-4">
+                                {r.isSystem ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[11px] bg-muted/80 text-foreground border-border font-semibold px-2.5 py-1"
+                                  >
+                                    Bawaan Sistem
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="default"
+                                    className="text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-bold px-2.5 py-1"
+                                  >
+                                    Peran Kustom
+                                  </Badge>
+                                )}
+                              </TableCell>
+
+                              {/* Jumlah Izin */}
+                              <TableCell className="align-top py-4">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/20">
+                                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                  {rolePerms.length} Izin
+                                </span>
+                              </TableCell>
+
+                              {/* Cakupan Modul */}
+                              <TableCell className="align-top py-4">
+                                <div className="flex flex-wrap gap-1 max-w-[260px]">
+                                  {activeGroups.map((grp) => {
+                                    const groupInfo = PERMISSION_GROUP_INFO[grp]
+                                    return (
+                                      <span
+                                        key={grp}
+                                        className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-background border border-border text-foreground shadow-2xs"
+                                      >
+                                        {groupInfo?.label
+                                          ? groupInfo.label.replace("Akses ", "").replace("Modul ", "")
+                                          : grp}
+                                      </span>
+                                    )
+                                  })}
+                                </div>
+                              </TableCell>
+
+                              {/* Action Toggle Button */}
+                              <TableCell className="text-right align-top py-4 pr-4">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className={`rounded-lg text-xs h-8 px-2.5 gap-1.5 transition-all ${
+                                    isExpanded
+                                      ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground font-bold shadow-xs"
+                                      : "hover:bg-primary/10 hover:text-primary hover:border-primary/40 border-border text-foreground font-semibold"
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleExpandRole(r.id)
+                                  }}
+                                >
+                                  <span>{isExpanded ? "Tutup Izin" : "Lihat Izin"}</span>
+                                  <ChevronDown
+                                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                                      isExpanded ? "rotate-180" : ""
+                                    }`}
+                                  />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+
+                            {/* Expandable Accordion Content Row */}
+                            {isExpanded && (
+                              <TableRow className="bg-muted/15 hover:bg-muted/15 border-b border-border/80">
+                                <TableCell colSpan={5} className="p-4 pl-6 sm:pl-10">
+                                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-4 animate-in fade-in-50 duration-200">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-border">
+                                      <div>
+                                        <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                          <Layers className="h-4 w-4 text-primary" />
+                                          <span>Rincian Lengkap Hak Akses: {r.displayName}</span>
+                                        </h4>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                          Daftar wewenang tindakan yang diizinkan untuk staf dengan peran ini.
+                                        </p>
+                                      </div>
+                                      <Badge variant="secondary" className="font-mono text-xs px-2.5 py-1 font-bold shrink-0 self-start sm:self-auto">
+                                        {rolePerms.length} dari {permissionsCatalog.length} Izin Tersedia
+                                      </Badge>
+                                    </div>
+
+                                    {rolePerms.length === 0 ? (
+                                      <div className="py-6 text-center text-xs text-muted-foreground">
+                                        Peran ini belum memiliki hak akses aktif.
+                                      </div>
+                                    ) : (
+                                      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                                        {Object.entries(
+                                          rolePerms.reduce((acc, p) => {
+                                            acc[p.group] = acc[p.group] || []
+                                            acc[p.group].push(p)
+                                            return acc
+                                          }, {} as Record<string, Permission[]>)
+                                        ).map(([grp, perms]) => {
+                                          const groupInfo = PERMISSION_GROUP_INFO[grp]
+                                          return (
+                                            <div
+                                              key={grp}
+                                              className="rounded-xl border border-border/80 p-3 bg-muted/25 space-y-2.5 shadow-2xs"
+                                            >
+                                              <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                                                <span className="text-xs font-bold text-foreground">
+                                                  {groupInfo?.label || grp}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
+                                                  {perms.length} izin
+                                                </span>
+                                              </div>
+
+                                              <div className="space-y-1.5">
+                                                {perms.map((p) => (
+                                                  <div
+                                                    key={p.id || p.code}
+                                                    className="p-2.5 rounded-lg bg-card border border-border/70 text-xs flex items-start gap-2.5 shadow-2xs"
+                                                  >
+                                                    <div className="p-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
+                                                      <Check className="h-3 w-3 stroke-[3]" />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                      <p className="font-bold text-foreground text-xs leading-tight">
+                                                        {p.name}
+                                                      </p>
+                                                      {p.description && (
+                                                        <p className="text-[11px] text-foreground/80 leading-snug mt-0.5">
+                                                          {p.description}
+                                                        </p>
+                                                      )}
+                                                      <span className="inline-block font-mono text-[9px] text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.2 rounded font-bold mt-1.5">
+                                                        {p.code}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>
@@ -975,51 +1104,25 @@ export default function StoreSettingsPage() {
           <form onSubmit={handleCreateRole} className="flex flex-col flex-1 overflow-hidden">
             <div className="p-6 pt-4 space-y-4 flex-1 overflow-y-auto pr-4">
               {/* Form Input Peran */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="role-display-name" className="text-xs font-semibold">
-                    Nama Tampilan Peran <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="role-display-name"
-                    value={newRoleData.displayName}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      setNewRoleData((prev) => ({
-                        ...prev,
-                        displayName: val,
-                        name:
-                          !prev.name ||
-                          prev.name ===
-                            prev.displayName.trim().toUpperCase().replace(/\s+/g, "_")
-                            ? val.trim().toUpperCase().replace(/\s+/g, "_")
-                            : prev.name,
-                      }))
-                    }}
-                    placeholder="Contoh: Supervisor Toko"
-                    className="rounded-xl text-xs"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="role-code" className="text-xs font-semibold">
-                    Kode Identifier Sistem <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="role-code"
-                    value={newRoleData.name}
-                    onChange={(e) =>
-                      setNewRoleData({
-                        ...newRoleData,
-                        name: e.target.value.toUpperCase().replace(/\s+/g, "_"),
-                      })
-                    }
-                    placeholder="Contoh: STORE_SUPERVISOR"
-                    className="rounded-xl text-xs font-mono"
-                    required
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="role-display-name" className="text-xs font-semibold">
+                  Nama Peran <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="role-display-name"
+                  value={newRoleData.displayName}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setNewRoleData((prev) => ({
+                      ...prev,
+                      displayName: val,
+                      name: val.trim().toUpperCase().replace(/[^A-Z0-9]/g, "_").replace(/_+/g, "_"),
+                    }))
+                  }}
+                  placeholder="Contoh: Supervisor Toko, Kepala Dapur, Barista"
+                  className="rounded-xl text-xs"
+                  required
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -1083,19 +1186,34 @@ export default function StoreSettingsPage() {
                     const allGroupSelected = perms.every((p) =>
                       newRoleData.permissionCodes.includes(p.code)
                     )
+                    const selectedInGroupCount = perms.filter((p) =>
+                      newRoleData.permissionCodes.includes(p.code)
+                    ).length
                     const groupInfo = PERMISSION_GROUP_INFO[grp]
 
                     return (
                       <div
                         key={grp}
-                        className="rounded-xl border border-border/70 p-3 bg-muted/20 space-y-2.5 transition-all"
+                        className={`rounded-2xl border p-3.5 space-y-3 transition-all ${
+                          selectedInGroupCount > 0
+                            ? "border-primary/40 bg-primary/[0.03] shadow-xs"
+                            : "border-border/70 bg-muted/20"
+                        }`}
                       >
-                        <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
+                        <div className="flex items-center justify-between pb-2 border-b border-border/50">
                           <div>
-                            <span className="text-xs font-bold text-foreground">
-                              {groupInfo?.label || grp}
-                            </span>
-                            <p className="text-[10px] text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-foreground">
+                                {groupInfo?.label || grp}
+                              </span>
+                              {selectedInGroupCount > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold shadow-xs">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                                  {selectedInGroupCount} dipilih
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
                               {groupInfo?.desc || "Daftar hak akses modul sistem"}
                             </p>
                           </div>
@@ -1104,42 +1222,71 @@ export default function StoreSettingsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleGroupPermissions(grp, !allGroupSelected)}
-                            className="text-[10px] h-6 px-2 text-primary hover:text-primary hover:bg-primary/10 rounded-md font-medium"
+                            className={`text-[10px] h-6 px-2.5 rounded-md font-semibold transition-colors ${
+                              allGroupSelected
+                                ? "text-destructive hover:text-destructive hover:bg-destructive/10"
+                                : "text-primary hover:text-primary hover:bg-primary/10"
+                            }`}
                           >
-                            {allGroupSelected ? "Batalkan Grup" : "Pilih Semua"}
+                            {allGroupSelected ? "Batalkan Grup" : "Pilih Semua Modul Ini"}
                           </Button>
                         </div>
 
-                        <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="grid gap-2.5 sm:grid-cols-2">
                           {perms.map((p) => {
                             const isChecked = newRoleData.permissionCodes.includes(p.code)
                             return (
                               <div
                                 key={p.id || p.code}
                                 onClick={() => togglePermission(p.code)}
-                                className={`p-2.5 rounded-lg border text-left cursor-pointer transition-all flex items-start gap-2 select-none ${
+                                className={`relative p-3 rounded-xl border text-left cursor-pointer transition-all duration-200 flex items-start gap-3 select-none ${
                                   isChecked
-                                    ? "bg-primary/10 border-primary/40 shadow-2xs"
-                                    : "bg-background border-border hover:border-border/80 hover:bg-muted/40"
+                                    ? "bg-primary/15 border-primary ring-2 ring-primary shadow-md shadow-primary/25 scale-[1.015] z-10 text-foreground"
+                                    : "bg-card border-border/70 hover:border-border hover:bg-muted/40 opacity-70 hover:opacity-100 text-muted-foreground"
                                 }`}
                               >
-                                <div className="pt-0.5">
-                                  {isChecked ? (
-                                    <CheckSquare className="h-4 w-4 text-primary shrink-0" />
-                                  ) : (
-                                    <Square className="h-4 w-4 text-muted-foreground/60 shrink-0" />
-                                  )}
+                                {/* Glowing Checkbox Indicator */}
+                                <div className="pt-0.5 shrink-0">
+                                  <div
+                                    className={`h-5 w-5 rounded-lg flex items-center justify-center transition-all ${
+                                      isChecked
+                                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary ring-2 ring-primary/40"
+                                        : "border-2 border-muted-foreground/30 bg-background"
+                                    }`}
+                                  >
+                                    {isChecked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                                  </div>
                                 </div>
-                                <div className="space-y-0.5 min-w-0">
-                                  <span className="text-xs font-semibold text-foreground block leading-tight">
+
+                                {/* Content Details */}
+                                <div className="space-y-1 min-w-0 flex-1">
+                                  <span
+                                    className={`text-xs block leading-tight transition-colors ${
+                                      isChecked ? "text-primary font-bold" : "text-foreground font-semibold"
+                                    }`}
+                                  >
                                     {p.name}
                                   </span>
-                                  <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">
+
+                                  <p
+                                    className={`text-[10px] leading-snug line-clamp-2 transition-colors ${
+                                      isChecked ? "text-foreground font-medium" : "text-muted-foreground"
+                                    }`}
+                                  >
                                     {p.description || "Akses fungsional sistem"}
                                   </p>
-                                  <span className="inline-block font-mono text-[9px] text-primary/80 bg-primary/5 px-1 rounded">
-                                    {p.code}
-                                  </span>
+
+                                  <div className="pt-0.5">
+                                    <span
+                                      className={`inline-block font-mono text-[9px] px-1.5 py-0.5 rounded transition-all ${
+                                        isChecked
+                                          ? "bg-primary/25 text-primary border border-primary/40 font-bold"
+                                          : "bg-muted text-muted-foreground"
+                                      }`}
+                                    >
+                                      {p.code}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             )

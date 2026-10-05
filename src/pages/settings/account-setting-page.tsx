@@ -69,7 +69,7 @@ const ACCOUNT_TABS: AccountTabItem[] = [
     value: "danger",
     label: "Zona Bahaya",
     icon: AlertOctagon,
-    className: "text-destructive hover:text-destructive data-[state=active]:text-destructive data-[state=active]:bg-destructive/10",
+    className: "hover:text-destructive hover:bg-destructive/10 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground data-[state=active]:shadow-md data-[state=active]:shadow-destructive/30 data-[state=active]:font-bold",
   },
 ]
 
@@ -150,7 +150,7 @@ export default function GeneralSettingsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-flow-col auto-cols-fr rounded-xl bg-muted/60 p-1 border border-border h-auto w-full sm:w-auto sm:inline-grid gap-1">
+        <TabsList className="grid grid-flow-col auto-cols-fr gap-1 rounded-xl bg-muted/60 p-1 border border-border h-auto w-full">
           {ACCOUNT_TABS.map((tab) => {
             const Icon = tab.icon
             return (
@@ -158,12 +158,12 @@ export default function GeneralSettingsPage() {
                 key={tab.value}
                 value={tab.value}
                 className={cn(
-                  "rounded-lg text-xs font-semibold py-2 transition-all whitespace-nowrap",
+                  "rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold whitespace-nowrap",
                   tab.className
                 )}
               >
                 <Icon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                {tab.label}
+                <span className="truncate">{tab.label}</span>
               </TabsTrigger>
             )
           })}
