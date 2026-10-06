@@ -1,5 +1,6 @@
 import * as React from "react"
-import { useSearchParams } from "react-router-dom"
+import { useInitialLoading } from "@/hooks/use-initial-loading"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import {
   Store,
   Building2,
@@ -19,8 +20,10 @@ import {
   Sparkles,
   Shield,
   Layers,
+  Pencil,
 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -58,6 +61,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { useStoreSettings } from "@/features/settings/hooks"
+import { PERMISSION_GROUP_INFO } from "@/features/settings/constants"
 import type { Permission } from "@/features/settings/types"
 
 const STORE_CATEGORIES = [
@@ -72,38 +76,9 @@ const STORE_CATEGORIES = [
   "Lainnya",
 ]
 
-const PERMISSION_GROUP_INFO: Record<string, { label: string; desc: string }> = {
-  MENU: {
-    label: "Akses Halaman & Modul Menu",
-    desc: "Wewenang membuka halaman navigasi utama sistem",
-  },
-  STOCKS: {
-    label: "Operasional Stok & Gudang",
-    desc: "Melihat, menambah, mengubah, dan stock opname bahan baku",
-  },
-  RECIPES: {
-    label: "Formula Resep & Biaya HPP",
-    desc: "Menyusun resep produksi dan menentukan target margin laba",
-  },
-  PRODUCTS: {
-    label: "Katalog Produk Siap Jual",
-    desc: "Mengelola produk etalase dan harga jual konsumen",
-  },
-  SALES: {
-    label: "Kasir & Transaksi POS",
-    desc: "Pencatatan kasir, riwayat pesanan, dan pembatalan nota (void)",
-  },
-  STAFF: {
-    label: "Manajemen Tim & Hak Akses",
-    desc: "Mengundang staf dan mendelegasikan wewenang akses",
-  },
-  SETTINGS: {
-    label: "Pengaturan Toko & Outlet",
-    desc: "Mengubah identitas toko, cabang, dan preferensi perhitungan",
-  },
-}
 
 export default function StoreSettingsPage() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get("tab") || "profile"
 
@@ -120,7 +95,8 @@ export default function StoreSettingsPage() {
   }
 
   const {
-    loading,
+    loading: profileLoading,
+    tabLoading,
     store,
     storesList,
     staffList,
@@ -143,19 +119,8 @@ export default function StoreSettingsPage() {
     setRevokingStaff,
     isRevoking,
     handleConfirmRevoke,
-    isCreateRoleOpen,
-    setIsCreateRoleOpen,
-    newRoleData,
-    setNewRoleData,
-    isCreatingRole,
-    createRoleError,
     selectedRoleDetail,
     setSelectedRoleDetail,
-    handleCreateRole,
-    togglePermission,
-    toggleGroupPermissions,
-    handleSelectAllPermissions,
-    handleClearAllPermissions,
     isNewStoreOpen,
     setIsNewStoreOpen,
     newStoreData,
@@ -164,7 +129,8 @@ export default function StoreSettingsPage() {
     createStoreError,
     handleCreateStore,
     handleSwitchStore,
-  } = useStoreSettings()
+  } = useStoreSettings(activeTab)
+  const loading = profileLoading || tabLoading
 
   function formatDate(dateStr?: string) {
     if (!dateStr) return "-"
@@ -181,7 +147,7 @@ export default function StoreSettingsPage() {
 
   function getRoleDisplayName(roleName: string) {
     const found = rolesList.find((r) => r.name === roleName)
-    if (found) return found.displayName
+    if (found) return found.name
     if (roleName === "OWNER" || roleName === "STORE_OWNER") return "Pemilik Toko (Owner)"
     if (roleName === "STORE_MANAGER") return "Manajer Operasional"
     if (roleName === "STORE_CASHIER") return "Kasir (POS)"
@@ -192,18 +158,15 @@ export default function StoreSettingsPage() {
 
   const TABS = [
     { id: "profile", label: "Profil Toko", icon: Building2 },
-    { id: "staff", label: `Anggota Tim (${staffList.length})`, icon: Users },
-    { id: "roles", label: `Peran & Hak Akses (${rolesList.length})`, icon: ShieldCheck },
-    { id: "stores", label: `Daftar Cabang (${storesList.length})`, icon: Store },
+    { id: "staff", label: "Anggota Tim", icon: Users },
+    { id: "roles", label: "Peran & Hak Akses", icon: ShieldCheck },
+    { id: "stores", label: "Daftar Cabang", icon: Store },
   ] as const
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2.5 text-sm text-muted-foreground">Memuat pengaturan toko...</span>
-      </div>
-    )
+  const isInitialLoading = useInitialLoading(loading)
+  if (isInitialLoading) {
+    // Global LoadingOverlay renders the spinner on top of this placeholder
+    return <div className="min-h-[60vh]" />
   }
 
   return (
@@ -564,7 +527,7 @@ export default function StoreSettingsPage() {
             <Card className="p-4 rounded-xl border border-border shadow-xs">
               <span className="text-xs text-muted-foreground font-medium">Peran Bawaan Sistem</span>
               <p className="text-2xl font-bold font-mono mt-1 text-foreground">
-                {rolesList.filter((r) => r.isSystem).length}
+                {rolesList.filter((r) => r.is_system).length}
               </p>
               <span className="text-[11px] text-muted-foreground">Template standar RBAC</span>
             </Card>
@@ -572,7 +535,7 @@ export default function StoreSettingsPage() {
             <Card className="p-4 rounded-xl border border-border shadow-xs">
               <span className="text-xs text-muted-foreground font-medium">Peran Kustom Toko</span>
               <p className="text-2xl font-bold font-mono mt-1 text-primary">
-                {rolesList.filter((r) => !r.isSystem).length}
+                {rolesList.filter((r) => !r.is_system).length}
               </p>
               <span className="text-[11px] text-muted-foreground">Dibuat khusus pengguna</span>
             </Card>
@@ -601,7 +564,7 @@ export default function StoreSettingsPage() {
                   </CardDescription>
                 </div>
                 <Button
-                  onClick={() => setIsCreateRoleOpen(true)}
+                  onClick={() => navigate("/settings/role/new")}
                   className="rounded-xl shadow-sm font-semibold"
                   size="sm"
                 >
@@ -623,7 +586,7 @@ export default function StoreSettingsPage() {
                     </p>
                   </div>
                   <Button
-                    onClick={() => setIsCreateRoleOpen(true)}
+                    onClick={() => navigate("/settings/role/new")}
                     variant="outline"
                     size="sm"
                     className="rounded-xl text-xs"
@@ -640,11 +603,10 @@ export default function StoreSettingsPage() {
                         <TableHead className="font-bold text-foreground text-xs py-3.5 pl-4">
                           Peran & Deskripsi
                         </TableHead>
-                        <TableHead className="font-bold text-foreground text-xs">Tipe Peran</TableHead>
                         <TableHead className="font-bold text-foreground text-xs">Izin Aktif</TableHead>
                         <TableHead className="font-bold text-foreground text-xs">Cakupan Modul</TableHead>
-                        <TableHead className="w-[140px] text-right font-bold text-foreground text-xs pr-4">
-                          Rincian
+                        <TableHead className="w-[200px] text-right font-bold text-foreground text-xs pr-4">
+                          Aksi
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -653,6 +615,7 @@ export default function StoreSettingsPage() {
                         const isExpanded = expandedRoleIds.includes(r.id)
                         const rolePerms = r.permissions || []
                         const activeGroups = Array.from(new Set(rolePerms.map((p) => p.group)))
+                        const isSystem = Boolean(r.is_system)
 
                         return (
                           <React.Fragment key={r.id}>
@@ -676,36 +639,31 @@ export default function StoreSettingsPage() {
                                     <Shield className="h-4 w-4" />
                                   </div>
                                   <div className="space-y-1">
-                                    <p className="font-bold text-sm text-foreground flex items-center gap-2 leading-tight">
-                                      <span>{r.displayName}</span>
-                                    </p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className="font-bold text-sm text-foreground leading-tight">
+                                        {r.name}
+                                      </p>
+                                      {isSystem ? (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[10px] bg-muted/60 text-muted-foreground border-border py-0 h-4"
+                                        >
+                                          Sistem
+                                        </Badge>
+                                      ) : (
+                                        <Badge
+                                          variant="default"
+                                          className="text-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-semibold py-0 h-4"
+                                        >
+                                          Kustom
+                                        </Badge>
+                                      )}
+                                    </div>
                                     <p className="text-xs text-foreground/80 leading-relaxed max-w-md">
                                       {r.description || "Tidak ada deskripsi tambahan untuk peran ini."}
                                     </p>
-                                    <span className="inline-block font-mono text-[10px] text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded border border-border/50">
-                                      ID: {r.name}
-                                    </span>
                                   </div>
                                 </div>
-                              </TableCell>
-
-                              {/* Tipe Peran */}
-                              <TableCell className="align-top py-4">
-                                {r.isSystem ? (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[11px] bg-muted/80 text-foreground border-border font-semibold px-2.5 py-1"
-                                  >
-                                    Bawaan Sistem
-                                  </Badge>
-                                ) : (
-                                  <Badge
-                                    variant="default"
-                                    className="text-[11px] bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-bold px-2.5 py-1"
-                                  >
-                                    Peran Kustom
-                                  </Badge>
-                                )}
                               </TableCell>
 
                               {/* Jumlah Izin */}
@@ -735,29 +693,47 @@ export default function StoreSettingsPage() {
                                 </div>
                               </TableCell>
 
-                              {/* Action Toggle Button */}
+                              {/* Action Buttons */}
                               <TableCell className="text-right align-top py-4 pr-4">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  className={`rounded-lg text-xs h-8 px-2.5 gap-1.5 transition-all ${
-                                    isExpanded
-                                      ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground font-bold shadow-xs"
-                                      : "hover:bg-primary/10 hover:text-primary hover:border-primary/40 border-border text-foreground font-semibold"
-                                  }`}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    toggleExpandRole(r.id)
-                                  }}
-                                >
-                                  <span>{isExpanded ? "Tutup Izin" : "Lihat Izin"}</span>
-                                  <ChevronDown
-                                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                                      isExpanded ? "rotate-180" : ""
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={isSystem}
+                                    title={isSystem ? "Peran bawaan sistem tidak dapat diedit" : "Edit peran & izin"}
+                                    className="rounded-lg text-xs h-8 px-2.5 gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/40 text-foreground disabled:opacity-40"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      navigate(`/settings/role/${r.id}`)
+                                    }}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    <span>Edit</span>
+                                  </Button>
+
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className={`rounded-lg text-xs h-8 px-2.5 gap-1.5 transition-all ${
+                                      isExpanded
+                                        ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground font-bold shadow-xs"
+                                        : "hover:bg-primary/10 hover:text-primary hover:border-primary/40 border-border text-foreground font-semibold"
                                     }`}
-                                  />
-                                </Button>
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      toggleExpandRole(r.id)
+                                    }}
+                                  >
+                                    <span>{isExpanded ? "Tutup" : "Izin"}</span>
+                                    <ChevronDown
+                                      className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                                        isExpanded ? "rotate-180" : ""
+                                      }`}
+                                    />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
 
@@ -770,7 +746,7 @@ export default function StoreSettingsPage() {
                                       <div>
                                         <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                                           <Layers className="h-4 w-4 text-primary" />
-                                          <span>Rincian Lengkap Hak Akses: {r.displayName}</span>
+                                          <span>Rincian Lengkap Hak Akses: {r.name}</span>
                                         </h4>
                                         <p className="text-xs text-muted-foreground mt-0.5">
                                           Daftar wewenang tindakan yang diizinkan untuk staf dengan peran ini.
@@ -995,8 +971,10 @@ export default function StoreSettingsPage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button type="button" variant="outline" className="w-full justify-between rounded-xl h-9 text-xs">
-                    <span className="truncate">
-                      {getRoleDisplayName(inviteData.role)}
+                    <span className={cn("truncate", !inviteData.role_id && "text-muted-foreground")}>
+                      {inviteData.role_id
+                        ? getRoleDisplayName(rolesList.find((r) => r.id === inviteData.role_id)?.name || "")
+                        : "Pilih peran..."}
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                   </Button>
@@ -1005,12 +983,12 @@ export default function StoreSettingsPage() {
                   {rolesList.map((r) => (
                     <DropdownMenuItem
                       key={r.id}
-                      onClick={() => setInviteData({ ...inviteData, role: r.name })}
+                      onClick={() => setInviteData({ ...inviteData, role_id: r.id })}
                       className="cursor-pointer text-xs flex flex-col items-start gap-0.5 py-1.5"
                     >
                       <div className="flex items-center gap-1.5 w-full justify-between">
-                        <span className="font-semibold text-foreground">{r.displayName}</span>
-                        {r.isSystem ? (
+                        <span className="font-semibold text-foreground">{r.name}</span>
+                        {r.is_system ? (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground">Sistem</span>
                         ) : (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 font-medium">Kustom</span>
@@ -1077,251 +1055,6 @@ export default function StoreSettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Tambah Peran & Hak Akses Baru */}
-      <Dialog open={isCreateRoleOpen} onOpenChange={setIsCreateRoleOpen}>
-        <DialogContent className="sm:max-w-[680px] max-h-[92vh] flex flex-col rounded-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-3 border-b border-border/60">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold">Tambah Peran & Hak Akses Baru</DialogTitle>
-                <DialogDescription className="text-xs">
-                  Buat peran khusus dan tentukan izin modul apa saja yang dapat diakses oleh staf.
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          {createRoleError && (
-            <div className="mx-6 mt-4 p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{createRoleError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleCreateRole} className="flex flex-col flex-1 overflow-hidden">
-            <div className="p-6 pt-4 space-y-4 flex-1 overflow-y-auto pr-4">
-              {/* Form Input Peran */}
-              <div className="space-y-1.5">
-                <Label htmlFor="role-display-name" className="text-xs font-semibold">
-                  Nama Peran <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="role-display-name"
-                  value={newRoleData.displayName}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    setNewRoleData((prev) => ({
-                      ...prev,
-                      displayName: val,
-                      name: val.trim().toUpperCase().replace(/[^A-Z0-9]/g, "_").replace(/_+/g, "_"),
-                    }))
-                  }}
-                  placeholder="Contoh: Supervisor Toko, Kepala Dapur, Barista"
-                  className="rounded-xl text-xs"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="role-description" className="text-xs font-semibold">
-                  Deskripsi Peran
-                </Label>
-                <Textarea
-                  id="role-description"
-                  value={newRoleData.description}
-                  onChange={(e) =>
-                    setNewRoleData({ ...newRoleData, description: e.target.value })
-                  }
-                  placeholder="Jelaskan ruang lingkup wewenang dan tanggung jawab peran ini..."
-                  className="rounded-xl text-xs min-h-[60px]"
-                />
-              </div>
-
-              {/* Permissions Selector Header */}
-              <div className="pt-2 border-t border-border/60">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2">
-                  <div>
-                    <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                      <Layers className="h-4 w-4 text-primary" />
-                      <span>Pilih Hak Akses & Izin Modul ({newRoleData.permissionCodes.length} / {permissionsCatalog.length})</span>
-                    </Label>
-                    <p className="text-[11px] text-muted-foreground">
-                      Centang izin yang diberikan kepada staf dengan peran ini.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSelectAllPermissions}
-                      className="text-[11px] h-7 px-2.5 rounded-lg border-primary/30 text-primary hover:bg-primary/5"
-                    >
-                      Pilih Semua
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleClearAllPermissions}
-                      className="text-[11px] h-7 px-2.5 rounded-lg text-muted-foreground hover:text-foreground"
-                    >
-                      Hapus Semua
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Permissions By Group */}
-                <div className="space-y-3.5 mt-2">
-                  {Object.entries(
-                    permissionsCatalog.reduce((acc, p) => {
-                      acc[p.group] = acc[p.group] || []
-                      acc[p.group].push(p)
-                      return acc
-                    }, {} as Record<string, Permission[]>)
-                  ).map(([grp, perms]) => {
-                    const allGroupSelected = perms.every((p) =>
-                      newRoleData.permissionCodes.includes(p.code)
-                    )
-                    const selectedInGroupCount = perms.filter((p) =>
-                      newRoleData.permissionCodes.includes(p.code)
-                    ).length
-                    const groupInfo = PERMISSION_GROUP_INFO[grp]
-
-                    return (
-                      <div
-                        key={grp}
-                        className={`rounded-2xl border p-3.5 space-y-3 transition-all ${
-                          selectedInGroupCount > 0
-                            ? "border-primary/40 bg-primary/[0.03] shadow-xs"
-                            : "border-border/70 bg-muted/20"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between pb-2 border-b border-border/50">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-foreground">
-                                {groupInfo?.label || grp}
-                              </span>
-                              {selectedInGroupCount > 0 && (
-                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold shadow-xs">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />
-                                  {selectedInGroupCount} dipilih
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              {groupInfo?.desc || "Daftar hak akses modul sistem"}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleGroupPermissions(grp, !allGroupSelected)}
-                            className={`text-[10px] h-6 px-2.5 rounded-md font-semibold transition-colors ${
-                              allGroupSelected
-                                ? "text-destructive hover:text-destructive hover:bg-destructive/10"
-                                : "text-primary hover:text-primary hover:bg-primary/10"
-                            }`}
-                          >
-                            {allGroupSelected ? "Batalkan Grup" : "Pilih Semua Modul Ini"}
-                          </Button>
-                        </div>
-
-                        <div className="grid gap-2.5 sm:grid-cols-2">
-                          {perms.map((p) => {
-                            const isChecked = newRoleData.permissionCodes.includes(p.code)
-                            return (
-                              <div
-                                key={p.id || p.code}
-                                onClick={() => togglePermission(p.code)}
-                                className={`relative p-3 rounded-xl border text-left cursor-pointer transition-all duration-200 flex items-start gap-3 select-none ${
-                                  isChecked
-                                    ? "bg-primary/15 border-primary ring-2 ring-primary shadow-md shadow-primary/25 scale-[1.015] z-10 text-foreground"
-                                    : "bg-card border-border/70 hover:border-border hover:bg-muted/40 opacity-70 hover:opacity-100 text-muted-foreground"
-                                }`}
-                              >
-                                {/* Glowing Checkbox Indicator */}
-                                <div className="pt-0.5 shrink-0">
-                                  <div
-                                    className={`h-5 w-5 rounded-lg flex items-center justify-center transition-all ${
-                                      isChecked
-                                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary ring-2 ring-primary/40"
-                                        : "border-2 border-muted-foreground/30 bg-background"
-                                    }`}
-                                  >
-                                    {isChecked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                                  </div>
-                                </div>
-
-                                {/* Content Details */}
-                                <div className="space-y-1 min-w-0 flex-1">
-                                  <span
-                                    className={`text-xs block leading-tight transition-colors ${
-                                      isChecked ? "text-primary font-bold" : "text-foreground font-semibold"
-                                    }`}
-                                  >
-                                    {p.name}
-                                  </span>
-
-                                  <p
-                                    className={`text-[10px] leading-snug line-clamp-2 transition-colors ${
-                                      isChecked ? "text-foreground font-medium" : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {p.description || "Akses fungsional sistem"}
-                                  </p>
-
-                                  <div className="pt-0.5">
-                                    <span
-                                      className={`inline-block font-mono text-[9px] px-1.5 py-0.5 rounded transition-all ${
-                                        isChecked
-                                          ? "bg-primary/25 text-primary border border-primary/40 font-bold"
-                                          : "bg-muted text-muted-foreground"
-                                      }`}
-                                    >
-                                      {p.code}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter className="p-4 border-t border-border/60 bg-muted/20 sm:space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateRoleOpen(false)}
-                className="rounded-xl text-xs"
-                disabled={isCreatingRole}
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                className="rounded-xl text-xs font-semibold"
-                disabled={isCreatingRole}
-              >
-                {isCreatingRole && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Simpan Peran Baru
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Modal Detail Hak Akses Peran */}
       <Dialog
         open={!!selectedRoleDetail}
@@ -1337,7 +1070,7 @@ export default function StoreSettingsPage() {
                   </div>
                   <div>
                     <DialogTitle className="text-base font-bold">
-                      {selectedRoleDetail?.displayName}
+                      {selectedRoleDetail?.name}
                     </DialogTitle>
                     <p className="text-[11px] font-mono text-muted-foreground">
                       ID: {selectedRoleDetail?.name}
@@ -1346,7 +1079,7 @@ export default function StoreSettingsPage() {
                 </div>
               </div>
 
-              {selectedRoleDetail?.isSystem ? (
+              {selectedRoleDetail?.is_system ? (
                 <Badge
                   variant="outline"
                   className="text-[10px] bg-muted/60 text-muted-foreground border-border"
@@ -1373,7 +1106,7 @@ export default function StoreSettingsPage() {
                 Daftar Izin Aktif ({selectedRoleDetail?.permissions?.length || 0})
               </span>
               <span className="text-[11px] text-muted-foreground">
-                {selectedRoleDetail?.isSystem
+                {selectedRoleDetail?.is_system
                   ? "Standar hak akses sistem terproteksi"
                   : "Dikonfigurasi khusus toko"}
               </span>

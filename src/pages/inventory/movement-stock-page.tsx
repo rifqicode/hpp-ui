@@ -25,10 +25,7 @@ import { cn } from "@/lib/utils"
 type Material = { id: string; name: string; baseUnit: string }
 type MovementType = "ADJUSTMENT_IN" | "ADJUSTMENT_OUT"
 
-const MOCK_MATERIALS: Material[] = [
-  { id: "mat-1", name: "Tepung Terigu", baseUnit: "kg" },
-  { id: "mat-2", name: "Minyak Goreng", baseUnit: "L" },
-]
+const MOCK_MATERIALS: Material[] = []
 
 const MOVEMENT_TYPES: { value: MovementType; label: string }[] = [
   { value: "ADJUSTMENT_IN", label: "Adjustment In" },

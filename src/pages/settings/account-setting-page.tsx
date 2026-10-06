@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useSearchParams } from "react-router-dom"
 import {
   Settings,
@@ -124,13 +125,10 @@ export default function GeneralSettingsPage() {
     handleDeleteAccount,
   } = useAccountSettings()
 
-  if (loadingInitial) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2.5 text-sm text-muted-foreground">Memuat pengaturan akun & profil...</span>
-      </div>
-    )
+  const isInitialLoading = useInitialLoading(loadingInitial)
+  if (isInitialLoading) {
+    // Global LoadingOverlay renders the spinner on top of this placeholder
+    return <div className="min-h-[60vh]" />
   }
 
   return (

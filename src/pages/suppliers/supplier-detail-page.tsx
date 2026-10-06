@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import {
   ArrowLeft,
@@ -122,13 +123,10 @@ export default function SupplierDetailPage() {
     }).format(new Date(dateStr))
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-sm text-muted-foreground">Memuat profil supplier...</span>
-      </div>
-    )
+  const isInitialLoading = useInitialLoading(loading)
+  if (isInitialLoading) {
+    // Global LoadingOverlay renders the spinner on top of this placeholder
+    return <div className="min-h-[60vh]" />
   }
 
   if (!supplier) {

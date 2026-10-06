@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useParams, Link } from "react-router-dom"
 import {
   ArrowLeft,
@@ -152,13 +153,10 @@ export default function BatchDetailPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-20 gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground font-medium">Memuat rincian batch produksi...</p>
-      </div>
-    )
+  const isInitialLoading = useInitialLoading(loading)
+  if (isInitialLoading) {
+    // Global LoadingOverlay renders the spinner on top of this placeholder
+    return <div className="min-h-[60vh]" />
   }
 
   if (!batch) {

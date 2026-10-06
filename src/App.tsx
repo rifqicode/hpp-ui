@@ -22,6 +22,7 @@ import BatchCreatePage from "./pages/production/batch-create-page"
 import BatchDetailPage from "./pages/production/batch-detail-page"
 import HppCalculatorPage from "./pages/production/hpp-calculator-page"
 import StoreSettingsPage from "./pages/settings/store-settings-page"
+import RoleCreatePage from "./pages/settings/role-create-page"
 import AccountSettingPage from "./pages/settings/account-setting-page"
 import PosPage from "./pages/sales/pos-page"
 import TransactionHistoryPage from "./pages/sales/transaction-history-page"
@@ -64,6 +65,8 @@ function App() {
           <Route path="/settings/profile" element={<Navigate to="/settings?tab=profile" replace />} />
           <Route path="/settings/account" element={<Navigate to="/settings?tab=security" replace />} />
           <Route path="/settings/store" element={<StoreSettingsPage />} />
+          <Route path="/settings/role/new" element={<RoleCreatePage />} />
+          <Route path="/settings/role/:id" element={<RoleCreatePage />} />
           <Route path="/settings" element={<AccountSettingPage />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

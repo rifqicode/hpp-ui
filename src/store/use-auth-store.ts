@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../features/auth/types';
+import { clearPermissionCache } from '../lib/permission-cache';
 
 interface AuthState {
   user: User | null;
@@ -28,11 +29,13 @@ export const useAuthStore = create<AuthState>()(
       setPermissions: (permissions) => set({ permissions }),
       logout: () => {
         localStorage.removeItem('token');
+        clearPermissionCache();
         set({ user: null, token: null, activeStoreId: null, permissions: [] });
       },
     }),
     {
       name: 'auth-storage',
+      partialize: ({ permissions: _permissions, ...rest }) => rest,
     }
   )
 );

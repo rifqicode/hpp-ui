@@ -193,11 +193,13 @@ export function SidebarMain() {
   })
 
   async function handleStoreChange(store: StoreInfo) {
+    if (store.id === currentStore.id) return
     try {
       await settingsService.switchStore(store.id)
       setActiveStore(store)
       useAuthStore.getState().setActiveStoreId(store.id)
       await settingsService.getStorePermissions(store.id)
+      window.location.reload()
     } catch (err) {
       console.error("Failed to switch store:", err)
     }

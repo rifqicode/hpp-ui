@@ -38,14 +38,7 @@ type MaterialStockRow = {
   min: number
 }
 
-const MOCK_MATERIALS: MaterialStockRow[] = [
-  { id: "mat-1", name: "Tepung Terigu", baseUnit: "kg", current: 1.2, min: 5 },
-  { id: "mat-2", name: "Minyak Goreng", baseUnit: "L", current: 0.5, min: 2 },
-  { id: "mat-3", name: "Gula Pasir", baseUnit: "kg", current: 10, min: 5 },
-  { id: "mat-4", name: "Ragi", baseUnit: "g", current: 0, min: 250 },
-  { id: "mat-5", name: "Susu Bubuk", baseUnit: "kg", current: 2.5, min: 2 },
-  { id: "mat-6", name: "Mentega", baseUnit: "kg", current: 0.8, min: 1 },
-]
+const MOCK_MATERIALS: MaterialStockRow[] = []
 
 function getStatus(row: MaterialStockRow): StockStatus {
   if (row.current <= 0) return "out"

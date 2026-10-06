@@ -27,12 +27,7 @@ import type { Supplier as SupplierType } from "@/features/suppliers/types"
 
 type Material = { id: string; name: string; baseUnit: string }
 
-const MOCK_MATERIALS: Material[] = [
-  { id: "mat-1", name: "Tepung Terigu", baseUnit: "kg" },
-  { id: "mat-2", name: "Minyak Goreng", baseUnit: "L" },
-  { id: "mat-3", name: "Gula Pasir", baseUnit: "kg" },
-  { id: "mat-4", name: "Ragi", baseUnit: "g" },
-]
+const MOCK_MATERIALS: Material[] = []
 
 const BASE_UNIT_OPTIONS = ["kg", "g", "L", "ml", "pcs"] as const
 

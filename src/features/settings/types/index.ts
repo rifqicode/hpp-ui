@@ -25,16 +25,11 @@ export interface Permission {
 export interface Role {
   id: string;
   name: string;
-  displayName: string;
-  display_name?: string;
   storeId?: string | null;
-  store_id?: string | null;
   description?: string;
-  isSystem: boolean;
   is_system?: boolean;
   permissions?: Permission[];
   createdAt?: string;
-  created_at?: string;
 }
 
 export interface CreateRoleInput {
@@ -42,6 +37,12 @@ export interface CreateRoleInput {
   displayName: string;
   description?: string;
   permissionCodes: string[];
+}
+
+export interface UpdateRoleInput {
+  name: string;
+  description?: string;
+  permission_codes: string[];
 }
 
 export interface StaffMember {
@@ -57,7 +58,7 @@ export interface StaffMember {
 export interface InviteStaffInput {
   email: string;
   name: string;
-  role: StaffRole;
+  role_id: string;
 }
 
 export interface TelegramIntegrationState {

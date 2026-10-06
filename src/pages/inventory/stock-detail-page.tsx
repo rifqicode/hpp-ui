@@ -49,27 +49,9 @@ type Movement = {
   createdAt: string
 }
 
-const MOCK_MATERIALS: Material[] = [
-  { id: "mat-1", name: "Tepung Terigu", baseUnit: "kg", current: 1.2 },
-  { id: "mat-2", name: "Minyak Goreng", baseUnit: "L", current: 0.5 },
-  { id: "mat-3", name: "Gula Pasir", baseUnit: "kg", current: 10 },
-  { id: "mat-4", name: "Ragi", baseUnit: "g", current: 0 },
-]
+const MOCK_MATERIALS: Material[] = []
 
-const MOCK_BATCHES_BY_MATERIAL: Record<string, Batch[]> = {
-  "mat-1": [
-    { id: "b-101", initial: 5, remaining: 0.8, pricePerUnit: 12000 },
-    { id: "b-102", initial: 10, remaining: 0.4, pricePerUnit: 12500 },
-  ],
-  "mat-2": [
-    { id: "b-201", initial: 2, remaining: 0.5, pricePerUnit: 18000 },
-  ],
-  "mat-3": [
-    { id: "b-301", initial: 5, remaining: 5, pricePerUnit: 14000 },
-    { id: "b-302", initial: 10, remaining: 5, pricePerUnit: 14500 },
-  ],
-  "mat-4": [],
-}
+const MOCK_BATCHES_BY_MATERIAL: Record<string, Batch[]> = {}
 
 const MOCK_MOVEMENTS_BY_MATERIAL: Record<string, Movement[]> = {
   "mat-1": [

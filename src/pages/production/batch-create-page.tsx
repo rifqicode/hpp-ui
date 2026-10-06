@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useNavigate, Link } from "react-router-dom"
 import {
   ArrowLeft,
@@ -185,13 +186,10 @@ export default function BatchCreatePage() {
     }
   }
 
-  if (loadingProducts) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[450px] gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-muted-foreground">Memuat data resep & katalog produk...</p>
-      </div>
-    )
+  const isInitialLoading = useInitialLoading(loadingProducts)
+  if (isInitialLoading) {
+    // Global LoadingOverlay renders the spinner on top of this placeholder
+    return <div className="min-h-[60vh]" />
   }
 
   return (
