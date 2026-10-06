@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Link } from "react-router-dom"
 import {
   Users,
@@ -54,152 +53,43 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TablePagination } from "@/components/ui/table-pagination"
 
-import { supplierService } from "@/features/suppliers/services/supplier-service"
-import type { Supplier, CreateSupplierInput } from "@/features/suppliers/types"
-
-type SortOption = "name-asc" | "name-desc" | "orders-desc" | "spent-desc"
+import { useSuppliers } from "@/features/suppliers/hooks"
 
 export default function SupplierListPage() {
-  const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
-  const [loading, setLoading] = React.useState<boolean>(true)
-  const [search, setSearch] = React.useState<string>("")
-  const [sortBy, setSortBy] = React.useState<SortOption>("name-asc")
-
-  // Modal states
-  const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState<boolean>(false)
-  const [submitting, setSubmitting] = React.useState<boolean>(false)
-  const [formError, setFormError] = React.useState<string>("")
-
-  const [editingSupplier, setEditingSupplier] = React.useState<Supplier | null>(null)
-  const [deletingSupplier, setDeletingSupplier] = React.useState<Supplier | null>(null)
-
-  // Form inputs
-  const [formData, setFormData] = React.useState<CreateSupplierInput>({
-    name: "",
-    contact: "",
-    address: "",
-  })
-
-  // Load suppliers
-  const loadSuppliers = React.useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await supplierService.getSuppliers()
-      setSuppliers(data)
-    } catch (err) {
-      console.error("Failed to load suppliers:", err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  React.useEffect(() => {
-    loadSuppliers()
-  }, [loadSuppliers])
-
-  // Open modal for Create
-  function handleOpenCreate() {
-    setEditingSupplier(null)
-    setFormData({ name: "", contact: "", address: "" })
-    setFormError("")
-    setIsFormOpen(true)
-  }
-
-  // Open modal for Edit
-  function handleOpenEdit(supplier: Supplier) {
-    setEditingSupplier(supplier)
-    setFormData({
-      name: supplier.name,
-      contact: supplier.contact,
-      address: supplier.address,
-    })
-    setFormError("")
-    setIsFormOpen(true)
-  }
-
-  // Open delete confirmation
-  function handleOpenDelete(supplier: Supplier) {
-    setDeletingSupplier(supplier)
-    setIsDeleteDialogOpen(true)
-  }
-
-  // Handle Form Submit (Create / Update)
-  async function handleSubmitForm(e: React.FormEvent) {
-    e.preventDefault()
-    if (!formData.name.trim()) {
-      setFormError("Nama supplier wajib diisi")
-      return
-    }
-
-    setSubmitting(true)
-    setFormError("")
-    try {
-      if (editingSupplier) {
-        await supplierService.updateSupplier(editingSupplier.id, formData)
-      } else {
-        await supplierService.createSupplier(formData)
-      }
-      setIsFormOpen(false)
-      await loadSuppliers()
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Gagal menyimpan supplier"
-      setFormError(message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  // Handle Confirm Delete
-  async function handleConfirmDelete() {
-    if (!deletingSupplier) return
-    setSubmitting(true)
-    try {
-      await supplierService.deleteSupplier(deletingSupplier.id)
-      setIsDeleteDialogOpen(false)
-      setDeletingSupplier(null)
-      await loadSuppliers()
-    } catch (err) {
-      console.error("Failed to delete supplier:", err)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  // Filter & Sort
-  const filteredSuppliers = React.useMemo(() => {
-    const q = search.trim().toLowerCase()
-    let result = suppliers.filter((s) => {
-      const matchName = s.name.toLowerCase().includes(q)
-      const matchContact = s.contact.toLowerCase().includes(q)
-      const matchAddress = s.address.toLowerCase().includes(q)
-      return matchName || matchContact || matchAddress
-    })
-
-    result = [...result].sort((a, b) => {
-      if (sortBy === "name-asc") return a.name.localeCompare(b.name)
-      if (sortBy === "name-desc") return b.name.localeCompare(a.name)
-      if (sortBy === "orders-desc") return (b.totalOrdersCount || 0) - (a.totalOrdersCount || 0)
-      if (sortBy === "spent-desc") return (b.totalPurchases || 0) - (a.totalPurchases || 0)
-      return 0
-    })
-
-    return result
-  }, [suppliers, search, sortBy])
-
-  // Calculation for Metric Cards
-  const totalVendors = suppliers.length
-  const totalPurchasesSum = suppliers.reduce((acc, s) => acc + (s.totalPurchases || 0), 0)
-  const activeVendorsCount = suppliers.filter((s) => (s.totalOrdersCount || 0) > 0).length
-
-  function formatRupiah(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
+  const {
+    loading,
+    search,
+    setSearch,
+    setSortBy,
+    filteredSuppliers,
+    page,
+    totalPages,
+    total,
+    handleNextPage,
+    handlePrevPage,
+    totalVendors,
+    totalPurchasesSum,
+    activeVendorsCount,
+    isFormOpen,
+    setIsFormOpen,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    submitting,
+    formError,
+    editingSupplier,
+    deletingSupplier,
+    formData,
+    setFormData,
+    loadSuppliers,
+    handleOpenCreate,
+    handleOpenEdit,
+    handleOpenDelete,
+    handleSubmitForm,
+    handleConfirmDelete,
+    formatRupiah,
+  } = useSuppliers()
 
   return (
     <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500">
@@ -289,7 +179,7 @@ export default function SupplierListPage() {
               </CardDescription>
             </div>
             <div className="text-xs text-muted-foreground">
-              {filteredSuppliers.length} supplier ditemukan
+              {total} supplier ditemukan
             </div>
           </div>
         </CardHeader>
@@ -482,6 +372,7 @@ export default function SupplierListPage() {
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              onSelect={() => handleOpenEdit(supplier)}
                               onClick={() => handleOpenEdit(supplier)}
                               className="cursor-pointer"
                             >
@@ -496,6 +387,7 @@ export default function SupplierListPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
+                              onSelect={() => handleOpenDelete(supplier)}
                               onClick={() => handleOpenDelete(supplier)}
                               className="text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50"
                             >
@@ -511,6 +403,18 @@ export default function SupplierListPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination Controls */}
+          <TablePagination
+            total={total}
+            displayedCount={filteredSuppliers.length}
+            page={page}
+            totalPages={totalPages}
+            onPrev={handlePrevPage}
+            onNext={handleNextPage}
+            disabled={loading}
+            label="supplier"
+          />
         </CardContent>
       </Card>
 

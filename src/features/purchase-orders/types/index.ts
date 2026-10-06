@@ -1,4 +1,10 @@
-export type PurchaseOrderStatus = "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type PurchaseOrderStatus =
+  | "IN_PROGRESS"
+  | "PURCHASE_REQUEST"
+  | "PURCHASE_ORDER"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "REJECTED";
 
 export interface PurchaseOrderItem {
   id: string;
@@ -6,41 +12,86 @@ export interface PurchaseOrderItem {
   stockName: string;
   quantity: number;
   baseUnit: string;
-  unitPrice: number; // 0 jika belum diset harganya oleh vendor
+  unitPrice: number;
   totalPrice: number;
+}
+
+export interface PurchaseOrderLog {
+  id: string;
+  userId: string;
+  userName: string;
+  action: string; // CREATED, UPDATED, APPROVED, REJECTED, COMPLETED, CANCELLED
+  notes?: string;
+  createdAt: string;
 }
 
 export interface PurchaseOrder {
   id: string;
-  poNumber: string; // e.g. PO-20260922-4821
-  supplierId: string;
+  poNumber: string;
+  supplierId?: string;
   supplierName: string;
+  createdByUserId?: string;
+  createdByName?: string;
   orderDate: string;
   completedDate?: string;
   status: PurchaseOrderStatus;
   notes?: string;
   items: PurchaseOrderItem[];
+  logs?: PurchaseOrderLog[];
   totalAmount: number;
   createdAt: string;
 }
 
 export interface CreatePOItemInput {
-  stockId: string;
-  stockName: string;
+  stock_id: string;
   quantity: number;
-  baseUnit: string;
-  estimatedUnitPrice?: number;
+  estimated_unit_price?: number;
 }
 
 export interface CreatePurchaseOrderInput {
-  supplierId: string;
-  supplierName: string;
+  supplier_id?: string;
   notes?: string;
-  orderDate?: string;
+  order_date?: string;
   items: CreatePOItemInput[];
 }
 
+export interface UpdatePurchaseOrderInput {
+  supplier_id?: string;
+  notes?: string;
+  items: CreatePOItemInput[];
+}
+
+export interface ApprovePOInput {
+  supplier_id?: string;
+  notes?: string;
+}
+
+export interface RejectPOInput {
+  reason: string;
+}
+
 export interface CompletePOPriceItem {
-  itemId: string;
-  unitPrice: number;
+  item_id: string;
+  unit_price: number;
+}
+
+export interface CompletePurchaseOrderInput {
+  supplier_id?: string;
+  prices: CompletePOPriceItem[];
+}
+
+export interface PurchaseOrderQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  sort_by?: string;
+}
+
+export interface PaginatedPurchaseOrders {
+  items: PurchaseOrder[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }

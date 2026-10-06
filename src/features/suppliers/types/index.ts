@@ -32,3 +32,19 @@ export interface SupplierPurchaseRecord {
   pricePerUnit: number;
   purchaseDate: string;
 }
+
+export interface SupplierQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+}
+
+export interface PaginatedSuppliers {
+  items: Supplier[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+

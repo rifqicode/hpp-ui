@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+import { TablePagination } from "@/components/ui/table-pagination"
 
 interface Column<T> {
   header: string
@@ -20,14 +20,34 @@ interface DataTableProps<T> {
   data: T[]
   pageSize?: number
   emptyMessage?: string
+  total?: number
+  page?: number
+  totalPages?: number
+  onPrev?: () => void
+  onNext?: () => void
+  label?: string
+  loading?: boolean
 }
 
-export function DataTable<T>({ columns, data, pageSize = 10, emptyMessage = "No results." }: DataTableProps<T>) {
-  const [page, setPage] = React.useState(1)
-  const pageCount = Math.max(1, Math.ceil(data.length / pageSize))
-  const safePage = Math.min(Math.max(1, page), pageCount)
-  const start = (safePage - 1) * pageSize
-  const pagedData = data.slice(start, start + pageSize)
+export function DataTable<T>({
+  columns,
+  data,
+  pageSize = 10,
+  emptyMessage = "No results.",
+  total,
+  page: serverPage,
+  totalPages: serverTotalPages,
+  onPrev: serverOnPrev,
+  onNext: serverOnNext,
+  label = "item",
+  loading = false,
+}: DataTableProps<T>) {
+  const isServerPaged = total !== undefined && serverPage !== undefined && serverTotalPages !== undefined
+  const [clientPage, setClientPage] = React.useState(1)
+  const clientPageCount = Math.max(1, Math.ceil(data.length / pageSize))
+  const safeClientPage = Math.min(Math.max(1, clientPage), clientPageCount)
+  const start = (safeClientPage - 1) * pageSize
+  const pagedData = isServerPaged ? data : data.slice(start, start + pageSize)
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,29 +82,16 @@ export function DataTable<T>({ columns, data, pageSize = 10, emptyMessage = "No 
         </Table>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xs text-muted-foreground">
-          Page {safePage} of {pageCount}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="rounded-xl"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={safePage <= 1}
-          >
-            Prev
-          </Button>
-          <Button
-            variant="outline"
-            className="rounded-xl"
-            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            disabled={safePage >= pageCount}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      <TablePagination
+        total={isServerPaged ? total : data.length}
+        displayedCount={pagedData.length}
+        page={isServerPaged ? serverPage : safeClientPage}
+        totalPages={isServerPaged ? serverTotalPages : clientPageCount}
+        onPrev={isServerPaged ? (serverOnPrev || (() => {})) : () => setClientPage((p) => Math.max(1, p - 1))}
+        onNext={isServerPaged ? (serverOnNext || (() => {})) : () => setClientPage((p) => Math.min(clientPageCount, p + 1))}
+        disabled={loading}
+        label={label}
+      />
     </div>
   )
 }

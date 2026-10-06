@@ -50,6 +50,7 @@ function App() {
           <Route path="/inventory/purchase-orders" element={<PurchaseOrderListPage />} />
           <Route path="/inventory/purchase-orders/new" element={<CreatePurchaseOrderPage />} />
           <Route path="/inventory/purchase-orders/:poId" element={<PurchaseOrderDetailPage />} />
+          <Route path="/inventory/purchase-orders/:poId/edit" element={<CreatePurchaseOrderPage />} />
           <Route path="/production/recipes" element={<RecipeListPage />} />
           <Route path="/production/recipes/new" element={<RecipeCreatePage />} />
           <Route path="/production/recipes/:productId" element={<RecipeDetailPage />} />

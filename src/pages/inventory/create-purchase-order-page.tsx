@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import {
   ArrowLeft,
   Plus,
@@ -35,9 +35,8 @@ import { ChevronDown } from "lucide-react"
 
 import { supplierService } from "@/features/suppliers/services/supplier-service"
 import { stockService, type MaterialOption } from "@/features/inventory/services/stock-service"
-import { purchaseOrderService, generatePONumber } from "@/features/purchase-orders/services/po-service"
+import { purchaseOrderService } from "@/features/purchase-orders/services/po-service"
 import type { Supplier } from "@/features/suppliers/types"
-import type { CreatePOItemInput } from "@/features/purchase-orders/types"
 
 interface ItemRowState {
   stockId: string;
@@ -49,14 +48,16 @@ interface ItemRowState {
 
 export default function CreatePurchaseOrderPage() {
   const navigate = useNavigate()
+  const { poId } = useParams<{ poId?: string }>()
   const [searchParams] = useSearchParams()
+  const isEditMode = Boolean(poId)
 
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
   const [materials, setMaterials] = React.useState<MaterialOption[]>([])
   const [loadingInitial, setLoadingInitial] = React.useState<boolean>(true)
 
-  // Auto generated PO Number
-  const [poNumberPreview] = React.useState<string>(() => generatePONumber())
+  // PO Number preview or existing
+  const [poNumber, setPoNumber] = React.useState<string>("PO-AUTO-GENERATED")
 
   // Form State
   const [supplierId, setSupplierId] = React.useState<string>("")
@@ -79,45 +80,73 @@ export default function CreatePurchaseOrderPage() {
   const [formError, setFormError] = React.useState<string>("")
   const [submitting, setSubmitting] = React.useState<boolean>(false)
 
-  // Load suppliers and materials
+  // Load suppliers, materials, and existing PO if in edit mode
   React.useEffect(() => {
     async function loadData() {
       try {
         const [supData, matData] = await Promise.all([
-          supplierService.getSuppliers(),
+          supplierService.getAllSuppliers(),
           stockService.getMaterials(),
         ])
         setSuppliers(supData)
         setMaterials(matData)
 
-        // If supplierId was provided via query param
-        const querySupId = searchParams.get("supplierId")
-        if (querySupId && supData.some((s) => s.id === querySupId)) {
-          setSupplierId(querySupId)
-        } else if (supData.length > 0) {
-          setSupplierId(supData[0].id)
-        }
+        if (poId) {
+          const existing = await purchaseOrderService.getPurchaseOrderById(poId)
+          if (existing.status !== "PURCHASE_REQUEST") {
+            setFormError("Hanya pesanan berstatus 'Purchase Request' yang dapat diedit.")
+          }
+          setPoNumber(existing.poNumber)
+          setSupplierId(existing.supplierId || "")
+          setOrderDate(
+            existing.orderDate
+              ? existing.orderDate.slice(0, 10)
+              : new Date().toISOString().slice(0, 10)
+          )
+          setNotes(existing.notes || "")
+          if (existing.items && existing.items.length > 0) {
+            setItems(
+              existing.items.map((it) => ({
+                stockId: it.stockId,
+                stockName: it.stockName,
+                quantity: it.quantity.toString(),
+                baseUnit: it.baseUnit,
+                estimatedUnitPrice:
+                  it.unitPrice && it.unitPrice > 0
+                    ? it.unitPrice.toString()
+                    : "0",
+              }))
+            )
+          }
+        } else {
+          // If supplierId was provided via query param
+          const querySupId = searchParams.get("supplierId")
+          if (querySupId && supData.some((s) => s.id === querySupId)) {
+            setSupplierId(querySupId)
+          }
 
-        // Initialize first item
-        if (matData.length > 0) {
-          setItems([
-            {
-              stockId: matData[0].id,
-              stockName: matData[0].name,
-              quantity: "10",
-              baseUnit: matData[0].baseUnit,
-              estimatedUnitPrice: matData[0].latestPrice?.toString() || "0",
-            },
-          ])
+          // Initialize first item
+          if (matData.length > 0) {
+            setItems([
+              {
+                stockId: matData[0].id,
+                stockName: matData[0].name,
+                quantity: "10",
+                baseUnit: matData[0].baseUnit,
+                estimatedUnitPrice: matData[0].latestPrice?.toString() || "0",
+              },
+            ])
+          }
         }
       } catch (err) {
         console.error("Failed to load form dependencies:", err)
+        setFormError("Gagal memuat data formulir")
       } finally {
         setLoadingInitial(false)
       }
     }
     loadData()
-  }, [searchParams])
+  }, [poId, searchParams])
 
   const selectedSupplier = suppliers.find((s) => s.id === supplierId)
 
@@ -179,10 +208,6 @@ export default function CreatePurchaseOrderPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!supplierId || !selectedSupplier) {
-      setFormError("Pilih supplier terlebih dahulu")
-      return
-    }
 
     if (items.length === 0) {
       setFormError("Tambahkan minimal 1 item bahan baku")
@@ -206,25 +231,30 @@ export default function CreatePurchaseOrderPage() {
     setFormError("")
 
     try {
-      const payloadItems: CreatePOItemInput[] = items.map((it) => ({
-        stockId: it.stockId,
-        stockName: it.stockName,
+      const payloadItems = items.map((it) => ({
+        stock_id: it.stockId,
         quantity: parseFloat(it.quantity),
-        baseUnit: it.baseUnit,
-        estimatedUnitPrice: parseFloat(it.estimatedUnitPrice) || 0,
+        estimated_unit_price: parseFloat(it.estimatedUnitPrice) || 0,
       }))
 
-      await purchaseOrderService.createPurchaseOrder({
-        supplierId: selectedSupplier.id,
-        supplierName: selectedSupplier.name,
-        notes,
-        orderDate: new Date(orderDate).toISOString(),
-        items: payloadItems,
-      })
+      if (isEditMode && poId) {
+        await purchaseOrderService.updatePurchaseOrder(poId, {
+          supplier_id: supplierId || undefined,
+          notes,
+          items: payloadItems,
+        })
+      } else {
+        await purchaseOrderService.createPurchaseOrder({
+          supplier_id: supplierId || undefined,
+          notes,
+          order_date: new Date(orderDate).toISOString(),
+          items: payloadItems,
+        })
+      }
 
       navigate("/inventory/purchase-orders")
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal membuat Purchase Request"
+      const msg = err instanceof Error ? err.message : "Gagal menyimpan Purchase Request"
       setFormError(msg)
     } finally {
       setSubmitting(false)
@@ -255,18 +285,22 @@ export default function CreatePurchaseOrderPage() {
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Buat Purchase Request (Pengajuan PO)
+            {isEditMode ? "Edit Purchase Request" : "Buat Purchase Request (Pengajuan PO)"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Sistem otomatis menghasilkan nomor PO dan menetapkan status awal <strong>Dalam Proses</strong>.
+            {isEditMode
+              ? "Perbarui informasi atau kuantitas bahan baku pada pengajuan Anda."
+              : "Pengajuan pengadaan bahan baku yang akan ditinjau dan diproses oleh Tim Finance."}
           </p>
         </div>
         <div className="flex items-center gap-2 mt-2 sm:mt-0">
           <Badge variant="outline" className="px-3 py-1 font-mono text-sm bg-muted/50 border-primary/30 text-primary flex items-center gap-1.5">
             <Hash className="h-3.5 w-3.5" />
-            {poNumberPreview}
+            {poNumber}
           </Badge>
-          <Badge variant="warning">Dalam Proses</Badge>
+          <Badge variant="outline" className="border-blue-500/40 text-blue-600 bg-blue-500/10">
+            Purchase Request
+          </Badge>
         </div>
       </div>
 
@@ -286,14 +320,14 @@ export default function CreatePurchaseOrderPage() {
               Informasi Rekanan & Tanggal Pemesanan
             </CardTitle>
             <CardDescription>
-              Tentukan vendor tujuan dan jadwal pengadaan bahan.
+              Vendor dapat ditentukan sekarang atau dikosongkan agar dipilih oleh Tim Finance.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {/* Vendor Selector */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">
-                Vendor / Supplier <span className="text-destructive">*</span>
+                Vendor / Supplier (Opsional)
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -303,7 +337,7 @@ export default function CreatePurchaseOrderPage() {
                     className="w-full justify-between rounded-xl h-10"
                   >
                     <span className="truncate">
-                      {selectedSupplier ? selectedSupplier.name : "Pilih Supplier"}
+                      {selectedSupplier ? selectedSupplier.name : "-- Belum Ditentukan (Tim Finance) --"}
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                   </Button>
@@ -313,6 +347,12 @@ export default function CreatePurchaseOrderPage() {
                     Daftar Supplier
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setSupplierId("")}
+                    className="cursor-pointer italic text-muted-foreground"
+                  >
+                    -- Belum Ditentukan (Tim Finance) --
+                  </DropdownMenuItem>
                   {suppliers.map((s) => (
                     <DropdownMenuItem
                       key={s.id}
@@ -495,10 +535,10 @@ export default function CreatePurchaseOrderPage() {
         </Card>
 
         {/* Process Explanation Alert */}
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 text-xs leading-relaxed flex items-start gap-2.5">
-          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-900 dark:text-blue-200 text-xs leading-relaxed flex items-start gap-2.5">
+          <AlertCircle className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
           <div>
-            <strong>Alur Proses Purchase Order:</strong> Setelah form ini dikirim, sistem akan menyimpan pesanan dengan nomor PO unik berstatus <strong>Dalam Proses</strong>. Setelah barang tiba dari vendor, Anda dapat mengisi harga faktur final melalui menu <em>"Set Harga & Selesaikan"</em> untuk otomatis membentuk batch stok dan memperbarui HPP.
+            <strong>Alur Purchase Request:</strong> Pengajuan ini berstatus <strong>Purchase Request</strong>. Tim Finance akan meninjau pengajuan ini, memilih atau menegosiasikan vendor rekanan, lalu menerbitkan <strong>Purchase Order</strong>. Realisasi harga final akan dicatat saat barang tiba untuk dimasukkan ke stok dan HPP.
           </div>
         </div>
 
@@ -515,7 +555,7 @@ export default function CreatePurchaseOrderPage() {
           </Button>
           <Button type="submit" className="rounded-xl shadow-sm px-6" disabled={submitting}>
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Kirim Purchase Request
+            {isEditMode ? "Simpan Perubahan Request" : "Kirim Purchase Request"}
           </Button>
         </div>
       </form>

@@ -70,9 +70,9 @@ const NAVIGATION: NavGroup[] = [
   {
     group: "Inventory",
     items: [
-      { title: "Stocks", url: "/inventory/stocks", icon: Package, permission: "menu:stocks" },
-      { title: "Purchase Orders", url: "/inventory/purchase-orders", icon: ClipboardList, permission: "stocks:create" },
+      { title: "Bahan Baku", url: "/inventory/stocks", icon: Package, permission: "menu:stocks" },
       { title: "Suppliers", url: "/inventory/suppliers", icon: Users, permission: "menu:stocks" },
+      { title: "Purchase Orders", url: "/inventory/purchase-orders", icon: ClipboardList, permission: "stocks:create" },
     ]
   },
   {

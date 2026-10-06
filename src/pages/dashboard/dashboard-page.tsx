@@ -78,7 +78,7 @@ export default function DashboardPage() {
       ])
       setBatches(bList)
       setProducts(pList)
-      setPurchaseOrders(poList)
+      setPurchaseOrders(poList.items || [])
     } catch (err) {
       console.error("Failed to load dashboard data:", err)
     } finally {

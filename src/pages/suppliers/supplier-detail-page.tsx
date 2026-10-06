@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useParams, Link, useNavigate } from "react-router-dom"
+import { RecordPurchaseDialog } from "@/features/inventory/components/record-purchase-dialog"
 import {
   ArrowLeft,
   Building2,
@@ -45,83 +46,30 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-import { supplierService } from "@/features/suppliers/services/supplier-service"
-import type { Supplier, SupplierPurchaseRecord, UpdateSupplierInput } from "@/features/suppliers/types"
+import { useSupplierDetail } from "@/features/suppliers/hooks"
 
 export default function SupplierDetailPage() {
   const { supplierId } = useParams<{ supplierId: string }>()
   const navigate = useNavigate()
 
-  const [supplier, setSupplier] = React.useState<Supplier | null>(null)
-  const [purchases, setPurchases] = React.useState<SupplierPurchaseRecord[]>([])
-  const [loading, setLoading] = React.useState<boolean>(true)
+  const {
+    supplier,
+    purchases,
+    loading,
+    isEditOpen,
+    setIsEditOpen,
+    editData,
+    setEditData,
+    submitting,
+    loadData,
+    handleUpdateSubmit,
+    formatRupiah,
+    formatDate,
+    totalSpent,
+    averageOrder,
+  } = useSupplierDetail(supplierId)
 
-  // Edit modal
-  const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false)
-  const [editData, setEditData] = React.useState<UpdateSupplierInput>({
-    name: "",
-    contact: "",
-    address: "",
-  })
-  const [submitting, setSubmitting] = React.useState<boolean>(false)
-
-  const loadData = React.useCallback(async () => {
-    if (!supplierId) return
-    setLoading(true)
-    try {
-      const sup = await supplierService.getSupplierById(supplierId)
-      setSupplier(sup)
-      setEditData({
-        name: sup.name,
-        contact: sup.contact,
-        address: sup.address,
-      })
-
-      const history = await supplierService.getSupplierPurchases(supplierId)
-      setPurchases(history)
-    } catch (err) {
-      console.error("Failed to load supplier detail:", err)
-    } finally {
-      setLoading(false)
-    }
-  }, [supplierId])
-
-  React.useEffect(() => {
-    loadData()
-  }, [loadData])
-
-  async function handleUpdateSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!supplierId || !editData.name?.trim()) return
-
-    setSubmitting(true)
-    try {
-      const updated = await supplierService.updateSupplier(supplierId, editData)
-      setSupplier(updated)
-      setIsEditOpen(false)
-    } catch (err) {
-      console.error("Failed to update supplier:", err)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  function formatRupiah(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
-  function formatDate(dateStr?: string) {
-    if (!dateStr) return "-"
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(new Date(dateStr))
-  }
+  const [isPurchaseOpen, setIsPurchaseOpen] = React.useState(false)
 
   const isInitialLoading = useInitialLoading(loading)
   if (isInitialLoading) {
@@ -140,9 +88,6 @@ export default function SupplierDetailPage() {
       </div>
     )
   }
-
-  const totalSpent = purchases.reduce((acc, p) => acc + p.totalPrice, 0) || (supplier.totalPurchases || 0)
-  const averageOrder = purchases.length > 0 ? totalSpent / purchases.length : 0
 
   return (
     <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500">
@@ -182,11 +127,12 @@ export default function SupplierDetailPage() {
               <Pencil className="mr-2 h-4 w-4" />
               Edit Data
             </Button>
-            <Button asChild className="rounded-xl shadow-sm">
-              <Link to={`/inventory/purchase/new?supplierId=${supplier.id}`}>
-                <Plus className="mr-2 h-4 w-4" />
-                Catat Pembelian Baru
-              </Link>
+            <Button
+              className="rounded-xl shadow-sm"
+              onClick={() => setIsPurchaseOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Catat Pembelian Baru
             </Button>
           </div>
         </div>
@@ -347,22 +293,15 @@ export default function SupplierDetailPage() {
                   {supplier.suppliedMaterials.map((materialName, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-muted/20 transition-all"
+                      className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/20 transition-all"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                          <Package className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-foreground text-sm">{materialName}</div>
-                          <div className="text-xs text-muted-foreground">Bahan Baku Aktif</div>
-                        </div>
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                        <Package className="h-4 w-4" />
                       </div>
-                      <Button asChild size="sm" variant="ghost" className="rounded-lg">
-                        <Link to={`/inventory/purchase/new?supplierId=${supplier.id}`}>
-                          Restock
-                        </Link>
-                      </Button>
+                      <div>
+                        <div className="font-semibold text-foreground text-sm">{materialName}</div>
+                        <div className="text-xs text-muted-foreground">Bahan Baku Aktif</div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -438,6 +377,14 @@ export default function SupplierDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Record Purchase */}
+      <RecordPurchaseDialog
+        open={isPurchaseOpen}
+        onOpenChange={setIsPurchaseOpen}
+        initialSupplierId={supplier.id}
+        onSuccess={loadData}
+      />
     </div>
   )
 }
