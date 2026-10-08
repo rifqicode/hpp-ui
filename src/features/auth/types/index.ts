@@ -1,5 +1,7 @@
 export interface User {
   id: string;
+  username?: string;
+  account_type?: "OWNER" | "STAFF";
   email: string;
   name: string;
   role: string;
@@ -41,7 +43,24 @@ export interface RegisterStoreCredentials {
 
 export interface RegisterCredentials {
   name: string;
+  username: string;
   email: string;
   password: string;
   store: RegisterStoreCredentials;
+}
+
+export interface InviteDetailsResponse {
+  email: string;
+  username?: string;
+  name: string;
+  store_name: string;
+  role_name: string;
+  is_existing_user: boolean;
+  expires_at?: string;
+}
+
+export interface AcceptInvitePayload {
+  token: string;
+  password?: string;
+  name?: string;
 }

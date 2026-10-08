@@ -1,6 +1,6 @@
 import axios from 'axios';
 import apiClient from '../../../lib/api-client';
-import type { AuthResponse, LoginCredentials, RegisterCredentials, User } from '../types';
+import type { AuthResponse, LoginCredentials, RegisterCredentials, User, InviteDetailsResponse, AcceptInvitePayload } from '../types';
 
 const NETWORK_ERROR_MSG = "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
 
@@ -31,6 +31,17 @@ export const authService = {
     }
   },
 
+  checkUsername: async (username: string): Promise<{ username: string; available: boolean }> => {
+    try {
+      const response = await apiClient.get<{ username: string; available: boolean }>(
+        `/auth/check-username?username=${encodeURIComponent(username)}`
+      );
+      return response.data;
+    } catch {
+      return { username, available: false };
+    }
+  },
+
   logout: async (): Promise<void> => {
     try {
       await apiClient.post('/auth/logout');
@@ -56,4 +67,23 @@ export const authService = {
       throw toError(err, "Gagal menyimpan profil.");
     }
   },
+
+  getInviteDetails: async (token: string): Promise<InviteDetailsResponse> => {
+    try {
+      const response = await apiClient.get<InviteDetailsResponse>(`/auth/invite?token=${encodeURIComponent(token)}`);
+      return response.data;
+    } catch (err: unknown) {
+      throw toError(err, "Tautan undangan tidak valid atau telah kadaluarsa.");
+    }
+  },
+
+  acceptInvite: async (payload: AcceptInvitePayload): Promise<AuthResponse> => {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/invite/accept', payload);
+      return response.data;
+    } catch (err: unknown) {
+      throw toError(err, "Gagal menerima undangan.");
+    }
+  },
 };
+

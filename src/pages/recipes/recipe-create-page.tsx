@@ -52,15 +52,6 @@ interface IngredientRow {
   quantity: number
 }
 
-const COMMON_CATEGORIES = [
-  "Roti",
-  "Pastry & Cake",
-  "Donat",
-  "Kue Kering",
-  "Minuman",
-  "Snack & Gorengan",
-]
-
 const COMMON_UNITS = ["pcs", "box", "loaf", "roll", "cup", "porsi", "pack"]
 
 export default function RecipeCreatePage() {
@@ -73,7 +64,8 @@ export default function RecipeCreatePage() {
 
   // Form State
   const [name, setName] = React.useState<string>("")
-  const [category, setCategory] = React.useState<string>("Roti")
+  const [categoriesList, setCategoriesList] = React.useState<string[]>([])
+  const [category, setCategory] = React.useState<string>("")
   const [customCategory, setCustomCategory] = React.useState<string>("")
   const [unit, setUnit] = React.useState<string>("pcs")
 
@@ -106,6 +98,19 @@ export default function RecipeCreatePage() {
       .catch((err) => {
         console.error("Failed to load materials:", err)
         if (!ignore) setLoadingMaterials(false)
+      })
+
+    recipeService
+      .getCategories()
+      .then((cats) => {
+        if (!ignore && cats.length > 0) {
+          const names = cats.map((c) => c.name)
+          setCategoriesList(names)
+          setCategory((prev) => (prev ? prev : names[0]))
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load categories:", err)
       })
 
     return () => {
@@ -206,7 +211,9 @@ export default function RecipeCreatePage() {
     setError("")
 
     try {
-      const activeCategory = category === "Custom" ? customCategory || "Lainnya" : category
+      const activeCategory = (category === "Custom" || categoriesList.length === 0)
+        ? (customCategory.trim() || "Umum")
+        : (category || customCategory.trim() || "Umum")
       const payload: CreateProductInput = {
         name: name.trim(),
         category: activeCategory,
@@ -337,36 +344,41 @@ export default function RecipeCreatePage() {
               {/* Category Selection */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Kategori Produk</Label>
-                <div className="flex flex-wrap gap-1.5 pt-0.5">
-                  {COMMON_CATEGORIES.map((cat) => (
+                {categoriesList.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {categoriesList.map((cat) => (
+                      <button
+                        type="button"
+                        key={cat}
+                        onClick={() => {
+                          setCategory(cat)
+                          setCustomCategory("")
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                          category === cat
+                            ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
+                            : "bg-muted/40 hover:bg-muted text-muted-foreground border-border"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
                     <button
                       type="button"
-                      key={cat}
-                      onClick={() => setCategory(cat)}
+                      onClick={() => setCategory("Custom")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                        category === cat
+                        category === "Custom"
                           ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
                           : "bg-muted/40 hover:bg-muted text-muted-foreground border-border"
                       }`}
                     >
-                      {cat}
+                      + Tambah Kategori
                     </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setCategory("Custom")}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                      category === "Custom"
-                        ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
-                        : "bg-muted/40 hover:bg-muted text-muted-foreground border-border"
-                    }`}
-                  >
-                    Lainnya...
-                  </button>
-                </div>
-                {category === "Custom" && (
+                  </div>
+                )}
+                {(category === "Custom" || categoriesList.length === 0) && (
                   <Input
-                    placeholder="Tulis kategori baru..."
+                    placeholder="Tulis nama kategori produk (misal: Roti, Minuman)..."
                     value={customCategory}
                     onChange={(e) => setCustomCategory(e.target.value)}
                     className="rounded-xl h-9 text-xs mt-2"
@@ -890,7 +902,7 @@ export default function RecipeCreatePage() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4" />
-                      <span>Simpan & Publikasikan Produk</span>
+                      <span>Simpan Produk</span>
                     </>
                   )}
                 </Button>

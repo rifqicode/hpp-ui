@@ -13,12 +13,13 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  LogOut,
   Trash2,
   Camera,
   Phone,
   Mail,
   RefreshCw,
+  Eye,
+  EyeOff,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -83,8 +84,10 @@ export default function GeneralSettingsPage() {
   }
 
   // --- UI Only States ---
-  const [twoFactorEnabled, setTwoFactorEnabled] = React.useState<boolean>(false)
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = React.useState<boolean>(false)
+  const [showOldPassword, setShowOldPassword] = React.useState<boolean>(false)
+  const [showNewPassword, setShowNewPassword] = React.useState<boolean>(false)
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState<boolean>(false)
 
   // --- API & State Logic from Hook ---
   const {
@@ -118,12 +121,18 @@ export default function GeneralSettingsPage() {
     sessionsLoading,
     loadSessions,
     handleRevokeSession,
-    handleRevokeOtherSessions,
+    revokingSessionId,
     deleteConfirmText,
     setDeleteConfirmText,
     isDeletingAccount,
+    deleteError,
     handleDeleteAccount,
   } = useAccountSettings()
+
+  const isStaff =
+    currentUser?.account_type?.toUpperCase() === "STAFF" ||
+    (!currentUser?.account_type && currentUser?.role?.toUpperCase() === "STAFF")
+  const accountRoleLabel = isStaff ? "Staff" : "Account Owner"
 
   const isInitialLoading = useInitialLoading(loadingInitial)
   if (isInitialLoading) {
@@ -179,7 +188,7 @@ export default function GeneralSettingsPage() {
                   </CardDescription>
                 </div>
                 <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] font-bold">
-                  {currentUser?.role || "OWNER"}
+                  {isStaff ? "STAFF" : "ACCOUNT OWNER"}
                 </Badge>
               </div>
             </CardHeader>
@@ -308,7 +317,7 @@ export default function GeneralSettingsPage() {
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold">Peran Akun (Role)</Label>
                     <Input
-                      value={currentUser?.role === "OWNER" ? "Pemilik Usaha (Owner)" : "Staf Operasional"}
+                      value={accountRoleLabel}
                       disabled
                       className="rounded-xl bg-muted/40 text-muted-foreground text-xs"
                     />
@@ -374,15 +383,27 @@ export default function GeneralSettingsPage() {
                     <Label htmlFor="old-pass" className="text-xs font-semibold">
                       Kata Sandi Saat Ini
                     </Label>
-                    <Input
-                      id="old-pass"
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="rounded-xl"
-                      placeholder="••••••••"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="old-pass"
+                        type={showOldPassword ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="rounded-xl pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOldPassword(!showOldPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showOldPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -390,30 +411,56 @@ export default function GeneralSettingsPage() {
                       <Label htmlFor="new-pass" className="text-xs font-semibold">
                         Kata Sandi Baru
                       </Label>
-                      <Input
-                        id="new-pass"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="rounded-xl"
-                        placeholder="Minimal 6 karakter"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="new-pass"
+                          type={showNewPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="rounded-xl pr-10"
+                          placeholder="Minimal 6 karakter"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">
                       <Label htmlFor="conf-pass" className="text-xs font-semibold">
                         Konfirmasi Sandi Baru
                       </Label>
-                      <Input
-                        id="conf-pass"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="rounded-xl"
-                        placeholder="Ulangi kata sandi"
-                        required
-                      />
+                      <div className="relative">
+                        <Input
+                          id="conf-pass"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="rounded-xl pr-10"
+                          placeholder="Ulangi kata sandi"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -427,44 +474,44 @@ export default function GeneralSettingsPage() {
               </CardContent>
             </Card>
 
-            {/* 2FA Card */}
-            <Card className="rounded-xl shadow-sm border-border flex flex-col justify-between">
+            {/* 2FA Card (Disabled / Segera Hadir) */}
+            <Card className="rounded-xl shadow-sm border-border flex flex-col justify-between opacity-80 bg-muted/10 relative overflow-hidden">
               <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-primary" />
-                  Autentikasi Dua Faktor (2FA)
-                </CardTitle>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    Autentikasi Dua Faktor (2FA)
+                  </CardTitle>
+                  <Badge variant="secondary" className="text-[10px] font-semibold bg-muted text-muted-foreground border-border">
+                    Segera Hadir
+                  </Badge>
+                </div>
                 <CardDescription>
                   Tingkatkan keamanan akun Anda dengan verifikasi OTP saat masuk dari perangkat baru.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 rounded-xl border border-border bg-muted/30 space-y-3">
+                <div className="p-4 rounded-xl border border-dashed border-border bg-muted/20 space-y-3 opacity-75">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">Aplikasi Authenticator (TOTP)</span>
-                      <Badge variant={twoFactorEnabled ? "default" : "secondary"} className="text-[10px]">
-                        {twoFactorEnabled ? "Aktif" : "Nonaktif"}
+                      <span className="text-sm font-semibold text-muted-foreground">Aplikasi Authenticator (TOTP)</span>
+                      <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+                        Dalam Pengembangan
                       </Badge>
                     </div>
                     <Switch
-                      checked={twoFactorEnabled}
-                      onCheckedChange={(checked) => {
-                        setTwoFactorEnabled(checked)
-                        if (checked) {
-                          alert("Fitur 2FA TOTP akan aktif pada sesi login berikutnya.")
-                        }
-                      }}
+                      checked={false}
+                      disabled={true}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Gunakan aplikasi seperti Google Authenticator atau 1Password untuk menghasilkan kode verifikasi sekali pakai demi perlindungan maksimal.
+                    Dukungan Google Authenticator dan TOTP sedang disiapkan untuk rilis mendatang demi keamanan ekstra.
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs">
-                  <span className="font-semibold block mb-0.5">Catatan Keamanan:</span>
-                  Pastikan nomor telepon dan email akun Anda selalu aktif untuk pemulihan akses jika kehilangan perangkat autentikator.
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border text-muted-foreground text-xs">
+                  <span className="font-semibold block mb-0.5 text-foreground/80">Informasi Fitur:</span>
+                  Fitur autentikasi 2FA saat ini sedang dalam tahap integrasi backend dan akan diaktifkan secara bertahap.
                 </div>
               </CardContent>
             </Card>
@@ -495,18 +542,6 @@ export default function GeneralSettingsPage() {
                     <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${sessionsLoading ? "animate-spin" : ""}`} />
                     Refresh
                   </Button>
-                  {sessions.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRevokeOtherSessions}
-                      className="rounded-xl text-xs text-destructive border-destructive/20 hover:bg-destructive/10"
-                    >
-                      <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                      Logout Sesi Lain
-                    </Button>
-                  )}
                 </div>
               </div>
             </CardHeader>
@@ -549,12 +584,18 @@ export default function GeneralSettingsPage() {
                     {!sess.isCurrent && (
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleRevokeSession(sess.id)}
-                        className="rounded-xl text-xs text-destructive hover:bg-destructive/10"
+                        disabled={revokingSessionId === sess.id}
+                        className="rounded-xl text-xs text-destructive border-destructive/30 hover:bg-destructive/10 h-8 px-3 shrink-0 font-medium"
                       >
-                        Keluar
+                        {revokingSessionId === sess.id ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        Hapus Sesi
                       </Button>
                     )}
                   </div>
@@ -577,27 +618,6 @@ export default function GeneralSettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Logout All Devices */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-xl border border-destructive/20 bg-background gap-3">
-                <div>
-                  <span className="font-semibold text-sm text-foreground block">
-                    Keluar dari Semua Perangkat
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Batalkan seluruh token sesi aktif di perangkat lain. Anda harus login ulang setelah ini.
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10 text-xs shrink-0"
-                  onClick={handleRevokeOtherSessions}
-                >
-                  <LogOut className="h-3.5 w-3.5 mr-1.5" />
-                  Logout Semua Sesi Lain
-                </Button>
-              </div>
-
               {/* Delete Account */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-xl border border-destructive/20 bg-background gap-3">
                 <div>
@@ -635,6 +655,13 @@ export default function GeneralSettingsPage() {
               Tindakan ini tidak dapat dibatalkan. Seluruh data transaksi, resep, dan inventaris toko Anda akan dihapus permanen.
             </DialogDescription>
           </DialogHeader>
+
+          {deleteError && (
+            <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{deleteError}</span>
+            </div>
+          )}
 
           <div className="space-y-3 py-2">
             <Label className="text-xs font-semibold text-foreground">

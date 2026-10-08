@@ -66,6 +66,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
 
   // Step 1: Account State
   const [name, setName] = React.useState<string>(user?.name || "")
+  const [username, setUsername] = React.useState<string>(user?.username || "")
   const [email, setEmail] = React.useState<string>(user?.email || "")
   const [password, setPassword] = React.useState<string>("")
   const [confirmPassword, setConfirmPassword] = React.useState<string>("")
@@ -81,7 +82,9 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
 
   // Loading & Error State
   const [loading, setLoading] = React.useState<boolean>(false)
-  const [error, setError] = React.useState<string>("")
+  const [error, setError] = React.useState<string>()
+  const [usernameStatus, setUsernameStatus] = React.useState<"idle" | "checking" | "available" | "taken">("idle")
+  const [usernameMsg, setUsernameMsg] = React.useState<string>("")
 
   // Check if authenticated user already has stores; if so, redirect to dashboard
   React.useEffect(() => {
@@ -102,11 +105,43 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     }
   }, [token, isSetupStoreRoute, navigate])
 
+  // Validate username availability on blur
+  async function validateUsername(val: string) {
+    const clean = val.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "")
+    if (!clean) {
+      setUsernameStatus("idle")
+      setUsernameMsg("")
+      return
+    }
+
+    setUsernameStatus("checking")
+    setUsernameMsg("Memeriksa ketersediaan...")
+
+    try {
+      const res = await authService.checkUsername(clean)
+      if (res.available) {
+        setUsernameStatus("available")
+        setUsernameMsg("Username tersedia!")
+      } else {
+        setUsernameStatus("taken")
+        setUsernameMsg("Username sudah digunakan, silakan pilih yang lain.")
+      }
+    } catch {
+      setUsernameStatus("idle")
+      setUsernameMsg("")
+    }
+  }
+
   // Step 1: Validate Account and go to Step 2 (client-side only)
-  function handleContinueToStore(e: React.FormEvent) {
+  async function handleContinueToStore(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !email.trim() || !password) {
-      setError("Nama lengkap, email, dan kata sandi wajib diisi.")
+    if (!name.trim() || !username.trim() || !email.trim() || !password) {
+      setError("Nama lengkap, username, email, dan kata sandi wajib diisi.")
+      return
+    }
+
+    if (usernameStatus === "taken") {
+      setError("Username sudah digunakan. Silakan gunakan username yang lain.")
       return
     }
 
@@ -123,6 +158,22 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     if (!agreeTerms) {
       setError("Anda harus menyetujui Ketentuan Layanan & Kebijakan Privasi.")
       return
+    }
+
+    // Double check username availability if not checked yet
+    if (usernameStatus !== "available") {
+      try {
+        const res = await authService.checkUsername(username.trim())
+        if (!res.available) {
+          setUsernameStatus("taken")
+          setUsernameMsg("Username sudah digunakan, silakan pilih yang lain.")
+          setError("Username sudah digunakan. Silakan gunakan username yang lain.")
+          return
+        }
+        setUsernameStatus("available")
+      } catch {
+        // proceed
+      }
     }
 
     setError("")
@@ -179,6 +230,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     try {
       const res = await authService.register({
         name: name.trim(),
+        username: username.trim(),
         email: email.trim(),
         password,
         store: {
@@ -384,12 +436,80 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     <Input
                       id="reg-name"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        setName(e.target.value)
+                        if (!username) {
+                          // Suggest username automatically from name
+                          const slug = e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9]/g, "-")
+                            .replace(/-+/g, "-")
+                            .replace(/^-|-$/g, "")
+                          setUsername(slug)
+                        }
+                      }}
                       placeholder="Contoh: Budi Santoso"
                       className="pl-9 rounded-xl h-10 text-sm"
                       required
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="reg-username" className="text-xs font-semibold text-foreground">
+                      Username Akun <span className="text-destructive">*</span>
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground">Untuk login ke sistem</span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-muted-foreground">
+                      @
+                    </span>
+                    <Input
+                      id="reg-username"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
+                        setUsernameStatus("idle")
+                        setUsernameMsg("")
+                      }}
+                      onBlur={() => validateUsername(username)}
+                      placeholder="budisantoso"
+                      className={`pl-8 pr-8 rounded-xl h-10 text-sm font-mono ${
+                        usernameStatus === "available"
+                          ? "border-emerald-500 focus-visible:ring-emerald-500"
+                          : usernameStatus === "taken"
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }`}
+                      required
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                      {usernameStatus === "checking" && (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      )}
+                      {usernameStatus === "available" && (
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      )}
+                      {usernameStatus === "taken" && (
+                        <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                      )}
+                    </div>
+                  </div>
+                  {usernameMsg && (
+                    <p
+                      className={`text-[11px] font-medium pt-0.5 ${
+                        usernameStatus === "available"
+                          ? "text-emerald-600"
+                          : usernameStatus === "taken"
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {usernameMsg}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">

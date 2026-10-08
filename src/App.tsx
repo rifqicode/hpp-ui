@@ -28,6 +28,7 @@ import PosPage from "./pages/sales/pos-page"
 import TransactionHistoryPage from "./pages/sales/transaction-history-page"
 import LoginPage from "./pages/auth/login-page"
 import RegisterPage from "./pages/auth/register-page"
+import AcceptInvitePage from "./pages/auth/accept-invite-page"
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/setup-store" element={<RegisterPage initialStep={2} />} />
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
         {/* Protected Dashboard Routes */}
         <Route element={<DashboardLayout />}>

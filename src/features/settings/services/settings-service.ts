@@ -17,12 +17,35 @@ import type {
 
 interface ApiErrorLike {
   message?: string;
-  response?: { data?: { error?: string; message?: string } };
+  response?: {
+    data?: {
+      error?: string;
+      message?: string;
+      errors?: unknown;
+    };
+  };
 }
 
-function toError(error: unknown, fallback: string): Error {
+export function toError(error: unknown, fallback: string): Error {
   const e = error as ApiErrorLike;
-  return new Error(e?.response?.data?.error || e?.response?.data?.message || e?.message || fallback);
+  const data = e?.response?.data;
+  let backendMsg = data?.message || data?.error;
+  if (!backendMsg && data?.errors) {
+    if (typeof data.errors === 'string') {
+      backendMsg = data.errors;
+    } else if (Array.isArray(data.errors) && data.errors.length > 0) {
+      backendMsg = data.errors.join(', ');
+    } else if (typeof data.errors === 'object') {
+      const vals = Object.values(data.errors as Record<string, unknown>).filter(Boolean);
+      if (vals.length > 0) backendMsg = vals.join(', ');
+    }
+  }
+
+  const raw = backendMsg || e?.message;
+  if (!raw || raw.startsWith('Request failed with status code')) {
+    return new Error(fallback);
+  }
+  return new Error(raw);
 }
 
 interface RawRole {
@@ -110,7 +133,12 @@ export const settingsService = {
     const targetId = storeId || useAuthStore.getState().activeStoreId;
     if (!targetId) return [];
     const res = await apiClient.get<StaffMember[]>(`/stores/${targetId}/staff`);
-    return res.data || [];
+    const list = res.data || [];
+    return list.map((item) => ({
+      ...item,
+      userId: item.userId || item.user_id || item.id,
+      joinedAt: item.joinedAt || item.joined_at || '',
+    }));
   },
 
   inviteStaff: async (input: InviteStaffInput, storeId?: string): Promise<StaffMember> => {
@@ -166,34 +194,66 @@ export const settingsService = {
 
   // User Profile
   getUserProfile: async (): Promise<UserProfileInfo> => {
-    const res = await apiClient.get<UserProfileInfo>('/auth/me');
-    return res.data;
+    try {
+      const res = await apiClient.get<UserProfileInfo>('/auth/me');
+      return res.data;
+    } catch (err) {
+      throw toError(err, 'Gagal mengambil profil pengguna');
+    }
   },
 
   updateUserProfile: async (data: Partial<UserProfileInfo>): Promise<UserProfileInfo> => {
-    const res = await apiClient.put<UserProfileInfo>('/auth/profile', data);
-    return res.data;
+    try {
+      const res = await apiClient.put<UserProfileInfo>('/auth/profile', data);
+      return res.data;
+    } catch (err) {
+      throw toError(err, 'Gagal memperbarui profil pengguna');
+    }
   },
 
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
-    await apiClient.put('/auth/password', {
-      current_password: currentPassword,
-      new_password: newPassword,
-    });
+    try {
+      await apiClient.put('/auth/password', {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+    } catch (err) {
+      throw toError(err, 'Gagal memperbarui kata sandi. Periksa kata sandi saat ini.');
+    }
   },
 
   // Sessions Management
   getSessions: async (): Promise<DeviceSession[]> => {
-    const res = await apiClient.get<DeviceSession[]>('/auth/sessions');
-    return res.data || [];
+    try {
+      const res = await apiClient.get<DeviceSession[]>('/auth/sessions');
+      return res.data || [];
+    } catch (err) {
+      throw toError(err, 'Gagal memuat sesi aktif');
+    }
   },
 
   revokeSession: async (sessionId: string): Promise<void> => {
-    await apiClient.delete(`/auth/sessions/${sessionId}`);
+    try {
+      await apiClient.delete(`/auth/sessions/${sessionId}`);
+    } catch (err) {
+      throw toError(err, 'Gagal menghapus sesi');
+    }
   },
 
   revokeOtherSessions: async (): Promise<void> => {
-    await apiClient.delete('/auth/sessions/others');
+    try {
+      await apiClient.delete('/auth/sessions/others');
+    } catch (err) {
+      throw toError(err, 'Gagal membatalkan sesi perangkat lain');
+    }
+  },
+
+  deleteAccount: async (): Promise<void> => {
+    try {
+      await apiClient.delete('/auth/account');
+    } catch (err) {
+      throw toError(err, 'Gagal menghapus akun');
+    }
   },
 
   // System Preferences

@@ -6,6 +6,38 @@ import { settingsService } from "@/features/settings/services/settings-service"
 import type { DeviceSession } from "@/features/settings/types"
 import type { User as UserType } from "@/features/auth/types"
 
+function formatAccountErrorMessage(err: unknown, fallback: string): string {
+  const msg = err instanceof Error ? err.message : fallback
+  if (!msg || msg.startsWith("Request failed with status code")) {
+    return fallback
+  }
+
+  const lower = msg.toLowerCase()
+  if (lower.includes("current password does not match") || lower.includes("current password is incorrect")) {
+    return "Kata sandi saat ini salah atau tidak sesuai."
+  }
+  if (lower.includes("new password must be at least 6 characters")) {
+    return "Kata sandi baru minimal 6 karakter."
+  }
+  if (lower.includes("new password must be different")) {
+    return "Kata sandi baru harus berbeda dari kata sandi saat ini."
+  }
+  if (lower.includes("email is already registered") || lower.includes("email is already in use")) {
+    return "Email sudah digunakan oleh akun lain."
+  }
+  if (lower.includes("username is already")) {
+    return "Username sudah digunakan oleh akun lain."
+  }
+  if (lower.includes("invalid password payload")) {
+    return "Data kata sandi tidak valid. Periksa kembali input Anda."
+  }
+  if (lower.includes("user not found")) {
+    return "Akun pengguna tidak ditemukan."
+  }
+
+  return msg
+}
+
 export function useAccountSettings() {
   const navigate = useNavigate()
   const currentUser = useAuthStore((state) => state.user)
@@ -123,7 +155,7 @@ export function useAccountSettings() {
       setProfileMsg("Profil pengguna berhasil disimpan!")
       setTimeout(() => setProfileMsg(""), 3500)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyimpan perubahan profil."
+      const msg = formatAccountErrorMessage(err, "Gagal menyimpan perubahan profil.")
       setProfileError(msg)
     } finally {
       setIsSavingProfile(false)
@@ -155,20 +187,27 @@ export function useAccountSettings() {
       setConfirmPassword("")
       setTimeout(() => setPasswordMsg(""), 4000)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memperbarui kata sandi. Periksa kata sandi saat ini."
+      const msg = formatAccountErrorMessage(err, "Gagal memperbarui kata sandi. Periksa kata sandi saat ini.")
       setPasswordError(msg)
     } finally {
       setPasswordLoading(false)
     }
   }
 
+  const [revokingSessionId, setRevokingSessionId] = React.useState<string | null>(null)
+
   // Revoke Single Session
   const handleRevokeSession = async (sessionId: string) => {
+    setRevokingSessionId(sessionId)
     try {
       await settingsService.revokeSession(sessionId)
       setSessions((prev) => prev.filter((s) => s.id !== sessionId))
     } catch (err) {
-      console.error("Failed to revoke session:", err)
+      const msg = formatAccountErrorMessage(err, "Gagal menghapus sesi.")
+      console.error(msg)
+      alert(msg)
+    } finally {
+      setRevokingSessionId(null)
     }
   }
 
@@ -179,7 +218,9 @@ export function useAccountSettings() {
       setSessions((prev) => prev.filter((s) => s.isCurrent))
       alert("Semua sesi di perangkat lain berhasil dinonaktifkan.")
     } catch (err) {
-      console.error("Failed to revoke other sessions:", err)
+      const msg = formatAccountErrorMessage(err, "Gagal membatalkan sesi perangkat lain.")
+      console.error(msg)
+      alert(msg)
     }
   }
 
@@ -189,11 +230,11 @@ export function useAccountSettings() {
     setIsDeletingAccount(true)
     setDeleteError("")
     try {
-      await authService.logout()
+      await settingsService.deleteAccount()
       logout()
-      navigate("/login")
+      navigate("/login", { replace: true })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Gagal menghapus akun."
+      const msg = formatAccountErrorMessage(err, "Gagal menghapus akun.")
       setDeleteError(msg)
       setIsDeletingAccount(false)
     }
@@ -237,6 +278,7 @@ export function useAccountSettings() {
     loadSessions,
     handleRevokeSession,
     handleRevokeOtherSessions,
+    revokingSessionId,
 
     // Danger Zone
     deleteConfirmText,

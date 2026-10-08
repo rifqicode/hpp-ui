@@ -57,6 +57,29 @@ apiClient.interceptors.response.use(
         window.location.replace('/login');
       }
     }
+
+    // Extract specific backend error message from standard { success, message, errors } envelope
+    if (axios.isAxiosError(error) && error.response?.data) {
+      const data = error.response.data as {
+        message?: string;
+        error?: string;
+        errors?: unknown;
+      };
+      let specificMsg = data.message || data.error;
+      if (typeof data.errors === 'string' && data.errors.trim() !== '') {
+        specificMsg = specificMsg ? `${specificMsg} (${data.errors})` : data.errors;
+      } else if (Array.isArray(data.errors) && data.errors.length > 0) {
+        specificMsg = data.errors.join(', ');
+      } else if (data.errors && typeof data.errors === 'object') {
+        const vals = Object.values(data.errors).filter(Boolean);
+        if (vals.length > 0) specificMsg = vals.join(', ');
+      }
+
+      if (specificMsg) {
+        error.message = specificMsg;
+      }
+    }
+
     return Promise.reject(error);
   }
 );

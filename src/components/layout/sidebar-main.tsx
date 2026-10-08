@@ -365,16 +365,20 @@ export function SidebarMain() {
                       )}
                     </DropdownMenuItem>
                   ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="flex items-center gap-2.5 p-2 cursor-pointer text-primary font-medium hover:bg-primary/5 rounded-lg">
-                    <Link to="/settings/store">
-                      <div className="flex size-7 items-center justify-center rounded-md border border-dashed border-primary/40 bg-primary/5">
-                        <Plus className="size-3.5" />
-                      </div>
-                      <span className="text-xs font-semibold">Kelola & Tambah Cabang</span>
-                      <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
-                    </Link>
-                  </DropdownMenuItem>
+                  {user?.account_type !== "STAFF" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild className="flex items-center gap-2.5 p-2 cursor-pointer text-primary font-medium hover:bg-primary/5 rounded-lg">
+                        <Link to="/settings/store">
+                          <div className="flex size-7 items-center justify-center rounded-md border border-dashed border-primary/40 bg-primary/5">
+                            <Plus className="size-3.5" />
+                          </div>
+                          <span className="text-xs font-semibold">Kelola & Tambah Cabang</span>
+                          <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </SidebarMenuItem>

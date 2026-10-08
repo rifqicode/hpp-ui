@@ -72,3 +72,11 @@ export interface AddIngredientInput {
   stockId: string;
   quantity: number;
 }
+
+export interface ProductCategory {
+  id: string;
+  storeId?: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+}

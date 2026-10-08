@@ -454,7 +454,14 @@ export default function StoreSettingsPage() {
                               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase shrink-0">
                                 {st.name ? st.name.substring(0, 2) : "ST"}
                               </div>
-                              <span>{st.name}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span>{st.name}</span>
+                                {st.username && (
+                                  <span className="text-[10px] text-muted-foreground font-mono">
+                                    @{st.username}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
 
