@@ -6,7 +6,13 @@ const NETWORK_ERROR_MSG = "Tidak dapat terhubung ke server. Periksa koneksi Anda
 
 function toError(err: unknown, fallback: string): Error {
   if (axios.isAxiosError(err)) {
-    if (err.response) return new Error(err.response.data?.message || fallback);
+    if (err.response) {
+      const msg = err.response.data?.message;
+      if (msg?.toLowerCase() === 'unauthorized' || err.response.status === 401) {
+        return new Error("Email atau kata sandi salah. Silakan coba lagi.");
+      }
+      return new Error(msg || fallback);
+    }
     return new Error(NETWORK_ERROR_MSG);
   }
   return err instanceof Error ? err : new Error(fallback);

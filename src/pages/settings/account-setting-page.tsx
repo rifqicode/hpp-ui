@@ -611,7 +611,7 @@ export default function GeneralSettingsPage() {
             <CardHeader className="pb-4">
               <CardTitle className="text-base text-destructive flex items-center gap-2">
                 <AlertOctagon className="h-5 w-5" />
-                Zona Berbahaya (Danger Zone)
+                Zona Bahaya
               </CardTitle>
               <CardDescription>
                 Tindakan di bagian ini memiliki dampak permanen terhadap akun dan akses data bisnis Anda.

@@ -62,7 +62,10 @@ export default function LoginPage() {
         navigate("/setup-store")
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal masuk. Periksa kembali email dan kata sandi Anda."
+      let msg = err instanceof Error ? err.message : "Gagal masuk. Periksa kembali email dan kata sandi Anda."
+      if (msg.toLowerCase() === "unauthorized") {
+        msg = "Email atau kata sandi salah. Silakan coba lagi."
+      }
       setError(msg)
     } finally {
       setLoading(false)
@@ -93,8 +96,8 @@ export default function LoginPage() {
           <div className="space-y-6 relative z-10 my-auto py-8">
             <div className="space-y-2">
               <h2 className="text-3xl font-extrabold tracking-tight text-white leading-tight">
-                Simple HPP, <br />
-                <span className="text-primary">Accurate Profits.</span>
+                Hitung HPP Mudah, <br />
+                <span className="text-primary">Keuntungan Lebih Akurat.</span>
               </h2>
               <p className="text-sm text-slate-300 leading-relaxed">
                 Kendalikan harga pokok penjualan secara riil dengan kalkulasi FIFO otomatis, lacak pemakaian bahan resep, dan cegah boncos terselubung.
@@ -107,26 +110,26 @@ export default function LoginPage() {
                 <div className="h-6 w-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <span>Pelacakan Batch Stok Bahan FIFO Akurat</span>
+                <span>Lacak stok bahan otomatis dengan metode FIFO</span>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-200">
                 <div className="h-6 w-6 rounded-lg bg-primary/20 text-primary flex items-center justify-center shrink-0">
                   <TrendingUp className="h-4 w-4" />
                 </div>
-                <span>Perhitungan HPP Dapur & Absorpsi Scrap / Waste</span>
+                <span>Hitung HPP dapur & kelola sisa bahan (waste)</span>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-200">
                 <div className="h-6 w-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
                   <Sparkles className="h-4 w-4" />
                 </div>
-                <span>Laporan Laba Rugi & Margin Produk Real-Time</span>
+                <span>Laporan laba rugi & margin produk real-time</span>
               </div>
             </div>
           </div>
 
           {/* Bottom Footer Quote */}
           <div className="pt-4 border-t border-slate-800 text-xs text-slate-400 relative z-10">
-            &copy; {new Date().getFullYear()} HPP Tracker Inc. Dirancang untuk efisiensi bisnis Anda.
+            &copy; {new Date().getFullYear()} HPP Tracker. Seluruh hak cipta dilindungi.
           </div>
         </div>
 
@@ -144,7 +147,7 @@ export default function LoginPage() {
               Selamat Datang Kembali
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-1">
-              Masukkan kredensial akun Anda untuk mengakses dashboard dan operasional toko.
+              Masukkan email dan kata sandi Anda untuk masuk.
             </CardDescription>
           </CardHeader>
 
@@ -225,7 +228,7 @@ export default function LoginPage() {
 
             <Button type="submit" className="w-full rounded-xl h-10 shadow-sm font-semibold" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Masuk ke Akun
+              Masuk
             </Button>
           </form>
 
