@@ -70,11 +70,11 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   const [password, setPassword] = React.useState<string>("")
   const [confirmPassword, setConfirmPassword] = React.useState<string>("")
   const [showPassword, setShowPassword] = React.useState<boolean>(false)
-  const [agreeTerms, setAgreeTerms] = React.useState<boolean>(true)
+  const [agreeTerms, setAgreeTerms] = React.useState<boolean>(false)
 
   // Step 2: Store State
   const [storeName, setStoreName] = React.useState<string>("")
-  const [category, setCategory] = React.useState<string>("Bakery & Pastry")
+  const [category, setCategory] = React.useState<string>("")
   const [storeLocation, setStoreLocation] = React.useState<string>("")
   const [phone, setPhone] = React.useState<string>("")
   const [description, setDescription] = React.useState<string>("")
@@ -134,6 +134,11 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     e.preventDefault()
     if (!storeName.trim()) {
       setError("Nama toko atau unit usaha wajib diisi.")
+      return
+    }
+
+    if (!category) {
+      setError("Kategori bisnis wajib dipilih.")
       return
     }
 
@@ -361,9 +366,6 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
           {step === 1 && (
             <div className="space-y-4">
               <CardHeader className="p-0 pb-2">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-primary/10 text-primary w-fit mb-1">
-                  <User className="h-3 w-3" /> Langkah 1 dari 2
-                </div>
                 <CardTitle className="text-2xl font-bold text-foreground tracking-tight">
                   Buat Akun Bisnis Baru
                 </CardTitle>
@@ -484,9 +486,6 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <CardHeader className="p-0 pb-2">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 w-fit mb-1">
-                  <Store className="h-3 w-3" /> Langkah 2 dari 2: Setup Usaha
-                </div>
                 <CardTitle className="text-2xl font-bold text-foreground tracking-tight">
                   Setup Toko / Usaha Pertama
                 </CardTitle>
@@ -524,8 +523,12 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       id="store-category"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
+                      required
                       className="w-full pl-9 pr-3 rounded-xl h-10 text-sm border border-input bg-background text-foreground shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
                     >
+                      <option value="" disabled>
+                        Pilih Kategori Bisnis...
+                      </option>
                       {STORE_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
                           {cat}
@@ -594,14 +597,6 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     rows={2}
                     className="rounded-xl text-sm"
                   />
-                </div>
-
-                {/* Info Callout */}
-                <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground flex items-start gap-2.5">
-                  <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>
-                    Toko ini akan otomatis diset sebagai <strong className="text-foreground">Toko Utama</strong>. Anda dapat menambah cabang atau staf lain kapan saja di menu Pengaturan.
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-3 mt-3">

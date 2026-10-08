@@ -32,10 +32,10 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((state) => state.setAuth)
 
-  const [email, setEmail] = React.useState<string>("budi@tokoroti.com")
-  const [password, setPassword] = React.useState<string>("password123")
+  const [email, setEmail] = React.useState<string>("")
+  const [password, setPassword] = React.useState<string>("")
   const [showPassword, setShowPassword] = React.useState<boolean>(false)
-  const [rememberMe, setRememberMe] = React.useState<boolean>(true)
+  const [rememberMe, setRememberMe] = React.useState<boolean>(false)
 
   const [loading, setLoading] = React.useState<boolean>(false)
   const [error, setError] = React.useState<string>("")
