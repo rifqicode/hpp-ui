@@ -78,7 +78,7 @@ const NAVIGATION: NavGroup[] = [
   {
     group: "Production",
     items: [
-      { title: "Produk", url: "/production/recipes", icon: Factory, permission: "menu:recipes" },
+      { title: "Produk", url: "/production/products", icon: Factory, permission: "menu:recipes" },
       { title: "Batches", url: "/production/batches", icon: History, badge: "3", permission: "menu:recipes" },
       { title: "HPP Calculator", url: "/production/hpp", icon: Calculator, permission: "menu:recipes" },
     ]

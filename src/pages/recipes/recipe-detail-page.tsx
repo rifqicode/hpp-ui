@@ -265,7 +265,7 @@ export default function RecipeDetailPage() {
     setSubmitting(true)
     try {
       await recipeService.deleteProduct(productId)
-      navigate("/production/recipes")
+      navigate("/production/products")
     } catch (err) {
       console.error("Failed to delete product:", err)
     } finally {
@@ -288,7 +288,7 @@ export default function RecipeDetailPage() {
         <AlertTriangle className="h-10 w-10 text-amber-500" />
         <h2 className="text-xl font-bold">Resep Produk Tidak Ditemukan</h2>
         <Button asChild variant="outline" className="rounded-xl">
-          <Link to="/production/recipes">Kembali ke Daftar Resep</Link>
+          <Link to="/production/products">Kembali ke Daftar Produk</Link>
         </Button>
       </div>
     )
@@ -309,9 +309,9 @@ export default function RecipeDetailPage() {
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs">
-            <Link to="/production/recipes">
+            <Link to="/production/products">
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              Daftar Resep
+              Daftar Produk
             </Link>
           </Button>
           <span className="text-xs text-muted-foreground">/</span>

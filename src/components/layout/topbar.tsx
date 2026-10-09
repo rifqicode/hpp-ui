@@ -92,21 +92,21 @@ function getBreadcrumbs(pathname: string): Crumb[] {
     ]
   }
 
-  // Production
-  if (p === "/production/recipes") {
+  // Production - Products & Recipes
+  if (p === "/production/products" || p === "/production/recipes") {
     return [{ label: "Produksi" }, { label: "Produk" }]
   }
-  if (p === "/production/recipes/new") {
+  if (p === "/production/products/new" || p === "/production/recipes/new") {
     return [
       { label: "Produksi" },
-      { label: "Produk", href: "/production/recipes" },
+      { label: "Produk", href: "/production/products" },
       { label: "Tambah Produk Baru" },
     ]
   }
-  if (p.startsWith("/production/recipes/")) {
+  if (p.startsWith("/production/products/") || p.startsWith("/production/recipes/")) {
     return [
       { label: "Produksi" },
-      { label: "Produk", href: "/production/recipes" },
+      { label: "Produk", href: "/production/products" },
       { label: "Detail Produk" },
     ]
   }

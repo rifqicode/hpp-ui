@@ -442,13 +442,49 @@ export const recipeService = {
       const response = await apiClient.get<{ items: RawStockItem[] }>('/stocks?page=1&limit=1000');
       const items = response.data?.items || [];
       if (Array.isArray(items) && items.length > 0) {
-        return items.map((s) => ({
-          id: s.id,
-          name: s.name,
-          baseUnit: s.base_unit || s.baseUnit || 'satuan',
-          currentStock: parseNumber(s.current_stock ?? s.currentStock),
-          avgCostPerUnit: parseNumber(s.cost_per_unit ?? s.costPerUnit ?? s.avgCostPerUnit ?? 0),
-        }));
+        const result = await Promise.all(
+          items.map(async (s) => {
+            let cost = parseNumber(s.cost_per_unit ?? s.costPerUnit ?? s.avgCostPerUnit ?? 0);
+            if (cost === 0) {
+              try {
+                const detail = await apiClient.get<{
+                  active_batches?: { price_per_unit: number; remaining_quantity: number }[];
+                  stock?: { cost_per_unit?: number };
+                }>(`/stocks/${s.id}`);
+                if (detail.data?.stock?.cost_per_unit) {
+                  cost = parseNumber(detail.data.stock.cost_per_unit);
+                } else {
+                  const batches = detail.data?.active_batches || [];
+                  let totalQty = 0;
+                  let totalVal = 0;
+                  for (const b of batches) {
+                    const q = Number(b.remaining_quantity) || 0;
+                    const p = Number(b.price_per_unit) || 0;
+                    if (q > 0) {
+                      totalQty += q;
+                      totalVal += q * p;
+                    }
+                  }
+                  if (totalQty > 0) {
+                    cost = totalVal / totalQty;
+                  } else if (batches.length > 0) {
+                    cost = Number(batches[0].price_per_unit) || 0;
+                  }
+                }
+              } catch {
+                // ignore fallback error
+              }
+            }
+            return {
+              id: s.id,
+              name: s.name,
+              baseUnit: s.base_unit || s.baseUnit || 'satuan',
+              currentStock: parseNumber(s.current_stock ?? s.currentStock),
+              avgCostPerUnit: cost,
+            };
+          })
+        );
+        return result;
       }
       return [...AVAILABLE_MATERIALS];
     } catch {

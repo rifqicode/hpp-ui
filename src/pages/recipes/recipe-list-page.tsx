@@ -215,7 +215,7 @@ export default function RecipeListPage() {
 
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => navigate("/production/recipes/new")}
+            onClick={() => navigate("/production/products/new")}
             className="rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
@@ -407,7 +407,7 @@ export default function RecipeListPage() {
                ? "Coba ubah kata kunci pencarian atau reset filter kategori."
                : "Belum ada produk yang dibuat. Mulai buat produk Anda sekarang untuk menghitung HPP otomatis!"}
           </p>
-          <Button onClick={() => navigate("/production/recipes/new")} className="rounded-xl flex items-center gap-2">
+          <Button onClick={() => navigate("/production/products/new")} className="rounded-xl flex items-center gap-2">
             <Plus className="h-4 w-4" />
             <span>Tambah Produk Pertama</span>
           </Button>
@@ -424,7 +424,7 @@ export default function RecipeListPage() {
             return (
               <Card
                 key={product.id}
-                onClick={() => navigate(`/production/recipes/${product.id}`)}
+                onClick={() => navigate(`/production/products/${product.id}`)}
                 className="rounded-2xl border-slate-200/80 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col justify-between overflow-hidden group bg-card cursor-pointer"
               >
                 {/* Card Top */}
@@ -459,7 +459,7 @@ export default function RecipeListPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                            <DropdownMenuItem onClick={() => navigate(`/production/recipes/${product.id}`)}>
+                            <DropdownMenuItem onClick={() => navigate(`/production/products/${product.id}`)}>
                               <Pencil className="h-3.5 w-3.5 mr-2" /> Detail / Edit Resep
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -552,7 +552,7 @@ export default function RecipeListPage() {
                     variant="outline"
                     className="w-full justify-between rounded-xl h-10 hover:bg-primary/5 hover:text-primary hover:border-primary/40 font-semibold group-hover:border-primary/30 transition-all text-xs"
                   >
-                    <Link to={`/production/recipes/${product.id}`}>
+                    <Link to={`/production/products/${product.id}`}>
                       <span>Buka Detail & BOM</span>
                       <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                     </Link>
@@ -588,7 +588,7 @@ export default function RecipeListPage() {
                   <TableRow
                     key={product.id}
                     className="hover:bg-primary/5 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/production/recipes/${product.id}`)}
+                    onClick={() => navigate(`/production/products/${product.id}`)}
                   >
                     <TableCell>
                       <div className="flex flex-col">
@@ -635,7 +635,7 @@ export default function RecipeListPage() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
-                          navigate(`/production/recipes/${product.id}`)
+                          navigate(`/production/products/${product.id}`)
                         }}
                         className="rounded-xl text-xs h-8 hover:bg-primary hover:text-primary-foreground transition-colors"
                       >

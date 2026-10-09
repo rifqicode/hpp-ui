@@ -257,7 +257,7 @@ export default function BatchDetailPage() {
 
                 <div className="flex items-center gap-2 mt-1">
                   <Link
-                    to={`/production/recipes/${batch.productId}`}
+                    to={`/production/products/${batch.productId}`}
                     className="text-sm font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1"
                   >
                     <span>{batch.productName}</span>

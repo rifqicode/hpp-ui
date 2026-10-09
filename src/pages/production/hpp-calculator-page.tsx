@@ -1035,9 +1035,9 @@ Dihitung otomatis dengan HPP Manager.
                       asChild
                       className="w-full h-10 rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex items-center justify-center gap-2 text-xs"
                     >
-                      <Link to="/production/recipes/new">
+                      <Link to="/production/products/new">
                         <Plus className="h-4 w-4" />
-                        <span>Jadikan Resep Baru</span>
+                        <span>Buat Produk Baru</span>
                       </Link>
                     </Button>
 
@@ -1266,8 +1266,8 @@ Dihitung otomatis dengan HPP Manager.
                             variant="outline"
                             className="w-full h-9 rounded-xl text-xs font-semibold bg-white border-slate-300/80 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                           >
-                            <Link to={`/production/recipes/${selectedSavedProduct.id}`}>
-                              Buka Detail Resep Lengkap
+                            <Link to={`/production/products/${selectedSavedProduct.id}`}>
+                              Buka Detail Produk Lengkap
                             </Link>
                           </Button>
                         </div>

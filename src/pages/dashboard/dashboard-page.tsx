@@ -440,14 +440,14 @@ export default function DashboardPage() {
           variant="outline"
           className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group"
         >
-          <Link to="/production/recipes/new">
+          <Link to="/production/products/new">
             <div className="flex items-center justify-between w-full mb-1">
               <div className="h-8 w-8 rounded-xl bg-sky-500/10 text-sky-600 flex items-center justify-center group-hover:scale-105 transition-transform">
                 <Boxes className="h-4 w-4" />
               </div>
               <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
             </div>
-            <span className="font-bold text-xs text-foreground block">Tambah Resep Baru</span>
+            <span className="font-bold text-xs text-foreground block">Tambah Produk Baru</span>
             <span className="text-[10px] text-muted-foreground block truncate">Atur formula & standar HPP</span>
           </Link>
         </Button>
@@ -581,10 +581,10 @@ export default function DashboardPage() {
                   </Badge>
                 )}
                 <Link
-                  to="/production/recipes"
+                  to="/production/products"
                   className="text-xs text-primary hover:underline font-semibold flex items-center gap-1"
                 >
-                  Semua Resep <ChevronRight className="h-3 w-3" />
+                  Semua Produk <ChevronRight className="h-3 w-3" />
                 </Link>
               </div>
             </CardHeader>

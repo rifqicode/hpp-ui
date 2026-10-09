@@ -350,7 +350,7 @@ export default function BatchCreatePage() {
                     </div>
                   </div>
                   <Link
-                    to={`/production/recipes/${selectedProduct.id}`}
+                    to={`/production/products/${selectedProduct.id}`}
                     target="_blank"
                     className="text-primary hover:underline font-semibold flex items-center gap-1 shrink-0"
                   >

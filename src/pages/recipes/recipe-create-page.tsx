@@ -2,7 +2,6 @@ import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import {
   ArrowLeft,
-  Factory,
   Plus,
   Trash2,
   AlertTriangle,
@@ -14,6 +13,8 @@ import {
   Layers,
   DollarSign,
   Percent,
+  Package,
+  Calculator,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -50,6 +51,41 @@ function formatCurrencyIdr(val: number): string {
 interface IngredientRow {
   stockId: string
   quantity: number
+  recipeUnit?: string
+}
+
+function getCompatibleUnits(baseUnit?: string): string[] {
+  if (!baseUnit) return ["satuan"]
+  const bu = baseUnit.toLowerCase()
+  if (bu === "kg" || bu === "g") return ["g", "kg"]
+  if (bu === "l" || bu === "ml") return ["ml", "L"]
+  return [baseUnit]
+}
+
+function getQuantityInBaseUnit(qty: number, recipeUnit?: string, baseUnit?: string): number {
+  if (!baseUnit || !recipeUnit || recipeUnit.toLowerCase() === baseUnit.toLowerCase()) {
+    return qty
+  }
+  const ru = recipeUnit.toLowerCase()
+  const bu = baseUnit.toLowerCase()
+  if (bu === "kg" && ru === "g") return qty / 1000
+  if (bu === "g" && ru === "kg") return qty * 1000
+  if (bu === "l" && ru === "ml") return qty / 1000
+  if (bu === "ml" && ru === "l") return qty * 1000
+  return qty
+}
+
+function getCostPerRecipeUnit(baseCost: number, recipeUnit?: string, baseUnit?: string): number {
+  if (!baseUnit || !recipeUnit || recipeUnit.toLowerCase() === baseUnit.toLowerCase()) {
+    return baseCost
+  }
+  const ru = recipeUnit.toLowerCase()
+  const bu = baseUnit.toLowerCase()
+  if (bu === "kg" && ru === "g") return baseCost / 1000
+  if (bu === "g" && ru === "kg") return baseCost * 1000
+  if (bu === "l" && ru === "ml") return baseCost / 1000
+  if (bu === "ml" && ru === "l") return baseCost * 1000
+  return baseCost
 }
 
 const COMMON_UNITS = ["pcs", "box", "loaf", "roll", "cup", "porsi", "pack"]
@@ -76,11 +112,8 @@ export default function RecipeCreatePage() {
   const [minStock, setMinStock] = React.useState<number>(10)
   const [description, setDescription] = React.useState<string>("")
 
-  // Ingredient Rows
-  const [ingredients, setIngredients] = React.useState<IngredientRow[]>([
-    { stockId: "mat-1", quantity: 50 }, // Default flour
-    { stockId: "mat-3", quantity: 15 }, // Default sugar
-  ])
+  // Ingredient Rows - starts empty from 0
+  const [ingredients, setIngredients] = React.useState<IngredientRow[]>([])
 
   // Overhead percentage option (15% standard)
   const [overheadPercent, setOverheadPercent] = React.useState<number>(15)
@@ -122,21 +155,24 @@ export default function RecipeCreatePage() {
     const unusedMaterial = availableMaterials.find(
       (m) => !ingredients.some((row) => row.stockId === m.id)
     )
-    const stockId = unusedMaterial ? unusedMaterial.id : (availableMaterials[0]?.id || "")
-    setIngredients([...ingredients, { stockId, quantity: 10 }])
+    const selectedMat = unusedMaterial || availableMaterials[0]
+    const stockId = selectedMat?.id || ""
+    const bu = selectedMat?.baseUnit?.toLowerCase()
+    const defaultUnit = bu === "kg" ? "g" : (bu === "l" ? "ml" : (selectedMat?.baseUnit || "satuan"))
+    setIngredients([...ingredients, { stockId, quantity: 10, recipeUnit: defaultUnit }])
   }
 
-  function updateIngredientRow(index: number, stockId: string, quantity: number) {
+  function updateIngredientRow(index: number, stockId: string, quantity: number, recipeUnit?: string) {
     const updated = [...ingredients]
-    updated[index] = { stockId, quantity }
+    const mat = availableMaterials.find((m) => m.id === stockId)
+    const bu = mat?.baseUnit?.toLowerCase()
+    const fallbackUnit = bu === "kg" ? "g" : (bu === "l" ? "ml" : (mat?.baseUnit || "satuan"))
+    const unit = recipeUnit || updated[index]?.recipeUnit || fallbackUnit
+    updated[index] = { stockId, quantity, recipeUnit: unit }
     setIngredients(updated)
   }
 
   function removeIngredientRow(index: number) {
-    if (ingredients.length <= 1) {
-      alert("Resep minimal membutuhkan 1 bahan baku utama.")
-      return
-    }
     setIngredients(ingredients.filter((_, idx) => idx !== index))
   }
 
@@ -145,12 +181,17 @@ export default function RecipeCreatePage() {
     let totalBOM = 0
     const items = ingredients.map((row) => {
       const mat = availableMaterials.find((m) => m.id === row.stockId)
-      const unitCost = mat ? mat.avgCostPerUnit : 0
+      const baseCost = mat ? mat.avgCostPerUnit : 0
+      const bu = mat?.baseUnit?.toLowerCase()
+      const fallbackUnit = bu === "kg" ? "g" : (bu === "l" ? "ml" : (mat?.baseUnit || "satuan"))
+      const activeUnit = row.recipeUnit || fallbackUnit
+      const unitCost = getCostPerRecipeUnit(baseCost, activeUnit, mat?.baseUnit)
       const subtotal = row.quantity * unitCost
       totalBOM += subtotal
       return {
         ...row,
         material: mat,
+        activeUnit,
         unitCost,
         subtotal,
       }
@@ -222,15 +263,19 @@ export default function RecipeCreatePage() {
         targetMargin: Number(targetMargin),
         minStock: Number(minStock) || 10,
         description: description.trim(),
-        initialIngredients: validIngredients.map((ing) => ({
-          stockId: ing.stockId,
-          quantity: Number(ing.quantity),
-        })),
+        initialIngredients: validIngredients.map((ing) => {
+          const mat = availableMaterials.find((m) => m.id === ing.stockId)
+          const baseQty = getQuantityInBaseUnit(ing.quantity, ing.recipeUnit, mat?.baseUnit)
+          return {
+            stockId: ing.stockId,
+            quantity: Number(baseQty),
+          }
+        }),
       }
 
       const created = await recipeService.createProduct(payload)
       // Navigate to created product recipe detail page
-      navigate(`/production/recipes/${created.id}`)
+      navigate(`/production/products/${created.id}`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menambahkan produk baru"
       setError(msg)
@@ -247,7 +292,7 @@ export default function RecipeCreatePage() {
             type="button"
             variant="outline"
             size="icon"
-            onClick={() => navigate("/production/recipes")}
+            onClick={() => navigate("/production/products")}
             className="rounded-xl h-10 w-10 shrink-0"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -255,14 +300,14 @@ export default function RecipeCreatePage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                Tambah Produk & Resep Baru
+                Buat Produk & Resep Baru
               </h1>
               <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
                 Margin-Driven Pricing
               </Badge>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Rancang komposisi bahan (BOM), tentukan target persentase margin keuntungan, dan sistem akan menghitung harga jual optimal secara otomatis.
+              Tentukan identitas produk, susun kebutuhan bahan baku (resep), dan tentukan margin keuntungan untuk menghitung harga jual optimal.
             </p>
           </div>
         </div>
@@ -271,7 +316,7 @@ export default function RecipeCreatePage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/production/recipes")}
+            onClick={() => navigate("/production/products")}
             className="rounded-xl"
             disabled={submitting}
           >
@@ -291,7 +336,7 @@ export default function RecipeCreatePage() {
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Simpan & Buat Produk</span>
+                <span>Simpan Produk & Resep</span>
               </>
             )}
           </Button>
@@ -307,7 +352,7 @@ export default function RecipeCreatePage() {
 
       <form id="recipe-create-form" onSubmit={handleSubmit} className="grid lg:grid-cols-12 gap-6 w-full">
         {/* ========================================================================= */}
-        {/* LEFT COLUMN: IDENTITAS PRODUK & KOMPOSISI BAHAN (BOM)                     */}
+        {/* LEFT COLUMN: IDENTITAS PRODUK, RESEP BAHAN & PERHITUNGAN MARGIN           */}
         {/* ========================================================================= */}
         <div className="lg:col-span-7 xl:col-span-8 space-y-6">
           {/* Section 1: Informasi Produk */}
@@ -315,12 +360,12 @@ export default function RecipeCreatePage() {
             <CardHeader className="p-5 pb-3 border-b border-border/50 bg-muted/20">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                  <Factory className="h-4 w-4" />
+                  <Package className="h-4 w-4" />
                 </div>
                 <div>
-                  <CardTitle className="text-base font-bold">1. Identitas Produk</CardTitle>
+                  <CardTitle className="text-base font-bold">1. Informasi Produk yang Dibuat</CardTitle>
                   <CardDescription className="text-xs">
-                    Informasi produk, kategori, dan target margin keuntungan yang diinginkan.
+                    Nama produk, kategori, satuan penjualan, dan batas minimum stok persediaan.
                   </CardDescription>
                 </div>
               </div>
@@ -386,53 +431,11 @@ export default function RecipeCreatePage() {
                 )}
               </div>
 
-              {/* Target Margin (%), Unit, Min Stock */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                {/* User Inputs ONLY the Margin % */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="targetMargin" className="text-xs font-semibold flex items-center gap-1">
-                      Target Margin (%) <span className="text-red-500">*</span>
-                    </Label>
-                    <span className="text-[10px] text-primary font-mono font-semibold">Gross Profit</span>
-                  </div>
-                  <div className="relative">
-                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      id="targetMargin"
-                      type="number"
-                      min="1"
-                      max="95"
-                      step="1"
-                      value={targetMargin || ""}
-                      onChange={(e) => setTargetMargin(Math.min(95, Math.max(1, Number(e.target.value))))}
-                      className="pl-8 rounded-xl h-10 font-mono text-sm font-bold text-foreground"
-                      placeholder="50"
-                      required
-                    />
-                  </div>
-                  {/* Quick percentage chips */}
-                  <div className="flex items-center gap-1 pt-0.5">
-                    {[35, 45, 50, 60, 70].map((pct) => (
-                      <button
-                        type="button"
-                        key={pct}
-                        onClick={() => setTargetMargin(pct)}
-                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md border transition-all ${
-                          targetMargin === pct
-                            ? "bg-primary text-primary-foreground border-primary font-bold"
-                            : "bg-muted/60 text-muted-foreground border-border hover:bg-muted"
-                        }`}
-                      >
-                        {pct}%
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
+              {/* Satuan Jual & Batas Minimum Stok */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 <div className="space-y-1.5">
                   <Label htmlFor="unit" className="text-xs font-semibold">
-                    Satuan Jual
+                    Satuan Hasil / Penjualan
                   </Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -465,7 +468,7 @@ export default function RecipeCreatePage() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="minStock" className="text-xs font-semibold">
-                    Batas Minimum Stok
+                    Batas Minimum Stok ({unit})
                   </Label>
                   <Input
                     id="minStock"
@@ -474,49 +477,19 @@ export default function RecipeCreatePage() {
                     value={minStock || ""}
                     onChange={(e) => setMinStock(Number(e.target.value))}
                     className="rounded-xl h-10 font-mono text-sm"
+                    placeholder="Contoh: 10"
                   />
-                </div>
-              </div>
-
-              {/* Real-time Auto-Calculated Selling Price Banner */}
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-emerald-500/10 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <span className="text-[10px] uppercase tracking-wider font-bold text-primary flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    Harga Jual Otomatis Terhitung
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black font-mono text-foreground">
-                      {formatCurrencyIdr(calculations.calculatedPrice)}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      /{unit}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 border-emerald-500/30 bg-emerald-500/10 ml-1 font-bold"
-                    >
-                      +{calculations.actualMarginPercent}% Margin
-                    </Badge>
-                  </div>
-                </div>
-                <div className="text-[11px] text-muted-foreground sm:text-right leading-tight">
-                  <div>HPP per Unit: <strong className="text-foreground">{formatCurrencyIdr(calculations.estimatedHPP)}</strong></div>
-                  <div>Target Margin: <strong className="text-primary font-bold">{targetMargin}%</strong></div>
-                  <div className="text-[10px] text-muted-foreground/80 mt-0.5">
-                    (Harga dihitung otomatis tanpa perlu ketik manual)
-                  </div>
                 </div>
               </div>
 
               {/* Description */}
               <div className="space-y-1.5 pt-1">
                 <Label htmlFor="description" className="text-xs font-semibold">
-                  Deskripsi / Catatan Resep
+                  Deskripsi / Catatan Produk
                 </Label>
                 <Input
                   id="description"
-                  placeholder="Karakteristik tekstur, suhu oven ideal, durasi proofing, porsi loyang..."
+                  placeholder="Karakteristik tekstur, saran penyimpanan, porsi sajian..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="rounded-xl h-10 text-sm"
@@ -534,10 +507,10 @@ export default function RecipeCreatePage() {
                 </div>
                 <div>
                   <CardTitle className="text-base font-bold">
-                    2. Formula Bahan Baku (BOM)
+                    2. Resep & Komposisi Bahan Baku (BOM)
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Tentukan takaran bahan yang dibutuhkan untuk menghasilkan <strong>1 {unit}</strong> produk.
+                    Tentukan takaran bahan baku yang dibutuhkan untuk menghasilkan <strong>1 {unit}</strong> produk.
                   </CardDescription>
                 </div>
               </div>
@@ -559,12 +532,39 @@ export default function RecipeCreatePage() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Memuat daftar bahan baku dari gudang...</span>
                 </div>
+              ) : ingredients.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-border/70 rounded-2xl flex flex-col items-center justify-center gap-3 bg-muted/10">
+                  <div className="p-3 rounded-2xl bg-primary/10 text-primary">
+                    <Layers className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-sm text-foreground">Mulai Racik Resep Bahan Baku</h4>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      Daftar bahan masih kosong. Klik tombol <strong>"Tambah Bahan"</strong> untuk memilih bahan baku dan menentukan takarannya.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addIngredientRow}
+                    className="rounded-xl text-xs flex items-center gap-1.5 border-dashed border-primary/40 text-primary hover:bg-primary/5 mt-1"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Tambah Bahan Baku</span>
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-2.5">
                   {ingredients.map((row, idx) => {
                     const selectedMat = availableMaterials.find((m) => m.id === row.stockId)
-                    const unitCost = selectedMat?.avgCostPerUnit || 0
+                    const baseCost = selectedMat ? selectedMat.avgCostPerUnit : 0
+                    const bu = selectedMat?.baseUnit?.toLowerCase()
+                    const fallbackUnit = bu === "kg" ? "g" : (bu === "l" ? "ml" : (selectedMat?.baseUnit || "satuan"))
+                    const activeUnit = row.recipeUnit || fallbackUnit
+                    const unitCost = getCostPerRecipeUnit(baseCost, activeUnit, selectedMat?.baseUnit)
                     const subtotal = row.quantity * unitCost
+                    const compatibleUnits = getCompatibleUnits(selectedMat?.baseUnit)
 
                     return (
                       <div
@@ -589,60 +589,105 @@ export default function RecipeCreatePage() {
                                   {selectedMat?.name || "Pilih Bahan Baku..."}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground ml-1">
-                                  ({selectedMat ? formatCurrencyIdr(selectedMat.avgCostPerUnit) + "/" + selectedMat.baseUnit : ""}) ▼
+                                  ({selectedMat ? (
+                                    selectedMat.baseUnit.toLowerCase() === "kg"
+                                      ? `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/kg (${formatCurrencyIdr(selectedMat.avgCostPerUnit / 1000)}/g)`
+                                      : `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/${selectedMat.baseUnit}`
+                                  ) : ""}) ▼
                                 </span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-72 max-h-64 overflow-y-auto rounded-xl">
+                            <DropdownMenuContent className="w-80 max-h-64 overflow-y-auto rounded-xl">
                               <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase">
                                 Bahan Baku Tersedia di Gudang
                               </DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              {availableMaterials.map((m) => (
-                                <DropdownMenuItem
-                                  key={m.id}
-                                  onClick={() => updateIngredientRow(idx, m.id, row.quantity)}
-                                  className="cursor-pointer text-xs flex items-center justify-between"
-                                >
-                                  <div>
-                                    <div className="font-medium">{m.name}</div>
-                                    <div className="text-[10px] text-muted-foreground">
-                                      Stok: {m.currentStock} {m.baseUnit}
+                              {availableMaterials.map((m) => {
+                                const isKg = m.baseUnit.toLowerCase() === "kg"
+                                return (
+                                  <DropdownMenuItem
+                                    key={m.id}
+                                    onClick={() => updateIngredientRow(idx, m.id, row.quantity)}
+                                    className="cursor-pointer text-xs flex items-center justify-between py-2"
+                                  >
+                                    <div>
+                                      <div className="font-semibold text-foreground">{m.name}</div>
+                                      <div className="text-[10px] text-muted-foreground">
+                                        Stok: {m.currentStock} {m.baseUnit}
+                                      </div>
                                     </div>
-                                  </div>
-                                  <span className="font-mono text-[11px] font-semibold text-primary">
-                                    {formatCurrencyIdr(m.avgCostPerUnit)}/{m.baseUnit}
-                                  </span>
-                                </DropdownMenuItem>
-                              ))}
+                                    <div className="text-right">
+                                      <span className="font-mono text-[11px] font-bold text-primary block">
+                                        {formatCurrencyIdr(m.avgCostPerUnit)}/{m.baseUnit}
+                                      </span>
+                                      {isKg && (
+                                        <span className="text-[9px] font-mono text-muted-foreground block">
+                                          ({formatCurrencyIdr(m.avgCostPerUnit / 1000)}/g)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </DropdownMenuItem>
+                                )
+                              })}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
 
-                        {/* Quantity & Unit */}
-                        <div className="flex items-center gap-1.5 w-full sm:w-36">
+                        {/* Quantity & Unit Selector */}
+                        <div className="flex items-center gap-1.5 w-full sm:w-44">
                           <Input
                             type="number"
-                            min="0.1"
+                            min="0.001"
                             step="any"
                             value={row.quantity || ""}
-                            onChange={(e) => updateIngredientRow(idx, row.stockId, Number(e.target.value))}
+                            onChange={(e) => updateIngredientRow(idx, row.stockId, Number(e.target.value), activeUnit)}
                             placeholder="Takaran"
                             className="rounded-xl h-10 text-xs font-mono font-bold bg-background text-right"
                             required
                           />
-                          <span className="text-xs font-mono font-medium text-muted-foreground shrink-0 w-8">
-                            {selectedMat?.baseUnit || "unit"}
-                          </span>
+
+                          {compatibleUnits.length > 1 ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-10 px-2 rounded-xl font-mono text-xs font-semibold shrink-0"
+                                >
+                                  <span>{activeUnit}</span>
+                                  <span className="text-[9px] text-muted-foreground ml-1">▼</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="w-20 rounded-xl">
+                                {compatibleUnits.map((u) => (
+                                  <DropdownMenuItem
+                                    key={u}
+                                    onClick={() => updateIngredientRow(idx, row.stockId, row.quantity, u)}
+                                    className="font-mono text-xs font-semibold cursor-pointer"
+                                  >
+                                    {u}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <span className="text-xs font-mono font-medium text-muted-foreground shrink-0 w-8 text-center">
+                              {selectedMat?.baseUnit || "unit"}
+                            </span>
+                          )}
                         </div>
 
                         {/* Subtotal Cost */}
-                        <div className="w-full sm:w-32 text-right">
+                        <div className="w-full sm:w-36 text-right">
                           <span className="text-[10px] text-muted-foreground block sm:hidden">
                             Subtotal:
                           </span>
-                          <span className="font-mono text-xs font-bold text-foreground">
+                          <span className="font-mono text-xs font-bold text-foreground block">
                             {formatCurrencyIdr(subtotal)}
+                          </span>
+                          <span className="text-[9px] font-mono text-muted-foreground block">
+                            @{formatCurrencyIdr(unitCost)}/{activeUnit}
                           </span>
                         </div>
 
@@ -673,6 +718,172 @@ export default function RecipeCreatePage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Section 3: Perhitungan HPP & Penetapan Margin Keuntungan */}
+          <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card overflow-hidden">
+            <CardHeader className="p-5 pb-3 border-b border-border/50 bg-muted/20">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600">
+                  <Calculator className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-bold">
+                    3. Perhitungan HPP & Penetapan Margin
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Setelah bahan baku diinput, tetapkan target margin keuntungan untuk menghasilkan harga jual ideal per 1 {unit}.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              {calculations.totalBOM === 0 ? (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
+                  <Info className="h-4 w-4 shrink-0" />
+                  <span>
+                    Tambahkan bahan baku di <strong>Bagian 2 (Resep)</strong> di atas untuk mulai melihat kalkulasi HPP dan menentukan margin keuntungan.
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Ringkasan Biaya Dasar */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60">
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
+                    Biaya Bahan Baku (BOM)
+                  </span>
+                  <span className="text-lg font-mono font-bold text-foreground block mt-0.5">
+                    {formatCurrencyIdr(calculations.totalBOM)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block mt-0.5">
+                    per 1 {unit} produk
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
+                      Estimasi Overhead
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-amber-600">
+                      +{overheadPercent}%
+                    </span>
+                  </div>
+                  <span className="text-lg font-mono font-bold text-amber-600 block mt-0.5">
+                    +{formatCurrencyIdr(calculations.overheadCost)}
+                  </span>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    {[10, 15, 20].map((pct) => (
+                      <button
+                        type="button"
+                        key={pct}
+                        onClick={() => setOverheadPercent(pct)}
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md border transition-all ${
+                          overheadPercent === pct
+                            ? "bg-amber-500 text-white border-amber-600 font-bold"
+                            : "bg-background text-muted-foreground border-border hover:bg-muted"
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20">
+                  <span className="text-[10px] text-primary uppercase font-bold tracking-wider block">
+                    Total HPP per {unit}
+                  </span>
+                  <span className="text-lg font-mono font-black text-primary block mt-0.5">
+                    {formatCurrencyIdr(calculations.estimatedHPP)}
+                  </span>
+                  <span className="text-[10px] text-primary/80 block mt-0.5">
+                    Modal Bersih (BOM + Overhead)
+                  </span>
+                </div>
+              </div>
+
+              {/* Target Margin (%) Input */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="targetMargin" className="text-xs font-semibold flex items-center gap-1">
+                    Target Margin Keuntungan (%) <span className="text-red-500">*</span>
+                  </Label>
+                  <span className="text-[10px] text-primary font-mono font-semibold">
+                    Gross Profit Margin berbasis HPP
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                  <div className="relative">
+                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      id="targetMargin"
+                      type="number"
+                      min="1"
+                      max="95"
+                      step="1"
+                      value={targetMargin || ""}
+                      onChange={(e) => setTargetMargin(Math.min(95, Math.max(1, Number(e.target.value))))}
+                      className="pl-8 rounded-xl h-10 font-mono text-sm font-bold text-foreground"
+                      placeholder="50"
+                      required
+                    />
+                  </div>
+
+                  {/* Quick percentage chips */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">Pilihan Cepat:</span>
+                    {[35, 45, 50, 60, 70].map((pct) => (
+                      <button
+                        type="button"
+                        key={pct}
+                        onClick={() => setTargetMargin(pct)}
+                        className={`text-xs font-mono px-2 py-1 rounded-lg border transition-all ${
+                          targetMargin === pct
+                            ? "bg-primary text-primary-foreground border-primary font-bold shadow-xs"
+                            : "bg-muted/60 text-muted-foreground border-border hover:bg-muted"
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-time Auto-Calculated Selling Price Banner */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-emerald-500/10 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-primary flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    Harga Jual Rekomendasi (Otomatis)
+                  </span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black font-mono text-foreground">
+                      {formatCurrencyIdr(calculations.calculatedPrice)}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-mono">
+                      /{unit}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 border-emerald-500/30 bg-emerald-500/10 ml-1 font-bold"
+                    >
+                      +{calculations.actualMarginPercent}% Margin
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground sm:text-right space-y-0.5">
+                  <div>Modal HPP: <strong className="text-foreground font-mono">{formatCurrencyIdr(calculations.estimatedHPP)}</strong></div>
+                  <div>Potensi Laba Kotor: <strong className="text-emerald-600 font-mono font-bold">+{formatCurrencyIdr(calculations.grossProfit)}</strong></div>
+                  <div className="text-[10px] text-muted-foreground/80 pt-0.5">
+                    Formula: HPP / (1 - {targetMargin}%)
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* ========================================================================= */}
@@ -688,7 +899,7 @@ export default function RecipeCreatePage() {
                     <TrendingUp className="h-4 w-4" />
                   </div>
                   <div>
-                    <CardTitle className="text-base font-bold">Simulasi HPP & Laba</CardTitle>
+                    <CardTitle className="text-base font-bold">Ringkasan Finansial Produk</CardTitle>
                     <CardDescription className="text-xs">
                       Perhitungan real-time per 1 {unit} produk.
                     </CardDescription>
@@ -902,7 +1113,7 @@ export default function RecipeCreatePage() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4" />
-                      <span>Simpan Produk</span>
+                      <span>Simpan Produk & Resep</span>
                     </>
                   )}
                 </Button>
@@ -910,11 +1121,11 @@ export default function RecipeCreatePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate("/production/recipes")}
+                  onClick={() => navigate("/production/products")}
                   className="w-full rounded-xl h-10 text-xs"
                   disabled={submitting}
                 >
-                  Batal & Kembali ke Katalog
+                  Batal & Kembali ke Daftar Produk
                 </Button>
               </div>
             </CardContent>

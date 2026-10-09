@@ -53,10 +53,16 @@ function App() {
           <Route path="/inventory/purchase-orders/new" element={<CreatePurchaseOrderPage />} />
           <Route path="/inventory/purchase-orders/:poId" element={<PurchaseOrderDetailPage />} />
           <Route path="/inventory/purchase-orders/:poId/edit" element={<CreatePurchaseOrderPage />} />
-          <Route path="/production/recipes" element={<RecipeListPage />} />
-          <Route path="/production/recipes/new" element={<RecipeCreatePage />} />
+          {/* Products & Recipes */}
+          <Route path="/production/products" element={<RecipeListPage />} />
+          <Route path="/production/products/new" element={<RecipeCreatePage />} />
+          <Route path="/production/products/:productId" element={<RecipeDetailPage />} />
+          <Route path="/products" element={<Navigate to="/production/products" replace />} />
+          <Route path="/products/new" element={<Navigate to="/production/products/new" replace />} />
+          <Route path="/production/recipes" element={<Navigate to="/production/products" replace />} />
+          <Route path="/production/recipes/new" element={<Navigate to="/production/products/new" replace />} />
           <Route path="/production/recipes/:productId" element={<RecipeDetailPage />} />
-          <Route path="/recipes" element={<Navigate to="/production/recipes" replace />} />
+          <Route path="/recipes" element={<Navigate to="/production/products" replace />} />
           <Route path="/production/batches" element={<BatchListPage />} />
           <Route path="/production/batches/new" element={<BatchCreatePage />} />
           <Route path="/production/batches/:batchId" element={<BatchDetailPage />} />
