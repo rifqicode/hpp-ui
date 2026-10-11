@@ -1,4 +1,4 @@
-export type ProductionStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type ProductionStatus = 'DRAFT' | 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'VOID';
 
 export interface ConsumedIngredient {
   stockId: string;
@@ -8,10 +8,19 @@ export interface ConsumedIngredient {
   cost: number;
 }
 
+export interface ProductionOverheadDetail {
+  id?: string;
+  overheadTypeId?: string;
+  name: string;
+  amount: number;
+}
+
 export interface ProductionBatch {
   id: string;
   batchNumber: string;
   storeId?: string;
+  saleId?: string;
+  saleItemId?: string;
   productId: string;
   productName: string;
   productCategory: string;
@@ -33,8 +42,29 @@ export interface ProductionBatch {
   hppPerUnit?: number;
   startedAt: string;
   completedAt?: string;
+  voidedAt?: string;
+  voidReason?: string;
   notes?: string;
   ingredients: ConsumedIngredient[];
+  overheads?: ProductionOverheadDetail[];
+  recipeSnapshot?: {
+    product_id: string;
+    product_name: string;
+    yield_qty: number;
+    waste_pct: number;
+    items?: Array<{
+      stock_id: string;
+      stock_name: string;
+      quantity: number;
+      unit: string;
+      cost_per_unit: number;
+    }>;
+    overheads?: Array<{
+      overhead_type_id?: string;
+      name: string;
+      amount: number;
+    }>;
+  };
 }
 
 export interface StartProductionInput {
@@ -51,5 +81,35 @@ export interface CompleteProductionInput {
   overheadEnergy?: number;
   overheadPackaging?: number;
   overheadOther?: number;
+  overheads?: ProductionOverheadDetail[];
   notes?: string;
+}
+
+export interface ProductionPreviewItem {
+  stock_id: string;
+  stock_name: string;
+  unit: string;
+  required_qty: number;
+  available_qty: number;
+  is_sufficient: boolean;
+  estimated_cost: number;
+}
+
+export interface ProductionPreviewOverhead {
+  overhead_type_id?: string;
+  name: string;
+  amount: number;
+}
+
+export interface ProductionPreviewResponse {
+  product_id: string;
+  product_name: string;
+  planned_qty: number;
+  is_all_sufficient: boolean;
+  items: ProductionPreviewItem[];
+  estimated_bom: number;
+  overheads: ProductionPreviewOverhead[];
+  estimated_overhead: number;
+  estimated_total: number;
+  estimated_hpp: number;
 }

@@ -21,11 +21,13 @@ import BatchListPage from "./pages/production/batch-list-page"
 import BatchCreatePage from "./pages/production/batch-create-page"
 import BatchDetailPage from "./pages/production/batch-detail-page"
 import HppCalculatorPage from "./pages/production/hpp-calculator-page"
+import OverheadListPage from "./pages/production/overhead-list-page"
 import StoreSettingsPage from "./pages/settings/store-settings-page"
 import RoleCreatePage from "./pages/settings/role-create-page"
 import AccountSettingPage from "./pages/settings/account-setting-page"
 import PosPage from "./pages/sales/pos-page"
 import TransactionHistoryPage from "./pages/sales/transaction-history-page"
+import CustomerListPage from "./pages/sales/customer-list-page"
 import LoginPage from "./pages/auth/login-page"
 import RegisterPage from "./pages/auth/register-page"
 import AcceptInvitePage from "./pages/auth/accept-invite-page"
@@ -68,8 +70,12 @@ function App() {
           <Route path="/production/batches/:batchId" element={<BatchDetailPage />} />
           <Route path="/production/hpp" element={<HppCalculatorPage />} />
           <Route path="/hpp" element={<Navigate to="/production/hpp" replace />} />
+          <Route path="/production/overheads" element={<OverheadListPage />} />
+          <Route path="/overheads" element={<Navigate to="/production/overheads" replace />} />
           <Route path="/sales/pos" element={<PosPage />} />
           <Route path="/sales/history" element={<TransactionHistoryPage />} />
+          <Route path="/sales/customers" element={<CustomerListPage />} />
+          <Route path="/customers" element={<Navigate to="/sales/customers" replace />} />
           <Route path="/sales" element={<Navigate to="/sales/pos" replace />} />
           <Route path="/settings/profile" element={<Navigate to="/settings?tab=profile" replace />} />
           <Route path="/settings/account" element={<Navigate to="/settings?tab=security" replace />} />

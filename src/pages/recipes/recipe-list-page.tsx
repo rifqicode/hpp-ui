@@ -16,15 +16,14 @@ import {
   AlertTriangle,
   Info,
   Loader2,
+  RefreshCw,
+  X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -44,14 +43,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { TablePagination } from "@/components/ui/table-pagination"
 
 import { recipeService } from "@/features/recipes/services/recipe-service"
 import type { Product } from "@/features/recipes/types"
@@ -85,28 +77,30 @@ export default function RecipeListPage() {
   const [viewMode, setViewMode] = React.useState<"grid" | "table">("grid")
   const [sortBy, setSortBy] = React.useState<string>("name-asc")
 
+  // Pagination
+  const [page, setPage] = React.useState(1)
+  const pageSize = 12
+
   // Modal Dialogs
   const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false)
   const [productToDelete, setProductToDelete] = React.useState<Product | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false)
 
-  React.useEffect(() => {
-    let ignore = false
-    recipeService.getProducts().then((data) => {
-      if (!ignore) {
-        setProducts(data)
-        setLoading(false)
-      }
-    }).catch((err) => {
+  const fetchProducts = React.useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await recipeService.getProducts()
+      setProducts(data)
+    } catch (err) {
       console.error("Failed to load products:", err)
-      if (!ignore) {
-        setLoading(false)
-      }
-    })
-    return () => {
-      ignore = true
+    } finally {
+      setLoading(false)
     }
   }, [])
+
+  React.useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
   // Extract categories dynamically
   const categories = React.useMemo(() => {
@@ -155,6 +149,13 @@ export default function RecipeListPage() {
     return result
   }, [products, search, selectedCategory, sortBy])
 
+  // Paginated items
+  const totalPages = Math.ceil(filteredProducts.length / pageSize) || 1
+  const paginatedProducts = React.useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredProducts.slice(start, start + pageSize)
+  }, [filteredProducts, page, pageSize])
+
   // Aggregate stats
   const stats = React.useMemo(() => {
     const total = products.length
@@ -197,198 +198,218 @@ export default function RecipeListPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-12 animate-in fade-in duration-500">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <Factory className="h-6 w-6" />
+          </div>
+          <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Katalog Produk & Formula Resep
             </h1>
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
-              Katalog Produk
-            </Badge>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Kelola formula bahan baku, kalkulasi HPP otomatis, dan simulasi margin keuntungan produk jadi
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Kelola formula bahan baku, kalkulasi HPP otomatis, dan simulasi margin keuntungan produk jadi.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchProducts}
+            disabled={loading}
+            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Segarkan
+          </Button>
           <Button
             onClick={() => navigate("/production/products/new")}
-            className="rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
           >
             <Plus className="h-4 w-4" />
-            <span>Tambah Produk Baru</span>
+            Tambah Produk
           </Button>
         </div>
       </div>
 
-      {/* Stats Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Total Produk Aktif
-              </CardDescription>
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                <Factory className="h-4 w-4" />
+      {/* KPI / Metric Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Card 1: Total Produk */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Total Produk Aktif</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-foreground">
+                  {stats.total}
+                </span>
+                <span className="text-xs text-muted-foreground">formula</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-black font-mono mt-1">
-              {stats.total}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Siap diproduksi di dapur</p>
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+              <Factory className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Rata-rata Margin
-              </CardDescription>
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
-                <TrendingUp className="h-4 w-4" />
+        {/* Card 2: Rata-rata Margin */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Rata-rata Margin</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                  +{stats.avgMargin}%
+                </span>
+                <span className="text-xs text-muted-foreground">di atas HPP</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-black font-mono text-emerald-600 mt-1">
-              +{stats.avgMargin}%
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Gross margin di atas HPP</p>
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+              <TrendingUp className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Stok Barang Jadi
-              </CardDescription>
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
-                <Package className="h-4 w-4" />
+        {/* Card 3: Total Stok Unit */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Stok Barang Jadi</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-foreground">
+                  {stats.totalStock}
+                </span>
+                <span className="text-xs text-muted-foreground">unit siap jual</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-black font-mono text-foreground mt-1">
-              {stats.totalStock} <span className="text-sm font-normal text-muted-foreground">unit</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Tersedia untuk dijual (POS)</p>
+            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+              <Package className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Perlu Restock
-              </CardDescription>
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
-                <AlertTriangle className="h-4 w-4" />
+        {/* Card 4: Perlu Restock */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Perlu Restock</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                  {stats.lowStockCount}
+                </span>
+                <span className="text-xs text-muted-foreground">produk menipis</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-black font-mono text-amber-600 mt-1">
-              {stats.lowStockCount} <span className="text-sm font-normal text-muted-foreground">produk</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Stok mendekati batas aman</p>
+            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filter and Control Bar */}
-      <Card className="rounded-2xl border-slate-200/80 shadow-sm">
-        <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-          {/* Search */}
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Cari resep, produk, bahan baku..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 rounded-xl h-10 text-sm bg-muted/20 focus-visible:ring-primary/20"
-            />
-          </div>
+      {/* Standalone Search & Filter Bar */}
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari nama produk, kategori, atau bahan baku..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+            className="pl-9 bg-background/50 h-9 text-xs"
+          />
+          {search && (
+            <button
+              onClick={() => {
+                setSearch("")
+                setPage(1)
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
+        <div className="flex flex-wrap items-center gap-2">
           {/* Category Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full">
             {categories.map((cat) => (
-              <Button
+              <button
                 key={cat}
                 type="button"
-                size="sm"
-                variant={selectedCategory === cat ? "default" : "outline"}
-                onClick={() => setSelectedCategory(cat)}
-                className={`rounded-xl text-xs font-medium h-8 transition-all shrink-0 ${
+                onClick={() => {
+                  setSelectedCategory(cat)
+                  setPage(1)
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
                   selectedCategory === cat
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "hover:bg-muted/50 border-slate-200"
+                    ? "bg-background text-foreground shadow-2xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {cat === "All" ? "Semua Kategori" : cat}
-              </Button>
+              </button>
             ))}
           </div>
 
-          {/* Sort and View Toggle */}
-          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-xl text-xs h-9 border-slate-200">
-                  Urutkan:{" "}
-                  <span className="font-semibold ml-1">
-                    {sortBy === "name-asc" && "Nama A-Z"}
-                    {sortBy === "name-desc" && "Nama Z-A"}
-                    {sortBy === "margin-desc" && "Margin Tertinggi"}
-                    {sortBy === "margin-asc" && "Margin Terendah"}
-                    {sortBy === "price-desc" && "Harga Tertinggi"}
-                    {sortBy === "stock-asc" && "Stok Menipis"}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-slate-200">
-                <DropdownMenuLabel className="text-xs uppercase text-muted-foreground">Kriteria Urut</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setSortBy("name-asc")}>Nama (A ke Z)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("name-desc")}>Nama (Z ke A)</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("margin-desc")}>Margin Tertinggi</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("margin-asc")}>Margin Terendah</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("price-desc")}>Harga Tertinggi</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy("stock-asc")}>Stok Terkecil</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
 
-            <div className="flex items-center border border-slate-200 rounded-xl p-0.5 bg-muted/20">
-              <Button
-                type="button"
-                size="icon"
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                onClick={() => setViewMode("grid")}
-                className="h-7 w-7 rounded-lg"
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
+          {/* Sort Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs rounded-lg border-border shadow-2xs">
+                Urutkan:{" "}
+                <span className="font-semibold ml-1">
+                  {sortBy === "name-asc" && "Nama A-Z"}
+                  {sortBy === "name-desc" && "Nama Z-A"}
+                  {sortBy === "margin-desc" && "Margin Tertinggi"}
+                  {sortBy === "margin-asc" && "Margin Terendah"}
+                  {sortBy === "price-desc" && "Harga Tertinggi"}
+                  {sortBy === "stock-asc" && "Stok Menipis"}
+                </span>
               </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant={viewMode === "table" ? "default" : "ghost"}
-                onClick={() => setViewMode("table")}
-                className="h-7 w-7 rounded-lg"
-              >
-                <List className="h-3.5 w-3.5" />
-              </Button>
-            </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-lg border-border">
+              <DropdownMenuLabel className="text-xs uppercase text-muted-foreground">Kriteria Urut</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSortBy("name-asc")}>Nama (A ke Z)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("name-desc")}>Nama (Z ke A)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("margin-desc")}>Margin Tertinggi</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("margin-asc")}>Margin Terendah</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("price-desc")}>Harga Tertinggi</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("stock-asc")}>Stok Terkecil</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center border border-border/80 rounded-lg p-0.5 bg-muted/40">
+            <Button
+              type="button"
+              size="icon"
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              onClick={() => setViewMode("grid")}
+              className="h-7 w-7 rounded-md"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant={viewMode === "table" ? "default" : "ghost"}
+              onClick={() => setViewMode("table")}
+              className="h-7 w-7 rounded-md"
+            >
+              <List className="h-3.5 w-3.5" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Main Content Area */}
       {loading ? (
@@ -397,75 +418,92 @@ export default function RecipeListPage() {
           <p className="text-sm text-muted-foreground font-medium">Memuat katalog resep & HPP...</p>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <Card className="rounded-2xl border-dashed border-2 p-12 text-center flex flex-col items-center justify-center bg-muted/10">
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4">
-            <Factory className="h-7 w-7" />
+        <div className="flex flex-col items-center justify-center p-12 sm:p-16 text-center rounded-2xl border-2 border-dashed border-border bg-card/60 shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">
+            <Factory className="h-8 w-8" />
           </div>
-          <h3 className="text-lg font-bold text-foreground">Tidak ada produk ditemukan</h3>
+          <h2 className="text-lg font-semibold text-foreground">Tidak Ada Produk Ditemukan</h2>
           <p className="text-sm text-muted-foreground max-w-md mt-1 mb-6">
             {search || selectedCategory !== "All"
-               ? "Coba ubah kata kunci pencarian atau reset filter kategori."
-               : "Belum ada produk yang dibuat. Mulai buat produk Anda sekarang untuk menghitung HPP otomatis!"}
+              ? "Coba ubah kata kunci pencarian atau reset filter kategori."
+              : "Belum ada produk yang dibuat. Mulai buat produk Anda sekarang untuk menghitung HPP otomatis!"}
           </p>
-          <Button onClick={() => navigate("/production/products/new")} className="rounded-xl flex items-center gap-2">
+          <Button
+            onClick={() => navigate("/production/products/new")}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs"
+          >
             <Plus className="h-4 w-4" />
-            <span>Tambah Produk Pertama</span>
+            Tambah Produk Pertama
           </Button>
-        </Card>
+        </div>
       ) : viewMode === "grid" ? (
         /* GRID VIEW */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredProducts.map((product) => {
-            const bomCost = calculateTotalBOM(product)
-            const activeCost = product.latestHpp || bomCost
-            const margin = calculateGrossMargin(product.sellingPrice, activeCost)
-            const isLowStock = product.currentStock <= product.minStock
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedProducts.map((product) => {
+              const bomCost = calculateTotalBOM(product)
+              const activeCost = product.latestHpp || bomCost
+              const margin = calculateGrossMargin(product.sellingPrice, activeCost)
 
-            return (
-              <Card
-                key={product.id}
-                onClick={() => navigate(`/production/products/${product.id}`)}
-                className="rounded-2xl border-slate-200/80 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col justify-between overflow-hidden group bg-card cursor-pointer"
-              >
-                {/* Card Top */}
-                <div>
-                  <div className="p-5 pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[11px] font-semibold bg-muted/40 border-slate-200">
-                            {product.category}
-                          </Badge>
-                          {isLowStock ? (
-                            <Badge variant="warning" className="text-[10px] flex items-center gap-1 font-bold">
-                              <AlertTriangle className="h-3 w-3" /> Stok Tipis
-                            </Badge>
-                          ) : (
-                            <Badge variant="success" className="text-[10px] font-bold">
-                              Stok Aman
-                            </Badge>
-                          )}
-                        </div>
-                        <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1 mt-1">
-                          {product.name}
-                        </h3>
+              return (
+                <Card
+                  key={product.id}
+                  onClick={() => navigate(`/production/products/${product.id}`)}
+                  className="rounded-xl border-border/80 shadow-2xs hover:shadow-md hover:border-primary/40 transition-all duration-200 flex flex-col justify-between overflow-hidden group bg-card cursor-pointer"
+                >
+                  {/* Card Top */}
+                  <div>
+                    {product.imageUrl && (
+                      <div className="h-36 w-full overflow-hidden bg-muted/40 relative">
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <Badge
+                          variant="outline"
+                          className={`absolute top-3 left-3 text-[10px] font-bold shadow-sm backdrop-blur-md ${
+                            product.mode === "MAKE_TO_ORDER"
+                              ? "bg-purple-100/90 text-purple-700 border-purple-200 dark:bg-purple-950/70 dark:text-purple-300"
+                              : "bg-blue-100/90 text-blue-700 border-blue-200 dark:bg-blue-950/70 dark:text-blue-300"
+                          }`}
+                        >
+                          {product.mode === "MAKE_TO_ORDER" ? "MTO" : "MTS"}
+                        </Badge>
                       </div>
+                    )}
 
-                      <div onClick={(e) => e.stopPropagation()}>
+                    <div className="p-4 pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            {product.category || "Tanpa Kategori"}
+                          </span>
+                          <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                            {product.name}
+                          </h3>
+                        </div>
+
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                            <DropdownMenuItem onClick={() => navigate(`/production/products/${product.id}`)}>
-                              <Pencil className="h-3.5 w-3.5 mr-2" /> Detail / Edit Resep
+                          <DropdownMenuContent align="end" className="rounded-xl border-border">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigate(`/production/products/${product.id}`)
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5 mr-2" /> Ubah / Edit
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600"
-                              onClick={() => {
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation()
                                 setProductToDelete(product)
                                 setIsDeleteOpen(true)
                               }}
@@ -475,179 +513,229 @@ export default function RecipeListPage() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
+
+                      {product.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-2 leading-relaxed">
+                          {product.description}
+                        </p>
+                      )}
                     </div>
 
-                    {product.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-2 leading-relaxed">
-                        {product.description}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Pricing and HPP Block */}
-                  <div className="px-5 py-3.5 bg-slate-50/70 border-y border-slate-100 grid grid-cols-2 gap-3">
-                    <div>
-                      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                        Harga Jual
-                      </span>
-                      <div className="text-base font-bold font-mono text-foreground mt-0.5">
-                        {formatCurrencyIdr(product.sellingPrice)}
-                        <span className="text-[11px] font-normal text-muted-foreground ml-1">/{product.unit}</span>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    {/* Pricing and HPP Block */}
+                    <div className="px-4 py-3 bg-muted/30 border-y border-border/70 grid grid-cols-2 gap-3">
+                      <div>
                         <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                          HPP Unit
+                          Harga Jual
                         </span>
-                        <Info className="h-3 w-3 text-muted-foreground/60" />
+                        <div className="text-base font-bold font-mono text-foreground mt-0.5">
+                          {formatCurrencyIdr(product.sellingPrice)}
+                          <span className="text-[11px] font-normal text-muted-foreground ml-1">/{product.unit}</span>
+                        </div>
                       </div>
-                      <div className="text-base font-bold font-mono text-slate-800 mt-0.5">
-                        {formatCurrencyIdr(activeCost)}
+
+                      <div className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            HPP Unit
+                          </span>
+                          <Info className="h-3 w-3 text-muted-foreground/60" />
+                        </div>
+                        <div className="text-base font-bold font-mono text-foreground mt-0.5">
+                          {formatCurrencyIdr(activeCost)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Margin & Stock Bar */}
+                    <div className="p-4 py-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground font-medium">Gross Margin:</span>
+                        <Badge
+                          className={`font-mono text-xs font-bold px-2 py-0.5 ${
+                            margin >= 50
+                              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300"
+                              : margin >= 25
+                              ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300"
+                              : "bg-red-500/10 text-red-700 dark:text-red-300 border-red-300"
+                          }`}
+                          variant="outline"
+                        >
+                          +{margin}%
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground font-medium">Stok Jadi Siap Jual:</span>
+                        <span className="font-mono font-bold text-foreground">
+                          {product.currentStock} {product.unit}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-border/70">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Layers className="h-3 w-3 text-primary" /> Komposisi:
+                        </span>
+                        <span className="text-xs font-semibold text-foreground">
+                          {product.ingredients.length} Bahan Baku
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Margin & Stock Bar */}
-                  <div className="p-5 py-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground font-medium">Gross Margin:</span>
-                      <Badge
-                        className={`font-mono text-xs font-bold px-2 py-0.5 ${
-                          margin >= 50
-                            ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
-                            : margin >= 25
-                            ? "bg-amber-500/10 text-amber-700 border-amber-300"
-                            : "bg-red-500/10 text-red-700 border-red-300"
-                        }`}
-                        variant="outline"
-                      >
-                        +{margin}%
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground font-medium">Stok Jadi Siap Jual:</span>
-                      <span className="font-mono font-bold text-foreground">
-                        {product.currentStock} {product.unit}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Layers className="h-3 w-3 text-primary" /> Komposisi:
-                      </span>
-                      <span className="text-xs font-semibold text-slate-700">
-                        {product.ingredients.length} Bahan Baku
-                      </span>
-                    </div>
+                  {/* Card Bottom CTA */}
+                  <div className="p-4 pt-0">
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="w-full justify-between rounded-xl h-9 hover:bg-primary/5 hover:text-primary hover:border-primary/40 font-semibold group-hover:border-primary/30 transition-all text-xs"
+                    >
+                      <Link to={`/production/products/${product.id}`}>
+                        <span>Buka Detail & BOM</span>
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                      </Link>
+                    </Button>
                   </div>
-                </div>
+                </Card>
+              )
+            })}
+          </div>
 
-                {/* Card Bottom CTA */}
-                <div className="p-4 pt-0">
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="w-full justify-between rounded-xl h-10 hover:bg-primary/5 hover:text-primary hover:border-primary/40 font-semibold group-hover:border-primary/30 transition-all text-xs"
-                  >
-                    <Link to={`/production/products/${product.id}`}>
-                      <span>Buka Detail & BOM</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
-                </div>
-              </Card>
-            )
-          })}
+          <TablePagination
+            total={filteredProducts.length}
+            displayedCount={paginatedProducts.length}
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={loading}
+            label="produk"
+          />
         </div>
       ) : (
         /* TABLE VIEW */
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader className="bg-slate-50/80">
-              <TableRow>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Produk & Kategori</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Harga Jual</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">HPP per Unit</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Biaya Bahan (BOM)</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Gross Margin</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Stok Jadi</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Bahan Baku</TableHead>
-                <TableHead className="text-right font-bold text-xs uppercase text-muted-foreground">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => {
-                const bomCost = calculateTotalBOM(product)
-                const activeCost = product.latestHpp || bomCost
-                const margin = calculateGrossMargin(product.sellingPrice, activeCost)
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
+                  <tr>
+                    <th className="px-5 py-3.5 w-14 text-center">Foto</th>
+                    <th className="px-5 py-3.5">Produk & Kategori</th>
+                    <th className="px-5 py-3.5">Mode</th>
+                    <th className="px-5 py-3.5">Harga Jual</th>
+                    <th className="px-5 py-3.5">HPP per Unit</th>
+                    <th className="px-5 py-3.5">Biaya Bahan (BOM)</th>
+                    <th className="px-5 py-3.5">Gross Margin</th>
+                    <th className="px-5 py-3.5">Stok Jadi</th>
+                    <th className="px-5 py-3.5">Bahan Baku</th>
+                    <th className="px-5 py-3.5 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/70">
+                  {paginatedProducts.map((product) => {
+                    const bomCost = calculateTotalBOM(product)
+                    const activeCost = product.latestHpp || bomCost
+                    const margin = calculateGrossMargin(product.sellingPrice, activeCost)
 
-                return (
-                  <TableRow
-                    key={product.id}
-                    className="hover:bg-primary/5 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/production/products/${product.id}`)}
-                  >
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-foreground hover:text-primary">
-                          {product.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{product.category} • Satuan: {product.unit}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono font-bold text-sm text-foreground">
-                      {formatCurrencyIdr(product.sellingPrice)}
-                    </TableCell>
-                    <TableCell className="font-mono font-bold text-sm text-slate-800">
-                      {formatCurrencyIdr(activeCost)}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      {formatCurrencyIdr(bomCost)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`font-mono text-xs font-bold ${
-                          margin >= 50
-                            ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
-                            : margin >= 25
-                            ? "bg-amber-500/10 text-amber-700 border-amber-300"
-                            : "bg-red-500/10 text-red-700 border-red-300"
-                        }`}
+                    return (
+                      <tr
+                        key={product.id}
+                        className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                        onClick={() => navigate(`/production/products/${product.id}`)}
                       >
-                        +{margin}%
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono font-semibold text-sm">
-                        {product.currentStock} {product.unit}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {product.ingredients.length} item
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/production/products/${product.id}`)
-                        }}
-                        className="rounded-xl text-xs h-8 hover:bg-primary hover:text-primary-foreground transition-colors"
-                      >
-                        Detail Resep
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </Card>
+                        <td className="px-5 py-3.5 text-center">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="h-10 w-10 rounded-lg object-cover border border-border mx-auto"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground mx-auto">
+                              <Package className="h-5 w-5" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                              {product.name}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{product.category || "Tanpa Kategori"} • Satuan: {product.unit}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-bold ${
+                              product.mode === "MAKE_TO_ORDER"
+                                ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300"
+                                : "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300"
+                            }`}
+                          >
+                            {product.mode === "MAKE_TO_ORDER" ? "MTO" : "MTS"}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3.5 font-mono font-bold text-sm text-foreground">
+                          {formatCurrencyIdr(product.sellingPrice)}
+                        </td>
+                        <td className="px-5 py-3.5 font-mono font-bold text-sm text-foreground">
+                          {formatCurrencyIdr(activeCost)}
+                        </td>
+                        <td className="px-5 py-3.5 font-mono text-sm text-muted-foreground">
+                          {formatCurrencyIdr(bomCost)}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <Badge
+                            variant="outline"
+                            className={`font-mono text-xs font-bold ${
+                              margin >= 50
+                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300"
+                                : margin >= 25
+                                ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300"
+                                : "bg-red-500/10 text-red-700 dark:text-red-300 border-red-300"
+                            }`}
+                          >
+                            +{margin}%
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className="font-mono font-semibold text-sm">
+                            {product.currentStock} {product.unit}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-muted-foreground">
+                          {product.ingredients.length} item
+                        </td>
+                        <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/production/products/${product.id}`)}
+                            className="rounded-lg text-xs h-8 hover:bg-primary hover:text-primary-foreground transition-colors shadow-2xs"
+                          >
+                            Detail Resep
+                          </Button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <TablePagination
+            total={filteredProducts.length}
+            displayedCount={paginatedProducts.length}
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={loading}
+            label="produk"
+          />
+        </div>
       )}
 
       {/* MODAL: Konfirmasi Hapus Resep */}

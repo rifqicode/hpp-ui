@@ -1,163 +1,208 @@
 import apiClient from '../../../lib/api-client';
 import { recipeService } from '../../recipes/services/recipe-service';
 import type { Product } from '../../recipes/types';
-import type { Sale, CreateSaleInput, SalesSummary } from '../types';
+import type {
+  Sale,
+  CreateSaleInput,
+  SalesSummary,
+  SaleQuery,
+  PaginatedSales,
+} from '../types';
 
-const STORAGE_KEY = 'hpp_sales_records_v1';
+export function normalizeSale(raw: any): Sale {
+  const items = Array.isArray(raw.items)
+    ? raw.items.map((it: any) => ({
+        id: it.id,
+        saleId: it.sale_id ?? it.saleId ?? raw.id,
+        sale_id: it.sale_id ?? it.saleId ?? raw.id,
+        productId: it.product_id ?? it.productId ?? it.product?.id,
+        product_id: it.product_id ?? it.productId ?? it.product?.id,
+        productName:
+          it.product?.name ?? it.product_name ?? it.productName ?? 'Product',
+        product_name:
+          it.product?.name ?? it.product_name ?? it.productName ?? 'Product',
+        category:
+          it.product?.category?.name ??
+          it.product?.category ??
+          it.category ??
+          'Uncategorized',
+        unit: it.product?.unit ?? it.unit ?? 'pcs',
+        quantity: Number(it.quantity ?? 0),
+        priceAtSale: Number(it.price_at_sale ?? it.priceAtSale ?? 0),
+        price_at_sale: Number(it.price_at_sale ?? it.priceAtSale ?? 0),
+        costAtSale: Number(it.cost_at_sale ?? it.costAtSale ?? 0),
+        cost_at_sale: Number(it.cost_at_sale ?? it.costAtSale ?? 0),
+        subtotal: Number(it.subtotal ?? 0),
+        totalCost: Number(it.total_cost ?? it.totalCost ?? 0),
+        total_cost: Number(it.total_cost ?? it.totalCost ?? 0),
+        grossProfit: Number(it.gross_profit ?? it.grossProfit ?? 0),
+        gross_profit: Number(it.gross_profit ?? it.grossProfit ?? 0),
+        product: it.product,
+      }))
+    : [];
 
-const INITIAL_SALES: Sale[] = [];
+  const totalAmount = Number(raw.total_amount ?? raw.totalAmount ?? 0);
+  const totalCost = Number(raw.total_cost ?? raw.totalCost ?? 0);
+  const grossProfit = Number(
+    raw.gross_profit ?? raw.grossProfit ?? totalAmount - totalCost
+  );
+  const profitMarginPct = Number(
+    raw.profit_margin_pct ??
+      raw.profitMarginPct ??
+      (totalAmount > 0 ? (grossProfit / totalAmount) * 100 : 0)
+  );
+  const discountAmount = Number(raw.discount_amount ?? raw.discountAmount ?? 0);
+  const taxAmount = Number(raw.tax_amount ?? raw.taxAmount ?? 0);
+  const cashReceived =
+    raw.cash_received != null || raw.cashReceived != null
+      ? Number(raw.cash_received ?? raw.cashReceived)
+      : undefined;
+  const cashChange =
+    raw.cash_change != null || raw.cashChange != null
+      ? Number(raw.cash_change ?? raw.cashChange)
+      : undefined;
 
-function loadLocalSales(): Sale[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch {
-    // Ignore storage parse error
-  }
-  return [...INITIAL_SALES];
+  return {
+    id: raw.id,
+    storeId: raw.store_id ?? raw.storeId ?? '',
+    store_id: raw.store_id ?? raw.storeId ?? '',
+    invoiceNumber: raw.invoice_number ?? raw.invoiceNumber ?? 'TRX-UNKNOWN',
+    invoice_number: raw.invoice_number ?? raw.invoiceNumber ?? 'TRX-UNKNOWN',
+    customerId: raw.customer_id ?? raw.customerId,
+    customer_id: raw.customer_id ?? raw.customerId,
+    customerName:
+      raw.customer_name ?? raw.customerName ?? raw.customer?.name ?? 'Guest',
+    customer_name:
+      raw.customer_name ?? raw.customerName ?? raw.customer?.name ?? 'Guest',
+    cashierId: raw.cashier_id ?? raw.cashierId,
+    cashier_id: raw.cashier_id ?? raw.cashierId,
+    cashierName: raw.cashier_name ?? raw.cashierName,
+    cashier_name: raw.cashier_name ?? raw.cashierName,
+    totalAmount,
+    total_amount: totalAmount,
+    totalCost,
+    total_cost: totalCost,
+    grossProfit,
+    gross_profit: grossProfit,
+    profitMarginPct: Number(profitMarginPct.toFixed(2)),
+    profit_margin_pct: Number(profitMarginPct.toFixed(2)),
+    discountAmount,
+    discount_amount: discountAmount,
+    taxAmount,
+    tax_amount: taxAmount,
+    paymentMethod: raw.payment_method ?? raw.paymentMethod ?? 'CASH',
+    payment_method: raw.payment_method ?? raw.paymentMethod ?? 'CASH',
+    cashReceived,
+    cash_received: cashReceived,
+    cashChange,
+    cash_change: cashChange,
+    paymentReference: raw.payment_reference ?? raw.paymentReference,
+    payment_reference: raw.payment_reference ?? raw.paymentReference,
+    notes: raw.notes,
+    transactionDate:
+      raw.transaction_date ?? raw.transactionDate ?? new Date().toISOString(),
+    transaction_date:
+      raw.transaction_date ?? raw.transactionDate ?? new Date().toISOString(),
+    createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
+    created_at: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
+    status: raw.status ?? 'COMPLETED',
+    items,
+    customer: raw.customer,
+  };
 }
-
-function saveLocalSales(sales: Sale[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sales));
-  } catch {
-    // Ignore storage write error
-  }
-}
-
-let LOCAL_SALES: Sale[] = loadLocalSales();
 
 export const salesService = {
   getProducts: async (): Promise<Product[]> => {
     return recipeService.getProducts();
   },
 
-  getSales: async (): Promise<Sale[]> => {
-    try {
-      const res = await apiClient.get<Sale[]>('/sales');
-      return res.data;
-    } catch {
-      return [...LOCAL_SALES];
+  getSales: async (query?: SaleQuery): Promise<Sale[]> => {
+    const res = await apiClient.get<any>('/sales', { params: query });
+    const rawList = Array.isArray(res.data)
+      ? res.data
+      : Array.isArray(res.data?.data)
+      ? res.data.data
+      : [];
+    return rawList.map(normalizeSale);
+  },
+
+  getPaginatedSales: async (query?: SaleQuery): Promise<PaginatedSales> => {
+    const res = await apiClient.get<any>('/sales', { params: query });
+    if (res.data && Array.isArray(res.data.data)) {
+      return {
+        data: res.data.data.map(normalizeSale),
+        total: res.data.total ?? res.data.data.length,
+        page: res.data.page ?? 1,
+        per_page: res.data.per_page ?? 10,
+        total_pages: res.data.total_pages ?? 1,
+      };
     }
+    const list = Array.isArray(res.data) ? res.data.map(normalizeSale) : [];
+    return {
+      data: list,
+      total: list.length,
+      page: 1,
+      per_page: list.length || 10,
+      total_pages: 1,
+    };
   },
 
   getSaleById: async (id: string): Promise<Sale> => {
-    try {
-      const res = await apiClient.get<Sale>(`/sales/${id}`);
-      return res.data;
-    } catch {
-      const found = LOCAL_SALES.find((s) => s.id === id);
-      if (!found) {
-        throw new Error('Transaksi tidak ditemukan');
-      }
-      return found;
-    }
+    const res = await apiClient.get<any>(`/sales/${id}`);
+    return normalizeSale(res.data);
   },
 
   createSale: async (input: CreateSaleInput): Promise<Sale> => {
-    try {
-      const res = await apiClient.post<Sale>('/sales', input);
-      return res.data;
-    } catch {
-      // Local fallback execution with real FIFO/stock updates
-      const allProducts = await recipeService.getProducts();
-      const saleId = `sale-${Date.now()}`;
-      const now = new Date();
-      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-      const seq = String(LOCAL_SALES.length + 1).padStart(3, '0');
-      const invoiceNumber = `TRX-${dateStr}-${seq}`;
+    const payload = {
+      customer_phone: input.customerPhone || input.customer_phone || undefined,
+      customer_name: input.customerName || input.customer_name || undefined,
+      items: input.items.map((it) => ({
+        product_id: it.productId || it.product_id,
+        quantity: it.quantity,
+      })),
+      discount_amount: input.discountAmount || input.discount_amount || 0,
+      tax_amount: input.taxAmount || input.tax_amount || 0,
+      payment_method: input.paymentMethod || input.payment_method || 'CASH',
+      cash_received:
+        input.cashReceived != null
+          ? input.cashReceived
+          : input.cash_received != null
+          ? input.cash_received
+          : undefined,
+      payment_reference:
+        input.paymentReference || input.payment_reference || undefined,
+      notes: input.notes,
+    };
 
-      let totalGross = 0;
-      let totalCost = 0;
-
-      const items = input.items.map((it, idx) => {
-        const prod = allProducts.find((p) => p.id === it.productId);
-        const productName = prod ? prod.name : 'Produk Toko';
-        const category = prod ? prod.category : 'Roti';
-        const unit = prod ? prod.unit : 'pcs';
-        const costAtSale = it.costAtSale || (prod ? prod.latestHpp : 0);
-        const subtotal = it.quantity * it.priceAtSale;
-        const lineCost = it.quantity * costAtSale;
-        const lineGrossProfit = subtotal - lineCost;
-
-        totalGross += subtotal;
-        totalCost += lineCost;
-
-        // Deduct finished goods stock from recipeService
-        if (prod) {
-          const newStock = Math.max(0, prod.currentStock - it.quantity);
-          recipeService.updateProduct(prod.id, { currentStock: newStock }).catch(() => {});
-        }
-
-        return {
-          id: `si-${Date.now()}-${idx}`,
-          saleId,
-          productId: it.productId,
-          productName,
-          category,
-          unit,
-          quantity: it.quantity,
-          priceAtSale: it.priceAtSale,
-          costAtSale,
-          subtotal,
-          totalCost: lineCost,
-          grossProfit: lineGrossProfit,
-        };
-      });
-
-      const discount = input.discountAmount || 0;
-      const tax = input.taxAmount || 0;
-      const netTotal = Math.max(0, totalGross - discount + tax);
-      const grossProfit = netTotal - totalCost;
-      const profitMarginPct = netTotal > 0 ? (grossProfit / netTotal) * 100 : 0;
-
-      const newSale: Sale = {
-        id: saleId,
-        storeId: input.storeId || '1',
-        invoiceNumber,
-        customerName: input.customerName?.trim() || 'Pelanggan Umum',
-        totalAmount: netTotal,
-        totalCost,
-        grossProfit,
-        profitMarginPct: Number(profitMarginPct.toFixed(2)),
-        discountAmount: discount,
-        taxAmount: tax,
-        paymentMethod: input.paymentMethod,
-        cashReceived: input.cashReceived,
-        cashChange: input.cashReceived ? Math.max(0, input.cashReceived - netTotal) : 0,
-        paymentReference: input.paymentReference,
-        notes: input.notes,
-        transactionDate: now.toISOString(),
-        createdAt: now.toISOString(),
-        status: 'COMPLETED',
-        items,
-      };
-
-      LOCAL_SALES = [newSale, ...LOCAL_SALES];
-      saveLocalSales(LOCAL_SALES);
-      return newSale;
-    }
+    const res = await apiClient.post<any>('/sales', payload);
+    return normalizeSale(res.data);
   },
 
-  getSummary: async (): Promise<SalesSummary> => {
-    const sales = await salesService.getSales();
-    const completed = sales.filter((s) => s.status === 'COMPLETED');
-    const totalRevenue = completed.reduce((acc, curr) => acc + curr.totalAmount, 0);
-    const totalHpp = completed.reduce((acc, curr) => acc + curr.totalCost, 0);
-    const totalGrossProfit = totalRevenue - totalHpp;
-    const averageMarginPct = totalRevenue > 0 ? (totalGrossProfit / totalRevenue) * 100 : 0;
+  getSummary: async (query?: SaleQuery): Promise<SalesSummary> => {
+    const res = await apiClient.get<any>('/sales/summary', { params: query });
+    const raw = res.data || {};
+    const totalRevenue = Number(raw.total_revenue ?? raw.totalRevenue ?? 0);
+    const totalCost = Number(raw.total_cost ?? raw.totalCost ?? 0);
+    const totalGrossProfit = Number(
+      raw.total_gross_profit ?? raw.totalGrossProfit ?? 0
+    );
+    const averageMarginPct = Number(
+      raw.average_margin_pct ?? raw.averageMarginPct ?? 0
+    );
+    const totalTransactions = Number(
+      raw.total_transactions ?? raw.totalTransactions ?? 0
+    );
+    const averageOrderValue = Number(
+      raw.average_order_value ?? raw.averageOrderValue ?? 0
+    );
 
     return {
       totalRevenue,
-      totalTransactions: completed.length,
-      totalHpp,
+      totalTransactions,
+      totalHpp: totalCost,
       totalGrossProfit,
-      averageMarginPct: Number(averageMarginPct.toFixed(2)),
+      averageMarginPct,
+      averageOrderValue,
     };
   },
 };

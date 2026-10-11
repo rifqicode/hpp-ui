@@ -43,6 +43,7 @@ import {
 import { productionService } from "@/features/production/services/production-service"
 import { recipeService } from "@/features/recipes/services/recipe-service"
 import type { Product } from "@/features/recipes/types"
+import type { ProductionPreviewResponse } from "@/features/production/types"
 
 function formatCurrencyIdr(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -66,6 +67,10 @@ export default function BatchCreatePage() {
   const [targetQuantity, setTargetQuantity] = React.useState<number>(50)
   const [chefName, setChefName] = React.useState<string>("Baker Utama")
   const [notes, setNotes] = React.useState<string>("")
+
+  // Live Backend Preview
+  const [preview, setPreview] = React.useState<ProductionPreviewResponse | null>(null)
+  const [loadingPreview, setLoadingPreview] = React.useState<boolean>(false)
 
   // Load products with recipes
   React.useEffect(() => {
@@ -99,8 +104,54 @@ export default function BatchCreatePage() {
     return products.find((p) => p.id === selectedProductId) || null
   }, [products, selectedProductId])
 
+  // Live Backend Preview Hook
+  React.useEffect(() => {
+    if (!selectedProductId || targetQuantity <= 0) {
+      setPreview(null)
+      return
+    }
+    let ignore = false
+    setLoadingPreview(true)
+    productionService
+      .previewProduction({ productId: selectedProductId, quantity: targetQuantity })
+      .then((res) => {
+        if (!ignore) {
+          setPreview(res)
+        }
+      })
+      .catch((err) => {
+        console.warn("Backend preview calculation warning:", err)
+      })
+      .finally(() => {
+        if (!ignore) setLoadingPreview(false)
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [selectedProductId, targetQuantity])
+
   // Ingredient audit & readiness calculations
   const ingredientAudit = React.useMemo(() => {
+    if (preview && preview.items && preview.items.length > 0) {
+      return preview.items.map((i) => {
+        const shortage = i.is_sufficient ? 0 : i.required_qty - i.available_qty
+        const baseQty = targetQuantity && targetQuantity > 0 ? i.required_qty / targetQuantity : i.required_qty
+        return {
+          id: i.stock_id,
+          stockId: i.stock_id,
+          stockName: i.stock_name,
+          baseUnit: i.unit,
+          quantity: baseQty,
+          neededQty: i.required_qty,
+          availableStock: i.available_qty,
+          isSufficient: i.is_sufficient,
+          shortage,
+          estimatedCost: i.estimated_cost,
+        }
+      })
+    }
+
     if (!selectedProduct) return []
     const qty = Math.max(1, targetQuantity || 0)
 
@@ -113,6 +164,7 @@ export default function BatchCreatePage() {
 
       return {
         ...ing,
+        id: ing.id || ing.stockId,
         neededQty,
         availableStock,
         isSufficient,
@@ -120,20 +172,23 @@ export default function BatchCreatePage() {
         estimatedCost,
       }
     })
-  }, [selectedProduct, targetQuantity])
+  }, [preview, selectedProduct, targetQuantity])
 
   const allIngredientsAvailable = React.useMemo(() => {
+    if (preview) return preview.is_all_sufficient
     return ingredientAudit.length > 0 && ingredientAudit.every((i) => i.isSufficient)
-  }, [ingredientAudit])
+  }, [preview, ingredientAudit])
 
   const totalEstimatedRawCost = React.useMemo(() => {
+    if (preview) return preview.estimated_bom
     return ingredientAudit.reduce((acc, curr) => acc + curr.estimatedCost, 0)
-  }, [ingredientAudit])
+  }, [preview, ingredientAudit])
 
   const estimatedHppPerUnit = React.useMemo(() => {
+    if (preview) return preview.estimated_hpp
     const qty = Math.max(1, targetQuantity || 0)
     return Math.round(totalEstimatedRawCost / qty)
-  }, [totalEstimatedRawCost, targetQuantity])
+  }, [preview, totalEstimatedRawCost, targetQuantity])
 
   const sellingPrice = selectedProduct?.sellingPrice || 0
   const projectedRevenue = sellingPrice * (targetQuantity || 0)
@@ -321,14 +376,6 @@ export default function BatchCreatePage() {
                           {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
                         </div>
                       </div>
-
-                      <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground text-[11px]">HPP Resep:</span>
-                        <span className="font-mono font-bold text-foreground">
-                          {formatCurrencyIdr(prod.latestHpp)}
-                          <span className="text-[10px] text-muted-foreground font-normal"> / {prod.unit}</span>
-                        </span>
-                      </div>
                     </div>
                   )
                 })}
@@ -480,17 +527,20 @@ export default function BatchCreatePage() {
                   </CardDescription>
                 </div>
 
-                {allIngredientsAvailable ? (
-                  <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 px-3 py-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Stok Gudang Siap 100%</span>
-                  </Badge>
-                ) : (
-                  <Badge variant="destructive" className="text-xs font-semibold flex items-center gap-1.5 px-3 py-1">
-                    <ShieldAlert className="h-3.5 w-3.5" />
-                    <span>Sebagian Stok Kurang</span>
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {loadingPreview && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  {allIngredientsAvailable ? (
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 px-3 py-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span>Stok Gudang Siap 100%</span>
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-xs font-semibold flex items-center gap-1.5 px-3 py-1">
+                      <ShieldAlert className="h-3.5 w-3.5" />
+                      <span>Sebagian Stok Kurang</span>
+                    </Badge>
+                  )}
+                </div>
               </div>
             </CardHeader>
 

@@ -1,3 +1,5 @@
+export type ProductMode = 'MAKE_TO_STOCK' | 'MAKE_TO_ORDER';
+
 export interface RawMaterialStock {
   id: string;
   name: string;
@@ -28,12 +30,54 @@ export interface ProductBatchLot {
   status: 'active' | 'depleted';
 }
 
+export interface PresignedUploadRequest {
+  filename: string;
+  contentType: string;
+  fileSize: number;
+}
+
+export interface PresignedUploadResponse {
+  uploadUrl: string;
+  publicUrl: string;
+  key: string;
+}
+
+export interface ProductEstimateBomItem {
+  stockId: string;
+  stockName: string;
+  quantity: number;
+  unitCost: number;
+  subtotalCost: number;
+}
+
+export interface ProductEstimate {
+  productId: string;
+  productName: string;
+  sellingPrice: number;
+  targetMargin: number;
+  yieldQty: number;
+  wastePct: number;
+  rawMaterialTotal: number;
+  bomCostPerUnit: number;
+  bomItems: ProductEstimateBomItem[];
+  estimatedHpp: number;
+  recommendedPrice: number;
+  actualMargin: number;
+  actualMarkup: number;
+}
+
 export interface Product {
   id: string;
   storeId?: string;
   name: string;
   category: string; // e.g. "Roti", "Pastry & Cake", "Donat", "Minuman"
+  categoryId?: string;
+  categoryName?: string;
   unit: string; // e.g. "pcs", "box", "loyang"
+  mode: ProductMode;
+  yieldQty: number;
+  wastePct: number;
+  imageUrl: string | null;
   sellingPrice: number;
   targetMargin?: number;
   currentStock: number;
@@ -49,7 +93,12 @@ export interface Product {
 export interface CreateProductInput {
   name: string;
   category: string;
+  categoryId?: string;
   unit: string;
+  mode?: ProductMode;
+  yieldQty?: number;
+  wastePct?: number;
+  imageUrl?: string | null;
   sellingPrice?: number;
   targetMargin?: number;
   minStock?: number;
@@ -60,7 +109,12 @@ export interface CreateProductInput {
 export interface UpdateProductInput {
   name?: string;
   category?: string;
+  categoryId?: string;
   unit?: string;
+  mode?: ProductMode;
+  yieldQty?: number;
+  wastePct?: number;
+  imageUrl?: string | null;
   sellingPrice?: number;
   targetMargin?: number;
   currentStock?: number;

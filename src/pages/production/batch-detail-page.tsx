@@ -46,7 +46,10 @@ import { productionService } from "@/features/production/services/production-ser
 import type {
   ProductionBatch,
   CompleteProductionInput,
+  ProductionOverheadDetail,
 } from "@/features/production/types"
+import { overheadService } from "@/features/overheads/services/overhead-service"
+import type { OverheadType } from "@/features/overheads/types"
 
 function formatCurrencyIdr(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -70,36 +73,59 @@ export default function BatchDetailPage() {
 
   // Modals
   const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
+  const [activeOverheads, setActiveOverheads] = React.useState<OverheadType[]>([])
+  const [completeOverheadItems, setCompleteOverheadItems] = React.useState<ProductionOverheadDetail[]>([])
   const [completeData, setCompleteData] = React.useState<CompleteProductionInput>({
     goodQuantity: 0,
     wasteQuantity: 0,
-    overheadLabor: 15000,
-    overheadEnergy: 10000,
-    overheadPackaging: 12000,
-    overheadOther: 0,
     notes: "",
   })
   const [completeError, setCompleteError] = React.useState<string>("")
 
   const [isCancelOpen, setIsCancelOpen] = React.useState<boolean>(false)
   const [cancelReason, setCancelReason] = React.useState<string>("")
+  const [cancelError, setCancelError] = React.useState<string>("")
   const [submitting, setSubmitting] = React.useState<boolean>(false)
+
+  // Helper to build initial overhead items
+  function buildInitialOverheads(batchData: ProductionBatch, masterOhs: OverheadType[]): ProductionOverheadDetail[] {
+    if (batchData.recipeSnapshot?.overheads && batchData.recipeSnapshot.overheads.length > 0) {
+      return batchData.recipeSnapshot.overheads.map((so) => ({
+        overheadTypeId: so.overhead_type_id,
+        name: so.name,
+        amount: so.amount || 0,
+      }))
+    }
+
+    if (masterOhs.length > 0) {
+      return masterOhs
+        .filter((ao) => !ao.category || ao.category === "PRODUCTION")
+        .map((ao) => ({
+          overheadTypeId: ao.id,
+          name: ao.name,
+          amount: ao.defaultAmount || 0,
+        }))
+    }
+
+    return []
+  }
 
   React.useEffect(() => {
     if (!batchId) return
     let ignore = false
 
-    productionService.getBatchById(batchId)
-      .then((data) => {
+    Promise.all([
+      productionService.getBatchById(batchId),
+      overheadService.getOverheads({ activeOnly: true, category: 'PRODUCTION' }),
+    ])
+      .then(([data, masterOhs]) => {
         if (!ignore) {
           setBatch(data)
+          setActiveOverheads(masterOhs)
+          setCompleteOverheadItems(buildInitialOverheads(data, masterOhs))
           setCompleteData({
             goodQuantity: data.targetQuantity,
             wasteQuantity: 0,
-            overheadLabor: 15000,
-            overheadEnergy: 10000,
-            overheadPackaging: 12000,
-            overheadOther: 0,
             notes: "",
           })
           setLoading(false)
@@ -115,6 +141,18 @@ export default function BatchDetailPage() {
     }
   }, [batchId])
 
+  function openCompleteModal() {
+    if (!batch) return
+    setCompleteOverheadItems(buildInitialOverheads(batch, activeOverheads))
+    setCompleteData({
+      goodQuantity: batch.targetQuantity,
+      wasteQuantity: 0,
+      notes: "",
+    })
+    setCompleteError("")
+    setIsCompleteOpen(true)
+  }
+
   async function handleCompleteSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!batch) return
@@ -126,7 +164,11 @@ export default function BatchDetailPage() {
     setSubmitting(true)
     setCompleteError("")
     try {
-      const updated = await productionService.completeProduction(batch.id, completeData)
+      const payload: CompleteProductionInput = {
+        ...completeData,
+        overheads: completeOverheadItems,
+      }
+      const updated = await productionService.completeProduction(batch.id, payload)
       setBatch(updated)
       setIsCompleteOpen(false)
     } catch (err: unknown) {
@@ -142,12 +184,14 @@ export default function BatchDetailPage() {
     if (!batch) return
 
     setSubmitting(true)
+    setCancelError("")
     try {
       const updated = await productionService.cancelProduction(batch.id, cancelReason)
       setBatch(updated)
       setIsCancelOpen(false)
-    } catch (err) {
-      console.error("Failed to cancel batch:", err)
+    } catch (err: unknown) {
+      const msg = (err as any)?.response?.data?.message || (err instanceof Error ? err.message : "Gagal membatalkan / void batch produksi")
+      setCancelError(msg)
     } finally {
       setSubmitting(false)
     }
@@ -179,11 +223,7 @@ export default function BatchDetailPage() {
 
   // Complete calculations
   const completeStockCost = batch.stockCost
-  const completeOverheadTotal =
-    (completeData.overheadLabor || 0) +
-    (completeData.overheadEnergy || 0) +
-    (completeData.overheadPackaging || 0) +
-    (completeData.overheadOther || 0)
+  const completeOverheadTotal = completeOverheadItems.reduce((acc, it) => acc + (it.amount || 0), 0)
   const completeTotalCost = completeStockCost + completeOverheadTotal
   const completeHppPerUnit = completeData.goodQuantity > 0 ? Math.round(completeTotalCost / completeData.goodQuantity) : 0
 
@@ -207,19 +247,40 @@ export default function BatchDetailPage() {
         {batch.status === "IN_PROGRESS" && (
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => setIsCompleteOpen(true)}
+              onClick={openCompleteModal}
               size="sm"
               className="rounded-xl text-xs font-semibold bg-primary text-primary-foreground h-9"
             >
               <Check className="h-3.5 w-3.5 mr-1.5" /> Selesaikan & Hitung HPP
             </Button>
             <Button
-              onClick={() => setIsCancelOpen(true)}
+              onClick={() => {
+                setCancelReason("")
+                setCancelError("")
+                setIsCancelOpen(true)
+              }}
               variant="destructive"
               size="sm"
               className="rounded-xl text-xs h-9"
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Batalkan Batch
+            </Button>
+          </div>
+        )}
+
+        {batch.status === "COMPLETED" && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => {
+                setCancelReason("")
+                setCancelError("")
+                setIsCancelOpen(true)
+              }}
+              variant="outline"
+              size="sm"
+              className="rounded-xl text-xs h-9 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Void Produksi
             </Button>
           </div>
         )}
@@ -248,9 +309,9 @@ export default function BatchDetailPage() {
                       <CheckCircle2 className="h-3.5 w-3.5" /> Selesai & Terverifikasi
                     </Badge>
                   )}
-                  {batch.status === "CANCELLED" && (
+                  {(batch.status === "CANCELLED" || batch.status === "VOID") && (
                     <Badge variant="destructive" className="text-xs font-bold flex items-center gap-1">
-                      <XCircle className="h-3.5 w-3.5" /> Dibatalkan
+                      <XCircle className="h-3.5 w-3.5" /> {batch.status === "VOID" ? "Void (Dibatalkan)" : "Dibatalkan"}
                     </Badge>
                   )}
                 </div>
@@ -540,39 +601,53 @@ export default function BatchDetailPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div className="grid gap-1">
-                <Label className="text-[11px] text-muted-foreground">Tenaga Kerja</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={completeData.overheadLabor}
-                  onChange={(e) => setCompleteData({ ...completeData, overheadLabor: Number(e.target.value) || 0 })}
-                  className="rounded-xl h-9 text-xs font-mono"
-                />
+            {/* Dynamic Overhead Items */}
+            <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                  Biaya Overhead Operasional (Batch Ini)
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-700">
+                  Total: {formatCurrencyIdr(completeOverheadTotal)}
+                </span>
               </div>
 
-              <div className="grid gap-1">
-                <Label className="text-[11px] text-muted-foreground">Gas & Listrik</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={completeData.overheadEnergy}
-                  onChange={(e) => setCompleteData({ ...completeData, overheadEnergy: Number(e.target.value) || 0 })}
-                  className="rounded-xl h-9 text-xs font-mono"
-                />
-              </div>
-
-              <div className="grid gap-1">
-                <Label className="text-[11px] text-muted-foreground">Kemasan</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={completeData.overheadPackaging}
-                  onChange={(e) => setCompleteData({ ...completeData, overheadPackaging: Number(e.target.value) || 0 })}
-                  className="rounded-xl h-9 text-xs font-mono"
-                />
-              </div>
+              {completeOverheadItems.length === 0 ? (
+                <div className="text-xs text-muted-foreground py-2 text-center">
+                  Tidak ada overhead aktif untuk batch ini.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {completeOverheadItems.map((oh, idx) => (
+                    <div key={oh.overheadTypeId || idx} className="grid gap-1 bg-white p-2.5 rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold text-slate-800 truncate" title={oh.name}>
+                          {oh.name}
+                        </Label>
+                        <Badge variant="outline" className="text-[9px] py-0 px-1 font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
+                          Biaya Produksi
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-medium">Rp</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="500"
+                          value={oh.amount === 0 ? "0" : (oh.amount || "")}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0
+                            setCompleteOverheadItems((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, amount: val } : item))
+                            )
+                          }}
+                          className="rounded-lg h-8 text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-between text-xs">
@@ -595,19 +670,29 @@ export default function BatchDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* CANCEL DIALOG */}
+      {/* CANCEL / VOID DIALOG */}
       <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
         <DialogContent className="sm:max-w-[420px] rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Batalkan Batch Produksi?</DialogTitle>
+            <DialogTitle className="text-lg font-bold">
+              {batch?.status === "COMPLETED" ? "Void Produksi Batch Ini?" : "Batalkan Batch Produksi?"}
+            </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Bahan baku akan dikembalikan ke stok gudang.
+              {batch?.status === "COMPLETED"
+                ? "Membatalkan batch ini akan membatalkan batch barang jadi dan mengembalikan stok bahan baku ke gudang."
+                : "Bahan baku yang telah dialokasikan akan dikembalikan ke stok gudang."}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCancelSubmit} className="space-y-4 py-2">
+            {cancelError && (
+              <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
+                {cancelError}
+              </div>
+            )}
+
             <div className="grid gap-2">
-              <Label className="text-xs font-semibold">Alasan Pembatalan</Label>
+              <Label className="text-xs font-semibold">Alasan Pembatalan / Void</Label>
               <Input
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
@@ -623,7 +708,7 @@ export default function BatchDetailPage() {
               </Button>
               <Button type="submit" variant="destructive" disabled={submitting} className="rounded-xl">
                 {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Batalkan
+                {batch?.status === "COMPLETED" ? "Void Batch" : "Batalkan"}
               </Button>
             </DialogFooter>
           </form>

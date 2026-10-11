@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 
 import { salesService } from '../../features/sales/services/sales-service';
-import type { CartItem, PaymentMethod, Sale } from '../../features/sales/types';
+import { customerService } from '../../features/sales/services/customer-service';
+import type { CartItem, PaymentMethod, Sale, Customer } from '../../features/sales/types';
 import type { Product } from '../../features/recipes/types';
 import { useAuthStore } from '../../store/use-auth-store';
 
@@ -58,10 +59,38 @@ export default function PosPage() {
 
   // Cart State
   const [cart, setCart] = React.useState<CartItem[]>([]);
+  const [customerPhone, setCustomerPhone] = React.useState('');
   const [customerName, setCustomerName] = React.useState('');
+  const [matchedCustomer, setMatchedCustomer] = React.useState<Customer | null>(null);
+  const [isSearchingCustomer, setIsSearchingCustomer] = React.useState(false);
   const [orderNotes, setOrderNotes] = React.useState('');
   const [discountAmount, setDiscountAmount] = React.useState<number>(0);
   const [showDiscountInput, setShowDiscountInput] = React.useState(false);
+
+  const handleCustomerPhoneChange = async (val: string) => {
+    setCustomerPhone(val);
+    const cleaned = val.trim();
+    if (cleaned.length >= 8) {
+      try {
+        setIsSearchingCustomer(true);
+        const cust = await customerService.searchCustomerByPhone(cleaned);
+        if (cust) {
+          setMatchedCustomer(cust);
+          if (!customerName || customerName === 'Guest') {
+            setCustomerName(cust.name);
+          }
+        } else {
+          setMatchedCustomer(null);
+        }
+      } catch {
+        setMatchedCustomer(null);
+      } finally {
+        setIsSearchingCustomer(false);
+      }
+    } else {
+      setMatchedCustomer(null);
+    }
+  };
 
   // Payment Modal State
   const [isPaymentOpen, setIsPaymentOpen] = React.useState(false);
@@ -144,14 +173,15 @@ export default function PosPage() {
 
   // Cart Handlers
   const handleAddToCart = (product: Product) => {
-    if (product.currentStock <= 0) return;
+    const isMTO = product.mode === 'MAKE_TO_ORDER';
+    if (!isMTO && product.currentStock <= 0) return;
 
     setCart((prev) => {
       const existingIndex = prev.findIndex((item) => item.product.id === product.id);
       if (existingIndex > -1) {
         const item = prev[existingIndex];
-        if (item.quantity >= product.currentStock) {
-          return prev; // cannot exceed stock
+        if (!isMTO && item.quantity >= product.currentStock) {
+          return prev; // cannot exceed stock for MTS
         }
         const updated = [...prev];
         updated[existingIndex] = {
@@ -181,7 +211,8 @@ export default function PosPage() {
     setCart((prev) =>
       prev.map((item) => {
         if (item.product.id === productId) {
-          const max = item.product.currentStock;
+          const isMTO = item.product.mode === 'MAKE_TO_ORDER';
+          const max = isMTO ? Infinity : item.product.currentStock;
           const cappedQty = Math.min(newQty, max);
           return { ...item, quantity: cappedQty };
         }
@@ -214,7 +245,8 @@ export default function PosPage() {
     try {
       setIsProcessing(true);
       const sale = await salesService.createSale({
-        customerName,
+        customerPhone: customerPhone.trim() || undefined,
+        customerName: customerName.trim() || undefined,
         paymentMethod,
         discountAmount,
         cashReceived: paymentMethod === 'CASH' ? cashReceivedNum : undefined,
@@ -234,7 +266,9 @@ export default function PosPage() {
 
       // Reset cart
       setCart([]);
+      setCustomerPhone('');
       setCustomerName('');
+      setMatchedCustomer(null);
       setOrderNotes('');
       setDiscountAmount(0);
       setShowDiscountInput(false);
@@ -361,7 +395,8 @@ export default function PosPage() {
                 {filteredProducts.map((product) => {
                   const inCartItem = cart.find((c) => c.product.id === product.id);
                   const inCartQty = inCartItem?.quantity || 0;
-                  const isOutOfStock = product.currentStock <= 0;
+                  const isMTO = product.mode === 'MAKE_TO_ORDER';
+                  const isOutOfStock = !isMTO && product.currentStock <= 0;
                   const marginPct =
                     product.sellingPrice > 0 && product.latestHpp
                       ? ((product.sellingPrice - product.latestHpp) / product.sellingPrice) * 100
@@ -394,26 +429,32 @@ export default function PosPage() {
                             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 bg-muted px-1.5 py-0.5 rounded">
                               {product.category || 'Roti'}
                             </span>
-                            <span
-                              className={`text-[10px] font-medium ml-auto flex items-center gap-1 ${
-                                isOutOfStock
-                                  ? 'text-red-500 font-bold'
-                                  : product.currentStock < (product.minStock || 10)
-                                  ? 'text-amber-600 font-semibold'
-                                  : 'text-emerald-600'
-                              }`}
-                            >
+                            {isMTO ? (
+                              <span className="text-[10px] font-bold ml-auto px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200">
+                                MTO Fresh
+                              </span>
+                            ) : (
                               <span
-                                className={`size-1.5 rounded-full ${
+                                className={`text-[10px] font-medium ml-auto flex items-center gap-1 ${
                                   isOutOfStock
-                                    ? 'bg-red-500'
+                                    ? 'text-red-500 font-bold'
                                     : product.currentStock < (product.minStock || 10)
-                                    ? 'bg-amber-500'
-                                    : 'bg-emerald-500'
+                                    ? 'text-amber-600 font-semibold'
+                                    : 'text-emerald-600'
                                 }`}
-                              />
-                              {isOutOfStock ? 'Habis' : `${product.currentStock} ${product.unit || 'pcs'}`}
-                            </span>
+                              >
+                                <span
+                                  className={`size-1.5 rounded-full ${
+                                    isOutOfStock
+                                      ? 'bg-red-500'
+                                      : product.currentStock < (product.minStock || 10)
+                                      ? 'bg-amber-500'
+                                      : 'bg-emerald-500'
+                                  }`}
+                                />
+                                {isOutOfStock ? 'Habis' : `${product.currentStock} ${product.unit || 'pcs'}`}
+                              </span>
+                            )}
                           </div>
 
                           <h3 className="font-semibold text-xs text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
@@ -481,20 +522,42 @@ export default function PosPage() {
 
           {/* Customer & Notes Input */}
           <div className="p-2.5 border-b border-border/70 bg-card space-y-2 shrink-0">
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Input
-                placeholder="Nama Pelanggan / No. Meja (opsional)"
+                placeholder="No. HP / WA Pelanggan"
+                value={customerPhone}
+                onChange={(e) => handleCustomerPhoneChange(e.target.value)}
+                className="h-8 text-xs bg-muted/20"
+              />
+              <Input
+                placeholder="Nama Pelanggan (opsional)"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="h-8 text-xs bg-muted/20"
               />
-              <Input
-                placeholder="Catatan (opsional)"
-                value={orderNotes}
-                onChange={(e) => setOrderNotes(e.target.value)}
-                className="h-8 text-xs bg-muted/20"
-              />
             </div>
+            {customerPhone.trim().length >= 8 && (
+              <div className="text-[11px] flex items-center gap-1.5 px-0.5">
+                {isSearchingCustomer ? (
+                  <span className="text-muted-foreground animate-pulse">Mencari data member...</span>
+                ) : matchedCustomer ? (
+                  <span className="text-emerald-600 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />
+                    Member: {matchedCustomer.name} ({matchedCustomer.total_orders ?? 0} pesanan)
+                  </span>
+                ) : (
+                  <span className="text-amber-600 font-medium">
+                    Pelanggan baru (tercatat otomatis saat checkout)
+                  </span>
+                )}
+              </div>
+            )}
+            <Input
+              placeholder="Catatan Pesanan (opsional)"
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+              className="h-8 text-xs bg-muted/20"
+            />
           </div>
 
           {/* Cart Items List */}
@@ -558,7 +621,7 @@ export default function PosPage() {
                         <button
                           type="button"
                           onClick={() => handleUpdateQty(item.product.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.product.currentStock}
+                          disabled={item.product.mode !== 'MAKE_TO_ORDER' && item.quantity >= item.product.currentStock}
                           className="size-6 flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         >
                           <Plus className="size-3" />
@@ -896,6 +959,12 @@ export default function PosPage() {
                     <span className="text-muted-foreground">Pelanggan:</span>
                     <span>{completedSale.customerName}</span>
                   </div>
+                  {completedSale.status === 'IN_PROGRESS' && (
+                    <div className="flex justify-between font-bold text-amber-600 bg-amber-500/10 px-1 py-0.5 rounded">
+                      <span>Status:</span>
+                      <span>IN PROCESS (Dapur Sedang Menyiapkan)</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Items Table */}

@@ -63,6 +63,9 @@ import type {
   RawMaterialStock,
   UpdateProductInput,
 } from "@/features/recipes/types"
+import { ImageUploadDropzone } from "@/features/recipes/components/image-upload-dropzone"
+import { overheadService } from "@/features/overheads/services/overhead-service"
+import type { OverheadType } from "@/features/overheads/types"
 
 function formatCurrencyIdr(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -87,7 +90,7 @@ export default function RecipeDetailPage() {
   const [loading, setLoading] = React.useState<boolean>(true)
 
   // Modals & Tabs
-  const [activeTab, setActiveTab] = React.useState<string>("bom")
+  const [activeTab, setActiveTab] = React.useState<string>("info")
   const [isAddIngredientOpen, setIsAddIngredientOpen] = React.useState<boolean>(false)
   const [isEditIngredientOpen, setIsEditIngredientOpen] = React.useState<boolean>(false)
   const [isDeleteProductOpen, setIsDeleteProductOpen] = React.useState<boolean>(false)
@@ -104,11 +107,12 @@ export default function RecipeDetailPage() {
   const [editMargin, setEditMargin] = React.useState<number>(50)
   const [editProductError, setEditProductError] = React.useState<string>("")
 
+  // Phase 2 State: Active Store Master Overheads & Simulator
+  const [masterOverheads, setMasterOverheads] = React.useState<OverheadType[]>([])
+
   // Production Simulator State
   const [simTargetUnits, setSimTargetUnits] = React.useState<number>(50)
-  const [simLaborCost, setSimLaborCost] = React.useState<number>(25000)
-  const [simEnergyCost, setSimEnergyCost] = React.useState<number>(15000)
-  const [simPackagingCost, setSimPackagingCost] = React.useState<number>(20000)
+  const [simOverheadRates, setSimOverheadRates] = React.useState<Record<string, number>>({})
 
   React.useEffect(() => {
     if (!productId) return
@@ -117,17 +121,31 @@ export default function RecipeDetailPage() {
     Promise.all([
       recipeService.getProductById(productId),
       recipeService.getAvailableMaterials(),
+      overheadService.getOverheads({ activeOnly: true }),
     ])
-      .then(([prod, mats]) => {
+      .then(([prod, mats, masterOhs]) => {
         if (!ignore) {
           setProduct(prod)
           setAvailableMaterials(mats)
+          setMasterOverheads(masterOhs)
+          // Initialize simOverheadRates from store master overheads
+          const initialRates: Record<string, number> = {}
+          masterOhs.forEach((oh) => {
+            initialRates[oh.id] = oh.defaultAmount ?? 0
+          })
+          setSimOverheadRates(initialRates)
+
           const computedMargin = prod.targetMargin || (prod.sellingPrice > 0 ? calculateGrossMargin(prod.sellingPrice, prod.latestHpp || 0) : 50)
           setEditMargin(Math.round(computedMargin))
           setEditProductData({
             name: prod.name,
             category: prod.category,
+            categoryId: prod.categoryId,
             unit: prod.unit,
+            mode: prod.mode,
+            yieldQty: prod.yieldQty,
+            wastePct: prod.wastePct,
+            imageUrl: prod.imageUrl,
             sellingPrice: prod.sellingPrice,
             targetMargin: Math.round(computedMargin),
             minStock: prod.minStock,
@@ -249,7 +267,10 @@ export default function RecipeDetailPage() {
     setSubmitting(true)
     setEditProductError("")
     try {
-      const updated = await recipeService.updateProduct(productId, editProductData)
+      const payload: UpdateProductInput = {
+        ...editProductData,
+      }
+      const updated = await recipeService.updateProduct(productId, payload)
       setProduct(updated)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal memperbarui info produk"
@@ -296,7 +317,20 @@ export default function RecipeDetailPage() {
 
   // Simulation Calculations
   const totalMaterialCostForBatch = totalBOMCost * simTargetUnits
-  const totalOverheadForBatch = simLaborCost + simEnergyCost + simPackagingCost
+
+  const simulatedOverheadItems = masterOverheads
+    .filter((oh) => !oh.category || oh.category === "PRODUCTION")
+    .map((oh) => {
+      const amount = simOverheadRates[oh.id] !== undefined
+        ? simOverheadRates[oh.id]
+        : (oh.defaultAmount ?? 0)
+
+      const batchCost = amount
+      const costPerUnit = simTargetUnits > 0 ? batchCost / simTargetUnits : 0
+      return { ...oh, amount, rate: amount, batchCost, costPerUnit }
+    })
+
+  const totalOverheadForBatch = simulatedOverheadItems.reduce((acc, it) => acc + it.batchCost, 0)
   const totalProductionCostForBatch = totalMaterialCostForBatch + totalOverheadForBatch
   const projectedHppPerUnit = simTargetUnits > 0 ? Math.round(totalProductionCostForBatch / simTargetUnits) : 0
   const projectedRevenue = product.sellingPrice * simTargetUnits
@@ -346,9 +380,17 @@ export default function RecipeDetailPage() {
         <div className="p-6 pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                <Factory className="h-7 w-7" />
-              </div>
+              {product.imageUrl ? (
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="h-16 w-16 rounded-2xl object-cover border border-slate-200 shrink-0 shadow-sm"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <Factory className="h-8 w-8" />
+                </div>
+              )}
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl font-black tracking-tight text-foreground">
@@ -357,8 +399,18 @@ export default function RecipeDetailPage() {
                   <Badge variant="outline" className="text-xs font-semibold bg-muted/40">
                     {product.category}
                   </Badge>
-                  <Badge variant="outline" className="text-xs font-mono font-medium">
-                    Satuan: {product.unit}
+                  <Badge
+                    variant="outline"
+                    className={`text-xs font-bold ${
+                      product.mode === "MAKE_TO_ORDER"
+                        ? "bg-purple-50 text-purple-700 border-purple-200"
+                        : "bg-blue-50 text-blue-700 border-blue-200"
+                    }`}
+                  >
+                    {product.mode === "MAKE_TO_ORDER" ? "Make to Order (MTO)" : "Make to Stock (MTS)"}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs font-mono font-medium bg-blue-50 text-blue-700 border-blue-200">
+                    Metode Stok: FIFO
                   </Badge>
                 </div>
                 {product.description ? (
@@ -463,6 +515,14 @@ export default function RecipeDetailPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-3xl bg-slate-100/90 dark:bg-muted/70 p-1.5 rounded-2xl border border-slate-200/90 shadow-sm gap-1.5 h-auto min-h-[50px]">
           <TabsTrigger
+            value="info"
+            className="rounded-xl py-2.5 px-3 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:font-bold text-slate-600 hover:text-slate-950 hover:bg-white/60 cursor-pointer"
+          >
+            <Info className={`h-4 w-4 transition-colors ${activeTab === "info" ? "text-primary-foreground" : "text-slate-500"}`} />
+            <span>Info & Harga</span>
+          </TabsTrigger>
+
+          <TabsTrigger
             value="bom"
             className="rounded-xl py-2.5 px-3 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:font-bold text-slate-600 hover:text-slate-950 hover:bg-white/60 cursor-pointer"
           >
@@ -506,14 +566,6 @@ export default function RecipeDetailPage() {
             >
               {product.batches?.length || 0}
             </span>
-          </TabsTrigger>
-
-          <TabsTrigger
-            value="info"
-            className="rounded-xl py-2.5 px-3 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:font-bold text-slate-600 hover:text-slate-950 hover:bg-white/60 cursor-pointer"
-          >
-            <Info className={`h-4 w-4 transition-colors ${activeTab === "info" ? "text-primary-foreground" : "text-slate-500"}`} />
-            <span>Info & Harga</span>
           </TabsTrigger>
         </TabsList>
 
@@ -683,6 +735,7 @@ export default function RecipeDetailPage() {
               )}
             </CardContent>
           </Card>
+
         </TabsContent>
 
         {/* TAB 2: SIMULATOR DAPUR & HPP (HPP CALCULATOR) */}
@@ -738,41 +791,75 @@ export default function RecipeDetailPage() {
                       Estimasi Biaya Overhead (Batch)
                     </span>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Upah Tenaga Kerja Langsung (Rp)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="5000"
-                        value={simLaborCost}
-                        onChange={(e) => setSimLaborCost(Number(e.target.value) || 0)}
-                        className="rounded-xl h-9 text-xs font-mono"
-                      />
-                    </div>
+                    {masterOverheads.length === 0 ? (
+                      <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl space-y-2.5">
+                        <div className="flex items-start gap-2 text-amber-800">
+                          <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium leading-relaxed">
+                              Belum ada master biaya overhead toko yang aktif.
+                            </p>
+                            <p className="text-[11px] text-amber-700/90 mt-1">
+                              Biaya overhead dihitung dinamis saat batch produksi dibuat berdasarkan master overhead toko.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="w-full rounded-lg text-xs font-semibold bg-white hover:bg-amber-100/60 border-amber-300 text-amber-900"
+                        >
+                          <Link to="/master-data/overhead">
+                            Kelola Master Overhead Toko
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {simulatedOverheadItems.map((oh) => {
+                          const dynamicSubtitle = `${formatCurrencyIdr(oh.batchCost)} per batch (${formatCurrencyIdr(oh.costPerUnit)}/unit)`
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Biaya Gas, Listrik & Oven (Rp)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="5000"
-                        value={simEnergyCost}
-                        onChange={(e) => setSimEnergyCost(Number(e.target.value) || 0)}
-                        className="rounded-xl h-9 text-xs font-mono"
-                      />
-                    </div>
+                          return (
+                            <div key={oh.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <Label className="text-xs font-semibold text-slate-800 truncate" title={oh.name}>
+                                  {oh.name}
+                                </Label>
+                                <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-medium shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                  Produksi
+                                </Badge>
+                              </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">Kemasan, Plastik & Label (Rp)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="5000"
-                        value={simPackagingCost}
-                        onChange={(e) => setSimPackagingCost(Number(e.target.value) || 0)}
-                        className="rounded-xl h-9 text-xs font-mono"
-                      />
-                    </div>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 select-none">
+                                  Rp
+                                </span>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="1000"
+                                  value={simOverheadRates[oh.id] !== undefined ? simOverheadRates[oh.id] : oh.rate}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, Number(e.target.value) || 0)
+                                    setSimOverheadRates((prev) => ({
+                                      ...prev,
+                                      [oh.id]: val,
+                                    }))
+                                  }}
+                                  className="rounded-lg h-8 pl-8 text-xs font-mono bg-white"
+                                />
+                              </div>
+
+                              <p className="text-[11px] text-muted-foreground font-mono">
+                                {dynamicSubtitle}
+                              </p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -830,6 +917,57 @@ export default function RecipeDetailPage() {
                       <span className="text-[10px] text-muted-foreground">Laba kotor batch</span>
                     </div>
                   </div>
+
+                  {/* Rincian Biaya Overhead Batch */}
+                  {simulatedOverheadItems.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Rincian Biaya Overhead Batch
+                        </h4>
+                        <span className="text-xs font-mono font-bold text-slate-700">
+                          Total: {formatCurrencyIdr(totalOverheadForBatch)}
+                        </span>
+                      </div>
+
+                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                        <Table>
+                          <TableHeader className="bg-slate-50">
+                            <TableRow>
+                              <TableHead className="text-[11px] font-bold">Nama Overhead</TableHead>
+                              <TableHead className="text-[11px] font-bold">Tipe/Behavior</TableHead>
+                              <TableHead className="text-[11px] font-bold">Tarif Simulasi</TableHead>
+                              <TableHead className="text-[11px] font-bold text-right">Total Biaya Batch</TableHead>
+                              <TableHead className="text-[11px] font-bold text-right">Biaya per Unit</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {simulatedOverheadItems.map((oh) => (
+                              <TableRow key={oh.id} className="text-xs">
+                                <TableCell className="font-semibold text-slate-800">
+                                  {oh.name}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
+                                    Produksi
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-mono text-muted-foreground">
+                                  {formatCurrencyIdr(oh.rate)}
+                                </TableCell>
+                                <TableCell className="font-mono font-bold text-right text-slate-900">
+                                  {formatCurrencyIdr(oh.batchCost)}
+                                </TableCell>
+                                <TableCell className="font-mono text-right text-muted-foreground">
+                                  {formatCurrencyIdr(oh.costPerUnit)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Kebutuhan Bahan Baku untuk Batch ini */}
                   <div className="space-y-2">
@@ -1024,9 +1162,60 @@ export default function RecipeDetailPage() {
                     </div>
 
                     <div className="grid gap-2">
+                      <Label className="text-xs font-semibold">Foto Produk</Label>
+                      <ImageUploadDropzone
+                        value={editProductData.imageUrl}
+                        onChange={(url) => setEditProductData({ ...editProductData, imageUrl: url })}
+                        disabled={submitting}
+                      />
+                    </div>
+
+                    {/* Mode Produksi */}
+                    <div className="grid gap-2">
+                      <Label className="text-xs font-semibold">Model Produksi (Product Mode)</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setEditProductData({ ...editProductData, mode: "MAKE_TO_STOCK" })}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            editProductData.mode !== "MAKE_TO_ORDER"
+                              ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
+                              : "border-slate-200 hover:border-slate-300 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-xs text-foreground">Make to Stock (MTS)</span>
+                            <Badge variant="outline" className="text-[10px] font-mono">MTS</Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                            Produksi massal untuk stok etalase.
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setEditProductData({ ...editProductData, mode: "MAKE_TO_ORDER" })}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            editProductData.mode === "MAKE_TO_ORDER"
+                              ? "border-purple-600 bg-purple-50 ring-1 ring-purple-600 shadow-xs"
+                              : "border-slate-200 hover:border-slate-300 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-xs text-foreground">Make to Order (MTO)</span>
+                            <Badge variant="outline" className="text-[10px] font-mono text-purple-700 border-purple-200">MTO</Badge>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                            Produksi sesuai pesanan / pre-order.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
                       <Label className="text-xs font-semibold">Deskripsi & Catatan Proses Pembuatan</Label>
                       <Textarea
-                        rows={5}
+                        rows={4}
                         value={editProductData.description || ""}
                         onChange={(e) => setEditProductData({ ...editProductData, description: e.target.value })}
                         placeholder="Tuliskan karakteristik resep, tips adonan/proofing, suhu pemanggangan oven, atau catatan khusus lainnya..."

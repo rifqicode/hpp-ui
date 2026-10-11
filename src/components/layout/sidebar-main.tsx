@@ -18,6 +18,7 @@ import {
   ClipboardList,
   User,
   LogOut,
+  Layers,
 } from "lucide-react"
 
 import {
@@ -32,6 +33,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenuBadge,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -78,6 +80,7 @@ const NAVIGATION: NavGroup[] = [
   {
     group: "Production",
     items: [
+      { title: "Biaya Overhead", url: "/production/overheads", icon: Layers, permission: "menu:recipes" },
       { title: "Produk", url: "/production/products", icon: Factory, permission: "menu:recipes" },
       { title: "Batches", url: "/production/batches", icon: History, badge: "3", permission: "menu:recipes" },
       { title: "HPP Calculator", url: "/production/hpp", icon: Calculator, permission: "menu:recipes" },
@@ -88,6 +91,7 @@ const NAVIGATION: NavGroup[] = [
     items: [
       { title: "POS", url: "/sales/pos", icon: ShoppingCart, permission: "menu:pos" },
       { title: "Transactions", url: "/sales/history", icon: History, permission: "orders:read" },
+      { title: "Customers", url: "/sales/customers", icon: Users, permission: "orders:read" },
     ]
   },
   {
@@ -173,6 +177,7 @@ export function SidebarMain() {
           const active = list.find((s) => s.id === currentId) || list[0]
           setActiveStore(active)
           useAuthStore.getState().setActiveStoreId(active.id)
+          useAuthStore.getState().setActiveStoreName(active.name)
           await settingsService.getStorePermissions(active.id)
         } else {
           navigate("/setup-store")
@@ -198,6 +203,7 @@ export function SidebarMain() {
       await settingsService.switchStore(store.id)
       setActiveStore(store)
       useAuthStore.getState().setActiveStoreId(store.id)
+      useAuthStore.getState().setActiveStoreName(store.name)
       await settingsService.getStorePermissions(store.id)
       window.location.reload()
     } catch (err) {
@@ -206,7 +212,7 @@ export function SidebarMain() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-primary/20 bg-sidebar shadow-md">
+    <Sidebar collapsible="offcanvas" className="border-r border-primary/20 bg-sidebar shadow-md">
       <SidebarHeader className="p-3 pb-2 group-data-[collapsible=icon]:p-2">
         <div className="rounded-xl border border-sidebar-border/70 bg-card/60 p-1.5 shadow-2xs transition-all group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:shadow-none flex flex-col gap-1">
           {/* 1. User Profile */}
@@ -409,14 +415,14 @@ export function SidebarMain() {
                           tooltip={item.title}
                           isActive={active}
                           className={`
-                            transition-all duration-200
+                            transition-all duration-150
                             ${active 
-                              ? 'bg-primary/10 text-primary font-semibold shadow-sm' 
-                              : 'hover:bg-primary/5 hover:text-primary'}
+                              ? 'bg-primary/15 text-primary font-semibold border border-primary/20 shadow-2xs hover:bg-primary/20 hover:text-primary' 
+                              : 'text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground'}
                           `}
                         >
                           <Link to={item.url} className="flex items-center gap-3">
-                            <item.icon className={`h-4.5 w-4.5 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <item.icon className={`h-4.5 w-4.5 shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover/menu-button:text-foreground'}`} />
                             <span className="text-sm">{item.title}</span>
                           </Link>
                         </SidebarMenuButton>
@@ -446,6 +452,7 @@ export function SidebarMain() {
           </div>
         </div>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }

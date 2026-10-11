@@ -7,9 +7,11 @@ interface AuthState {
   user: User | null;
   token: string | null;
   activeStoreId: string | null;
+  activeStoreName: string | null;
   permissions: string[];
   setAuth: (user: User, token: string) => void;
   setActiveStoreId: (storeId: string | null) => void;
+  setActiveStoreName: (storeName: string | null) => void;
   setPermissions: (permissions: string[]) => void;
   logout: () => void;
 }
@@ -20,17 +22,19 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       activeStoreId: null,
+      activeStoreName: null,
       permissions: [],
       setAuth: (user, token) => {
         localStorage.setItem('token', token);
         set({ user, token });
       },
       setActiveStoreId: (activeStoreId) => set({ activeStoreId }),
+      setActiveStoreName: (activeStoreName) => set({ activeStoreName }),
       setPermissions: (permissions) => set({ permissions }),
       logout: () => {
         localStorage.removeItem('token');
         clearPermissionCache();
-        set({ user: null, token: null, activeStoreId: null, permissions: [] });
+        set({ user: null, token: null, activeStoreId: null, activeStoreName: null, permissions: [] });
       },
     }),
     {

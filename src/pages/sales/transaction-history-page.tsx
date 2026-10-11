@@ -10,21 +10,24 @@ import {
   Printer,
   Calendar,
   X,
+  ShoppingBag,
+  RefreshCw,
 } from 'lucide-react';
 
 import { salesService } from '../../features/sales/services/sales-service';
-import type { Sale, SalesSummary } from '../../features/sales/types';
+import type { Sale, SalesSummary, SaleQuery } from '../../features/sales/types';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
+import { TablePagination } from '../../components/ui/table-pagination';
 
 function formatRupiah(num: number): string {
   return new Intl.NumberFormat('id-ID', {
@@ -34,12 +37,33 @@ function formatRupiah(num: number): string {
   }).format(num);
 }
 
+function getTodayString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getSevenDaysAgoString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().slice(0, 10);
+}
+
+function getStartOfMonthString(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
 export default function TransactionHistoryPage() {
   const [sales, setSales] = React.useState<Sale[]>([]);
   const [summary, setSummary] = React.useState<SalesSummary | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filterMethod, setFilterMethod] = React.useState<string>('ALL');
+  const [filterStatus, setFilterStatus] = React.useState<string>('ALL');
+
+  // Date Range Controls
+  const [datePreset, setDatePreset] = React.useState<'TODAY' | '7D' | 'THIS_MONTH' | 'ALL_TIME' | 'CUSTOM'>('THIS_MONTH');
+  const [startDate, setStartDate] = React.useState<string>(getStartOfMonthString());
+  const [endDate, setEndDate] = React.useState<string>(getTodayString());
 
   // Selected sale for detail dialog
   const [selectedSale, setSelectedSale] = React.useState<Sale | null>(null);
@@ -48,9 +72,20 @@ export default function TransactionHistoryPage() {
   const fetchSalesData = React.useCallback(async () => {
     try {
       setLoading(true);
+
+      const query: SaleQuery = {
+        search: searchQuery.trim() || undefined,
+        payment_method: filterMethod !== 'ALL' ? filterMethod : undefined,
+      };
+
+      if (datePreset !== 'ALL_TIME') {
+        if (startDate) query.start_date = startDate;
+        if (endDate) query.end_date = endDate;
+      }
+
       const [salesData, summaryData] = await Promise.all([
-        salesService.getSales(),
-        salesService.getSummary(),
+        salesService.getSales(query),
+        salesService.getSummary(query),
       ]);
       setSales(salesData);
       setSummary(summaryData);
@@ -59,22 +94,51 @@ export default function TransactionHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [searchQuery, filterMethod, datePreset, startDate, endDate]);
 
   React.useEffect(() => {
-    fetchSalesData();
+    const timer = setTimeout(() => {
+      fetchSalesData();
+    }, 250);
+    return () => clearTimeout(timer);
   }, [fetchSalesData]);
 
+  const handlePresetChange = (preset: 'TODAY' | '7D' | 'THIS_MONTH' | 'ALL_TIME' | 'CUSTOM') => {
+    setDatePreset(preset);
+    const today = getTodayString();
+    if (preset === 'TODAY') {
+      setStartDate(today);
+      setEndDate(today);
+    } else if (preset === '7D') {
+      setStartDate(getSevenDaysAgoString());
+      setEndDate(today);
+    } else if (preset === 'THIS_MONTH') {
+      setStartDate(getStartOfMonthString());
+      setEndDate(today);
+    } else if (preset === 'ALL_TIME') {
+      setStartDate('');
+      setEndDate('');
+    }
+  };
+
+  // Pagination state
+  const [page, setPage] = React.useState(1);
+  const perPage = 10;
+
   const filteredSales = React.useMemo(() => {
-    return sales.filter((s) => {
-      const matchSearch =
-        s.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.customerName && s.customerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        s.items.some((it) => it.productName.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchMethod = filterMethod === 'ALL' || s.paymentMethod === filterMethod;
-      return matchSearch && matchMethod;
-    });
-  }, [sales, searchQuery, filterMethod]);
+    return sales.filter((s) => filterStatus === 'ALL' || s.status === filterStatus);
+  }, [sales, filterStatus]);
+
+  const totalPages = Math.ceil(filteredSales.length / perPage) || 1;
+  const paginatedSales = React.useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredSales.slice(start, start + perPage);
+  }, [filteredSales, page, perPage]);
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filterMethod, filterStatus, datePreset, startDate, endDate]);
 
   const handleOpenDetail = (sale: Sale) => {
     setSelectedSale(sale);
@@ -86,298 +150,478 @@ export default function TransactionHistoryPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
+    <div className="w-full space-y-6 pb-12 animate-in fade-in duration-500">
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <History className="size-6 text-primary" />
-            <span>Riwayat Transaksi Penjualan</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Daftar seluruh transaksi kasir, analisis laba kotor, dan audit HPP per penjualan
-          </p>
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <History className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Dashboard Transaksi Penjualan
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Ringkasan KPI performa omzet, analisis HPP riil, dan audit laba kotor per penjualan
+            </p>
+          </div>
         </div>
 
-        <Button asChild className="gap-2 shadow-xs">
-          <Link to="/sales/pos">
-            <ShoppingCart className="size-4" />
-            <span>Buka Kasir (POS)</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchSalesData}
+            disabled={loading}
+            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Segarkan
+          </Button>
+          <Button asChild className="gap-2 font-medium shadow-2xs">
+            <Link to="/sales/pos">
+              <ShoppingCart className="h-4 w-4" />
+              <span>Buka Kasir (POS)</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* KPI Dashboard Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-border/80 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Total Omzet Penjualan
-              </CardTitle>
-              <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <DollarSign className="size-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-muted-foreground">Total Omzet</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold tracking-tight text-foreground">
+                    {formatRupiah(summary.totalRevenue)}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {summary.totalTransactions} transaksi
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-black text-foreground">
-                {formatRupiah(summary.totalRevenue)}
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                <DollarSign className="h-5 w-5" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Dari {summary.totalTransactions} transaksi berhasil
-              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/80 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Total HPP Terjual
-              </CardTitle>
-              <div className="size-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                <Receipt className="size-4" />
+          <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-muted-foreground">Total HPP Modal</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                    {formatRupiah(summary.totalHpp)}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Modal bahan & overhead
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-black text-foreground">
-                {formatRupiah(summary.totalHpp)}
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                <Receipt className="h-5 w-5" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Modal bahan & overhead produksi
-              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/80 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Total Laba Kotor
-              </CardTitle>
-              <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                <TrendingUp className="size-4" />
+          <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-muted-foreground">Total Laba Kotor</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                    {formatRupiah(summary.totalGrossProfit)}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Omzet dikurangi HPP
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                {formatRupiah(summary.totalGrossProfit)}
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                <TrendingUp className="h-5 w-5" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Omzet dikurangi HPP
-              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-border/80 shadow-2xs">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Rata-rata Margin
-              </CardTitle>
-              <div className="size-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                <TrendingUp className="size-4" />
+          <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-muted-foreground">Rata-rata Margin</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
+                    {summary.averageMarginPct.toFixed(1)}%
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Margin laba kotor
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl font-black text-foreground">
-                {summary.averageMarginPct.toFixed(1)}%
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                <TrendingUp className="h-5 w-5" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Margin kotor terhadap omzet
-              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+            <CardContent className="p-0 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-xs font-medium text-muted-foreground">Rata-rata Order (AOV)</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
+                    {formatRupiah(
+                      summary.averageOrderValue ||
+                        (summary.totalTransactions > 0
+                          ? summary.totalRevenue / summary.totalTransactions
+                          : 0)
+                    )}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Belanja per transaksi
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                <ShoppingBag className="h-5 w-5" />
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <Card className="border-border shadow-2xs">
-        <CardContent className="p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+      {/* Date Range & Filter Toolbar */}
+      <div className="flex flex-col gap-3 bg-card p-3 rounded-xl border border-border shadow-2xs">
+        {/* Top row: Date Presets & Custom Pickers */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-border/70">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
+              <Calendar className="size-3.5" />
+              Periode:
+            </span>
+            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+              {[
+                { label: 'Hari Ini', key: 'TODAY' as const },
+                { label: '7 Hari', key: '7D' as const },
+                { label: 'Bulan Ini', key: 'THIS_MONTH' as const },
+                { label: 'Semua Waktu', key: 'ALL_TIME' as const },
+                { label: 'Kustom', key: 'CUSTOM' as const },
+              ].map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => handlePresetChange(p.key)}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    datePreset === p.key
+                      ? 'bg-background text-foreground shadow-2xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Date Inputs */}
+          {datePreset === 'CUSTOM' && (
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-8 text-xs w-36 bg-background/50"
+              />
+              <span className="text-xs text-muted-foreground">s/d</span>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-8 text-xs w-36 bg-background/50"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Bottom row: Search & Status / Payment Method Pills */}
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari invoice, pelanggan, atau nama produk..."
+              placeholder="Cari invoice, pelanggan, atau produk..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-xs"
+              className="pl-9 bg-background/50 h-9 text-xs"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
               >
-                <X className="size-3.5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
 
-          <div className="flex gap-1.5 w-full sm:w-auto overflow-x-auto">
-            {['ALL', 'CASH', 'QRIS', 'TRANSFER'].map((method) => (
-              <button
-                key={method}
-                onClick={() => setFilterMethod(method)}
-                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${
-                  filterMethod === method
-                    ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-                    : 'bg-card text-muted-foreground border-border hover:bg-muted'
-                }`}
-              >
-                {method === 'ALL'
-                  ? 'Semua Metode'
-                  : method === 'CASH'
-                  ? 'Tunai'
-                  : method}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Status Filter Pills */}
+            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+              {['ALL', 'COMPLETED', 'IN_PROGRESS'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    filterStatus === status
+                      ? 'bg-background text-foreground shadow-2xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {status === 'ALL'
+                    ? 'Semua Status'
+                    : status === 'COMPLETED'
+                    ? 'Selesai'
+                    : 'Dalam Proses'}
+                </button>
+              ))}
+            </div>
+
+            {/* Payment Method Pills */}
+            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+              {['ALL', 'CASH', 'QRIS', 'TRANSFER', 'DEBIT'].map((method) => (
+                <button
+                  key={method}
+                  onClick={() => setFilterMethod(method)}
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                    filterMethod === method
+                      ? 'bg-background text-foreground shadow-2xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {method === 'ALL'
+                    ? 'Semua Metode'
+                    : method === 'CASH'
+                    ? 'Tunai'
+                    : method}
+                </button>
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Transactions Table */}
-      <Card className="border-border shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-muted/40 font-semibold text-muted-foreground">
-                <th className="p-3.5">Invoice & Waktu</th>
-                <th className="p-3.5">Pelanggan</th>
-                <th className="p-3.5">Ringkasan Item</th>
-                <th className="p-3.5">Metode Bayar</th>
-                <th className="p-3.5 text-right">Total Omzet</th>
-                <th className="p-3.5 text-right">Total HPP</th>
-                <th className="p-3.5 text-right">Laba Kotor</th>
-                <th className="p-3.5 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    Memuat data transaksi...
-                  </td>
-                </tr>
-              ) : filteredSales.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                    Tidak ada riwayat transaksi yang cocok.
-                  </td>
-                </tr>
-              ) : (
-                filteredSales.map((sale) => {
-                  const itemCount = sale.items.reduce((acc, curr) => acc + curr.quantity, 0);
-
-                  return (
-                    <tr
-                      key={sale.id}
-                      className="hover:bg-muted/30 transition-colors cursor-pointer"
-                      onClick={() => handleOpenDetail(sale)}
-                    >
-                      <td className="p-3.5">
-                        <span className="font-bold text-foreground block">
-                          {sale.invoiceNumber}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Calendar className="size-3" />
-                          {new Date(sale.transactionDate).toLocaleString('id-ID', {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
-                        </span>
-                      </td>
-
-                      <td className="p-3.5">
-                        <span className="font-medium text-foreground block truncate max-w-44">
-                          {sale.customerName || 'Pelanggan Umum'}
-                        </span>
-                        {sale.notes && (
-                          <span className="text-[10px] text-muted-foreground truncate block max-w-44 italic">
-                            &quot;{sale.notes}&quot;
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5">
-                        <span className="text-xs text-foreground block font-medium">
-                          {itemCount} pcs ({sale.items.length} jenis)
-                        </span>
-                        <span className="text-[10px] text-muted-foreground truncate block max-w-48">
-                          {sale.items.map((i) => `${i.productName} (${i.quantity})`).join(', ')}
-                        </span>
-                      </td>
-
-                      <td className="p-3.5">
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] font-semibold ${
-                            sale.paymentMethod === 'QRIS'
-                              ? 'bg-purple-500/10 text-purple-700 border-purple-500/20'
-                              : sale.paymentMethod === 'CASH'
-                              ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
-                              : 'bg-blue-500/10 text-blue-700 border-blue-500/20'
-                          }`}
-                        >
-                          {sale.paymentMethod}
-                        </Badge>
-                      </td>
-
-                      <td className="p-3.5 text-right font-bold text-foreground">
-                        {formatRupiah(sale.totalAmount)}
-                      </td>
-
-                      <td className="p-3.5 text-right text-muted-foreground">
-                        {formatRupiah(sale.totalCost)}
-                      </td>
-
-                      <td className="p-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatRupiah(sale.grossProfit)}
-                        <span className="block text-[10px] font-normal text-muted-foreground">
-                          ({sale.profitMarginPct}%)
-                        </span>
-                      </td>
-
-                      <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenDetail(sale)}
-                          className="h-7 text-xs px-2.5 gap-1.5"
-                        >
-                          <Receipt className="size-3.5" />
-                          <span>Struk</span>
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
         </div>
-      </Card>
+      </div>
 
-      {/* Transaction Detail & Struk Dialog */}
+      {/* Transactions Table & Pagination */}
+      <div className="space-y-4">
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
+                <tr>
+                  <th className="px-5 py-3.5">Invoice & Waktu</th>
+                  <th className="px-5 py-3.5">Pelanggan</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5">Kasir</th>
+                  <th className="px-5 py-3.5">Ringkasan Item</th>
+                  <th className="px-5 py-3.5">Metode Bayar</th>
+                  <th className="px-5 py-3.5 text-right">Total Omzet</th>
+                  <th className="px-5 py-3.5 text-right">Total HPP</th>
+                  <th className="px-5 py-3.5 text-right">Laba Kotor</th>
+                  <th className="px-5 py-3.5 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/70">
+                {loading ? (
+                  <tr>
+                    <td colSpan={10} className="px-5 py-12 text-center text-muted-foreground">
+                      Memuat data transaksi...
+                    </td>
+                  </tr>
+                ) : filteredSales.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="px-5 py-12 text-center text-muted-foreground">
+                      Tidak ada riwayat transaksi yang cocok dengan filter.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedSales.map((sale) => {
+                    const itemCount = sale.items.reduce(
+                      (acc, curr) => acc + curr.quantity,
+                      0
+                    );
+
+                    return (
+                      <tr
+                        key={sale.id}
+                        className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                        onClick={() => handleOpenDetail(sale)}
+                      >
+                        <td className="px-5 py-3.5">
+                          <span className="font-bold text-foreground block">
+                            {sale.invoiceNumber}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Calendar className="size-3" />
+                            {new Date(sale.transactionDate).toLocaleString('id-ID', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-3.5">
+                          <span className="font-medium text-foreground block truncate max-w-44">
+                            {sale.customerName || 'Pelanggan Umum'}
+                          </span>
+                          {sale.customer?.phone && (
+                            <span className="text-[10px] text-muted-foreground block truncate max-w-44">
+                              {sale.customer.phone}
+                            </span>
+                          )}
+                          {sale.notes && (
+                            <span className="text-[10px] text-muted-foreground truncate block max-w-44 italic">
+                              &quot;{sale.notes}&quot;
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-3.5">
+                          {sale.status === 'IN_PROGRESS' ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-bold bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400"
+                            >
+                              Dapur (In Progress)
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] font-bold bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400"
+                            >
+                              Selesai
+                            </Badge>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-3.5 text-muted-foreground">
+                          {sale.cashierName || 'Kasir'}
+                        </td>
+
+                        <td className="px-5 py-3.5">
+                          <span className="text-xs text-foreground block font-medium">
+                            {itemCount} pcs ({sale.items.length} jenis)
+                          </span>
+                          <span className="text-[10px] text-muted-foreground truncate block max-w-48">
+                            {sale.items
+                              .map((i) => `${i.productName} (${i.quantity})`)
+                              .join(', ')}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-3.5">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-semibold ${
+                              sale.paymentMethod === 'QRIS'
+                                ? 'bg-purple-500/10 text-purple-700 border-purple-500/20'
+                                : sale.paymentMethod === 'CASH'
+                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
+                                : sale.paymentMethod === 'DEBIT'
+                                ? 'bg-amber-500/10 text-amber-700 border-amber-500/20'
+                                : 'bg-blue-500/10 text-blue-700 border-blue-500/20'
+                            }`}
+                          >
+                            {sale.paymentMethod}
+                          </Badge>
+                        </td>
+
+                        <td className="px-5 py-3.5 text-right font-bold text-foreground">
+                          {formatRupiah(sale.totalAmount)}
+                        </td>
+
+                        <td className="px-5 py-3.5 text-right text-muted-foreground">
+                          {formatRupiah(sale.totalCost)}
+                        </td>
+
+                        <td className="px-5 py-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatRupiah(sale.grossProfit)}
+                          <span className="block text-[10px] font-normal text-muted-foreground">
+                            ({sale.profitMarginPct}%)
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-3.5 text-center" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenDetail(sale)}
+                            className="h-7 text-xs px-2.5 gap-1.5"
+                          >
+                            <Receipt className="size-3.5" />
+                            <span>Struk</span>
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Pagination */}
+        <TablePagination
+          total={filteredSales.length}
+          displayedCount={paginatedSales.length}
+          page={page}
+          totalPages={totalPages}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={loading}
+          label="transaksi"
+        />
+      </div>
+
+      {/* Transaction Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold flex items-center justify-between">
-              <span>Detail & Struk Transaksi</span>
-            </DialogTitle>
-          </DialogHeader>
-
+        <DialogContent className="max-w-md p-6 max-h-[90vh] overflow-y-auto">
           {selectedSale && (
-            <div className="space-y-4 py-2">
-              {/* Receipt Box */}
+            <div className="space-y-4">
+              <DialogHeader className="border-b border-border pb-3">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-base font-bold flex items-center gap-2">
+                    <Receipt className="size-5 text-primary" />
+                    <span>Detail Transaksi</span>
+                  </DialogTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrint}
+                    className="h-8 gap-1.5 text-xs print:hidden"
+                  >
+                    <Printer className="size-3.5" />
+                    <span>Cetak</span>
+                  </Button>
+                </div>
+              </DialogHeader>
+
+              {/* Printable Thermal Receipt Style */}
               <div
-                id="thermal-receipt"
-                className="bg-card border border-border rounded-xl p-4 font-mono text-xs text-foreground shadow-xs space-y-3"
+                id="receipt-print-area"
+                className="bg-card border border-border/80 rounded-xl p-4 text-xs font-mono space-y-3"
               >
-                <div className="text-center border-b border-border/80 pb-2.5">
-                  <h3 className="font-bold text-sm">TOKO ROTI ENAK</h3>
-                  <p className="text-[10px] text-muted-foreground">Cabang Tebet - Jakarta Selatan</p>
-                  <p className="text-[10px] text-muted-foreground">Telp: (021) 829-4567</p>
+                <div className="text-center border-b border-border/80 pb-2">
+                  <h3 className="font-bold text-sm tracking-tight font-sans">
+                    TOKO KASIR
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground font-sans">
+                    STRUK PEMBELIAN RESMI
+                  </p>
                 </div>
 
                 <div className="space-y-1 text-[11px] border-b border-border/80 pb-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Invoice:</span>
+                    <span className="text-muted-foreground">No. Invoice:</span>
                     <span className="font-bold">{selectedSale.invoiceNumber}</span>
                   </div>
                   <div className="flex justify-between">
@@ -390,13 +634,35 @@ export default function TransactionHistoryPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Pelanggan:</span>
-                    <span>{selectedSale.customerName || 'Pelanggan Umum'}</span>
+                    <span className="text-muted-foreground">Kasir:</span>
+                    <span>{selectedSale.cashierName || 'Kasir'}</span>
                   </div>
-                  {selectedSale.notes && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Pelanggan:</span>
+                    <span className="font-semibold">{selectedSale.customerName || 'Guest'}</span>
+                  </div>
+                  {selectedSale.customer?.phone && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Catatan:</span>
-                      <span>{selectedSale.notes}</span>
+                      <span className="text-muted-foreground">No. HP:</span>
+                      <span>{selectedSale.customer.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-0.5">
+                    <span className="text-muted-foreground">Status Pesanan:</span>
+                    {selectedSale.status === 'IN_PROGRESS' ? (
+                      <span className="font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                        Dapur Sedang Menyiapkan (In Progress)
+                      </span>
+                    ) : (
+                      <span className="font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                        Selesai (Completed)
+                      </span>
+                    )}
+                  </div>
+                  {selectedSale.productionLogId && (
+                    <div className="flex justify-between items-center text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
+                      <span>Pesanan MTO (Make to Order):</span>
+                      <span className="font-semibold">Terhubung ke Antrean Dapur</span>
                     </div>
                   )}
                 </div>
@@ -408,70 +674,71 @@ export default function TransactionHistoryPage() {
                       <div className="truncate flex-1 pr-2">
                         <p className="font-medium truncate">{it.productName}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {it.quantity} x {formatRupiah(it.priceAtSale)} • HPP: {formatRupiah(it.costAtSale)}
+                          {it.quantity} x {formatRupiah(it.priceAtSale)}
                         </p>
                       </div>
-                      <span className="font-semibold shrink-0">{formatRupiah(it.subtotal)}</span>
+                      <span className="font-semibold shrink-0">
+                        {formatRupiah(it.subtotal)}
+                      </span>
                     </div>
                   ))}
                 </div>
 
-                {/* Financial Summary */}
+                {/* Totals */}
                 <div className="space-y-1 text-[11px] border-b border-border/80 pb-2">
                   {selectedSale.discountAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Diskon:</span>
-                      <span className="text-red-500">
-                        -{formatRupiah(selectedSale.discountAmount)}
-                      </span>
+                      <span>-{formatRupiah(selectedSale.discountAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm font-bold pt-1">
-                    <span>TOTAL:</span>
-                    <span>{formatRupiah(selectedSale.totalAmount)}</span>
+                  {selectedSale.taxAmount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Pajak:</span>
+                      <span>+{formatRupiah(selectedSale.taxAmount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-xs pt-1">
+                    <span>Total Bayar:</span>
+                    <span className="text-foreground">
+                      {formatRupiah(selectedSale.totalAmount)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Metode:</span>
-                    <span className="font-semibold">{selectedSale.paymentMethod}</span>
+                    <span>Metode Pembayaran:</span>
+                    <span>{selectedSale.paymentMethod}</span>
                   </div>
-                  {selectedSale.paymentMethod === 'CASH' && selectedSale.cashReceived && (
-                    <>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Tunai:</span>
-                        <span>{formatRupiah(selectedSale.cashReceived)}</span>
-                      </div>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>Kembalian:</span>
-                        <span className="font-semibold text-emerald-600">
-                          {formatRupiah(selectedSale.cashChange || 0)}
-                        </span>
-                      </div>
-                    </>
+                  {selectedSale.cashReceived != null && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Uang Diterima:</span>
+                      <span>{formatRupiah(selectedSale.cashReceived)}</span>
+                    </div>
+                  )}
+                  {selectedSale.cashChange != null && (
+                    <div className="flex justify-between text-muted-foreground font-semibold">
+                      <span>Kembalian:</span>
+                      <span>{formatRupiah(selectedSale.cashChange)}</span>
+                    </div>
                   )}
                 </div>
 
-                {/* Profit Margin Info (For Staff/Owner View) */}
-                <div className="bg-primary/5 p-2 rounded-lg space-y-1 text-[10px]">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Total HPP Transaksi:</span>
-                    <span className="font-semibold">{formatRupiah(selectedSale.totalCost)}</span>
+                {/* Profit & Margin Audit (Internal Back-Office info) */}
+                <div className="bg-muted/40 p-2.5 rounded-lg text-[10px] font-sans space-y-1 text-muted-foreground border border-border/50">
+                  <div className="flex justify-between">
+                    <span>Total HPP Modal:</span>
+                    <span>{formatRupiah(selectedSale.totalCost)}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-emerald-600">
-                    <span>Laba Bersih Transaksi:</span>
-                    <span>{formatRupiah(selectedSale.grossProfit)} ({selectedSale.profitMarginPct}%)</span>
+                  <div className="flex justify-between font-semibold text-emerald-600">
+                    <span>Laba Kotor (Gross Profit):</span>
+                    <span>
+                      {formatRupiah(selectedSale.grossProfit)} ({selectedSale.profitMarginPct}%)
+                    </span>
                   </div>
                 </div>
-              </div>
 
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={handlePrint} className="flex-1 text-xs gap-1.5 h-9">
-                  <Printer className="size-3.5" />
-                  <span>Cetak Struk</span>
-                </Button>
-                <Button onClick={() => setIsDetailOpen(false)} className="flex-1 text-xs font-semibold h-9">
-                  <span>Tutup</span>
-                </Button>
+                <div className="text-center pt-1 text-[10px] text-muted-foreground font-sans">
+                  Terima kasih atas kunjungan Anda!
+                </div>
               </div>
             </div>
           )}

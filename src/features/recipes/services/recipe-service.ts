@@ -1,6 +1,7 @@
 import apiClient from '../../../lib/api-client';
 import type {
   Product,
+  ProductMode,
   CreateProductInput,
   UpdateProductInput,
   AddIngredientInput,
@@ -8,6 +9,9 @@ import type {
   RecipeIngredient,
   ProductBatchLot,
   ProductCategory,
+  PresignedUploadRequest,
+  PresignedUploadResponse,
+  ProductEstimate,
 } from '../types';
 
 export const AVAILABLE_MATERIALS: RawMaterialStock[] = [];
@@ -63,7 +67,18 @@ interface RawProduct {
   storeId?: string;
   name: string;
   category?: string;
+  category_id?: string;
+  categoryId?: string;
+  category_name?: string;
+  categoryName?: string;
   unit?: string;
+  mode?: ProductMode | string;
+  yield_qty?: number | string;
+  yieldQty?: number | string;
+  waste_pct?: number | string;
+  wastePct?: number | string;
+  image_url?: string | null;
+  imageUrl?: string | null;
   selling_price?: number | string;
   sellingPrice?: number | string;
   target_margin?: number | string;
@@ -138,13 +153,25 @@ export function transformProductFromApi(raw: RawProduct): Product {
   const minStock = parseNumber(raw.min_stock ?? raw.minStock);
   const currentStock = parseNumber(raw.current_stock ?? raw.currentStock);
   const latestHpp = parseNumber(raw.latest_hpp ?? raw.latestHpp);
+  const yieldQty = parseNumber(raw.yield_qty ?? raw.yieldQty, 1);
+  const wastePct = parseNumber(raw.waste_pct ?? raw.wastePct, 0);
+  const mode: ProductMode = (raw.mode === 'MAKE_TO_ORDER' ? 'MAKE_TO_ORDER' : 'MAKE_TO_STOCK');
+  const imageUrl = raw.image_url ?? raw.imageUrl ?? null;
+  const categoryId = raw.category_id || raw.categoryId || '';
+  const categoryName = raw.category_name || raw.categoryName || raw.category || '';
 
   return {
     id: raw.id,
     storeId: raw.store_id || raw.storeId,
     name: raw.name,
-    category: raw.category || 'Roti',
+    category: categoryName || 'Roti',
+    categoryId,
+    categoryName,
     unit: raw.unit || 'pcs',
+    mode,
+    yieldQty: yieldQty > 0 ? yieldQty : 1,
+    wastePct,
+    imageUrl,
     sellingPrice,
     targetMargin,
     minStock,
@@ -212,10 +239,13 @@ export const recipeService = {
 
   createProduct: async (data: CreateProductInput): Promise<Product> => {
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         name: data.name,
         category: data.category || 'Roti',
         unit: data.unit || 'pcs',
+        mode: data.mode || 'MAKE_TO_STOCK',
+        yield_qty: data.yieldQty !== undefined ? Number(data.yieldQty) : 1,
+        waste_pct: data.wastePct !== undefined ? Number(data.wastePct) : 0,
         selling_price: data.sellingPrice !== undefined ? Number(data.sellingPrice) : 0,
         target_margin: data.targetMargin !== undefined ? Number(data.targetMargin) : 0,
         min_stock: data.minStock !== undefined ? Number(data.minStock) : 0,
@@ -225,6 +255,9 @@ export const recipeService = {
           quantity: Number(item.quantity),
         })),
       };
+
+      if (data.categoryId) payload.category_id = data.categoryId;
+      if (data.imageUrl !== undefined) payload.image_url = data.imageUrl;
 
       const response = await apiClient.post<RawProduct>('/products', payload);
       const transformed = transformProductFromApi(response.data);
@@ -253,7 +286,9 @@ export const recipeService = {
       }
 
       const totalIngCost = newIngredients.reduce((acc, curr) => acc + curr.subtotalCost, 0);
-      const estHpp = totalIngCost > 0 ? totalIngCost * 1.15 : 0;
+      const yieldQty = data.yieldQty && data.yieldQty > 0 ? Number(data.yieldQty) : 1;
+      const wastePct = data.wastePct ? Number(data.wastePct) : 0;
+      const estHpp = totalIngCost > 0 ? (totalIngCost / yieldQty) * (1 + wastePct / 100) : 0;
       const margin = data.targetMargin || 50;
       const calculatedSellingPrice = data.sellingPrice && data.sellingPrice > 0
         ? Number(data.sellingPrice)
@@ -263,7 +298,13 @@ export const recipeService = {
         id: `prod-${Date.now()}`,
         name: data.name,
         category: data.category || "Roti",
+        categoryId: data.categoryId || '',
+        categoryName: data.category || 'Roti',
         unit: data.unit || "pcs",
+        mode: data.mode || "MAKE_TO_STOCK",
+        yieldQty: yieldQty,
+        wastePct: wastePct,
+        imageUrl: data.imageUrl ?? null,
         sellingPrice: calculatedSellingPrice,
         targetMargin: margin,
         currentStock: 0,
@@ -285,7 +326,12 @@ export const recipeService = {
       const payload: Record<string, unknown> = {};
       if (data.name !== undefined) payload.name = data.name;
       if (data.category !== undefined) payload.category = data.category;
+      if (data.categoryId !== undefined) payload.category_id = data.categoryId;
       if (data.unit !== undefined) payload.unit = data.unit;
+      if (data.mode !== undefined) payload.mode = data.mode;
+      if (data.yieldQty !== undefined) payload.yield_qty = Number(data.yieldQty);
+      if (data.wastePct !== undefined) payload.waste_pct = Number(data.wastePct);
+      if (data.imageUrl !== undefined) payload.image_url = data.imageUrl;
       if (data.sellingPrice !== undefined) payload.selling_price = Number(data.sellingPrice);
       if (data.targetMargin !== undefined) payload.target_margin = Number(data.targetMargin);
       if (data.minStock !== undefined) payload.min_stock = Number(data.minStock);
@@ -311,6 +357,11 @@ export const recipeService = {
         sellingPrice: data.sellingPrice !== undefined ? Number(data.sellingPrice) : existing.sellingPrice,
         minStock: data.minStock !== undefined ? Number(data.minStock) : existing.minStock,
         currentStock: data.currentStock !== undefined ? Number(data.currentStock) : existing.currentStock,
+        yieldQty: data.yieldQty !== undefined ? Number(data.yieldQty) : existing.yieldQty,
+        wastePct: data.wastePct !== undefined ? Number(data.wastePct) : existing.wastePct,
+        mode: data.mode !== undefined ? data.mode : existing.mode,
+        imageUrl: data.imageUrl !== undefined ? data.imageUrl : existing.imageUrl,
+        categoryId: data.categoryId !== undefined ? data.categoryId : existing.categoryId,
         updatedAt: new Date().toISOString(),
       };
 
@@ -514,5 +565,123 @@ export const recipeService = {
 
   deleteCategory: async (categoryId: string): Promise<void> => {
     await apiClient.delete(`/products/categories/${categoryId}`);
+  },
+
+  getPresignedUploadUrl: async (data: PresignedUploadRequest): Promise<PresignedUploadResponse> => {
+    const response = await apiClient.post<{
+      upload_url?: string;
+      uploadUrl?: string;
+      public_url?: string;
+      publicUrl?: string;
+      key?: string;
+    }>('/products/upload-presigned-url', {
+      filename: data.filename,
+      content_type: data.contentType,
+      file_size: data.fileSize,
+    });
+
+    const res = response.data;
+    return {
+      uploadUrl: res.upload_url || res.uploadUrl || '',
+      publicUrl: res.public_url || res.publicUrl || '',
+      key: res.key || '',
+    };
+  },
+
+  uploadProductImage: async (file: File): Promise<string> => {
+    const presigned = await recipeService.getPresignedUploadUrl({
+      filename: file.name,
+      contentType: file.type || 'image/jpeg',
+      fileSize: file.size,
+    });
+
+    if (!presigned?.uploadUrl) {
+      throw new Error('Gagal mendapatkan izin upload S3 dari server');
+    }
+
+    const uploadRes = await fetch(presigned.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type || 'image/jpeg',
+      },
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error(`Upload gambar ke S3 gagal (HTTP ${uploadRes.status})`);
+    }
+
+    return presigned.publicUrl;
+  },
+
+  getProductEstimate: async (productId: string): Promise<ProductEstimate> => {
+    try {
+      const response = await apiClient.get<Record<string, unknown>>(`/products/${productId}/estimate`);
+      const data = response.data;
+
+      const rawBomItems = (data.bom_items || data.bomItems || []) as Array<Record<string, unknown>>;
+
+      return {
+        productId: String(data.product_id || data.productId || productId),
+        productName: String(data.product_name || data.productName || ''),
+        sellingPrice: parseNumber(data.selling_price ?? data.sellingPrice),
+        targetMargin: parseNumber(data.target_margin ?? data.targetMargin),
+        yieldQty: parseNumber(data.yield_qty ?? data.yieldQty, 1),
+        wastePct: parseNumber(data.waste_pct ?? data.wastePct, 0),
+        rawMaterialTotal: parseNumber(data.raw_material_total ?? data.rawMaterialTotal),
+        bomCostPerUnit: parseNumber(data.bom_cost_per_unit ?? data.bomCostPerUnit),
+        bomItems: rawBomItems.map((b) => ({
+          stockId: String(b.stock_id || b.stockId || ''),
+          stockName: String(b.stock_name || b.stockName || ''),
+          quantity: parseNumber(b.quantity),
+          unitCost: parseNumber(b.unit_cost ?? b.unitCost),
+          subtotalCost: parseNumber(b.subtotal_cost ?? b.subtotalCost),
+        })),
+        estimatedHpp: parseNumber(data.estimated_hpp ?? data.estimatedHpp),
+        recommendedPrice: parseNumber(data.recommended_price ?? data.recommendedPrice),
+        actualMargin: parseNumber(data.actual_margin ?? data.actualMargin),
+        actualMarkup: parseNumber(data.actual_markup ?? data.actualMarkup),
+      };
+    } catch {
+      // Mock / fallback calculation if estimate endpoint is offline
+      const prod = LOCAL_PRODUCTS.find((p) => p.id === productId);
+      const yieldQty = prod?.yieldQty && prod.yieldQty > 0 ? prod.yieldQty : 1;
+      const wastePct = prod?.wastePct || 0;
+      const sellingPrice = prod?.sellingPrice || 0;
+      const targetMargin = prod?.targetMargin || 0;
+
+      const bomItems = (prod?.ingredients || []).map((ing) => ({
+        stockId: ing.stockId,
+        stockName: ing.stockName,
+        quantity: ing.quantity,
+        unitCost: ing.unitCost,
+        subtotalCost: ing.subtotalCost,
+      }));
+      const rawMaterialTotal = bomItems.reduce((acc, curr) => acc + curr.subtotalCost, 0);
+      const bomCostPerUnit = (rawMaterialTotal / yieldQty) * (1 + wastePct / 100);
+
+      const estimatedHpp = bomCostPerUnit;
+      const recommendedPrice = estimatedHpp > 0 && targetMargin < 100
+        ? Math.ceil((estimatedHpp / (1 - targetMargin / 100)) / 500) * 500
+        : estimatedHpp * 1.5;
+      const actualMargin = sellingPrice > 0 ? ((sellingPrice - estimatedHpp) / sellingPrice) * 100 : 0;
+      const actualMarkup = estimatedHpp > 0 ? ((sellingPrice - estimatedHpp) / estimatedHpp) * 100 : 0;
+
+      return {
+        productId,
+        productName: prod?.name || 'Produk',
+        sellingPrice,
+        targetMargin,
+        yieldQty,
+        wastePct,
+        rawMaterialTotal,
+        bomCostPerUnit,
+        bomItems,
+        estimatedHpp,
+        recommendedPrice,
+        actualMargin,
+        actualMarkup,
+      };
+    }
   },
 };

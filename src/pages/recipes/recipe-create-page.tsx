@@ -38,7 +38,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { recipeService } from "@/features/recipes/services/recipe-service"
-import type { RawMaterialStock, CreateProductInput } from "@/features/recipes/types"
+import type { RawMaterialStock, CreateProductInput, ProductMode, ProductCategory } from "@/features/recipes/types"
+import { ImageUploadDropzone } from "@/features/recipes/components/image-upload-dropzone"
 
 function formatCurrencyIdr(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -100,10 +101,16 @@ export default function RecipeCreatePage() {
 
   // Form State
   const [name, setName] = React.useState<string>("")
-  const [categoriesList, setCategoriesList] = React.useState<string[]>([])
-  const [category, setCategory] = React.useState<string>("")
+  const [categories, setCategories] = React.useState<ProductCategory[]>([])
+  const [categoryId, setCategoryId] = React.useState<string>("")
   const [customCategory, setCustomCategory] = React.useState<string>("")
   const [unit, setUnit] = React.useState<string>("pcs")
+
+  // Phase 2 New Fields
+  const [mode, setMode] = React.useState<ProductMode>("MAKE_TO_STOCK")
+  const yieldQty = 1
+  const wastePct = 0
+  const [imageUrl, setImageUrl] = React.useState<string | null>(null)
 
   // Target Margin (%) Input by User - Selling Price is derived automatically!
   const [targetMargin, setTargetMargin] = React.useState<number>(50)
@@ -114,9 +121,6 @@ export default function RecipeCreatePage() {
 
   // Ingredient Rows - starts empty from 0
   const [ingredients, setIngredients] = React.useState<IngredientRow[]>([])
-
-  // Overhead percentage option (15% standard)
-  const [overheadPercent, setOverheadPercent] = React.useState<number>(15)
 
   React.useEffect(() => {
     let ignore = false
@@ -137,9 +141,8 @@ export default function RecipeCreatePage() {
       .getCategories()
       .then((cats) => {
         if (!ignore && cats.length > 0) {
-          const names = cats.map((c) => c.name)
-          setCategoriesList(names)
-          setCategory((prev) => (prev ? prev : names[0]))
+          setCategories(cats)
+          setCategoryId(cats[0].id)
         }
       })
       .catch((err) => {
@@ -176,9 +179,9 @@ export default function RecipeCreatePage() {
     setIngredients(ingredients.filter((_, idx) => idx !== index))
   }
 
-  // Live Calculations (Automatic Price Derivation from HPP and Margin %)
+  // Live Calculations (Automatic Price Derivation from Yield, Waste%, Overheads, and Margin %)
   const calculations = React.useMemo(() => {
-    let totalBOM = 0
+    let totalRawMaterials = 0
     const items = ingredients.map((row) => {
       const mat = availableMaterials.find((m) => m.id === row.stockId)
       const baseCost = mat ? mat.avgCostPerUnit : 0
@@ -187,7 +190,7 @@ export default function RecipeCreatePage() {
       const activeUnit = row.recipeUnit || fallbackUnit
       const unitCost = getCostPerRecipeUnit(baseCost, activeUnit, mat?.baseUnit)
       const subtotal = row.quantity * unitCost
-      totalBOM += subtotal
+      totalRawMaterials += subtotal
       return {
         ...row,
         material: mat,
@@ -197,15 +200,18 @@ export default function RecipeCreatePage() {
       }
     })
 
-    const overheadCost = (totalBOM * overheadPercent) / 100
-    const estimatedHPP = totalBOM + overheadCost
+    const safeYield = yieldQty > 0 ? yieldQty : 1
+    const safeWaste = wastePct >= 0 ? wastePct : 0
 
-    // Margin Pricing Formula:
-    // Selling Price = HPP / (1 - Margin% / 100)
+    // BOM cost per unit = (totalRawMaterials / safeYield) * (1 + safeWaste / 100)
+    const bomCostPerUnit = (totalRawMaterials / safeYield) * (1 + safeWaste / 100)
+    const estimatedHPP = bomCostPerUnit
+
+    // Margin Pricing Formula: Selling Price = HPP / (1 - Margin% / 100)
     const safeMargin = Math.min(95, Math.max(1, targetMargin))
     const rawPrice = estimatedHPP > 0 ? estimatedHPP / (1 - safeMargin / 100) : 0
 
-    // Rounding to standard retail denomination (Rp 500, Rp 100, or Exact)
+    // Rounding
     const calculatedPrice = roundMode > 1
       ? Math.ceil(rawPrice / roundMode) * roundMode
       : Math.round(rawPrice)
@@ -214,23 +220,28 @@ export default function RecipeCreatePage() {
     const actualMarginPercent = calculatedPrice > 0
       ? (grossProfit / calculatedPrice) * 100
       : safeMargin
+    const actualMarkupPercent = estimatedHPP > 0
+      ? (grossProfit / estimatedHPP) * 100
+      : 0
 
     return {
       items,
-      totalBOM,
-      overheadCost,
+      totalRawMaterials,
+      bomCostPerUnit,
+      overheadCostPerUnit: 0,
       estimatedHPP,
       rawPrice,
       calculatedPrice,
       grossProfit,
       actualMarginPercent: Math.round(actualMarginPercent * 10) / 10,
+      actualMarkupPercent: Math.round(actualMarkupPercent * 10) / 10,
     }
-  }, [ingredients, availableMaterials, overheadPercent, targetMargin, roundMode])
+  }, [name, ingredients, availableMaterials, yieldQty, wastePct, targetMargin, roundMode])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) {
-      setError("Nama produk / resep wajib diisi")
+      setError("Nama produk wajib diisi")
       return
     }
 
@@ -252,13 +263,20 @@ export default function RecipeCreatePage() {
     setError("")
 
     try {
-      const activeCategory = (category === "Custom" || categoriesList.length === 0)
+      const selectedCat = categories.find((c) => c.id === categoryId)
+      const activeCategoryName = categoryId === "Custom"
         ? (customCategory.trim() || "Umum")
-        : (category || customCategory.trim() || "Umum")
+        : (selectedCat?.name || customCategory.trim() || "Umum")
+
       const payload: CreateProductInput = {
         name: name.trim(),
-        category: activeCategory,
+        category: activeCategoryName,
+        categoryId: categoryId !== "Custom" ? categoryId : undefined,
         unit: unit.trim() || "pcs",
+        mode,
+        yieldQty: Number(yieldQty) || 1,
+        wastePct: Number(wastePct) || 0,
+        imageUrl,
         sellingPrice: calculations.calculatedPrice,
         targetMargin: Number(targetMargin),
         minStock: Number(minStock) || 10,
@@ -374,7 +392,7 @@ export default function RecipeCreatePage() {
               {/* Product Name */}
               <div className="space-y-1.5">
                 <Label htmlFor="name" className="text-xs font-semibold">
-                  Nama Produk / Resep <span className="text-red-500">*</span>
+                  Nama Produk <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -387,32 +405,32 @@ export default function RecipeCreatePage() {
               </div>
 
               {/* Category Selection */}
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 pt-1">
                 <Label className="text-xs font-semibold">Kategori Produk</Label>
-                {categoriesList.length > 0 && (
+                {categories.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {categoriesList.map((cat) => (
+                    {categories.map((cat) => (
                       <button
                         type="button"
-                        key={cat}
+                        key={cat.id}
                         onClick={() => {
-                          setCategory(cat)
+                          setCategoryId(cat.id)
                           setCustomCategory("")
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                          category === cat
+                          categoryId === cat.id
                             ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
                             : "bg-muted/40 hover:bg-muted text-muted-foreground border-border"
                         }`}
                       >
-                        {cat}
+                        {cat.name}
                       </button>
                     ))}
                     <button
                       type="button"
-                      onClick={() => setCategory("Custom")}
+                      onClick={() => setCategoryId("Custom")}
                       className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                        category === "Custom"
+                        categoryId === "Custom"
                           ? "bg-primary text-primary-foreground border-primary shadow-xs font-semibold"
                           : "bg-muted/40 hover:bg-muted text-muted-foreground border-border"
                       }`}
@@ -421,7 +439,7 @@ export default function RecipeCreatePage() {
                     </button>
                   </div>
                 )}
-                {(category === "Custom" || categoriesList.length === 0) && (
+                {(categoryId === "Custom" || categories.length === 0) && (
                   <Input
                     placeholder="Tulis nama kategori produk (misal: Roti, Minuman)..."
                     value={customCategory}
@@ -429,6 +447,71 @@ export default function RecipeCreatePage() {
                     className="rounded-xl h-9 text-xs mt-2"
                   />
                 )}
+              </div>
+
+              {/* Product Photo Upload */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Foto Produk</Label>
+                <ImageUploadDropzone
+                  value={imageUrl}
+                  onChange={(url) => setImageUrl(url)}
+                  disabled={submitting}
+                />
+              </div>
+
+              {/* Product Mode Toggle */}
+              <div className="space-y-1.5 pt-1">
+                <Label className="text-xs font-semibold">Model Produksi (Product Mode)</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMode("MAKE_TO_STOCK")}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      mode === "MAKE_TO_STOCK"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-foreground">Make to Stock (MTS)</span>
+                      <Badge variant="outline" className="text-[10px] font-mono">MTS</Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                      Diproduksi massal untuk stok etalase/rak sebelum ada pesanan pelanggan.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMode("MAKE_TO_ORDER")}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      mode === "MAKE_TO_ORDER"
+                        ? "border-purple-600 bg-purple-50 ring-1 ring-purple-600 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-foreground">Make to Order (MTO)</span>
+                      <Badge variant="outline" className="text-[10px] font-mono text-purple-700 border-purple-200">MTO</Badge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                      Dibuat berdasarkan pesanan (custom cake, katering, pre-order).
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Metode Pengurangan Stok (FIFO) */}
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-xs text-blue-900 flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                <div className="space-y-0.5">
+                  <div className="font-semibold text-blue-950 flex items-center gap-1.5">
+                    Metode Pengurangan Stok: <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 font-mono text-[10px] px-1.5 py-0">FIFO</Badge>
+                  </div>
+                  <p className="text-[11px] text-blue-800 leading-relaxed">
+                    Pengurangan stok bahan baku dan batch produk otomatis menggunakan sistem <strong>First In, First Out (FIFO)</strong> berdasarkan tanggal penerimaan/produksi terlama.
+                  </p>
+                </div>
               </div>
 
               {/* Satuan Jual & Batas Minimum Stok */}
@@ -710,9 +793,9 @@ export default function RecipeCreatePage() {
               <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/50">
                 <span>Total item bahan: {ingredients.length}</span>
                 <span className="font-medium text-foreground">
-                  Subtotal Bahan Baku:{" "}
+                  Subtotal Bahan per Batch:{" "}
                   <strong className="text-primary font-mono text-sm">
-                    {formatCurrencyIdr(calculations.totalBOM)}
+                    {formatCurrencyIdr(calculations.totalRawMaterials)}
                   </strong>
                 </span>
               </div>
@@ -731,13 +814,13 @@ export default function RecipeCreatePage() {
                     3. Perhitungan HPP & Penetapan Margin
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Setelah bahan baku diinput, tetapkan target margin keuntungan untuk menghasilkan harga jual ideal per 1 {unit}.
+                    Setelah bahan baku diatur, tetapkan target margin untuk menghasilkan harga jual optimal per 1 {unit}. Biaya overhead dihitung dinamis saat batch produksi.
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-5 space-y-4">
-              {calculations.totalBOM === 0 ? (
+              {calculations.totalRawMaterials === 0 ? (
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
                   <Info className="h-4 w-4 shrink-0" />
                   <span>
@@ -747,58 +830,28 @@ export default function RecipeCreatePage() {
               ) : null}
 
               {/* Ringkasan Biaya Dasar */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60">
                   <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
-                    Biaya Bahan Baku (BOM)
+                    Bahan Baku (BOM / Unit)
                   </span>
                   <span className="text-lg font-mono font-bold text-foreground block mt-0.5">
-                    {formatCurrencyIdr(calculations.totalBOM)}
+                    {formatCurrencyIdr(calculations.bomCostPerUnit)}
                   </span>
                   <span className="text-[10px] text-muted-foreground block mt-0.5">
-                    per 1 {unit} produk
+                    Metode Stok: FIFO
                   </span>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">
-                      Estimasi Overhead
-                    </span>
-                    <span className="text-[10px] font-mono font-bold text-amber-600">
-                      +{overheadPercent}%
-                    </span>
-                  </div>
-                  <span className="text-lg font-mono font-bold text-amber-600 block mt-0.5">
-                    +{formatCurrencyIdr(calculations.overheadCost)}
-                  </span>
-                  <div className="flex items-center gap-1 mt-1.5">
-                    {[10, 15, 20].map((pct) => (
-                      <button
-                        type="button"
-                        key={pct}
-                        onClick={() => setOverheadPercent(pct)}
-                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md border transition-all ${
-                          overheadPercent === pct
-                            ? "bg-amber-500 text-white border-amber-600 font-bold"
-                            : "bg-background text-muted-foreground border-border hover:bg-muted"
-                        }`}
-                      >
-                        {pct}%
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20">
                   <span className="text-[10px] text-primary uppercase font-bold tracking-wider block">
-                    Total HPP per {unit}
+                    Estimasi HPP per {unit}
                   </span>
                   <span className="text-lg font-mono font-black text-primary block mt-0.5">
                     {formatCurrencyIdr(calculations.estimatedHPP)}
                   </span>
                   <span className="text-[10px] text-primary/80 block mt-0.5">
-                    Modal Bersih (BOM + Overhead)
+                    HPP Bahan Baku (BOM)
                   </span>
                 </div>
               </div>
@@ -936,101 +989,29 @@ export default function RecipeCreatePage() {
                 </div>
               </div>
 
-              {/* Cost Breakdown */}
-              <div className="space-y-2.5 pt-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-slate-400" />
-                    Biaya Bahan Baku (BOM):
-                  </span>
-                  <span className="font-mono font-bold text-foreground">
-                    {formatCurrencyIdr(calculations.totalBOM)}
-                  </span>
-                </div>
 
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                    Estimasi Overhead (+{overheadPercent}%):
-                  </span>
-                  <span className="font-mono font-bold text-amber-600">
-                    +{formatCurrencyIdr(calculations.overheadCost)}
-                  </span>
-                </div>
-
-                {/* Overhead percentage buttons */}
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  <span className="text-[10px] text-muted-foreground">Opsi Overhead:</span>
-                  {[10, 15, 20].map((pct) => (
+              {/* Rounding option toggle */}
+              <div className="flex items-center justify-between pt-1 text-xs">
+                <span className="text-[10px] text-muted-foreground">Pembulatan Harga:</span>
+                <div className="flex items-center gap-1">
+                  {[
+                    { label: "Rp 500", val: 500 },
+                    { label: "Rp 100", val: 100 },
+                    { label: "Eksak", val: 1 },
+                  ].map((r) => (
                     <button
                       type="button"
-                      key={pct}
-                      onClick={() => setOverheadPercent(pct)}
+                      key={r.label}
+                      onClick={() => setRoundMode(r.val)}
                       className={`text-[10px] font-mono px-2 py-0.5 rounded-md border transition-all ${
-                        overheadPercent === pct
-                          ? "bg-amber-500 text-white border-amber-600 font-bold"
+                        roundMode === r.val
+                          ? "bg-primary text-primary-foreground border-primary font-bold"
                           : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
                       }`}
                     >
-                      {pct}%
+                      {r.label}
                     </button>
                   ))}
-                </div>
-
-                <div className="h-[1px] bg-border my-2" />
-
-                <div className="flex items-center justify-between text-sm pt-0.5">
-                  <span className="font-bold text-foreground">
-                    Estimasi Total HPP:
-                  </span>
-                  <span className="font-mono font-black text-base text-primary">
-                    {formatCurrencyIdr(calculations.estimatedHPP)}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Target Margin:</span>
-                  <span className="font-mono font-bold text-primary">
-                    {targetMargin}%
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-bold text-foreground">
-                    Estimasi Laba Kotor:
-                  </span>
-                  <span
-                    className={`font-mono font-black text-base ${
-                      calculations.grossProfit > 0 ? "text-emerald-600" : "text-destructive"
-                    }`}
-                  >
-                    +{formatCurrencyIdr(calculations.grossProfit)} / {unit}
-                  </span>
-                </div>
-
-                {/* Rounding option toggle */}
-                <div className="flex items-center justify-between pt-1 text-xs">
-                  <span className="text-[10px] text-muted-foreground">Pembulatan Harga:</span>
-                  <div className="flex items-center gap-1">
-                    {[
-                      { label: "Rp 500", val: 500 },
-                      { label: "Rp 100", val: 100 },
-                      { label: "Eksak", val: 1 },
-                    ].map((r) => (
-                      <button
-                        type="button"
-                        key={r.label}
-                        onClick={() => setRoundMode(r.val)}
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-md border transition-all ${
-                          roundMode === r.val
-                            ? "bg-primary text-primary-foreground border-primary font-bold"
-                            : "bg-muted text-muted-foreground border-border hover:bg-muted/80"
-                        }`}
-                      >
-                        {r.label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
 
@@ -1073,7 +1054,7 @@ export default function RecipeCreatePage() {
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Total Biaya Bahan:</span>
                     <span className="font-mono font-semibold">
-                      {formatCurrencyIdr(calculations.totalBOM * 50)}
+                      {formatCurrencyIdr(calculations.bomCostPerUnit * 50)}
                     </span>
                   </div>
                   <div>

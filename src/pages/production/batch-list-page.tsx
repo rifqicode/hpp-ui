@@ -1,28 +1,27 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Factory,
   Plus,
   Search,
   CheckCircle2,
   Clock,
   AlertTriangle,
   XCircle,
-  TrendingUp,
   MoreVertical,
   Check,
   RotateCcw,
   Loader2,
+  RefreshCw,
+  X,
+  History,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card"
+import { TablePagination } from "@/components/ui/table-pagination"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -41,20 +40,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
 import { productionService } from "@/features/production/services/production-service"
 import type {
   ProductionBatch,
   CompleteProductionInput,
+  ProductionOverheadDetail,
 } from "@/features/production/types"
+import { overheadService } from "@/features/overheads/services/overhead-service"
+import type { OverheadType } from "@/features/overheads/types"
 
 function formatCurrencyIdr(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -87,13 +81,11 @@ export default function BatchListPage() {
   // Modal: Complete Production
   const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
   const [batchToComplete, setBatchToComplete] = React.useState<ProductionBatch | null>(null)
+  const [activeOverheads, setActiveOverheads] = React.useState<OverheadType[]>([])
+  const [completeOverheadItems, setCompleteOverheadItems] = React.useState<ProductionOverheadDetail[]>([])
   const [completeData, setCompleteData] = React.useState<CompleteProductionInput>({
     goodQuantity: 0,
     wasteQuantity: 0,
-    overheadLabor: 15000,
-    overheadEnergy: 10000,
-    overheadPackaging: 12000,
-    overheadOther: 0,
     notes: "",
   })
   const [completeError, setCompleteError] = React.useState<string>("")
@@ -105,27 +97,33 @@ export default function BatchListPage() {
 
   const [submitting, setSubmitting] = React.useState<boolean>(false)
 
-  React.useEffect(() => {
-    let ignore = false
-    productionService.getBatches()
-      .then((bList) => {
-        if (!ignore) {
-          setBatches(bList)
-          setLoading(false)
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load batch data:", err)
-        if (!ignore) setLoading(false)
-      })
+  // Pagination
+  const [page, setPage] = React.useState(1)
+  const pageSize = 10
 
-    return () => {
-      ignore = true
+  const fetchBatchData = React.useCallback(async () => {
+    setLoading(true)
+    try {
+      const [bList, ohList] = await Promise.all([
+        productionService.getBatches(),
+        overheadService.getOverheads({ activeOnly: true, category: 'PRODUCTION' }),
+      ])
+      setBatches(bList)
+      setActiveOverheads(ohList)
+    } catch (err) {
+      console.error("Failed to load batch data:", err)
+    } finally {
+      setLoading(false)
     }
   }, [])
 
+  React.useEffect(() => {
+    fetchBatchData()
+  }, [fetchBatchData])
+
   // Aggregate statistics
   const stats = React.useMemo(() => {
+    const queuedCount = batches.filter((b) => b.status === "QUEUED").length
     const activeCount = batches.filter((b) => b.status === "IN_PROGRESS").length
     const completedList = batches.filter((b) => b.status === "COMPLETED")
     const completedCount = completedList.length
@@ -142,7 +140,7 @@ export default function BatchListPage() {
 
     const avgYield = totalTarget > 0 ? Math.round((totalGood / totalTarget) * 1000) / 10 : 100
 
-    return { activeCount, completedCount, avgYield, totalSpent }
+    return { queuedCount, activeCount, completedCount, avgYield, totalSpent }
   }, [batches])
 
   // Filtered batches
@@ -158,21 +156,59 @@ export default function BatchListPage() {
     })
   }, [batches, search, statusFilter])
 
+  // Paginated batches
+  const totalPages = Math.ceil(filteredBatches.length / pageSize) || 1
+  const paginatedBatches = React.useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredBatches.slice(start, start + pageSize)
+  }, [filteredBatches, page, pageSize])
+
   // In-progress list
   const activeBatches = React.useMemo(() => {
     return batches.filter((b) => b.status === "IN_PROGRESS")
   }, [batches])
 
+  // Queued list (MTO / Pesanan Baru)
+  const queuedBatches = React.useMemo(() => {
+    return batches.filter((b) => b.status === "QUEUED")
+  }, [batches])
+
+  // Pickup Batch Handler
+  async function handlePickupBatch(batchId: string) {
+    try {
+      const updated = await productionService.pickupProduction(batchId)
+      setBatches((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+    } catch (err) {
+      console.error("Failed to pickup production batch:", err)
+    }
+  }
+
   // Open complete modal
   function openCompleteDialog(batch: ProductionBatch) {
     setBatchToComplete(batch)
+
+    // Build initial overhead items
+    let initialOhs: ProductionOverheadDetail[] = []
+    if (batch.recipeSnapshot?.overheads && batch.recipeSnapshot.overheads.length > 0) {
+      initialOhs = batch.recipeSnapshot.overheads.map((so) => ({
+        overheadTypeId: so.overhead_type_id,
+        name: so.name,
+        amount: so.amount || 0,
+      }))
+    } else if (activeOverheads.length > 0) {
+      initialOhs = activeOverheads
+        .filter((ao) => !ao.category || ao.category === "PRODUCTION")
+        .map((ao) => ({
+          overheadTypeId: ao.id,
+          name: ao.name,
+          amount: ao.defaultAmount || 0,
+        }))
+    }
+
+    setCompleteOverheadItems(initialOhs)
     setCompleteData({
       goodQuantity: batch.targetQuantity,
       wasteQuantity: 0,
-      overheadLabor: 15000,
-      overheadEnergy: 10000,
-      overheadPackaging: 12000,
-      overheadOther: 0,
       notes: "",
     })
     setCompleteError("")
@@ -191,7 +227,11 @@ export default function BatchListPage() {
     setSubmitting(true)
     setCompleteError("")
     try {
-      const completed = await productionService.completeProduction(batchToComplete.id, completeData)
+      const payload: CompleteProductionInput = {
+        ...completeData,
+        overheads: completeOverheadItems,
+      }
+      const completed = await productionService.completeProduction(batchToComplete.id, payload)
       setBatches((prev) => prev.map((b) => (b.id === completed.id ? completed : b)))
       setIsCompleteOpen(false)
       setBatchToComplete(null)
@@ -224,11 +264,7 @@ export default function BatchListPage() {
 
   // Calculations for Complete modal
   const completeStockCost = batchToComplete ? batchToComplete.stockCost : 0
-  const completeOverheadTotal =
-    (completeData.overheadLabor || 0) +
-    (completeData.overheadEnergy || 0) +
-    (completeData.overheadPackaging || 0) +
-    (completeData.overheadOther || 0)
+  const completeOverheadTotal = completeOverheadItems.reduce((acc, it) => acc + (it.amount || 0), 0)
   const completeTotalCost = completeStockCost + completeOverheadTotal
   const completeHppPerUnit = completeData.goodQuantity > 0 ? Math.round(completeTotalCost / completeData.goodQuantity) : 0
   const completeSellingPrice = batchToComplete?.sellingPrice || 0
@@ -236,111 +272,198 @@ export default function BatchListPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-16 animate-in fade-in duration-500">
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary">
+            <History className="h-6 w-6" />
+          </div>
+          <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Dapur Produksi & Batch HPP
             </h1>
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
-              Live Cooking
-            </Badge>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Pantau batch yang sedang berjalan, input hasil panen (yield), dan hitung HPP aktual otomatis berbasis FIFO
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Pantau batch yang sedang berjalan, input hasil panen (yield), dan hitung HPP aktual otomatis berbasis FIFO.
-          </p>
         </div>
 
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchBatchData}
+            disabled={loading}
+            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Segarkan
+          </Button>
           <Button
             onClick={() => navigate("/production/batches/new")}
-            className="rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2 h-10"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
           >
             <Plus className="h-4 w-4" />
-            <span>Mulai Batch Baru</span>
+            Mulai Batch Baru
           </Button>
+        </div>
       </div>
 
-      {/* 4 Summary Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Batch di Dapur
-              </CardDescription>
-              <div className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+      {/* KPI / Metric Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Card 1: Total Batch */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Total Batch Produksi</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-foreground">
+                  {batches.length}
+                </span>
+                <span className="text-xs text-muted-foreground">batch tercatat</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-black font-mono mt-1 text-foreground flex items-baseline gap-1.5">
-              {stats.activeCount}{" "}
-              <span className="text-xs font-semibold text-muted-foreground">batch aktif</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Sedang proses memasak/oven</p>
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+              <History className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Batch Selesai
-              </CardDescription>
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
-                <CheckCircle2 className="h-4 w-4" />
+        {/* Card 2: Sedang Berjalan */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Sedang Berjalan</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                  {stats.activeCount}
+                </span>
+                <span className="text-xs text-muted-foreground">di dapur aktif</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-black font-mono text-foreground mt-1">
-              {stats.completedCount}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Stok jadi masuk ke gudang</p>
+            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+              <Clock className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Rata-rata Yield
-              </CardDescription>
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600">
-                <TrendingUp className="h-4 w-4" />
+        {/* Card 3: Selesai */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Batch Selesai</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                  {stats.completedCount}
+                </span>
+                <span className="text-xs text-muted-foreground">yield {stats.avgYield}%</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-black font-mono text-emerald-600 mt-1">
-              {stats.avgYield}%
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Tingkat keberhasilan adonan</p>
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card">
-          <CardHeader className="p-4 pb-1">
-            <div className="flex items-center justify-between">
-              <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Akumulasi Modal
-              </CardDescription>
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                <Factory className="h-4 w-4" />
+        {/* Card 4: Dibatalkan */}
+        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Dibatalkan / Void</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
+                  {batches.filter((b) => b.status === "CANCELLED" || b.status === "VOID").length}
+                </span>
+                <span className="text-xs text-muted-foreground">batch batal</span>
               </div>
             </div>
-            <CardTitle className="text-xl font-black font-mono text-foreground mt-1 truncate">
-              {formatCurrencyIdr(stats.totalSpent)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-1">
-            <p className="text-xs text-muted-foreground">Total biaya produksi selesai</p>
+            <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
+              <XCircle className="h-5 w-5" />
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* SECTION: QUEUED BATCHES (MTO & ANTREAN PESANAN BARU) */}
+      {(statusFilter === "ALL" || statusFilter === "QUEUED") && queuedBatches.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full bg-purple-500 animate-pulse" />
+              <h2 className="text-base font-bold text-foreground">Antrean Pesanan Masuk (Make-to-Order)</h2>
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-300 font-mono text-xs font-bold">
+                {queuedBatches.length} Antrean
+              </Badge>
+            </div>
+            <span className="text-xs text-muted-foreground">Klik 'Mulai Proses' untuk mulai memasak</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {queuedBatches.map((batch) => (
+              <Card
+                key={batch.id}
+                onClick={() => navigate(`/production/batches/${batch.id}`)}
+                className="rounded-2xl border-purple-200/90 shadow-sm hover:shadow-md hover:border-purple-400 transition-all duration-200 overflow-hidden bg-purple-50/20 cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="p-5 pb-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">
+                        {batch.batchNumber}
+                      </span>
+                      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 text-[11px] font-bold">
+                        Antrean Dapur
+                      </Badge>
+                    </div>
+
+                    <h3 className="text-base font-bold text-foreground group-hover:text-purple-700 transition-colors mt-2.5 line-clamp-1">
+                      {batch.productName}
+                    </h3>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground/80" />
+                      {formatElapsedTime(batch.startedAt)}
+                    </p>
+                  </div>
+
+                  <div className="px-5 py-3 bg-white/80 border-y border-purple-100 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Jumlah Pesanan</span>
+                      <span className="font-mono font-bold text-sm text-foreground">
+                        {batch.targetQuantity} {batch.productUnit}
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-muted-foreground block text-[11px]">Tipe Produksi</span>
+                      <span className="font-bold text-xs text-purple-700">
+                        {batch.saleId ? 'Pesanan Kasir (MTO)' : 'Rencana Produksi'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {batch.notes && (
+                    <div className="p-5 py-2 text-xs text-muted-foreground line-clamp-1 italic">
+                      "{batch.notes}"
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 pt-2 border-t border-purple-100 bg-white flex items-center gap-2">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handlePickupBatch(batch.id)
+                    }}
+                    className="flex-1 rounded-xl h-9 text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
+                  >
+                    <Clock className="h-3.5 w-3.5 mr-1.5" /> Mulai Proses (Pickup)
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* SECTION: ACTIVE BATCHES IN PROGRESS (DAPUR LANGSUNG) */}
       {(statusFilter === "ALL" || statusFilter === "IN_PROGRESS") && activeBatches.length > 0 && (
@@ -452,54 +575,67 @@ export default function BatchListPage() {
         </div>
       )}
 
-      {/* FILTER & SEARCH TOOLBAR */}
-      <Card className="rounded-2xl border-slate-200/80 shadow-sm">
-        <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Cari nomor batch, produk, catatan..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 rounded-xl h-10 text-sm bg-muted/20"
-            />
-          </div>
+      {/* Standalone Search & Filter Bar */}
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari nomor batch, produk, catatan..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(1)
+            }}
+            className="pl-9 bg-background/50 h-9 text-xs"
+          />
+          {search && (
+            <button
+              onClick={() => {
+                setSearch("")
+                setPage(1)
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-            {[
-              { key: "ALL", label: "Semua Batch", count: batches.length },
-              { key: "IN_PROGRESS", label: "Dapur Aktif", count: stats.activeCount },
-              { key: "COMPLETED", label: "Selesai (HPP)", count: stats.completedCount },
-              { key: "CANCELLED", label: "Dibatalkan", count: batches.filter((b) => b.status === "CANCELLED").length },
-            ].map((tab) => (
-              <Button
-                key={tab.key}
-                type="button"
-                size="sm"
-                variant={statusFilter === tab.key ? "default" : "outline"}
-                onClick={() => setStatusFilter(tab.key)}
-                className={`rounded-xl text-xs font-semibold h-8 transition-all shrink-0 ${
+        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto">
+          {[
+            { key: "ALL", label: "Semua", count: batches.length },
+            { key: "QUEUED", label: "Antrean MTO", count: stats.queuedCount },
+            { key: "IN_PROGRESS", label: "Dapur Aktif", count: stats.activeCount },
+            { key: "COMPLETED", label: "Selesai", count: stats.completedCount },
+            { key: "CANCELLED", label: "Batal", count: batches.filter((b) => b.status === "CANCELLED" || b.status === "VOID").length },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => {
+                setStatusFilter(tab.key)
+                setPage(1)
+              }}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+                statusFilter === tab.key
+                  ? "bg-background text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
                   statusFilter === tab.key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "hover:bg-muted/50 border-slate-200 text-muted-foreground"
+                    ? "bg-primary/10 text-primary"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
-                <span>{tab.label}</span>
-                <span
-                  className={`ml-1.5 text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
-                    statusFilter === tab.key
-                      ? "bg-white/20 text-white"
-                      : "bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* FULL BATCH TABLE */}
       {loading ? (
@@ -508,11 +644,11 @@ export default function BatchListPage() {
           <p className="text-sm text-muted-foreground font-medium">Memuat data batch produksi...</p>
         </div>
       ) : filteredBatches.length === 0 ? (
-        <Card className="rounded-2xl border-dashed border-2 p-12 text-center flex flex-col items-center justify-center bg-muted/10">
-          <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4">
-            <Factory className="h-7 w-7" />
+        <div className="flex flex-col items-center justify-center p-12 sm:p-16 text-center rounded-2xl border-2 border-dashed border-border bg-card/60 shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">
+            <History className="h-8 w-8" />
           </div>
-          <h3 className="text-lg font-bold text-foreground">Tidak ada data batch produksi</h3>
+          <h2 className="text-lg font-semibold text-foreground">Tidak Ada Data Batch Produksi</h2>
           <p className="text-sm text-muted-foreground max-w-md mt-1 mb-6">
             {search || statusFilter !== "ALL"
               ? "Tidak ada batch yang cocok dengan kata kunci atau filter status saat ini."
@@ -520,164 +656,195 @@ export default function BatchListPage() {
           </p>
           <Button
             onClick={() => navigate("/production/batches/new")}
-            className="rounded-xl flex items-center gap-2"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs"
           >
             <Plus className="h-4 w-4" />
-            <span>Mulai Batch Pertama</span>
+            Mulai Batch Pertama
           </Button>
-        </Card>
+        </div>
       ) : (
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm overflow-hidden w-full bg-card">
-          <Table>
-            <TableHeader className="bg-slate-50/80">
-              <TableRow>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Nomor Batch & Waktu</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Produk Jadi</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Hasil Produksi (Yield)</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Biaya Bahan (BOM)</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Biaya Overhead</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">HPP per Unit</TableHead>
-                <TableHead className="font-bold text-xs uppercase text-muted-foreground">Status</TableHead>
-                <TableHead className="text-right font-bold text-xs uppercase text-muted-foreground">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBatches.map((batch) => {
-                const yieldRate = batch.goodQuantity && batch.targetQuantity > 0
-                  ? Math.round((batch.goodQuantity / batch.targetQuantity) * 1000) / 10
-                  : null
+        <div className="space-y-4">
+          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
+                  <tr>
+                    <th className="px-5 py-3.5">Nomor Batch & Waktu</th>
+                    <th className="px-5 py-3.5">Produk Jadi</th>
+                    <th className="px-5 py-3.5">Hasil Produksi (Yield)</th>
+                    <th className="px-5 py-3.5">Biaya Bahan (BOM)</th>
+                    <th className="px-5 py-3.5">Biaya Overhead</th>
+                    <th className="px-5 py-3.5">HPP per Unit</th>
+                    <th className="px-5 py-3.5">Status</th>
+                    <th className="px-5 py-3.5 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/70">
+                  {paginatedBatches.map((batch) => {
+                    const yieldRate = batch.goodQuantity && batch.targetQuantity > 0
+                      ? Math.round((batch.goodQuantity / batch.targetQuantity) * 1000) / 10
+                      : null
 
-                return (
-                  <TableRow
-                    key={batch.id}
-                    onClick={() => navigate(`/production/batches/${batch.id}`)}
-                    className="hover:bg-primary/5 cursor-pointer transition-colors"
-                  >
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-mono font-bold text-sm text-foreground">
-                          {batch.batchNumber}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {new Date(batch.startedAt).toLocaleDateString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-                    </TableCell>
+                    return (
+                      <tr
+                        key={batch.id}
+                        onClick={() => navigate(`/production/batches/${batch.id}`)}
+                        className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="flex flex-col">
+                            <span className="font-mono font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                              {batch.batchNumber}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {new Date(batch.startedAt).toLocaleDateString("id-ID", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                        </td>
 
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-sm text-foreground">
-                          {batch.productName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {batch.productCategory} • Satuan: {batch.productUnit}
-                        </span>
-                      </div>
-                    </TableCell>
+                        <td className="px-5 py-3.5">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-sm text-foreground">
+                              {batch.productName}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {batch.productCategory || "Tanpa Kategori"} • Satuan: {batch.productUnit}
+                            </span>
+                          </div>
+                        </td>
 
-                    <TableCell>
-                      {batch.status === "COMPLETED" ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono font-bold text-sm text-foreground">
-                            {batch.goodQuantity} {batch.productUnit}
-                            {batch.wasteQuantity ? (
-                              <span className="text-xs font-normal text-amber-600 ml-1">
-                                (Afkir: {batch.wasteQuantity})
+                        <td className="px-5 py-3.5">
+                          {batch.status === "COMPLETED" ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-mono font-bold text-sm text-foreground">
+                                {batch.goodQuantity} {batch.productUnit}
+                                {batch.wasteQuantity ? (
+                                  <span className="text-xs font-normal text-amber-600 dark:text-amber-400 ml-1">
+                                    (Afkir: {batch.wasteQuantity})
+                                  </span>
+                                ) : null}
                               </span>
-                            ) : null}
-                          </span>
-                          <span className="text-[11px] text-emerald-600 font-semibold">
-                            Yield: {yieldRate}%
-                          </span>
-                        </div>
-                      ) : batch.status === "IN_PROGRESS" ? (
-                        <span className="font-mono text-sm text-muted-foreground">
-                          Target: {batch.targetQuantity} {batch.productUnit}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-red-600">Dibatalkan</span>
-                      )}
-                    </TableCell>
+                              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                                Yield: {yieldRate}%
+                              </span>
+                            </div>
+                          ) : batch.status === "IN_PROGRESS" ? (
+                            <span className="font-mono text-sm text-muted-foreground">
+                              Target: {batch.targetQuantity} {batch.productUnit}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-rose-600 dark:text-rose-400">Dibatalkan</span>
+                          )}
+                        </td>
 
-                    <TableCell className="font-mono font-bold text-sm text-slate-800">
-                      {formatCurrencyIdr(batch.stockCost)}
-                    </TableCell>
+                        <td className="px-5 py-3.5 font-mono font-bold text-sm text-foreground">
+                          {formatCurrencyIdr(batch.stockCost)}
+                        </td>
 
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      {batch.overheadCost ? formatCurrencyIdr(batch.overheadCost) : "-"}
-                    </TableCell>
+                        <td className="px-5 py-3.5 font-mono text-sm text-muted-foreground">
+                          {batch.overheadCost ? formatCurrencyIdr(batch.overheadCost) : "-"}
+                        </td>
 
-                    <TableCell>
-                      {batch.hppPerUnit ? (
-                        <div className="flex flex-col">
-                          <span className="font-mono font-black text-sm text-primary">
-                            {formatCurrencyIdr(batch.hppPerUnit)}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            Jual: {formatCurrencyIdr(batch.sellingPrice)}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">Menunggu panen</span>
-                      )}
-                    </TableCell>
+                        <td className="px-5 py-3.5">
+                          {batch.hppPerUnit ? (
+                            <div className="flex flex-col">
+                              <span className="font-mono font-black text-sm text-primary">
+                                {formatCurrencyIdr(batch.hppPerUnit)}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">
+                                per {batch.productUnit}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Menunggu panen</span>
+                          )}
+                        </td>
 
-                    <TableCell>
-                      {batch.status === "IN_PROGRESS" && (
-                        <Badge variant="warning" className="text-[10px] font-bold flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> Berjalan
-                        </Badge>
-                      )}
-                      {batch.status === "COMPLETED" && (
-                        <Badge variant="success" className="text-[10px] font-bold flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" /> Selesai
-                        </Badge>
-                      )}
-                      {batch.status === "CANCELLED" && (
-                        <Badge variant="destructive" className="text-[10px] font-bold flex items-center gap-1">
-                          <XCircle className="h-3 w-3" /> Batal
-                        </Badge>
-                      )}
-                    </TableCell>
+                        <td className="px-5 py-3.5">
+                          {batch.status === "QUEUED" && (
+                            <Badge variant="outline" className="text-xs font-semibold bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 flex items-center gap-1 w-fit">
+                              <Clock className="h-3 w-3" /> Antrean Dapur
+                            </Badge>
+                          )}
+                          {batch.status === "IN_PROGRESS" && (
+                            <Badge variant="outline" className="text-xs font-semibold bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 flex items-center gap-1 w-fit">
+                              <Clock className="h-3 w-3" /> Berjalan
+                            </Badge>
+                          )}
+                          {batch.status === "COMPLETED" && (
+                            <Badge variant="outline" className="text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 flex items-center gap-1 w-fit">
+                              <CheckCircle2 className="h-3 w-3" /> Selesai
+                            </Badge>
+                          )}
+                          {(batch.status === "CANCELLED" || batch.status === "VOID") && (
+                            <Badge variant="outline" className="text-xs font-semibold bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 flex items-center gap-1 w-fit">
+                              <XCircle className="h-3 w-3" /> {batch.status === "VOID" ? "Void" : "Batal"}
+                            </Badge>
+                          )}
+                        </td>
 
-                    <TableCell className="text-right">
-                      {batch.status === "IN_PROGRESS" ? (
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openCompleteDialog(batch)
-                          }}
-                          className="rounded-xl text-xs h-8 bg-primary text-primary-foreground font-semibold"
-                        >
-                          Hitung HPP
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            navigate(`/production/batches/${batch.id}`)
-                          }}
-                          className="rounded-xl text-xs h-8"
-                        >
-                          Audit HPP
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </Card>
+                        <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                          {batch.status === "QUEUED" ? (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handlePickupBatch(batch.id)
+                              }}
+                              className="rounded-lg text-xs h-8 bg-purple-600 text-white hover:bg-purple-700 font-medium shadow-2xs"
+                            >
+                              Mulai (Pickup)
+                            </Button>
+                          ) : batch.status === "IN_PROGRESS" ? (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openCompleteDialog(batch)
+                              }}
+                              className="rounded-lg text-xs h-8 bg-primary text-primary-foreground font-medium shadow-2xs hover:bg-primary/90"
+                            >
+                              Hitung HPP
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigate(`/production/batches/${batch.id}`)
+                              }}
+                              className="rounded-lg text-xs h-8 shadow-2xs hover:bg-muted"
+                            >
+                              Audit HPP
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <TablePagination
+            total={filteredBatches.length}
+            displayedCount={paginatedBatches.length}
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={loading}
+            label="batch"
+          />
+        </div>
       )}
 
       {/* DIALOG 2: SELESAIKAN BATCH PRODUKSI & HITUNG HPP */}
@@ -739,47 +906,51 @@ export default function BatchListPage() {
 
             {/* Overhead Cost Inputs */}
             <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                2. Biaya Overhead Operasional (Batch Ini)
-              </span>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="grid gap-1">
-                  <Label className="text-[11px] text-muted-foreground">Upah Tenaga Kerja</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={completeData.overheadLabor || ""}
-                    onChange={(e) => setCompleteData({ ...completeData, overheadLabor: Number(e.target.value) || 0 })}
-                    className="rounded-xl h-9 text-xs font-mono"
-                  />
-                </div>
-
-                <div className="grid gap-1">
-                  <Label className="text-[11px] text-muted-foreground">Gas & Listrik Oven</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={completeData.overheadEnergy || ""}
-                    onChange={(e) => setCompleteData({ ...completeData, overheadEnergy: Number(e.target.value) || 0 })}
-                    className="rounded-xl h-9 text-xs font-mono"
-                  />
-                </div>
-
-                <div className="grid gap-1 col-span-2 sm:col-span-1">
-                  <Label className="text-[11px] text-muted-foreground">Kemasan & Plastik</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="1000"
-                    value={completeData.overheadPackaging || ""}
-                    onChange={(e) => setCompleteData({ ...completeData, overheadPackaging: Number(e.target.value) || 0 })}
-                    className="rounded-xl h-9 text-xs font-mono"
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
+                  2. Biaya Overhead Operasional (Batch Ini)
+                </span>
+                <span className="text-xs font-mono font-bold text-slate-700">
+                  Total: {formatCurrencyIdr(completeOverheadTotal)}
+                </span>
               </div>
+
+              {completeOverheadItems.length === 0 ? (
+                <div className="text-xs text-muted-foreground py-2 text-center">
+                  Tidak ada overhead aktif untuk batch ini.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {completeOverheadItems.map((oh, idx) => (
+                    <div key={oh.overheadTypeId || idx} className="grid gap-1 bg-white p-2.5 rounded-xl border border-slate-200">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold text-slate-800 truncate" title={oh.name}>
+                          {oh.name}
+                        </Label>
+                        <Badge variant="outline" className="text-[9px] py-0 px-1 font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
+                          Biaya Produksi
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-medium">Rp</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="500"
+                          value={oh.amount === 0 ? "0" : (oh.amount || "")}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0
+                            setCompleteOverheadItems((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, amount: val } : item))
+                            )
+                          }}
+                          className="rounded-lg h-8 text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Live HPP Calculation Summary Preview */}
