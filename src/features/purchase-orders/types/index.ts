@@ -96,3 +96,11 @@ export interface PaginatedPurchaseOrders {
   limit: number;
   totalPages: number;
 }
+
+export interface PurchaseOrderSummary {
+  total_orders: number;
+  request_count: number;
+  order_count: number;
+  completed_count: number;
+  total_completed_amount: string | number;
+}

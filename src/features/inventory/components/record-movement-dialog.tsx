@@ -49,7 +49,7 @@ export function RecordMovementDialog({
     isSubmitting,
     error: hookError,
     handleRecordAdjustment,
-  } = useMovementStock()
+  } = useMovementStock({ enabled: open })
 
   const [selectedMaterialId, setSelectedMaterialId] = React.useState<string>("")
   const [movementType, setMovementType] = React.useState<MovementType>("ADJUSTMENT_IN")

@@ -1,6 +1,7 @@
 import apiClient from '../../../lib/api-client';
 import type {
   Product,
+  ProductSummary,
   ProductMode,
   CreateProductInput,
   UpdateProductInput,
@@ -212,6 +213,11 @@ export const recipeService = {
     } catch {
       return [...LOCAL_PRODUCTS];
     }
+  },
+
+  getProductSummary: async (): Promise<ProductSummary> => {
+    const response = await apiClient.get<ProductSummary>('/products/summary');
+    return response.data;
   },
 
   getProductById: async (id: string): Promise<Product> => {

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import { Store, Check, ChevronsUpDown, Settings, Plus } from "lucide-react"
 import {
   DropdownMenu,
@@ -10,35 +10,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { settingsService } from "@/features/settings/services/settings-service"
+import { useStoresQuery, storeKeys } from "@/features/settings/hooks/use-stores-query"
 import type { StoreInfo } from "@/features/settings/types"
 import { useAuthStore } from "@/store/use-auth-store"
 
 export function StoreDropdown() {
-  const [stores, setStores] = useState<StoreInfo[]>([])
+  const queryClient = useQueryClient()
+  const { data: stores = [] } = useStoresQuery()
   const activeStoreId = useAuthStore((state) => state.activeStoreId)
   const activeStoreName = useAuthStore((state) => state.activeStoreName)
-
-  useEffect(() => {
-    let isMounted = true
-    async function loadStores() {
-      try {
-        const list = await settingsService.getStoresList()
-        if (isMounted && list) {
-          setStores(list)
-          if (!activeStoreId && list.length > 0) {
-            useAuthStore.getState().setActiveStoreId(list[0].id)
-            useAuthStore.getState().setActiveStoreName(list[0].name)
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch stores for dropdown:", err)
-      }
-    }
-    loadStores()
-    return () => {
-      isMounted = false
-    }
-  }, [activeStoreId])
 
   async function handleStoreChange(store: StoreInfo) {
     if (store.id === activeStoreId) return
@@ -47,6 +27,7 @@ export function StoreDropdown() {
       useAuthStore.getState().setActiveStoreId(store.id)
       useAuthStore.getState().setActiveStoreName(store.name)
       await settingsService.getStorePermissions(store.id)
+      await queryClient.invalidateQueries({ queryKey: storeKeys.all })
       window.location.reload()
     } catch (err) {
       console.error("Failed to switch store:", err)

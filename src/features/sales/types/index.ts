@@ -190,3 +190,9 @@ export interface SalesSummary {
   averageMarginPct: number;
   averageOrderValue?: number;
 }
+
+export interface CustomerSummary {
+  total_customers: number;
+  active_customers: number;
+  total_spent_amount: string | number;
+}

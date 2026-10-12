@@ -1,6 +1,7 @@
 import apiClient from '@/lib/api-client';
 import type {
   OverheadType,
+  OverheadSummary,
   OverheadCategory,
   CreateOverheadInput,
   UpdateOverheadInput,
@@ -170,6 +171,23 @@ export const overheadService = {
       if (query?.activeOnly !== undefined) mock = mock.filter((item) => item.isActive === query.activeOnly);
       if (query?.category) mock = mock.filter((item) => item.category === query.category);
       return mock;
+    }
+  },
+
+  getOverheadSummary: async (): Promise<OverheadSummary> => {
+    const response = await apiClient.get<OverheadSummary>('/overheads/summary');
+    return response.data;
+  },
+
+  getOverheadById: async (id: string): Promise<OverheadType> => {
+    try {
+      const response = await apiClient.get<OverheadRawResponse>(`/overheads/${id}`);
+      return mapRawToOverhead(response.data);
+    } catch {
+      const current = getMockData();
+      const found = current.find((item) => item.id === id);
+      if (found) return found;
+      throw new Error(`Overhead with id ${id} not found`);
     }
   },
 

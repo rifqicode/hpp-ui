@@ -48,3 +48,9 @@ export interface PaginatedSuppliers {
   totalPages: number;
 }
 
+export interface SupplierSummary {
+  total_suppliers: number;
+  active_suppliers: number;
+  total_purchases_amount: string | number;
+}
+

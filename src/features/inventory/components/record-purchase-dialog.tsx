@@ -65,7 +65,7 @@ export function RecordPurchaseDialog({
     error: hookError,
     handleCreateStock,
     handleRecordPurchase,
-  } = usePurchaseStock()
+  } = usePurchaseStock({ enabled: open })
 
   const [selectedMaterialId, setSelectedMaterialId] = React.useState<string>("")
   const [selectedSupplierId, setSelectedSupplierId] = React.useState<string>("")

@@ -42,9 +42,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { usePermission } from "@/hooks/use-permission"
-import { useStocks } from "@/features/inventory/hooks/use-stocks"
-import { stockService } from "@/features/inventory/services/stock-service"
-import type { Stock } from "@/features/inventory/types"
+import { useStocks, useStockSummaryQuery } from "@/features/inventory/hooks"
 import { RecordPurchaseDialog } from "@/features/inventory/components/record-purchase-dialog"
 import { RecordMovementDialog } from "@/features/inventory/components/record-movement-dialog"
 
@@ -147,7 +145,7 @@ export default function StockListPage() {
     handleCreateStock,
   } = useStocks()
 
-  const [allStocks, setAllStocks] = React.useState<Stock[]>([])
+  const { data: summary, refetch: refetchSummary } = useStockSummaryQuery()
   const { can } = usePermission()
   const canCreate = can("stocks:create")
   const canAdjust = can("stocks:adjust")
@@ -164,42 +162,6 @@ export default function StockListPage() {
   const [newBaseUnit, setNewBaseUnit] = React.useState("kg")
   const [newMethod, setNewMethod] = React.useState<"FIFO" | "FEFO">("FIFO")
   const [createError, setCreateError] = React.useState("")
-
-  const fetchAllStats = React.useCallback(async () => {
-    try {
-      const data = await stockService.getAllStocks()
-      setAllStocks(data)
-    } catch {
-      // fallback ignore
-    }
-  }, [])
-
-  React.useEffect(() => {
-    fetchAllStats()
-  }, [fetchAllStats])
-
-  // Aggregate stats across store materials
-  const stats = React.useMemo(() => {
-    const list = allStocks.length > 0 ? allStocks : stocks
-    let healthyCount = 0
-    let lowCount = 0
-    let outCount = 0
-
-    list.forEach((s) => {
-      const cur = Number(s.current_stock) || 0
-      const min = 0
-      if (cur <= 0) outCount++
-      else if (cur < min) lowCount++
-      else healthyCount++
-    })
-
-    return {
-      total: allStocks.length > 0 ? allStocks.length : total,
-      healthy: healthyCount,
-      low: lowCount,
-      out: outCount,
-    }
-  }, [allStocks, stocks, total])
 
   const materialRows: MaterialStockRow[] = React.useMemo(() => {
     return stocks.map((s) => ({
@@ -219,7 +181,7 @@ export default function StockListPage() {
   }, [materialRows, statusFilter, sortKey, sortDir])
 
   const handleRefresh = async () => {
-    await Promise.all([loadStocks(), fetchAllStats()])
+    await Promise.all([loadStocks(), refetchSummary()])
   }
 
   const handleOpenCreateModal = () => {
@@ -243,7 +205,7 @@ export default function StockListPage() {
         inventory_method: newMethod,
       })
       setIsCreateOpen(false)
-      fetchAllStats()
+      refetchSummary()
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : "Gagal menambahkan bahan baku")
     }
@@ -451,7 +413,7 @@ export default function StockListPage() {
               <p className="text-xs font-medium text-muted-foreground">Total Bahan Baku</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-foreground">
-                  {stats.total}
+                  {summary?.total_materials ?? total}
                 </span>
                 <span className="text-xs text-muted-foreground">material</span>
               </div>
@@ -469,7 +431,7 @@ export default function StockListPage() {
               <p className="text-xs font-medium text-muted-foreground">Stok Aman (Healthy)</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {stats.healthy}
+                  {summary?.healthy_stock ?? 0}
                 </span>
                 <span className="text-xs text-muted-foreground">tersedia cukup</span>
               </div>
@@ -487,7 +449,7 @@ export default function StockListPage() {
               <p className="text-xs font-medium text-muted-foreground">Stok Menipis (Low)</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
-                  {stats.low}
+                  {summary?.low_stock ?? 0}
                 </span>
                 <span className="text-xs text-muted-foreground">dibawah batas min</span>
               </div>
@@ -505,7 +467,7 @@ export default function StockListPage() {
               <p className="text-xs font-medium text-muted-foreground">Stok Habis (Kosong)</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
-                  {stats.out}
+                  {summary?.out_of_stock ?? 0}
                 </span>
                 <span className="text-xs text-muted-foreground">perlu order segera</span>
               </div>
@@ -523,7 +485,7 @@ export default function StockListPage() {
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mb-3" />
           <p className="text-sm font-medium text-muted-foreground">Memuat data inventaris...</p>
         </div>
-      ) : stats.total === 0 && !search && inventoryMethod === undefined && statusFilter === "all" ? (
+      ) : (summary?.total_materials ?? total) === 0 && !search && inventoryMethod === undefined && statusFilter === "all" ? (
         /* Empty State */
         <div className="flex flex-col items-center justify-center p-12 sm:p-16 text-center rounded-2xl border-2 border-dashed border-border bg-card/60 shadow-xs">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">
@@ -586,7 +548,7 @@ export default function StockListPage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Semua ({stats.total})
+                  Semua ({summary?.total_materials ?? total})
                 </button>
                 <button
                   type="button"
@@ -600,7 +562,7 @@ export default function StockListPage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Healthy ({stats.healthy})
+                  Healthy ({summary?.healthy_stock ?? 0})
                 </button>
                 <button
                   type="button"
@@ -614,7 +576,7 @@ export default function StockListPage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Low ({stats.low})
+                  Low ({summary?.low_stock ?? 0})
                 </button>
                 <button
                   type="button"
@@ -628,7 +590,7 @@ export default function StockListPage() {
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Habis ({stats.out})
+                  Habis ({summary?.out_of_stock ?? 0})
                 </button>
               </div>
 
@@ -829,24 +791,28 @@ export default function StockListPage() {
       )}
 
       {/* Record Purchase Dialog */}
-      <RecordPurchaseDialog
-        open={isPurchaseOpen}
-        onOpenChange={setIsPurchaseOpen}
-        onSuccess={() => {
-          loadStocks()
-          fetchAllStats()
-        }}
-      />
+      {isPurchaseOpen && (
+        <RecordPurchaseDialog
+          open={isPurchaseOpen}
+          onOpenChange={setIsPurchaseOpen}
+          onSuccess={() => {
+            loadStocks()
+            refetchSummary()
+          }}
+        />
+      )}
 
       {/* Record Movement Dialog */}
-      <RecordMovementDialog
-        open={isMovementOpen}
-        onOpenChange={setIsMovementOpen}
-        onSuccess={() => {
-          loadStocks()
-          fetchAllStats()
-        }}
-      />
+      {isMovementOpen && (
+        <RecordMovementDialog
+          open={isMovementOpen}
+          onOpenChange={setIsMovementOpen}
+          onSuccess={() => {
+            loadStocks()
+            refetchSummary()
+          }}
+        />
+      )}
     </div>
   )
 }

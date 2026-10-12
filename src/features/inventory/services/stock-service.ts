@@ -8,6 +8,7 @@ import type {
   RecordAdjustmentInput,
   StockQuery,
   PaginatedStocks,
+  StockSummary,
 } from '../types';
 
 export interface MaterialOption {
@@ -35,6 +36,11 @@ export const stockService = {
   getAllStocks: async (): Promise<Stock[]> => {
     const res = await stockService.getStocks({ page: 1, limit: 1000 });
     return res.items || [];
+  },
+
+  getStockSummary: async (): Promise<StockSummary> => {
+    const response = await apiClient.get<StockSummary>('/stocks/summary');
+    return response.data;
   },
 
   getMaterials: async (): Promise<MaterialOption[]> => {

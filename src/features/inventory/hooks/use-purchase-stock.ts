@@ -1,80 +1,72 @@
 import * as React from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { stockService } from '../services/stock-service';
 import { supplierService } from '@/features/suppliers/services/supplier-service';
+import { stockKeys, useAllStocksQuery } from './use-stocks-query';
 import type { Stock, RecordPurchaseInput, CreateStockInput } from '../types';
 import type { Supplier } from '@/features/suppliers/types';
 
-export function usePurchaseStock() {
-  const [stocks, setStocks] = React.useState<Stock[]>([]);
-  const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(true);
+export const supplierKeys = {
+  all: ['suppliers'] as const,
+  allItems: () => [...supplierKeys.all, 'all-items'] as const,
+};
+
+export function usePurchaseStock(options?: { enabled?: boolean }) {
+  const queryClient = useQueryClient();
+  const isEnabled = options?.enabled ?? true;
+
+  const {
+    data: stocks = [],
+    isLoading: stocksLoading,
+    error: stocksError,
+    refetch: refetchStocks,
+  } = useAllStocksQuery({ enabled: isEnabled });
+
+  const {
+    data: suppliers = [],
+    isLoading: suppliersLoading,
+    error: suppliersError,
+    refetch: refetchSuppliers,
+  } = useQuery<Supplier[]>({
+    queryKey: supplierKeys.allItems(),
+    queryFn: () => supplierService.getAllSuppliers(),
+    enabled: isEnabled,
+  });
+
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string>('');
+  const [mutationError, setMutationError] = React.useState<string>('');
+
+  const loading = stocksLoading || suppliersLoading;
+  const rawError = mutationError || stocksError || suppliersError;
+  const error = rawError instanceof Error ? rawError.message : rawError ? String(rawError) : '';
 
   const loadDependencies = React.useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const [stocksData, suppliersData] = await Promise.all([
-        stockService.getAllStocks(),
-        supplierService.getAllSuppliers(),
-      ]);
-      setStocks(stocksData);
-      setSuppliers(suppliersData);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load options';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    let ignore = false;
-    Promise.all([
-      stockService.getAllStocks(),
-      supplierService.getAllSuppliers(),
-    ])
-      .then(([stocksData, suppliersData]) => {
-        if (!ignore) {
-          setStocks(stocksData);
-          setSuppliers(suppliersData);
-          setLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!ignore) {
-          const msg = err instanceof Error ? err.message : 'Failed to load options';
-          setError(msg);
-          setLoading(false);
-        }
-      });
-    return () => {
-      ignore = true;
-    };
-  }, []);
+    await Promise.all([refetchStocks(), refetchSuppliers()]);
+  }, [refetchStocks, refetchSuppliers]);
 
   const handleCreateStock = async (payload: CreateStockInput): Promise<Stock> => {
+    setMutationError('');
     try {
       const newStock = await stockService.createStock(payload);
-      setStocks((prev) => [...prev, newStock]);
+      await queryClient.invalidateQueries({ queryKey: stockKeys.all });
       return newStock;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to create new material';
-      setError(msg);
+      setMutationError(msg);
       throw err;
     }
   };
 
   const handleRecordPurchase = async (payload: RecordPurchaseInput): Promise<unknown> => {
     setIsSubmitting(true);
-    setError('');
+    setMutationError('');
     try {
       const result = await stockService.recordPurchase(payload);
+      await queryClient.invalidateQueries({ queryKey: stockKeys.all });
       return result;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to record purchase';
-      setError(msg);
+      setMutationError(msg);
       throw err;
     } finally {
       setIsSubmitting(false);

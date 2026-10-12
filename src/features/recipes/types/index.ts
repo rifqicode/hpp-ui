@@ -134,3 +134,9 @@ export interface ProductCategory {
   description?: string;
   createdAt?: string;
 }
+
+export interface ProductSummary {
+  total_products: number;
+  active_products: number;
+  low_stock_count: number;
+}

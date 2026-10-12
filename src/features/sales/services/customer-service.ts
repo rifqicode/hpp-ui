@@ -1,6 +1,7 @@
 import apiClient from '../../../lib/api-client';
 import type {
   Customer,
+  CustomerSummary,
   CreateCustomerInput,
   UpdateCustomerInput,
   PaginatedCustomers,
@@ -16,6 +17,11 @@ export const customerService = {
     const res = await apiClient.get<PaginatedCustomers>('/customers', {
       params: query,
     });
+    return res.data;
+  },
+
+  getCustomerSummary: async (): Promise<CustomerSummary> => {
+    const res = await apiClient.get<CustomerSummary>('/customers/summary');
     return res.data;
   },
 

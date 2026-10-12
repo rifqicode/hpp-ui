@@ -1,20 +1,18 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { supplierService } from "../services/supplier-service"
+import { useSuppliersQuery, useSupplierSummaryQuery, supplierKeys } from "./use-suppliers-query"
 import type { Supplier, CreateSupplierInput } from "../types"
 
 export type SortOption = "name-asc" | "name-desc" | "orders-desc" | "spent-desc"
 
 export function useSuppliers() {
-  const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
-  const [loading, setLoading] = React.useState<boolean>(true)
-  const [error, setError] = React.useState<string>("")
+  const queryClient = useQueryClient()
   const [search, setSearch] = React.useState<string>("")
   const [debouncedSearch, setDebouncedSearch] = React.useState<string>("")
   const [sortBy, setSortBy] = React.useState<SortOption>("name-asc")
   const [page, setPage] = React.useState<number>(1)
   const [limit, setLimit] = React.useState<number>(10)
-  const [total, setTotal] = React.useState<number>(0)
-  const [totalPages, setTotalPages] = React.useState<number>(1)
 
   // Debounce search input to avoid hitting backend on every keystroke
   React.useEffect(() => {
@@ -24,6 +22,21 @@ export function useSuppliers() {
     }, 300)
     return () => clearTimeout(handler)
   }, [search])
+
+  const suppliersQuery = useSuppliersQuery({
+    page,
+    limit,
+    search: debouncedSearch.trim() || undefined,
+    sortBy,
+  })
+
+  const summaryQuery = useSupplierSummaryQuery()
+
+  const suppliers = suppliersQuery.data?.items || []
+  const total = suppliersQuery.data?.total || 0
+  const totalPages = suppliersQuery.data?.totalPages || 1
+  const loading = suppliersQuery.isLoading || summaryQuery.isLoading
+  const error = suppliersQuery.error instanceof Error ? suppliersQuery.error.message : ""
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = React.useState<boolean>(false)
@@ -41,57 +54,12 @@ export function useSuppliers() {
     address: "",
   })
 
-  // Load suppliers from backend
+  // Invalidate / reload suppliers from backend
   const loadSuppliers = React.useCallback(async () => {
-    setLoading(true)
-    setError("")
-    try {
-      const data = await supplierService.getSuppliers({
-        page,
-        limit,
-        search: debouncedSearch.trim() || undefined,
-        sortBy,
-      })
-      setSuppliers(data.items || [])
-      setTotal(data.total || 0)
-      setTotalPages(data.totalPages || 1)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memuat data supplier"
-      setError(msg)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, limit, debouncedSearch, sortBy])
-
-  React.useEffect(() => {
-    let ignore = false
-    supplierService
-      .getSuppliers({
-        page,
-        limit,
-        search: debouncedSearch.trim() || undefined,
-        sortBy,
-      })
-      .then((data) => {
-        if (!ignore) {
-          setSuppliers(data.items || [])
-          setTotal(data.total || 0)
-          setTotalPages(data.totalPages || 1)
-          setLoading(false)
-        }
-      })
-      .catch((err: unknown) => {
-        if (!ignore) {
-          const msg = err instanceof Error ? err.message : "Gagal memuat data supplier"
-          setError(msg)
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      ignore = true
-    }
-  }, [page, limit, debouncedSearch, sortBy])
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: supplierKeys.all }),
+    ])
+  }, [queryClient])
 
   // Open modal for Create
   function handleOpenCreate() {
@@ -175,10 +143,10 @@ export function useSuppliers() {
     }
   }
 
-  // Statistics (based on current page suppliers or total)
-  const totalVendors = total
-  const totalPurchasesSum = suppliers.reduce((acc, s) => acc + (s.totalPurchases || 0), 0)
-  const activeVendorsCount = suppliers.filter((s) => (s.totalOrdersCount || 0) > 0).length
+  // Statistics from backend summary or fallback
+  const totalVendors = summaryQuery.data?.total_suppliers ?? total
+  const totalPurchasesSum = Number(summaryQuery.data?.total_purchases_amount ?? 0)
+  const activeVendorsCount = summaryQuery.data?.active_suppliers ?? suppliers.filter((s) => (s.totalOrdersCount || 0) > 0).length
 
   function formatRupiah(amount: number) {
     return new Intl.NumberFormat("id-ID", {

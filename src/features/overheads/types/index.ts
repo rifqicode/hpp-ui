@@ -44,6 +44,14 @@ export interface PaginatedOverheads {
   totalPages: number;
 }
 
+export interface OverheadSummary {
+  total_overheads: number;
+  active_count: number;
+  inactive_count: number;
+  production_count: number;
+  operational_count: number;
+}
+
 export interface OverheadCategoryMeta {
   label: string;
   shortLabel: string;

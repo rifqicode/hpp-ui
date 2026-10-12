@@ -1,6 +1,7 @@
 import apiClient from "@/lib/api-client"
 import type {
   Supplier,
+  SupplierSummary,
   CreateSupplierInput,
   UpdateSupplierInput,
   SupplierPurchaseRecord,
@@ -29,6 +30,11 @@ export const supplierService = {
   getAllSuppliers: async (): Promise<Supplier[]> => {
     const res = await supplierService.getSuppliers({ page: 1, limit: 1000 })
     return res.items
+  },
+
+  getSupplierSummary: async (): Promise<SupplierSummary> => {
+    const response = await apiClient.get<SupplierSummary>("/suppliers/summary")
+    return response.data
   },
 
   getSupplierById: async (id: string): Promise<Supplier> => {

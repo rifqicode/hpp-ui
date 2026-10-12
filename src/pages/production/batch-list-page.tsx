@@ -41,7 +41,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { productionService } from "@/features/production/services/production-service"
+import {
+  useBatchesQuery,
+  productionKeys,
+} from "@/features/production/hooks/use-production-query"
 import type {
   ProductionBatch,
   CompleteProductionInput,
@@ -70,9 +75,13 @@ function formatElapsedTime(dateStr: string): string {
 
 export default function BatchListPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
-  const [batches, setBatches] = React.useState<ProductionBatch[]>([])
-  const [loading, setLoading] = React.useState<boolean>(true)
+  const {
+    data: batches = [],
+    isLoading: loading,
+    refetch: refetchBatches,
+  } = useBatchesQuery()
 
   // Filter & Search
   const [search, setSearch] = React.useState<string>("")
@@ -101,25 +110,12 @@ export default function BatchListPage() {
   const [page, setPage] = React.useState(1)
   const pageSize = 10
 
-  const fetchBatchData = React.useCallback(async () => {
-    setLoading(true)
-    try {
-      const [bList, ohList] = await Promise.all([
-        productionService.getBatches(),
-        overheadService.getOverheads({ activeOnly: true, category: 'PRODUCTION' }),
-      ])
-      setBatches(bList)
-      setActiveOverheads(ohList)
-    } catch (err) {
-      console.error("Failed to load batch data:", err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   React.useEffect(() => {
-    fetchBatchData()
-  }, [fetchBatchData])
+    overheadService
+      .getOverheads({ activeOnly: true, category: 'PRODUCTION' })
+      .then((ohList) => setActiveOverheads(ohList))
+      .catch((err) => console.error("Failed to load overheads:", err))
+  }, [])
 
   // Aggregate statistics
   const stats = React.useMemo(() => {
@@ -176,8 +172,8 @@ export default function BatchListPage() {
   // Pickup Batch Handler
   async function handlePickupBatch(batchId: string) {
     try {
-      const updated = await productionService.pickupProduction(batchId)
-      setBatches((prev) => prev.map((b) => (b.id === updated.id ? updated : b)))
+      await productionService.pickupProduction(batchId)
+      queryClient.invalidateQueries({ queryKey: productionKeys.all })
     } catch (err) {
       console.error("Failed to pickup production batch:", err)
     }
@@ -231,8 +227,8 @@ export default function BatchListPage() {
         ...completeData,
         overheads: completeOverheadItems,
       }
-      const completed = await productionService.completeProduction(batchToComplete.id, payload)
-      setBatches((prev) => prev.map((b) => (b.id === completed.id ? completed : b)))
+      await productionService.completeProduction(batchToComplete.id, payload)
+      queryClient.invalidateQueries({ queryKey: productionKeys.all })
       setIsCompleteOpen(false)
       setBatchToComplete(null)
     } catch (err: unknown) {
@@ -250,8 +246,8 @@ export default function BatchListPage() {
 
     setSubmitting(true)
     try {
-      const cancelled = await productionService.cancelProduction(batchToCancel.id, cancelReason)
-      setBatches((prev) => prev.map((b) => (b.id === cancelled.id ? cancelled : b)))
+      await productionService.cancelProduction(batchToCancel.id, cancelReason)
+      queryClient.invalidateQueries({ queryKey: productionKeys.all })
       setIsCancelOpen(false)
       setBatchToCancel(null)
       setCancelReason("")
@@ -292,7 +288,7 @@ export default function BatchListPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchBatchData}
+            onClick={() => refetchBatches()}
             disabled={loading}
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >

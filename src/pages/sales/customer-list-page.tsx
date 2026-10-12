@@ -17,7 +17,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { customerService } from '../../features/sales/services/customer-service';
+import {
+  useCustomersQuery,
+  useCustomerSummaryQuery,
+  salesKeys,
+} from '../../features/sales/hooks/use-sales-query';
 import type {
   Customer,
   CreateCustomerInput,
@@ -47,12 +53,28 @@ function formatRupiah(num: number): string {
 }
 
 export default function CustomerListPage() {
-  const [customers, setCustomers] = React.useState<Customer[]>([]);
-  const [total, setTotal] = React.useState(0);
-  const [loading, setLoading] = React.useState(true);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [page, setPage] = React.useState(1);
   const perPage = 10;
+
+  const {
+    data: customersData,
+    isLoading: loading,
+    refetch: refetchCustomers,
+  } = useCustomersQuery({
+    search: searchQuery.trim() || undefined,
+    page,
+    per_page: perPage,
+  });
+
+  const {
+    data: summaryData,
+    refetch: refetchSummary,
+  } = useCustomerSummaryQuery();
+
+  const customers = customersData?.data || [];
+  const total = summaryData?.total_customers ?? customersData?.total ?? 0;
 
   // Dialog States
   const [isAddOpen, setIsAddOpen] = React.useState(false);
@@ -73,30 +95,6 @@ export default function CustomerListPage() {
   const [customerDetail, setCustomerDetail] = React.useState<CustomerDetail | null>(null);
   const [editForm, setEditForm] = React.useState<UpdateCustomerInput>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-
-  const fetchCustomers = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await customerService.getCustomers({
-        search: searchQuery.trim() || undefined,
-        page,
-        per_page: perPage,
-      });
-      setCustomers(res.data || []);
-      setTotal(res.total || 0);
-    } catch (err) {
-      console.error('Failed to load customers', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, page]);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchCustomers();
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [fetchCustomers]);
 
   const handleOpenDetail = async (customer: Customer) => {
     setSelectedCustomer(customer);
@@ -138,7 +136,7 @@ export default function CustomerListPage() {
       await customerService.createCustomer(addForm);
       setIsAddOpen(false);
       setAddForm({ name: '', phone: '', email: '', address: '', notes: '' });
-      fetchCustomers();
+      queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
     } catch (err: any) {
       console.error('Failed to create customer', err);
       alert(err.response?.data?.message || 'Gagal menambahkan pelanggan');
@@ -155,7 +153,7 @@ export default function CustomerListPage() {
       setIsSubmitting(true);
       await customerService.updateCustomer(selectedCustomer.id, editForm);
       setIsEditOpen(false);
-      fetchCustomers();
+      queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
     } catch (err: any) {
       console.error('Failed to update customer', err);
       alert(err.response?.data?.message || 'Gagal mengubah pelanggan');
@@ -171,7 +169,7 @@ export default function CustomerListPage() {
       setIsSubmitting(true);
       await customerService.deleteCustomer(selectedCustomer.id);
       setIsDeleteOpen(false);
-      fetchCustomers();
+      queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
     } catch (err: any) {
       console.error('Failed to delete customer', err);
       alert(err.response?.data?.message || 'Gagal menghapus pelanggan');
@@ -180,10 +178,23 @@ export default function CustomerListPage() {
     }
   };
 
+  const handleRefresh = async () => {
+    await Promise.all([refetchCustomers(), refetchSummary()]);
+  };
+
   // Metrics summary calculated from loaded list or defaults
   const totalSpentAll = React.useMemo(() => {
+    if (summaryData) return Number(summaryData.total_spent_amount) || 0;
     return customers.reduce((acc, curr) => acc + (curr.total_spent || 0), 0);
-  }, [customers]);
+  }, [customers, summaryData]);
+
+  const avgSpentPerCustomer = React.useMemo(() => {
+    if (summaryData) {
+      const spent = Number(summaryData.total_spent_amount) || 0;
+      return summaryData.total_customers > 0 ? spent / summaryData.total_customers : 0;
+    }
+    return customers.length > 0 ? totalSpentAll / customers.length : 0;
+  }, [customers, summaryData, totalSpentAll]);
 
   const totalPages = Math.ceil(total / perPage) || 1;
 
@@ -209,7 +220,7 @@ export default function CustomerListPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchCustomers}
+            onClick={handleRefresh}
             disabled={loading}
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >
@@ -265,7 +276,7 @@ export default function CustomerListPage() {
               <p className="text-xs font-medium text-muted-foreground">Rata-rata Belanja per Member</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-foreground">
-                  {formatRupiah(customers.length > 0 ? totalSpentAll / customers.length : 0)}
+                  {formatRupiah(avgSpentPerCustomer)}
                 </span>
               </div>
             </div>

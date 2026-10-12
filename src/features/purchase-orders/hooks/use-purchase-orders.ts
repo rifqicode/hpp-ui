@@ -1,5 +1,11 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { purchaseOrderService } from "../services/po-service"
+import {
+  usePurchaseOrdersQuery,
+  usePurchaseOrderSummaryQuery,
+  purchaseOrderKeys,
+} from "./use-purchase-orders-query"
 import { useAuthStore } from "@/store/use-auth-store"
 import { usePermission } from "@/hooks/use-permission"
 import type {
@@ -8,19 +14,15 @@ import type {
 } from "../types"
 
 export function usePurchaseOrders() {
+  const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.user)
   const { can } = usePermission()
 
-  const [orders, setOrders] = React.useState<PurchaseOrder[]>([])
-  const [loading, setLoading] = React.useState<boolean>(true)
-  const [error, setError] = React.useState<string>("")
   const [search, setSearch] = React.useState<string>("")
   const [debouncedSearch, setDebouncedSearch] = React.useState<string>("")
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
   const [page, setPage] = React.useState<number>(1)
   const [limit, setLimit] = React.useState<number>(10)
-  const [total, setTotal] = React.useState<number>(0)
-  const [totalPages, setTotalPages] = React.useState<number>(1)
 
   // Action modals state
   const [approvingPO, setApprovingPO] = React.useState<PurchaseOrder | null>(null)
@@ -45,59 +47,27 @@ export function usePurchaseOrders() {
     return () => clearTimeout(handler)
   }, [search])
 
+  const queryParams: PurchaseOrderQueryParams = {
+    page,
+    limit,
+    search: debouncedSearch.trim() || undefined,
+    status: statusFilter === "ALL" ? undefined : statusFilter,
+  }
+
+  const ordersQuery = usePurchaseOrdersQuery(queryParams)
+  const summaryQuery = usePurchaseOrderSummaryQuery()
+
+  const orders: PurchaseOrder[] = ordersQuery.data?.items || []
+  const total = ordersQuery.data?.total || 0
+  const totalPages = ordersQuery.data?.totalPages || 1
+  const loading = ordersQuery.isLoading || summaryQuery.isLoading
+  const error = ordersQuery.error instanceof Error ? ordersQuery.error.message : ""
+
   const loadOrders = React.useCallback(async () => {
-    setLoading(true)
-    setError("")
-    try {
-      const params: PurchaseOrderQueryParams = {
-        page,
-        limit,
-        search: debouncedSearch.trim() || undefined,
-        status: statusFilter === "ALL" ? undefined : statusFilter,
-      }
-      const data = await purchaseOrderService.getPurchaseOrders(params)
-      setOrders(data.items)
-      setTotal(data.total)
-      setTotalPages(data.totalPages)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memuat purchase orders"
-      setError(msg)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, limit, debouncedSearch, statusFilter])
-
-  React.useEffect(() => {
-    let ignore = false
-    const params: PurchaseOrderQueryParams = {
-      page,
-      limit,
-      search: debouncedSearch.trim() || undefined,
-      status: statusFilter === "ALL" ? undefined : statusFilter,
-    }
-
-    purchaseOrderService
-      .getPurchaseOrders(params)
-      .then((data) => {
-        if (!ignore) {
-          setOrders(data.items)
-          setTotal(data.total)
-          setTotalPages(data.totalPages)
-          setLoading(false)
-        }
-      })
-      .catch((err: unknown) => {
-        if (!ignore) {
-          const msg = err instanceof Error ? err.message : "Gagal memuat purchase orders"
-          setError(msg)
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      ignore = true
-    }
-  }, [page, limit, debouncedSearch, statusFilter])
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all }),
+    ])
+  }, [queryClient])
 
   // --- Handlers: Approve ---
   function handleOpenApprove(po: PurchaseOrder) {
@@ -201,46 +171,56 @@ export function usePurchaseOrders() {
   }
 
   // --- Handlers: Cancel ---
-  async function handleCancelPO(id: string) {
-    if (!confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) return
+  async function handleCancelPO(po: PurchaseOrder) {
+    const isRequest = po.status === "PURCHASE_REQUEST"
+    const confirmMsg = isRequest
+      ? `Apakah Anda yakin ingin membatalkan Purchase Request ${po.poNumber}?`
+      : `Apakah Anda yakin ingin membatalkan Purchase Order ${po.poNumber}?`
+    if (!window.confirm(confirmMsg)) return
+
+    setSubmitting(true)
     try {
-      await purchaseOrderService.cancelPurchaseOrder(id)
+      await purchaseOrderService.cancelPurchaseOrder(po.id)
       await loadOrders()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal membatalkan purchase order"
+      const msg = err instanceof Error ? err.message : "Gagal membatalkan pesanan"
       alert(msg)
+    } finally {
+      setSubmitting(false)
     }
   }
 
+  // Pagination navigation
   const handleNextPage = () => {
-    if (page < totalPages) setPage((p) => p + 1)
+    if (page < totalPages) {
+      setPage((prev) => prev + 1)
+    }
   }
 
   const handlePrevPage = () => {
-    if (page > 1) setPage((p) => p - 1)
+    if (page > 1) {
+      setPage((prev) => prev - 1)
+    }
   }
 
-  // Permissions helpers
+  // RBAC checks
   const canProcess = can("purchases:process")
   const canRequest = can("purchases:request")
-
-  const canEditPO = (po: PurchaseOrder): boolean => {
+  const canEditPO = (po: PurchaseOrder) => {
+    if (po.status !== "PURCHASE_REQUEST") return false
     return (
-      po.status === "PURCHASE_REQUEST" &&
-      canRequest &&
-      !!currentUser?.id &&
-      po.createdByUserId === currentUser.id
+      canProcess ||
+      (canRequest && !!currentUser?.id && po.createdByUserId === currentUser.id)
     )
   }
 
-  // Summary counts
-  const totalCount = total
-  const requestCount = orders.filter((o) => o.status === "PURCHASE_REQUEST").length
-  const orderCount = orders.filter((o) => o.status === "PURCHASE_ORDER").length
-  const completedCount = orders.filter((o) => o.status === "COMPLETED").length
-  const totalCompletedAmount = orders
-    .filter((o) => o.status === "COMPLETED")
-    .reduce((acc, o) => acc + o.totalAmount, 0)
+  // Summary counts directly from backend summary endpoint
+  const summary = summaryQuery.data
+  const totalCount = summary?.total_orders ?? total
+  const requestCount = summary?.request_count ?? 0
+  const orderCount = summary?.order_count ?? 0
+  const completedCount = summary?.completed_count ?? 0
+  const totalCompletedAmount = Number(summary?.total_completed_amount ?? 0)
 
   function formatRupiah(amount: number) {
     return new Intl.NumberFormat("id-ID", {

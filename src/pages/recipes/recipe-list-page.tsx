@@ -43,9 +43,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useQueryClient } from "@tanstack/react-query"
 import { TablePagination } from "@/components/ui/table-pagination"
 
 import { recipeService } from "@/features/recipes/services/recipe-service"
+import {
+  useProductsQuery,
+  useProductSummaryQuery,
+  recipeKeys,
+} from "@/features/recipes/hooks/use-recipes-query"
 import type { Product } from "@/features/recipes/types"
 
 function formatCurrencyIdr(val: number): string {
@@ -68,8 +74,7 @@ function calculateTotalBOM(product: Product): number {
 
 export default function RecipeListPage() {
   const navigate = useNavigate()
-  const [products, setProducts] = React.useState<Product[]>([])
-  const [loading, setLoading] = React.useState<boolean>(true)
+  const queryClient = useQueryClient()
 
   // Filters & Views
   const [search, setSearch] = React.useState<string>("")
@@ -86,21 +91,17 @@ export default function RecipeListPage() {
   const [productToDelete, setProductToDelete] = React.useState<Product | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false)
 
-  const fetchProducts = React.useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await recipeService.getProducts()
-      setProducts(data)
-    } catch (err) {
-      console.error("Failed to load products:", err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  // React Queries
+  const {
+    data: products = [],
+    isLoading: loading,
+    refetch: refetchProducts,
+  } = useProductsQuery()
 
-  React.useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
+  const {
+    data: summaryData,
+    refetch: refetchSummary,
+  } = useProductSummaryQuery()
 
   // Extract categories dynamically
   const categories = React.useMemo(() => {
@@ -158,12 +159,12 @@ export default function RecipeListPage() {
 
   // Aggregate stats
   const stats = React.useMemo(() => {
-    const total = products.length
+    const total = summaryData ? summaryData.total_products : products.length
     const totalStock = products.reduce((acc, p) => acc + p.currentStock, 0)
 
     let totalMargin = 0
     let countWithPrice = 0
-    let lowStockCount = 0
+    let calculatedLowStock = 0
 
     products.forEach((p) => {
       const cost = p.latestHpp || calculateTotalBOM(p)
@@ -172,21 +173,22 @@ export default function RecipeListPage() {
         countWithPrice++
       }
       if (p.currentStock <= (p.minStock || 5)) {
-        lowStockCount++
+        calculatedLowStock++
       }
     })
 
     const avgMargin = countWithPrice > 0 ? Math.round((totalMargin / countWithPrice) * 10) / 10 : 0
+    const lowStockCount = summaryData ? summaryData.low_stock_count : calculatedLowStock
 
     return { total, avgMargin, totalStock, lowStockCount }
-  }, [products])
+  }, [products, summaryData])
 
   async function handleDeleteProduct() {
     if (!productToDelete) return
     setIsSubmitting(true)
     try {
       await recipeService.deleteProduct(productToDelete.id)
-      setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id))
+      queryClient.invalidateQueries({ queryKey: recipeKeys.all })
       setIsDeleteOpen(false)
       setProductToDelete(null)
     } catch (err) {
@@ -194,6 +196,10 @@ export default function RecipeListPage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchProducts(), refetchSummary()])
   }
 
   return (
@@ -218,7 +224,7 @@ export default function RecipeListPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchProducts}
+            onClick={handleRefresh}
             disabled={loading}
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >

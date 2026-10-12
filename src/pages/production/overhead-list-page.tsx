@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Layers,
   Plus,
@@ -34,8 +34,14 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { useQueryClient } from '@tanstack/react-query';
 import { TablePagination } from '@/components/ui/table-pagination';
 import { overheadService } from '@/features/overheads/services/overhead-service';
+import {
+  useOverheadsQuery,
+  useOverheadSummaryQuery,
+  overheadKeys,
+} from '@/features/overheads/hooks/use-overheads-query';
 import { OVERHEAD_CATEGORIES } from '@/features/overheads/types';
 import type {
   OverheadType,
@@ -49,9 +55,7 @@ interface FeedbackMessage {
 }
 
 export default function OverheadListPage() {
-  const [items, setItems] = useState<OverheadType[]>([]);
-  const [allOverheads, setAllOverheads] = useState<OverheadType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
@@ -59,8 +63,39 @@ export default function OverheadListPage() {
   // Pagination state
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+
+  // Queries
+  const activeOnly =
+    statusFilter === 'ACTIVE'
+      ? true
+      : statusFilter === 'INACTIVE'
+      ? false
+      : undefined;
+  const category =
+    categoryFilter !== 'ALL'
+      ? (categoryFilter as OverheadCategory)
+      : undefined;
+
+  const {
+    data: overheadsData,
+    isLoading: loading,
+    refetch: refetchOverheads,
+  } = useOverheadsQuery({
+    page,
+    limit,
+    search: search.trim() || undefined,
+    category,
+    activeOnly,
+  });
+
+  const {
+    data: summaryData,
+    refetch: refetchSummary,
+  } = useOverheadSummaryQuery();
+
+  const items = overheadsData?.items ?? [];
+  const total = overheadsData?.total ?? 0;
+  const totalPages = overheadsData?.totalPages ?? 1;
 
   // Feedback Notification Banner
   const [feedback, setFeedback] = useState<FeedbackMessage | null>(null);
@@ -82,56 +117,8 @@ export default function OverheadListPage() {
   const [deleteTarget, setDeleteTarget] = useState<OverheadType | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const fetchOverheads = async () => {
-    setLoading(true);
-    try {
-      const activeOnly =
-        statusFilter === 'ACTIVE'
-          ? true
-          : statusFilter === 'INACTIVE'
-          ? false
-          : undefined;
-      const category =
-        categoryFilter !== 'ALL'
-          ? (categoryFilter as OverheadCategory)
-          : undefined;
-
-      const data = await overheadService.getPaginatedOverheads({
-        page,
-        limit,
-        search: search.trim() || undefined,
-        category,
-        activeOnly,
-      });
-      setItems(data.items);
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
-    } catch {
-      showFeedback('error', 'Gagal memuat daftar biaya overhead.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const data = await overheadService.getOverheads();
-      setAllOverheads(data);
-    } catch {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  useEffect(() => {
-    fetchOverheads();
-  }, [page, limit, search, categoryFilter, statusFilter]);
-
   const handleRefresh = async () => {
-    await Promise.all([fetchOverheads(), fetchStats()]);
+    await Promise.all([refetchOverheads(), refetchSummary()]);
   };
 
   const showFeedback = (type: 'success' | 'error', text: string) => {
@@ -141,16 +128,16 @@ export default function OverheadListPage() {
     }, 4500);
   };
 
-  // Metrics Calculation from allOverheads
+  // Metrics Calculation from summaryData
   const stats = useMemo(() => {
-    const totalCount = allOverheads.length;
-    const active = allOverheads.filter((i) => i.isActive).length;
-    const inactive = totalCount - active;
-    const production = allOverheads.filter((i) => i.category === 'PRODUCTION').length;
-    const operational = allOverheads.filter((i) => i.category === 'OPERATIONAL').length;
-
-    return { total: totalCount, active, inactive, production, operational };
-  }, [allOverheads]);
+    return {
+      total: summaryData?.total_overheads ?? 0,
+      active: summaryData?.active_count ?? 0,
+      inactive: summaryData?.inactive_count ?? 0,
+      production: summaryData?.production_count ?? 0,
+      operational: summaryData?.operational_count ?? 0,
+    };
+  }, [summaryData]);
 
   const handleOpenCreate = () => {
     setEditingItem(null);
@@ -204,7 +191,7 @@ export default function OverheadListPage() {
         showFeedback('success', `Biaya overhead "${formData.name}" berhasil ditambahkan.`);
       }
       setIsModalOpen(false);
-      await Promise.all([fetchOverheads(), fetchStats()]);
+      queryClient.invalidateQueries({ queryKey: overheadKeys.all });
     } catch {
       showFeedback('error', 'Terjadi kesalahan saat menyimpan biaya overhead.');
     } finally {
@@ -220,7 +207,7 @@ export default function OverheadListPage() {
       await overheadService.deleteOverhead(deleteTarget.id);
       setDeleteTarget(null);
       showFeedback('success', `Biaya overhead "${deletedName}" berhasil dihapus.`);
-      await Promise.all([fetchOverheads(), fetchStats()]);
+      queryClient.invalidateQueries({ queryKey: overheadKeys.all });
     } catch {
       showFeedback('error', `Gagal menghapus biaya overhead "${deletedName}".`);
     } finally {
@@ -230,23 +217,16 @@ export default function OverheadListPage() {
 
   const handleToggleActive = async (item: OverheadType) => {
     const updatedStatus = !item.isActive;
-    // Optimistic update
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, isActive: updatedStatus } : i))
-    );
-    setAllOverheads((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, isActive: updatedStatus } : i))
-    );
     try {
       await overheadService.updateOverhead(item.id, { isActive: updatedStatus });
       showFeedback(
         'success',
         `Status "${item.name}" diubah ke ${updatedStatus ? 'Aktif' : 'Non-aktif'}.`
       );
-      fetchStats();
+      queryClient.invalidateQueries({ queryKey: overheadKeys.all });
     } catch {
       showFeedback('error', `Gagal mengubah status "${item.name}".`);
-      await Promise.all([fetchOverheads(), fetchStats()]);
+      queryClient.invalidateQueries({ queryKey: overheadKeys.all });
     }
   };
 

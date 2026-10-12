@@ -1,58 +1,40 @@
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { stockService } from '../services/stock-service';
-import type { Stock, RecordAdjustmentInput } from '../types';
+import { stockKeys, useAllStocksQuery } from './use-stocks-query';
+import type { RecordAdjustmentInput } from '../types';
 
-export function useMovementStock() {
-  const [stocks, setStocks] = React.useState<Stock[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(true);
+export function useMovementStock(options?: { enabled?: boolean }) {
+  const queryClient = useQueryClient();
+  const isEnabled = options?.enabled ?? true;
+
+  const {
+    data: stocks = [],
+    isLoading: loading,
+    error: queryError,
+    refetch,
+  } = useAllStocksQuery({ enabled: isEnabled });
+
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string>('');
+  const [mutationError, setMutationError] = React.useState<string>('');
+
+  const rawError = mutationError || queryError;
+  const error = rawError instanceof Error ? rawError.message : rawError ? String(rawError) : '';
 
   const loadStocks = React.useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await stockService.getAllStocks();
-      setStocks(data);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to load materials';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    let ignore = false;
-    stockService
-      .getAllStocks()
-      .then((data) => {
-        if (!ignore) {
-          setStocks(data);
-          setLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!ignore) {
-          const msg = err instanceof Error ? err.message : 'Failed to load materials';
-          setError(msg);
-          setLoading(false);
-        }
-      });
-    return () => {
-      ignore = true;
-    };
-  }, []);
+    await refetch();
+  }, [refetch]);
 
   const handleRecordAdjustment = async (payload: RecordAdjustmentInput): Promise<unknown> => {
     setIsSubmitting(true);
-    setError('');
+    setMutationError('');
     try {
       const result = await stockService.recordAdjustment(payload);
+      await queryClient.invalidateQueries({ queryKey: stockKeys.all });
       return result;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to record stock adjustment';
-      setError(msg);
+      setMutationError(msg);
       throw err;
     } finally {
       setIsSubmitting(false);

@@ -20,6 +20,8 @@ import {
   X,
 } from 'lucide-react';
 
+import { useQueryClient } from '@tanstack/react-query';
+import { useProductsQuery, recipeKeys } from '../../features/recipes/hooks/use-recipes-query';
 import { salesService } from '../../features/sales/services/sales-service';
 import { customerService } from '../../features/sales/services/customer-service';
 import type { CartItem, PaymentMethod, Sale, Customer } from '../../features/sales/types';
@@ -49,11 +51,11 @@ function formatRupiah(num: number): string {
 }
 
 export default function PosPage() {
+  const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const cashierName = user?.name || 'Kasir 1';
 
-  const [products, setProducts] = React.useState<Product[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const { data: products = [], isLoading: loading } = useProductsQuery();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedCategory, setSelectedCategory] = React.useState<string>('ALL');
   const [onlyInStock, setOnlyInStock] = React.useState(false);
@@ -103,23 +105,6 @@ export default function PosPage() {
   // Success / Receipt Modal State
   const [completedSale, setCompletedSale] = React.useState<Sale | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = React.useState(false);
-
-  // Load products
-  const fetchProducts = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await salesService.getProducts();
-      setProducts(data);
-    } catch (err) {
-      console.error('Failed to load products', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
 
   // Categories list
   const categories = React.useMemo(() => {
@@ -275,7 +260,7 @@ export default function PosPage() {
       setShowDiscountInput(false);
 
       // Refresh product list to show updated stock counts
-      fetchProducts();
+      queryClient.invalidateQueries({ queryKey: recipeKeys.all });
     } catch (err) {
       console.error('Failed to create sale', err);
       alert('Gagal memproses transaksi. Silakan coba lagi.');

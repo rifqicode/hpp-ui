@@ -14,8 +14,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-import { salesService } from '../../features/sales/services/sales-service';
-import type { Sale, SalesSummary, SaleQuery } from '../../features/sales/types';
+import {
+  useSalesListQuery,
+  useSalesSummaryQuery,
+} from '../../features/sales/hooks/use-sales-query';
+import type { Sale, SaleQuery } from '../../features/sales/types';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -53,9 +56,6 @@ function getStartOfMonthString(): string {
 }
 
 export default function TransactionHistoryPage() {
-  const [sales, setSales] = React.useState<Sale[]>([]);
-  const [summary, setSummary] = React.useState<SalesSummary | null>(null);
-  const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [filterMethod, setFilterMethod] = React.useState<string>('ALL');
   const [filterStatus, setFilterStatus] = React.useState<string>('ALL');
@@ -69,39 +69,35 @@ export default function TransactionHistoryPage() {
   const [selectedSale, setSelectedSale] = React.useState<Sale | null>(null);
   const [isDetailOpen, setIsDetailOpen] = React.useState(false);
 
-  const fetchSalesData = React.useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const query: SaleQuery = {
-        search: searchQuery.trim() || undefined,
-        payment_method: filterMethod !== 'ALL' ? filterMethod : undefined,
-      };
-
-      if (datePreset !== 'ALL_TIME') {
-        if (startDate) query.start_date = startDate;
-        if (endDate) query.end_date = endDate;
-      }
-
-      const [salesData, summaryData] = await Promise.all([
-        salesService.getSales(query),
-        salesService.getSummary(query),
-      ]);
-      setSales(salesData);
-      setSummary(summaryData);
-    } catch (err) {
-      console.error('Failed to load transaction history', err);
-    } finally {
-      setLoading(false);
+  const query: SaleQuery = React.useMemo(() => {
+    const q: SaleQuery = {
+      search: searchQuery.trim() || undefined,
+      payment_method: filterMethod !== 'ALL' ? filterMethod : undefined,
+    };
+    if (datePreset !== 'ALL_TIME') {
+      if (startDate) q.start_date = startDate;
+      if (endDate) q.end_date = endDate;
     }
+    return q;
   }, [searchQuery, filterMethod, datePreset, startDate, endDate]);
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchSalesData();
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [fetchSalesData]);
+  const {
+    data: sales = [],
+    isLoading: isSalesLoading,
+    refetch: refetchSales,
+  } = useSalesListQuery(query);
+
+  const {
+    data: summary = null,
+    isLoading: isSummaryLoading,
+    refetch: refetchSummary,
+  } = useSalesSummaryQuery(query);
+
+  const loading = isSalesLoading || isSummaryLoading;
+
+  const fetchSalesData = async () => {
+    await Promise.all([refetchSales(), refetchSummary()]);
+  };
 
   const handlePresetChange = (preset: 'TODAY' | '7D' | 'THIS_MONTH' | 'ALL_TIME' | 'CUSTOM') => {
     setDatePreset(preset);

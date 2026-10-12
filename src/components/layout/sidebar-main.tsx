@@ -172,14 +172,19 @@ const USER_DATA = {
 
 
 import { settingsService } from "@/features/settings/services/settings-service"
+import { useStoresQuery, useStorePermissionsQuery, storeKeys } from "@/features/settings/hooks/use-stores-query"
+import { useQueryClient } from "@tanstack/react-query"
 import type { StoreInfo } from "@/features/settings/types"
 
 export function SidebarMain() {
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { isMobile, state: sidebarState } = useSidebar()
-  const [stores, setStores] = React.useState<StoreInfo[]>([])
-  const [activeStore, setActiveStore] = React.useState<StoreInfo | null>(null)
+  const activeStoreId = useAuthStore((state) => state.activeStoreId)
+  const { data: stores = [], isSuccess: isStoresSuccess } = useStoresQuery()
+  useStorePermissionsQuery(activeStoreId)
+
   const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>(() => {
     // Auto-open if current path matches any sub-item or /production/hpp
     const initial: Record<string, boolean> = {}
@@ -225,43 +230,28 @@ export function SidebarMain() {
   const userEmail = user?.email || USER_DATA.email
 
   React.useEffect(() => {
-    async function loadStores() {
-      try {
-        const list = await settingsService.getStoresList()
-        if (list && list.length > 0) {
-          setStores(list)
-          const currentId = useAuthStore.getState().activeStoreId
-          const active = list.find((s) => s.id === currentId) || list[0]
-          setActiveStore(active)
-          useAuthStore.getState().setActiveStoreId(active.id)
-          useAuthStore.getState().setActiveStoreName(active.name)
-          await settingsService.getStorePermissions(active.id)
-        } else {
-          navigate("/setup-store")
-        }
-      } catch (err) {
-        console.error("Failed to load stores for sidebar:", err)
-      }
+    if (isStoresSuccess && stores.length === 0) {
+      navigate("/setup-store")
     }
-    loadStores()
-  }, [navigate])
+  }, [isStoresSuccess, stores.length, navigate])
 
-  const currentStore = activeStore || (stores.length > 0 ? stores[0] : {
-    id: "default",
-    name: "Toko Utama",
-    location: "Jakarta",
-    status: "online" as const,
-    category: "Bakery",
-  })
+  const currentStore = (activeStoreId && stores.find((s) => s.id === activeStoreId)) ||
+    (stores.length > 0 ? stores[0] : {
+      id: "default",
+      name: "Toko Utama",
+      location: "Jakarta",
+      status: "online" as const,
+      category: "Bakery",
+    })
 
   async function handleStoreChange(store: StoreInfo) {
     if (store.id === currentStore.id) return
     try {
       await settingsService.switchStore(store.id)
-      setActiveStore(store)
       useAuthStore.getState().setActiveStoreId(store.id)
       useAuthStore.getState().setActiveStoreName(store.name)
       await settingsService.getStorePermissions(store.id)
+      await queryClient.invalidateQueries({ queryKey: storeKeys.all })
       window.location.reload()
     } catch (err) {
       console.error("Failed to switch store:", err)

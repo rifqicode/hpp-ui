@@ -1,6 +1,7 @@
 import apiClient from '../../../lib/api-client';
 import type {
   PurchaseOrder,
+  PurchaseOrderSummary,
   CreatePurchaseOrderInput,
   UpdatePurchaseOrderInput,
   ApprovePOInput,
@@ -155,8 +156,16 @@ export const purchaseOrderService = {
     return mapRawPOToPurchaseOrder(response.data);
   },
 
+  getPurchaseOrderSummary: async (): Promise<PurchaseOrderSummary> => {
+    const response = await apiClient.get<PurchaseOrderSummary>('/purchase-orders/summary');
+    return response.data;
+  },
+
   cancelPurchaseOrder: async (id: string): Promise<PurchaseOrder> => {
     const response = await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/cancel`);
     return mapRawPOToPurchaseOrder(response.data);
   },
 };
+
+export const poService = purchaseOrderService;
+export default purchaseOrderService;

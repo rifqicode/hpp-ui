@@ -35,8 +35,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { useAuthStore } from "@/store/use-auth-store"
-import { settingsService } from "@/features/settings/services/settings-service"
-import type { StoreInfo } from "@/features/settings/types"
+import { useStoresQuery } from "@/features/settings/hooks/use-stores-query"
 import { dashboardService } from "@/features/dashboard/services/dashboard-service"
 import type {
   OperationalDashboardData,
@@ -61,24 +60,12 @@ function parseNum(val: number | string | undefined | null): number {
 
 export default function DashboardPage() {
   const activeStoreId = useAuthStore((state) => state.activeStoreId)
-  const [activeStore, setActiveStore] = React.useState<StoreInfo | null>(null)
+  const activeStoreName = useAuthStore((state) => state.activeStoreName)
+  const { data: stores = [] } = useStoresQuery()
+  const activeStore = (activeStoreId && stores.find((s) => s.id === activeStoreId)) || null
+  const displayStoreName = activeStore?.name || activeStoreName || "Toko Aktif"
   const [activeTab, setActiveTab] = React.useState<"operational" | "hpp">("operational")
   const [hppPeriod, setHppPeriod] = React.useState<"today" | "week" | "month">("week")
-
-  React.useEffect(() => {
-    async function fetchStoreInfo() {
-      try {
-        const list = await settingsService.getStoresList()
-        if (list && list.length > 0) {
-          const current = list.find((s) => s.id === activeStoreId) || list[0]
-          setActiveStore(current)
-        }
-      } catch {
-        // Ignore store name fetch error
-      }
-    }
-    fetchStoreInfo()
-  }, [activeStoreId])
 
   const [operationalData, setOperationalData] = React.useState<OperationalDashboardData | null>(null)
   const [hppData, setHppData] = React.useState<HPPDashboardData | null>(null)
@@ -161,7 +148,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 flex items-center gap-2">
             <Store className="h-3.5 w-3.5 text-primary" />
-            <span>{activeStore?.name || "Toko Aktif"}</span>
+            <span>{displayStoreName}</span>
             <span>•</span>
             <span className="font-mono">
               {new Date(currentTime).toLocaleDateString("id-ID", {

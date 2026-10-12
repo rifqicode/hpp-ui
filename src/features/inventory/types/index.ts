@@ -89,3 +89,11 @@ export interface PaginatedStocks {
   limit: number;
   total_pages: number;
 }
+
+export interface StockSummary {
+  total_materials: number;
+  healthy_stock: number;
+  low_stock: number;
+  out_of_stock: number;
+}
+

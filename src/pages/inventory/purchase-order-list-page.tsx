@@ -49,7 +49,11 @@ import {
 } from "@/components/ui/dialog"
 
 import { usePurchaseOrders } from "@/features/purchase-orders/hooks"
-import type { PurchaseOrderStatus } from "@/features/purchase-orders/types"
+import type {
+  PurchaseOrderStatus,
+  PurchaseOrder,
+  PurchaseOrderItem,
+} from "@/features/purchase-orders/types"
 import { supplierService } from "@/features/suppliers/services/supplier-service"
 import type { Supplier } from "@/features/suppliers/types"
 
@@ -445,7 +449,7 @@ export default function PurchaseOrderListPage() {
                       </td>
                     </tr>
                   ) : (
-                    orders.map((po) => (
+                    orders.map((po: PurchaseOrder) => (
                       <tr
                         key={po.id}
                         className="hover:bg-muted/30 transition-colors group"
@@ -482,8 +486,8 @@ export default function PurchaseOrderListPage() {
                         <td className="px-5 py-3.5">
                           <div className="flex flex-col gap-0.5 text-xs">
                             <span className="font-medium text-foreground">{po.items.length} jenis item</span>
-                            <span className="text-muted-foreground truncate max-w-[200px]" title={po.items.map((it) => `${it.stockName} (${it.quantity}${it.baseUnit})`).join(", ")}>
-                              {po.items.map((it) => `${it.stockName} (${it.quantity}${it.baseUnit})`).join(", ")}
+                            <span className="text-muted-foreground truncate max-w-[200px]" title={po.items.map((it: PurchaseOrderItem) => `${it.stockName} (${it.quantity}${it.baseUnit})`).join(", ")}>
+                              {po.items.map((it: PurchaseOrderItem) => `${it.stockName} (${it.quantity}${it.baseUnit})`).join(", ")}
                             </span>
                           </div>
                         </td>
@@ -557,7 +561,7 @@ export default function PurchaseOrderListPage() {
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    onClick={() => handleCancelPO(po.id)}
+                                    onClick={() => handleCancelPO(po)}
                                     className="text-destructive cursor-pointer focus:text-destructive focus:bg-destructive/10"
                                   >
                                     <Ban className="mr-2 h-3.5 w-3.5" />
