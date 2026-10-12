@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { usePurchaseStock } from "@/features/inventory/hooks/use-purchase-stock"
@@ -353,14 +354,14 @@ export default function PurchaseStockPage() {
                 <Label htmlFor="qty">
                   Quantity {selectedMaterial ? `(${selectedMaterial.base_unit})` : ""}
                 </Label>
-                <Input
+                <FormattedNumberInput
                   id="qty"
-                  type="number"
-                  step="any"
-                  min="0.0001"
+                  allowDecimal
+                  maxDecimals={4}
+                  min={0.0001}
                   placeholder="e.g. 10"
                   value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
+                  onChange={(val) => setQuantity(String(val))}
                   className="rounded-xl font-mono"
                   required
                 />
@@ -368,14 +369,12 @@ export default function PurchaseStockPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="price">Total Purchase Price (IDR)</Label>
-                <Input
+                <FormattedNumberInput
                   id="price"
-                  type="number"
-                  step="any"
-                  min="1"
+                  min={1}
                   placeholder="e.g. 250000"
                   value={totalPrice}
-                  onChange={(e) => setTotalPrice(e.target.value)}
+                  onChange={(val) => setTotalPrice(String(val))}
                   className="rounded-xl font-mono"
                   required
                 />

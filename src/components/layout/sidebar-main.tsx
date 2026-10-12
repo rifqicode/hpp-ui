@@ -19,6 +19,7 @@ import {
   User,
   LogOut,
   Layers,
+  ChevronRight,
 } from "lucide-react"
 
 import {
@@ -29,6 +30,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -48,12 +52,20 @@ import {
   DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu"
 
-interface NavItem {
+interface NavSubItem {
   title: string
   url: string
+  permission?: string
+  badge?: string
+}
+
+interface NavItem {
+  title: string
+  url?: string
   icon: React.ComponentType<{ className?: string }>
   permission?: string
   badge?: string
+  subItems?: NavSubItem[]
 }
 
 interface NavGroup {
@@ -83,7 +95,15 @@ const NAVIGATION: NavGroup[] = [
       { title: "Biaya Overhead", url: "/production/overheads", icon: Layers, permission: "menu:recipes" },
       { title: "Produk", url: "/production/products", icon: Factory, permission: "menu:recipes" },
       { title: "Batches", url: "/production/batches", icon: History, badge: "3", permission: "menu:recipes" },
-      { title: "HPP Calculator", url: "/production/hpp", icon: Calculator, permission: "menu:recipes" },
+      {
+        title: "HPP Calculator",
+        icon: Calculator,
+        permission: "menu:recipes",
+        subItems: [
+          { title: "Simulasi Resep Baru", url: "/production/hpp/recipe-simulation" },
+          { title: "Simulasi Produksi & Restock", url: "/production/hpp/production-simulation" },
+        ],
+      },
     ]
   },
   {
@@ -103,7 +123,9 @@ const NAVIGATION: NavGroup[] = [
   }
 ]
 
-const ALL_NAV_URLS = NAVIGATION.flatMap((g) => g.items.map((i) => i.url))
+const ALL_NAV_URLS = NAVIGATION.flatMap((g) =>
+  g.items.flatMap((i) => (i.subItems ? i.subItems.map((s) => s.url) : (i.url ? [i.url] : [])))
+)
 
 function isItemActive(pathname: string, itemUrl: string): boolean {
   const p = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname
@@ -155,9 +177,44 @@ import type { StoreInfo } from "@/features/settings/types"
 export function SidebarMain() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { isMobile } = useSidebar()
+  const { isMobile, state: sidebarState } = useSidebar()
   const [stores, setStores] = React.useState<StoreInfo[]>([])
   const [activeStore, setActiveStore] = React.useState<StoreInfo | null>(null)
+  const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>(() => {
+    // Auto-open if current path matches any sub-item or /production/hpp
+    const initial: Record<string, boolean> = {}
+    NAVIGATION.forEach((g) => {
+      g.items.forEach((item) => {
+        if (item.subItems) {
+          const isChildActive = item.subItems.some((sub) => location.pathname.startsWith(sub.url)) ||
+            (item.title === "HPP Calculator" && location.pathname.startsWith("/production/hpp"))
+          if (isChildActive) {
+            initial[item.title] = true
+          }
+        }
+      })
+    })
+    return initial
+  })
+
+  // Keep openMenus synchronized when path changes
+  React.useEffect(() => {
+    NAVIGATION.forEach((g) => {
+      g.items.forEach((item) => {
+        if (item.subItems) {
+          const isChildActive = item.subItems.some((sub) => location.pathname.startsWith(sub.url)) ||
+            (item.title === "HPP Calculator" && location.pathname.startsWith("/production/hpp"))
+          if (isChildActive) {
+            setOpenMenus((prev) => ({ ...prev, [item.title]: true }))
+          }
+        }
+      })
+    })
+  }, [location.pathname])
+
+  const toggleMenu = (title: string) => {
+    setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }))
+  }
 
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
@@ -334,7 +391,7 @@ export function SidebarMain() {
                   sideOffset={6}
                 >
                   <DropdownMenuLabel className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1.5">
-                    Daftar Toko & Cabang
+                    Daftar Toko
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {stores.map((s) => (
@@ -375,12 +432,12 @@ export function SidebarMain() {
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild className="flex items-center gap-2.5 p-2 cursor-pointer text-primary font-medium hover:bg-primary/5 rounded-lg">
-                        <Link to="/settings/store">
+                        <Link to="/settings/store?tab=stores">
                           <div className="flex size-7 items-center justify-center rounded-md border border-dashed border-primary/40 bg-primary/5">
                             <Plus className="size-3.5" />
                           </div>
-                          <span className="text-xs font-semibold">Kelola & Tambah Cabang</span>
-                          <DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
+                          <span className="text-xs font-semibold">Tambah Toko</span>
+                          <DropdownMenuShortcut>⌘</DropdownMenuShortcut>
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -407,7 +464,112 @@ export function SidebarMain() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {visibleItems.map((item) => {
-                    const active = isItemActive(location.pathname, item.url)
+                    if (item.subItems && item.subItems.length > 0) {
+                      const isChildActive = item.subItems.some((sub) => location.pathname === sub.url || location.pathname.startsWith(sub.url + "/")) ||
+                        (item.title === "HPP Calculator" && location.pathname.startsWith("/production/hpp"))
+                      const isOpen = openMenus[item.title] ?? isChildActive
+
+                      // If sidebar is collapsed to icon mode, provide DropdownMenu so users can still access sub-items
+                      if (sidebarState === "collapsed" && !isMobile) {
+                        return (
+                          <SidebarMenuItem key={item.title}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <SidebarMenuButton
+                                  tooltip={item.title}
+                                  isActive={isChildActive}
+                                  className={`
+                                    transition-all duration-150
+                                    ${isChildActive
+                                      ? "bg-primary/15 text-primary font-semibold border border-primary/20 shadow-2xs hover:bg-primary/20 hover:text-primary"
+                                      : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"}
+                                  `}
+                                >
+                                  <item.icon className={`h-4.5 w-4.5 shrink-0 transition-colors ${isChildActive ? "text-primary" : "text-muted-foreground group-hover/menu-button:text-foreground"}`} />
+                                  <span className="text-sm">{item.title}</span>
+                                </SidebarMenuButton>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent side="right" align="start" className="min-w-48 rounded-xl p-1.5 shadow-xl border-border">
+                                <DropdownMenuLabel className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                                  {item.title}
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {item.subItems.map((sub) => {
+                                  const isSubActive = location.pathname === sub.url
+                                  return (
+                                    <DropdownMenuItem key={sub.url} asChild className="p-0">
+                                      <Link
+                                        to={sub.url}
+                                        className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                                          isSubActive
+                                            ? "bg-primary/15 text-primary font-semibold"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-primary/5"
+                                        }`}
+                                      >
+                                        <span>{sub.title}</span>
+                                      </Link>
+                                    </DropdownMenuItem>
+                                  )
+                                })}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </SidebarMenuItem>
+                        )
+                      }
+
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            onClick={() => toggleMenu(item.title)}
+                            isActive={isChildActive}
+                            className={`
+                              w-full justify-between transition-all duration-150 cursor-pointer
+                              ${isChildActive
+                                ? "bg-primary/10 text-primary font-semibold border border-primary/20"
+                                : "text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground"}
+                            `}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <item.icon className={`h-4.5 w-4.5 shrink-0 transition-colors ${isChildActive ? "text-primary" : "text-muted-foreground"}`} />
+                              <span className="text-sm truncate">{item.title}</span>
+                            </div>
+                            <ChevronRight
+                              className={`h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform duration-200 ${
+                                isOpen ? "rotate-90 text-primary" : ""
+                              }`}
+                            />
+                          </SidebarMenuButton>
+
+                          {isOpen && (
+                            <SidebarMenuSub className="mt-1 space-y-0.5">
+                              {item.subItems.map((sub) => {
+                                const isSubActive = location.pathname === sub.url
+                                return (
+                                  <SidebarMenuSubItem key={sub.url}>
+                                    <SidebarMenuSubButton
+                                      asChild
+                                      isActive={isSubActive}
+                                      className={`
+                                        transition-colors text-xs py-1.5 h-8
+                                        ${isSubActive
+                                          ? "bg-primary/15 text-primary font-semibold hover:bg-primary/20 hover:text-primary"
+                                          : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"}
+                                      `}
+                                    >
+                                      <Link to={sub.url}>
+                                        <span>{sub.title}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                )
+                              })}
+                            </SidebarMenuSub>
+                          )}
+                        </SidebarMenuItem>
+                      )
+                    }
+
+                    const active = item.url ? isItemActive(location.pathname, item.url) : false
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton 
@@ -421,7 +583,7 @@ export function SidebarMain() {
                               : 'text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground'}
                           `}
                         >
-                          <Link to={item.url} className="flex items-center gap-3">
+                          <Link to={item.url || "#"} className="flex items-center gap-3">
                             <item.icon className={`h-4.5 w-4.5 shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover/menu-button:text-foreground'}`} />
                             <span className="text-sm">{item.title}</span>
                           </Link>

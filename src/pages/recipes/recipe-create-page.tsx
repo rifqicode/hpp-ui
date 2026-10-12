@@ -26,6 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -51,7 +52,7 @@ function formatCurrencyIdr(val: number): string {
 
 interface IngredientRow {
   stockId: string
-  quantity: number
+  quantity: number | ""
   recipeUnit?: string
 }
 
@@ -113,10 +114,10 @@ export default function RecipeCreatePage() {
   const [imageUrl, setImageUrl] = React.useState<string | null>(null)
 
   // Target Margin (%) Input by User - Selling Price is derived automatically!
-  const [targetMargin, setTargetMargin] = React.useState<number>(50)
+  const [targetMargin, setTargetMargin] = React.useState<number | "">(50)
   const [roundMode, setRoundMode] = React.useState<number>(500) // Default round up to nearest Rp 500
 
-  const [minStock, setMinStock] = React.useState<number>(10)
+  const [minStock, setMinStock] = React.useState<number | "">(10)
   const [description, setDescription] = React.useState<string>("")
 
   // Ingredient Rows - starts empty from 0
@@ -165,7 +166,7 @@ export default function RecipeCreatePage() {
     setIngredients([...ingredients, { stockId, quantity: 10, recipeUnit: defaultUnit }])
   }
 
-  function updateIngredientRow(index: number, stockId: string, quantity: number, recipeUnit?: string) {
+  function updateIngredientRow(index: number, stockId: string, quantity: number | "", recipeUnit?: string) {
     const updated = [...ingredients]
     const mat = availableMaterials.find((m) => m.id === stockId)
     const bu = mat?.baseUnit?.toLowerCase()
@@ -189,7 +190,7 @@ export default function RecipeCreatePage() {
       const fallbackUnit = bu === "kg" ? "g" : (bu === "l" ? "ml" : (mat?.baseUnit || "satuan"))
       const activeUnit = row.recipeUnit || fallbackUnit
       const unitCost = getCostPerRecipeUnit(baseCost, activeUnit, mat?.baseUnit)
-      const subtotal = row.quantity * unitCost
+      const subtotal = (Number(row.quantity) || 0) * unitCost
       totalRawMaterials += subtotal
       return {
         ...row,
@@ -208,7 +209,7 @@ export default function RecipeCreatePage() {
     const estimatedHPP = bomCostPerUnit
 
     // Margin Pricing Formula: Selling Price = HPP / (1 - Margin% / 100)
-    const safeMargin = Math.min(95, Math.max(1, targetMargin))
+    const safeMargin = Math.min(95, Math.max(1, Number(targetMargin) || 1))
     const rawPrice = estimatedHPP > 0 ? estimatedHPP / (1 - safeMargin / 100) : 0
 
     // Rounding
@@ -245,14 +246,14 @@ export default function RecipeCreatePage() {
       return
     }
 
-    if (targetMargin <= 0 || targetMargin >= 100) {
+    if (Number(targetMargin) <= 0 || Number(targetMargin) >= 100) {
       setError("Target margin harus di antara 1% sampai 95%")
       return
     }
 
     // Validate ingredients
     const validIngredients = ingredients.filter(
-      (ing) => ing.stockId && ing.quantity > 0
+      (ing) => ing.stockId && Number(ing.quantity) > 0
     )
     if (validIngredients.length === 0) {
       setError("Tambahkan minimal 1 bahan baku dengan takaran lebih dari 0")
@@ -278,12 +279,12 @@ export default function RecipeCreatePage() {
         wastePct: Number(wastePct) || 0,
         imageUrl,
         sellingPrice: calculations.calculatedPrice,
-        targetMargin: Number(targetMargin),
-        minStock: Number(minStock) || 10,
+        targetMargin: Number(targetMargin) || 50,
+        minStock: minStock === "" ? 0 : (Number(minStock) || 0),
         description: description.trim(),
         initialIngredients: validIngredients.map((ing) => {
           const mat = availableMaterials.find((m) => m.id === ing.stockId)
-          const baseQty = getQuantityInBaseUnit(ing.quantity, ing.recipeUnit, mat?.baseUnit)
+          const baseQty = getQuantityInBaseUnit(Number(ing.quantity), ing.recipeUnit, mat?.baseUnit)
           return {
             stockId: ing.stockId,
             quantity: Number(baseQty),
@@ -553,12 +554,11 @@ export default function RecipeCreatePage() {
                   <Label htmlFor="minStock" className="text-xs font-semibold">
                     Batas Minimum Stok ({unit})
                   </Label>
-                  <Input
+                  <FormattedNumberInput
                     id="minStock"
-                    type="number"
-                    min="0"
-                    value={minStock || ""}
-                    onChange={(e) => setMinStock(Number(e.target.value))}
+                    min={0}
+                    value={minStock}
+                    onChange={(val) => setMinStock(val === "" ? "" : Number(val))}
                     className="rounded-xl h-10 font-mono text-sm"
                     placeholder="Contoh: 10"
                   />
@@ -646,7 +646,7 @@ export default function RecipeCreatePage() {
                     const fallbackUnit = bu === "kg" ? "g" : (bu === "l" ? "ml" : (selectedMat?.baseUnit || "satuan"))
                     const activeUnit = row.recipeUnit || fallbackUnit
                     const unitCost = getCostPerRecipeUnit(baseCost, activeUnit, selectedMat?.baseUnit)
-                    const subtotal = row.quantity * unitCost
+                    const subtotal = (Number(row.quantity) || 0) * unitCost
                     const compatibleUnits = getCompatibleUnits(selectedMat?.baseUnit)
 
                     return (
@@ -718,12 +718,12 @@ export default function RecipeCreatePage() {
 
                         {/* Quantity & Unit Selector */}
                         <div className="flex items-center gap-1.5 w-full sm:w-44">
-                          <Input
-                            type="number"
-                            min="0.001"
-                            step="any"
-                            value={row.quantity || ""}
-                            onChange={(e) => updateIngredientRow(idx, row.stockId, Number(e.target.value), activeUnit)}
+                          <FormattedNumberInput
+                            allowDecimal
+                            maxDecimals={4}
+                            min={0.001}
+                            value={row.quantity}
+                            onChange={(val) => updateIngredientRow(idx, row.stockId, val === "" ? "" : Number(val), activeUnit)}
                             placeholder="Takaran"
                             className="rounded-xl h-10 text-xs font-mono font-bold bg-background text-right"
                             required
@@ -869,14 +869,12 @@ export default function RecipeCreatePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                   <div className="relative">
                     <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
+                    <FormattedNumberInput
                       id="targetMargin"
-                      type="number"
-                      min="1"
-                      max="95"
-                      step="1"
-                      value={targetMargin || ""}
-                      onChange={(e) => setTargetMargin(Math.min(95, Math.max(1, Number(e.target.value))))}
+                      min={1}
+                      max={95}
+                      value={targetMargin}
+                      onChange={(val) => setTargetMargin(val === "" ? "" : Math.min(95, Math.max(1, Number(val))))}
                       className="pl-8 rounded-xl h-10 font-mono text-sm font-bold text-foreground"
                       placeholder="50"
                       required

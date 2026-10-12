@@ -57,6 +57,7 @@ export default function LoginPage() {
       const stores = await settingsService.getStoresList()
       if (stores && stores.length > 0) {
         useAuthStore.getState().setActiveStoreId(stores[0].id)
+        useAuthStore.getState().setActiveStoreName(stores[0].name)
         navigate("/dashboard")
       } else {
         navigate("/setup-store")

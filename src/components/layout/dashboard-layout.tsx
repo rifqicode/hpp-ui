@@ -8,6 +8,9 @@ import { useLoadingStore } from "@/store/use-loading-store"
 import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { getActiveMenuTitle } from "@/lib/page-info"
 
+import { NotificationDropdown } from "./notification-dropdown"
+import { StoreDropdown } from "./store-dropdown"
+
 export function DashboardLayout() {
   const location = useLocation()
   const token = useAuthStore((state) => state.token)
@@ -31,6 +34,11 @@ export function DashboardLayout() {
               <h1 className="text-sm font-semibold tracking-tight text-foreground sm:text-base truncate">
                 {menuTitle}
               </h1>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <StoreDropdown />
+              <NotificationDropdown />
             </div>
           </div>
           <div className="relative flex min-h-0 flex-1 flex-col">

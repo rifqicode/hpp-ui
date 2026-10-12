@@ -841,14 +841,14 @@ export default function StoreSettingsPage() {
         <TabsContent value="stores" className="mt-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-semibold text-foreground">Daftar Cabang & Toko Bisnis</h3>
+              <h3 className="text-base font-semibold text-foreground">Daftar Toko</h3>
               <p className="text-xs text-muted-foreground">
-                Pilih atau beralih cabang untuk mengelola stok bahan dan laporan HPP cabang terkait.
+                Pilih atau beralih toko untuk mengelola stok bahan dan laporan HPP cabang terkait.
               </p>
             </div>
             <Button onClick={() => setIsNewStoreOpen(true)} className="rounded-xl shadow-sm font-semibold" size="sm">
               <Plus className="mr-1.5 h-3.5 w-3.5" />
-              Tambah Cabang Baru
+              Tambah Toko Baru
             </Button>
           </div>
 
@@ -1196,7 +1196,7 @@ export default function StoreSettingsPage() {
           <form onSubmit={handleCreateStore} className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="new-store-name" className="text-xs font-semibold">
-                Nama Cabang / Toko <span className="text-destructive">*</span>
+                Nama Toko <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="new-store-name"

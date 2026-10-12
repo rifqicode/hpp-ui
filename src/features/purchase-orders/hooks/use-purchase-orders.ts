@@ -32,7 +32,7 @@ export function usePurchaseOrders() {
 
   const [completingPO, setCompletingPO] = React.useState<PurchaseOrder | null>(null)
   const [completeSupplierId, setCompleteSupplierId] = React.useState<string>("")
-  const [itemPrices, setItemPrices] = React.useState<Record<string, number>>({})
+  const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({})
 
   const [submitting, setSubmitting] = React.useState<boolean>(false)
 
@@ -161,9 +161,9 @@ export function usePurchaseOrders() {
     setCompleteSupplierId(po.supplierId || "")
     const initial: Record<string, number> = {}
     po.items.forEach((it) => {
-      initial[it.id] = it.unitPrice || 0
+      initial[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0)
     })
-    setItemPrices(initial)
+    setItemTotalPrices(initial)
   }
 
   async function handleConfirmComplete(e: React.FormEvent) {
@@ -176,10 +176,15 @@ export function usePurchaseOrders() {
 
     setSubmitting(true)
     try {
-      const prices = completingPO.items.map((it) => ({
-        item_id: it.id,
-        unit_price: Number(itemPrices[it.id]) || 0,
-      }))
+      const prices = completingPO.items.map((it) => {
+        const total = Number(itemTotalPrices[it.id]) || 0
+        const unit_price = it.quantity > 0 ? Number((total / it.quantity).toFixed(4)) : 0
+        return {
+          item_id: it.id,
+          unit_price,
+          total_price: total,
+        }
+      })
 
       await purchaseOrderService.completePurchaseOrder(completingPO.id, {
         supplier_id: completeSupplierId,
@@ -297,8 +302,10 @@ export function usePurchaseOrders() {
     setCompletingPO,
     completeSupplierId,
     setCompleteSupplierId,
-    itemPrices,
-    setItemPrices,
+    itemPrices: itemTotalPrices,
+    setItemPrices: setItemTotalPrices,
+    itemTotalPrices,
+    setItemTotalPrices,
     handleOpenComplete,
     handleConfirmComplete,
     // Cancel & Submitting

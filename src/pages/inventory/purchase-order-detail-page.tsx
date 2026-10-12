@@ -86,7 +86,7 @@ export default function PurchaseOrderDetailPage() {
   // Complete modal
   const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
   const [completeSupplierId, setCompleteSupplierId] = React.useState<string>("")
-  const [itemPrices, setItemPrices] = React.useState<Record<string, number>>({})
+  const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({})
 
   const canProcess = can("purchases:process")
   const canRequest = can("purchases:request")
@@ -110,11 +110,11 @@ export default function PurchaseOrderDetailPage() {
       setApproveSupplierId(data.supplierId || "")
       setCompleteSupplierId(data.supplierId || "")
 
-      const initialPrices: Record<string, number> = {}
+      const initialTotalPrices: Record<string, number> = {}
       data.items.forEach((it) => {
-        initialPrices[it.id] = it.unitPrice || 0
+        initialTotalPrices[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0)
       })
-      setItemPrices(initialPrices)
+      setItemTotalPrices(initialTotalPrices)
     } catch (err) {
       console.error("Failed to load PO detail:", err)
     } finally {
@@ -179,10 +179,15 @@ export default function PurchaseOrderDetailPage() {
 
     setSubmitting(true)
     try {
-      const prices = order.items.map((it) => ({
-        item_id: it.id,
-        unit_price: Number(itemPrices[it.id]) || 0,
-      }))
+      const prices = order.items.map((it) => {
+        const total = Number(itemTotalPrices[it.id]) || 0
+        const unit_price = it.quantity > 0 ? Number((total / it.quantity).toFixed(4)) : 0
+        return {
+          item_id: it.id,
+          unit_price,
+          total_price: total,
+        }
+      })
       const updated = await purchaseOrderService.completePurchaseOrder(order.id, {
         supplier_id: completeSupplierId,
         prices,
@@ -334,12 +339,12 @@ export default function PurchaseOrderDetailPage() {
   }
 
   const calculatedTotal = order.items.reduce((acc, it) => {
-    const p = Number(itemPrices[it.id]) || 0
-    return acc + p * it.quantity
+    const total = Number(itemTotalPrices[it.id]) || 0
+    return acc + total
   }, 0)
 
   return (
-    <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500 w-full">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button asChild variant="outline" size="sm" className="rounded-xl">
@@ -422,6 +427,11 @@ export default function PurchaseOrderDetailPage() {
                 className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 onClick={() => {
                   setCompleteSupplierId(order.supplierId || "")
+                  const initialTotalPrices: Record<string, number> = {}
+                  order.items.forEach((it) => {
+                    initialTotalPrices[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0)
+                  })
+                  setItemTotalPrices(initialTotalPrices)
                   setIsCompleteOpen(true)
                 }}
               >
@@ -757,7 +767,7 @@ export default function PurchaseOrderDetailPage() {
 
       {/* Modal 3: Set Harga & Selesaikan */}
       <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
-        <DialogContent className="sm:max-w-[580px] rounded-xl">
+        <DialogContent className="sm:max-w-[660px] rounded-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -765,7 +775,7 @@ export default function PurchaseOrderDetailPage() {
             </DialogTitle>
             <DialogDescription>
               Pesanan <strong className="text-foreground">{order.poNumber}</strong> telah tiba.
-              Pilih supplier final dan masukkan harga satuan faktur untuk memasukkan barang ke stok bahan baku.
+              Pilih supplier final dan masukkan total harga faktur untuk memasukkan barang ke stok bahan baku.
             </DialogDescription>
           </DialogHeader>
 
@@ -809,38 +819,46 @@ export default function PurchaseOrderDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40">
-                    <TableHead>Bahan Baku</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="w-[180px]">Harga Satuan (Rp)</TableHead>
+                    <TableHead className="py-2.5 px-3 text-left">Bahan Baku</TableHead>
+                    <TableHead className="py-2.5 px-3 text-right">Qty</TableHead>
+                    <TableHead className="py-2.5 px-3 w-[170px] text-right">Total Faktur (Rp)</TableHead>
+                    <TableHead className="py-2.5 px-3 w-[150px] text-right">Harga Satuan (Kalkulasi)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {order.items.map((it) => (
-                    <TableRow key={it.id}>
-                      <TableCell className="font-medium text-sm">
-                        {it.stockName}
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm">
-                        {it.quantity} {it.baseUnit}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={itemPrices[it.id] ?? ""}
-                          onChange={(e) =>
-                            setItemPrices({
-                              ...itemPrices,
-                              [it.id]: Number(e.target.value),
-                            })
-                          }
-                          placeholder="e.g. 15000"
-                          className="rounded-lg h-8 text-right font-mono text-sm"
-                          required
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {order.items.map((it) => {
+                    const total = Number(itemTotalPrices[it.id]) || 0
+                    const unitPrice = it.quantity > 0 ? total / it.quantity : 0
+                    return (
+                      <TableRow key={it.id}>
+                        <TableCell className="align-middle py-2.5 px-3 font-medium text-sm text-foreground">
+                          {it.stockName}
+                        </TableCell>
+                        <TableCell className="align-middle py-2.5 px-3 text-right font-mono text-sm text-muted-foreground whitespace-nowrap">
+                          {it.quantity} {it.baseUnit}
+                        </TableCell>
+                        <TableCell className="align-middle py-2.5 px-3">
+                          <Input
+                            type="number"
+                            min="0"
+                            value={itemTotalPrices[it.id] ?? ""}
+                            onChange={(e) =>
+                              setItemTotalPrices({
+                                ...itemTotalPrices,
+                                [it.id]: Number(e.target.value),
+                              })
+                            }
+                            placeholder="e.g. 150000"
+                            className="h-8 text-right font-mono text-sm"
+                            required
+                          />
+                        </TableCell>
+                        <TableCell className="align-middle py-2.5 px-3 text-right font-mono text-xs text-muted-foreground whitespace-nowrap font-medium">
+                          {unitPrice > 0 ? `${formatRupiah(Math.round(unitPrice))} / ${it.baseUnit}` : "-"}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>

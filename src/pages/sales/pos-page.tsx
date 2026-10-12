@@ -28,6 +28,7 @@ import { useAuthStore } from '../../store/use-auth-store';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { FormattedNumberInput } from '../../components/ui/formatted-number-input';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent } from '../../components/ui/card';
 import { Separator } from '../../components/ui/separator';
@@ -651,14 +652,13 @@ export default function PosPage() {
               {showDiscountInput ? (
                 <div className="flex items-center gap-2 pt-1">
                   <span className="text-xs text-muted-foreground">Diskon:</span>
-                  <Input
-                    type="number"
-                    min="0"
+                  <FormattedNumberInput
+                    min={0}
                     max={subtotal}
                     value={discountAmount || ''}
-                    onChange={(e) => setDiscountAmount(Math.max(0, Number(e.target.value)))}
-                    placeholder="Rp"
-                    className="h-7 text-xs w-28 bg-background"
+                    onChange={(val) => setDiscountAmount(val === '' ? 0 : Math.max(0, Number(val)))}
+                    placeholder="0"
+                    className="h-7 text-xs w-28 bg-background font-mono text-right"
                   />
                   <Button
                     variant="ghost"
@@ -795,10 +795,9 @@ export default function PosPage() {
             {paymentMethod === 'CASH' && (
               <div className="space-y-2.5 pt-1">
                 <label className="text-xs font-semibold text-foreground">Uang Diterima (Rp)</label>
-                <Input
-                  type="text"
+                <FormattedNumberInput
                   value={cashReceived}
-                  onChange={(e) => setCashReceived(e.target.value)}
+                  onChange={(val) => setCashReceived(String(val))}
                   placeholder="0"
                   className="h-10 text-base font-bold text-center bg-background"
                 />

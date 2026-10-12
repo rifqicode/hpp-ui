@@ -87,8 +87,8 @@ export default function PurchaseOrderListPage() {
     setCompletingPO,
     completeSupplierId,
     setCompleteSupplierId,
-    itemPrices,
-    setItemPrices,
+    itemTotalPrices,
+    setItemTotalPrices,
     handleOpenComplete,
     handleConfirmComplete,
     // Actions & Permissions
@@ -164,8 +164,8 @@ export default function PurchaseOrderListPage() {
 
   const calculatedDialogTotal = completingPO
     ? completingPO.items.reduce((acc, it) => {
-        const p = Number(itemPrices[it.id]) || 0
-        return acc + p * it.quantity
+        const total = Number(itemTotalPrices[it.id]) || 0
+        return acc + total
       }, 0)
     : 0
 
@@ -735,7 +735,7 @@ export default function PurchaseOrderListPage() {
 
       {/* Modal 3: Set Harga & Selesaikan PO */}
       <Dialog open={!!completingPO} onOpenChange={(open) => !open && setCompletingPO(null)}>
-        <DialogContent className="sm:max-w-[580px] rounded-xl">
+        <DialogContent className="sm:max-w-[660px] rounded-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -743,7 +743,7 @@ export default function PurchaseOrderListPage() {
             </DialogTitle>
             <DialogDescription>
               Pesanan <strong className="text-foreground">{completingPO?.poNumber}</strong> telah tiba.
-              Pilih supplier final dan masukkan harga satuan faktur untuk memasukkan barang ke stok bahan baku.
+              Pilih supplier final dan masukkan total harga faktur untuk memasukkan barang ke stok bahan baku.
             </DialogDescription>
           </DialogHeader>
 
@@ -788,38 +788,46 @@ export default function PurchaseOrderListPage() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted/40 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                     <tr>
-                      <th className="px-4 py-2.5">Bahan Baku</th>
-                      <th className="px-4 py-2.5 text-right">Qty</th>
-                      <th className="px-4 py-2.5 w-[180px]">Harga Satuan (Rp)</th>
+                      <th className="py-2.5 px-3 text-left">Bahan Baku</th>
+                      <th className="py-2.5 px-3 text-right">Qty</th>
+                      <th className="py-2.5 px-3 w-[170px] text-right">Total Faktur (Rp)</th>
+                      <th className="py-2.5 px-3 w-[150px] text-right">Harga Satuan (Kalkulasi)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/70">
-                    {completingPO.items.map((it) => (
-                      <tr key={it.id}>
-                        <td className="px-4 py-2.5 font-medium text-sm text-foreground">
-                          {it.stockName}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-mono text-sm">
-                          {it.quantity} {it.baseUnit}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <Input
-                            type="number"
-                            min="0"
-                            value={itemPrices[it.id] ?? ""}
-                            onChange={(e) =>
-                              setItemPrices({
-                                ...itemPrices,
-                                [it.id]: Number(e.target.value),
-                              })
-                            }
-                            placeholder="e.g. 15000"
-                            className="h-8 text-right font-mono text-sm"
-                            required
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {completingPO.items.map((it) => {
+                      const total = Number(itemTotalPrices[it.id]) || 0
+                      const unitPrice = it.quantity > 0 ? total / it.quantity : 0
+                      return (
+                        <tr key={it.id}>
+                          <td className="align-middle py-2.5 px-3 font-medium text-sm text-foreground">
+                            {it.stockName}
+                          </td>
+                          <td className="align-middle py-2.5 px-3 text-right font-mono text-sm text-muted-foreground whitespace-nowrap">
+                            {it.quantity} {it.baseUnit}
+                          </td>
+                          <td className="align-middle py-2.5 px-3">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={itemTotalPrices[it.id] ?? ""}
+                              onChange={(e) =>
+                                setItemTotalPrices({
+                                  ...itemTotalPrices,
+                                  [it.id]: Number(e.target.value),
+                                })
+                              }
+                              placeholder="e.g. 150000"
+                              className="h-8 text-right font-mono text-sm"
+                              required
+                            />
+                          </td>
+                          <td className="align-middle py-2.5 px-3 text-right font-mono text-xs text-muted-foreground whitespace-nowrap font-medium">
+                            {unitPrice > 0 ? `${formatRupiah(Math.round(unitPrice))} / ${it.baseUnit}` : "-"}
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

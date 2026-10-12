@@ -73,6 +73,7 @@ export interface RejectPOInput {
 export interface CompletePOPriceItem {
   item_id: string;
   unit_price: number;
+  total_price?: number;
 }
 
 export interface CompletePurchaseOrderInput {

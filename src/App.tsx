@@ -20,7 +20,8 @@ import RecipeDetailPage from "./pages/recipes/recipe-detail-page"
 import BatchListPage from "./pages/production/batch-list-page"
 import BatchCreatePage from "./pages/production/batch-create-page"
 import BatchDetailPage from "./pages/production/batch-detail-page"
-import HppCalculatorPage from "./pages/production/hpp-calculator-page"
+import RecipeSimulationPage from "./pages/production/recipe-simulation-page"
+import ProductionSimulationPage from "./pages/production/production-simulation-page"
 import OverheadListPage from "./pages/production/overhead-list-page"
 import StoreSettingsPage from "./pages/settings/store-settings-page"
 import RoleCreatePage from "./pages/settings/role-create-page"
@@ -31,12 +32,14 @@ import CustomerListPage from "./pages/sales/customer-list-page"
 import LoginPage from "./pages/auth/login-page"
 import RegisterPage from "./pages/auth/register-page"
 import AcceptInvitePage from "./pages/auth/accept-invite-page"
+import LandingPage from "./pages/landing/landing-page"
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Auth & Onboarding Routes */}
+        {/* Public Landing & Auth Routes */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/setup-store" element={<RegisterPage initialStep={2} />} />
@@ -68,8 +71,10 @@ function App() {
           <Route path="/production/batches" element={<BatchListPage />} />
           <Route path="/production/batches/new" element={<BatchCreatePage />} />
           <Route path="/production/batches/:batchId" element={<BatchDetailPage />} />
-          <Route path="/production/hpp" element={<HppCalculatorPage />} />
-          <Route path="/hpp" element={<Navigate to="/production/hpp" replace />} />
+          <Route path="/production/hpp" element={<Navigate to="/production/hpp/recipe-simulation" replace />} />
+          <Route path="/production/hpp/recipe-simulation" element={<RecipeSimulationPage />} />
+          <Route path="/production/hpp/production-simulation" element={<ProductionSimulationPage />} />
+          <Route path="/hpp" element={<Navigate to="/production/hpp/recipe-simulation" replace />} />
           <Route path="/production/overheads" element={<OverheadListPage />} />
           <Route path="/overheads" element={<Navigate to="/production/overheads" replace />} />
           <Route path="/sales/pos" element={<PosPage />} />
