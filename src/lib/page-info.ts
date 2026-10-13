@@ -57,8 +57,11 @@ export function getActiveMenuTitle(pathname: string): string {
   if (path.startsWith('/production/batches/')) {
     return 'Detail Batch';
   }
-  if (path === '/production/hpp') {
-    return 'HPP Calculator';
+  if (path === '/production/hpp' || path === '/production/hpp/recipe-simulation' || path === '/hpp') {
+    return 'Simulasi Resep Baru';
+  }
+  if (path === '/production/hpp/production-simulation') {
+    return 'Simulasi Produksi & Restock';
   }
   if (path === '/production/overheads') {
     return 'Biaya Overhead';

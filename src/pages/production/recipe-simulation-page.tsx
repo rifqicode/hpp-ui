@@ -239,7 +239,7 @@ Dihitung otomatis dengan HPP Manager.
             <Calculator className="h-5 w-5" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Simulasi Resep Baru (HPP Calculator)
+            Simulasi Resep Baru
           </h1>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
             Kalkulator Resep
