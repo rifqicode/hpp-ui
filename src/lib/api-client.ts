@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/use-auth-store';
 import { useLoadingStore } from '../store/use-loading-store';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
   headers: {
     'Content-Type': 'application/json',
   },

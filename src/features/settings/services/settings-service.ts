@@ -70,32 +70,16 @@ function normalizeRole(r: RawRole): Role {
   };
 }
 
-async function resolveStoreId(storeId?: string): Promise<string | null> {
-  let targetId = storeId || useAuthStore.getState().activeStoreId;
-  if (!targetId) {
-    const stores = await settingsService.getStoresList();
-    if (stores.length > 0) {
-      targetId = stores[0].id;
-      useAuthStore.getState().setActiveStoreId(targetId);
-    }
-  }
-  return targetId || null;
-}
-
 export const settingsService = {
   // Store Operations
-  getStoreProfile: async (storeId?: string): Promise<StoreInfo> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) throw new Error('Toko tidak ditemukan');
-    const res = await apiClient.get<StoreInfo>(`/stores/${targetId}`);
+  getStoreProfile: async (_storeId?: string): Promise<StoreInfo> => {
+    const res = await apiClient.get<StoreInfo>('/store');
     return res.data;
   },
 
-  updateStoreProfile: async (data: Partial<StoreInfo>, storeId?: string): Promise<StoreInfo> => {
-    const targetId = storeId || useAuthStore.getState().activeStoreId;
-    if (!targetId) throw new Error('Store ID tidak ditemukan');
+  updateStoreProfile: async (data: Partial<StoreInfo>, _storeId?: string): Promise<StoreInfo> => {
     try {
-      const res = await apiClient.put<StoreInfo>(`/stores/${targetId}`, data);
+      const res = await apiClient.put<StoreInfo>('/store', data);
       return res.data;
     } catch (error) {
       throw toError(error, 'Gagal memperbarui profil toko');
@@ -129,10 +113,8 @@ export const settingsService = {
   },
 
   // Staff Operations
-  getStaffList: async (storeId?: string): Promise<StaffMember[]> => {
-    const targetId = storeId || useAuthStore.getState().activeStoreId;
-    if (!targetId) return [];
-    const res = await apiClient.get<StaffMember[]>(`/stores/${targetId}/staff`);
+  getStaffList: async (_storeId?: string): Promise<StaffMember[]> => {
+    const res = await apiClient.get<StaffMember[]>('/staff');
     const list = res.data || [];
     return list.map((item) => ({
       ...item,
@@ -141,32 +123,26 @@ export const settingsService = {
     }));
   },
 
-  inviteStaff: async (input: InviteStaffInput, storeId?: string): Promise<StaffMember> => {
-    const targetId = storeId || useAuthStore.getState().activeStoreId;
-    if (!targetId) throw new Error('Store ID tidak ditemukan');
+  inviteStaff: async (input: InviteStaffInput, _storeId?: string): Promise<StaffMember> => {
     try {
-      const res = await apiClient.post<StaffMember>(`/stores/${targetId}/staff/invite`, input);
+      const res = await apiClient.post<StaffMember>('/staff/invite', input);
       return res.data;
     } catch (error) {
       throw toError(error, 'Gagal mengundang staf');
     }
   },
 
-  updateStaffRole: async (userId: string, roleId: string, storeId?: string): Promise<void> => {
-    const targetId = storeId || useAuthStore.getState().activeStoreId;
-    if (!targetId) throw new Error('Store ID tidak ditemukan');
+  updateStaffRole: async (userId: string, roleId: string, _storeId?: string): Promise<void> => {
     try {
-      await apiClient.put(`/stores/${targetId}/staff/${userId}/role`, { role_id: roleId });
+      await apiClient.put(`/staff/${userId}/role`, { role_id: roleId });
     } catch (error) {
       throw toError(error, 'Gagal mengubah peran staf');
     }
   },
 
-  revokeStaff: async (staffId: string, storeId?: string): Promise<void> => {
-    const targetId = storeId || useAuthStore.getState().activeStoreId;
-    if (!targetId) throw new Error('Store ID tidak ditemukan');
+  revokeStaff: async (staffId: string, _storeId?: string): Promise<void> => {
     try {
-      await apiClient.delete(`/stores/${targetId}/staff/${staffId}`);
+      await apiClient.delete(`/staff/${staffId}`);
     } catch (error) {
       throw toError(error, 'Gagal mencabut akses staf');
     }
@@ -257,81 +233,65 @@ export const settingsService = {
   },
 
   // System Preferences
-  getPreferences: async (storeId?: string): Promise<SystemPreferences> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) throw new Error('Toko tidak ditemukan');
-    const res = await apiClient.get<SystemPreferences>(`/stores/${targetId}/preferences`);
+  getPreferences: async (_storeId?: string): Promise<SystemPreferences> => {
+    const res = await apiClient.get<SystemPreferences>('/store/preferences');
     return res.data;
   },
 
-  updatePreferences: async (data: Partial<SystemPreferences>, storeId?: string): Promise<SystemPreferences> => {
-    const targetId = storeId || useAuthStore.getState().activeStoreId;
-    if (!targetId) throw new Error('Store ID tidak ditemukan');
-    const res = await apiClient.put<SystemPreferences>(`/stores/${targetId}/preferences`, data);
+  updatePreferences: async (data: Partial<SystemPreferences>, _storeId?: string): Promise<SystemPreferences> => {
+    const res = await apiClient.put<SystemPreferences>('/store/preferences', data);
     return res.data;
   },
 
   // Permissions & Roles
   getStorePermissions: async (storeId?: string, force = false): Promise<{ permissions: string[]; role: string }> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) return { permissions: [], role: '' };
+    const targetId = storeId || useAuthStore.getState().activeStoreId;
     const userId = useAuthStore.getState().user?.id;
-    if (userId && !force) {
+    if (userId && targetId && !force) {
       const cached = await readPermissionCache(userId, targetId);
       if (cached) {
         useAuthStore.getState().setPermissions(cached.permissions);
         return cached;
       }
     }
-    const res = await apiClient.get<{ permissions: string[]; role: string }>(`/stores/${targetId}/permissions`);
+    const res = await apiClient.get<{ permissions: string[]; role: string }>('/permissions/me');
     if (res.data?.permissions) {
       useAuthStore.getState().setPermissions(res.data.permissions);
-      if (userId) await writePermissionCache(userId, targetId, res.data);
+      if (userId && targetId) await writePermissionCache(userId, targetId, res.data);
     }
     return res.data;
   },
 
-  getPermissionsCatalog: async (storeId?: string): Promise<Permission[]> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) return [];
-    const res = await apiClient.get<Permission[]>(`/stores/${targetId}/permissions/catalog`);
+  getPermissionsCatalog: async (_storeId?: string): Promise<Permission[]> => {
+    const res = await apiClient.get<Permission[]>('/permissions/catalog');
     return Array.isArray(res.data) ? res.data : [];
   },
 
-  getRolesList: async (storeId?: string): Promise<Role[]> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) return [];
-    
-    const url = `/stores/${targetId}/roles`;
-    const res = await apiClient.get<RawRole[]>(url);
+  getRolesList: async (_storeId?: string): Promise<Role[]> => {
+    const res = await apiClient.get<RawRole[]>('/roles');
     if (!Array.isArray(res.data)) return [];
+    const activeStoreId = useAuthStore.getState().activeStoreId;
     return res.data
       .map(normalizeRole)
-      .filter((r) => !r.storeId || r.storeId === targetId);
+      .filter((r) => !r.storeId || !activeStoreId || r.storeId === activeStoreId);
   },
 
-  getRoleById: async (roleId: string, storeId?: string): Promise<Role | null> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) return null;
-    const url = `/stores/${targetId}/roles/${roleId}`;
+  getRoleById: async (roleId: string, _storeId?: string): Promise<Role | null> => {
     try {
-      const res = await apiClient.get<RawRole>(url);
+      const res = await apiClient.get<RawRole>(`/roles/${roleId}`);
       if (res.data) return normalizeRole(res.data);
       return null;
     } catch {
       // Fallback: search in getRolesList
-      const list = await settingsService.getRolesList(targetId);
+      const list = await settingsService.getRolesList();
       return list.find((r) => r.id === roleId) || null;
     }
   },
 
-  createRole: async (input: CreateRoleInput, storeId?: string): Promise<Role> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) throw new Error('Pilih toko terlebih dahulu sebelum membuat peran.');
-
+  createRole: async (input: CreateRoleInput, _storeId?: string): Promise<Role> => {
     const roleName = input.name.trim().toUpperCase().replace(/\s+/g, '_');
     try {
-      const res = await apiClient.post<RawRole>(`/stores/${targetId}/roles`, {
+      const res = await apiClient.post<RawRole>('/roles', {
         name: roleName,
         description: input.description?.trim() || '',
         permission_codes: input.permissionCodes,
@@ -342,12 +302,9 @@ export const settingsService = {
     }
   },
 
-  updateRole: async (roleId: string, input: UpdateRoleInput, storeId?: string): Promise<Role> => {
-    const targetId = await resolveStoreId(storeId);
-    if (!targetId) throw new Error('Pilih toko terlebih dahulu.');
-
+  updateRole: async (roleId: string, input: UpdateRoleInput, _storeId?: string): Promise<Role> => {
     try {
-      const res = await apiClient.put<RawRole>(`/stores/${targetId}/roles/${roleId}`, {
+      const res = await apiClient.put<RawRole>(`/roles/${roleId}`, {
         name: input.name.trim(),
         description: input.description?.trim() || '',
         permission_codes: input.permission_codes,
