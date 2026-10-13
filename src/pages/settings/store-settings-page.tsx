@@ -160,7 +160,7 @@ export default function StoreSettingsPage() {
     { id: "profile", label: "Profil Toko", icon: Building2 },
     { id: "staff", label: "Anggota Tim", icon: Users },
     { id: "roles", label: "Peran & Hak Akses", icon: ShieldCheck },
-    { id: "stores", label: "Daftar Cabang", icon: Store },
+    { id: "stores", label: "Daftar Toko", icon: Store },
   ] as const
 
   const isInitialLoading = useInitialLoading(loading)
@@ -832,7 +832,7 @@ export default function StoreSettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* ================= TAB 4: DAFTAR CABANG TOKO ================= */}
+        {/* ================= TAB 4: DAFTAR TOKO ================= */}
         <TabsContent value="stores" className="mt-4 space-y-4">
           <div className="flex items-center justify-between">
             <div>
