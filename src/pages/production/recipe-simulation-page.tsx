@@ -8,11 +8,8 @@ import {
   RotateCcw,
   Copy,
   Check,
-  Sparkles,
-  Percent,
   Boxes,
   FileText,
-  Info,
   Scale,
 } from "lucide-react"
 
@@ -27,7 +24,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -36,9 +32,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-
-import { recipeService } from "@/features/recipes/services/recipe-service"
-import type { Product } from "@/features/recipes/types"
 
 function formatCurrencyIdr(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -82,9 +75,7 @@ const DEFAULT_OVERHEADS: CustomOverhead[] = [
 ]
 
 export default function RecipeSimulationPage() {
-  const [activeTab, setActiveTab] = React.useState<string>("sandbox")
-
-  // Sandbox Mode State
+  // Recipe Simulation State
   const [productName, setProductName] = React.useState<string>("")
   const [yieldUnits, setYieldUnits] = React.useState<number | "">("")
   const [unitName, setUnitName] = React.useState<string>("")
@@ -99,41 +90,10 @@ export default function RecipeSimulationPage() {
   const [targetMarkup, setTargetMarkup] = React.useState<number>(100) // %
   const [manualPrice, setManualPrice] = React.useState<number>(0)
 
-  // Recipe Integration (Tab 2)
-  const [savedProducts, setSavedProducts] = React.useState<Product[]>([])
-  const [selectedProductId, setSelectedProductId] = React.useState<string>("")
-  const [sensitivityMaterialPct, setSensitivityMaterialPct] = React.useState<number>(0) // -20% to +50%
-  const [sensitivityYieldPct, setSensitivityYieldPct] = React.useState<number>(0) // -30% to +30%
-
   // Copy Feedback
   const [copied, setCopied] = React.useState<boolean>(false)
 
-  // Load Saved Products from recipeService
-  React.useEffect(() => {
-    let ignore = false
-    recipeService
-      .getProducts()
-      .then((data) => {
-        if (!ignore) {
-          setSavedProducts(data)
-          if (data.length > 0) {
-            setSelectedProductId(data[0].id)
-          }
-        }
-      })
-      .catch((err) => console.error("Failed to fetch recipes:", err))
-
-    return () => {
-      ignore = true
-    }
-  }, [])
-
-  // Selected Saved Product
-  const selectedSavedProduct = React.useMemo(() => {
-    return savedProducts.find((p) => p.id === selectedProductId) || null
-  }, [savedProducts, selectedProductId])
-
-  // ===================== CALCULATIONS (SANDBOX) =====================
+  // ===================== CALCULATIONS =====================
   const ingredientCalculations = React.useMemo(() => {
     return ingredients.map((ing) => {
       const unitCost = ing.packageSize > 0 ? ing.packagePrice / ing.packageSize : 0
@@ -186,38 +146,7 @@ export default function RecipeSimulationPage() {
       ? Math.round((grossProfitPerUnit / calculatedSellingPrice) * 1000) / 10
       : 0
 
-  // ===================== SAVED RECIPE SIMULATION (TAB 2) =====================
-  const savedRecipeSimulation = React.useMemo(() => {
-    if (!selectedSavedProduct) return null
-
-    const baseHpp = selectedSavedProduct.latestHpp || 0
-    const baseSellingPrice = selectedSavedProduct.sellingPrice || 0
-
-    // Adjusted values
-    const adjustedHpp = Math.round(baseHpp * (1 + sensitivityMaterialPct / 100))
-    const simulatedYieldScale = 1 + sensitivityYieldPct / 100
-    const finalSimulatedHpp = simulatedYieldScale > 0 ? Math.round(adjustedHpp / simulatedYieldScale) : adjustedHpp
-
-    const baseProfit = baseSellingPrice - baseHpp
-    const baseMargin = baseSellingPrice > 0 ? (baseProfit / baseSellingPrice) * 100 : 0
-
-    const simulatedProfit = baseSellingPrice - finalSimulatedHpp
-    const simulatedMargin = baseSellingPrice > 0 ? (simulatedProfit / baseSellingPrice) * 100 : 0
-    const marginDrop = baseMargin - simulatedMargin
-
-    return {
-      baseHpp,
-      baseSellingPrice,
-      baseMargin: Math.round(baseMargin * 10) / 10,
-      finalSimulatedHpp,
-      simulatedProfit,
-      simulatedMargin: Math.round(simulatedMargin * 10) / 10,
-      marginDrop: Math.round(marginDrop * 10) / 10,
-      hppDelta: finalSimulatedHpp - baseHpp,
-    }
-  }, [selectedSavedProduct, sensitivityMaterialPct, sensitivityYieldPct])
-
-  // Handlers for Sandbox Ingredients
+  // Handlers for Ingredients
   function handleAddIngredient() {
     const newIng: CustomIngredient = {
       id: `custom-${Date.now()}`,
@@ -321,32 +250,9 @@ Dihitung otomatis dengan HPP Manager.
         </p>
       </div>
 
-      {/* Main Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-muted/60 p-1 rounded-xl h-11 border border-border">
-          <TabsTrigger
-            value="sandbox"
-            className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center gap-2 h-9"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Simulasi Bebas & Resep Baru</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="saved"
-            className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center gap-2 h-9"
-          >
-            <Boxes className="h-3.5 w-3.5" />
-            <span>Simulasi What-If Resep Tersimpan</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* ========================================================= */}
-        {/* TAB 1: SANDBOX / CUSTOM CALCULATOR                        */}
-        {/* ========================================================= */}
-        <TabsContent value="sandbox" className="mt-5 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* LEFT COLUMN (8 cols): Inputs & Formulations */}
-            <div className="lg:col-span-8 flex flex-col gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN (8 cols): Inputs & Formulations */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
               {/* Card 1: Informasi Produk & Target Batch */}
               <Card className="rounded-2xl border-border shadow-sm">
                 <CardHeader className="pb-3">
@@ -833,219 +739,6 @@ Dihitung otomatis dengan HPP Manager.
               </Card>
             </div>
           </div>
-        </TabsContent>
-
-        {/* ========================================================= */}
-        {/* TAB 2: SIMULASI WHAT-IF DARI RESEP TERSIMPAN             */}
-        {/* ========================================================= */}
-        <TabsContent value="saved" className="mt-5 space-y-6">
-          <Card className="rounded-2xl border-border shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <Boxes className="h-4 w-4 text-primary" />
-                Pilih Resep Aktif untuk Simulasi Kenaikan Harga
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Uji sensitivitas bisnis Anda jika harga bahan baku pokok naik atau jika hasil panen dapur berkurang karena kegagalan proses.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Product Picker */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                {savedProducts.map((p) => {
-                  const isSelected = p.id === selectedProductId
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => setSelectedProductId(p.id)}
-                      className={`
-                        p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col justify-between gap-3 text-left
-                        ${isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm" : "border-border hover:border-primary/40 hover:bg-muted/30"}
-                      `}
-                    >
-                      <div>
-                        <Badge variant="outline" className="text-[10px] py-0 px-2 font-medium mb-1">
-                          {p.category}
-                        </Badge>
-                        <h4 className="font-bold text-xs text-foreground truncate">{p.name}</h4>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          HPP Saat Ini: <strong className="text-foreground">{formatCurrencyIdr(p.latestHpp)}</strong>
-                        </p>
-                      </div>
-
-                      <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground text-[10px]">Harga Jual:</span>
-                        <span className="font-mono font-bold text-primary">{formatCurrencyIdr(p.sellingPrice)}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {selectedSavedProduct && savedRecipeSimulation && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4 border-t border-border items-start">
-                  {/* Slider Controls (7 cols) */}
-                  <div className="lg:col-span-7 space-y-6">
-                    {/* Slider 1: Fluktuasi Bahan Baku */}
-                    <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-bold text-foreground flex items-center gap-2">
-                          <Percent className="h-4 w-4 text-amber-500" />
-                          Simulasi Kenaikan / Penurunan Biaya Bahan Baku (%)
-                        </Label>
-                        <Badge
-                          variant="outline"
-                          className={`font-mono text-xs font-bold ${
-                            sensitivityMaterialPct > 0
-                              ? "bg-red-500/10 text-red-600 border-red-500/20"
-                              : sensitivityMaterialPct < 0
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                              : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {sensitivityMaterialPct > 0 ? `+${sensitivityMaterialPct}%` : `${sensitivityMaterialPct}%`}
-                        </Badge>
-                      </div>
-                      <input
-                        type="range"
-                        min="-20"
-                        max="50"
-                        step="5"
-                        value={sensitivityMaterialPct}
-                        onChange={(e) => setSensitivityMaterialPct(Number(e.target.value))}
-                        className="w-full accent-amber-500 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                      />
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>-20% (Bahan Turun)</span>
-                        <span>0% (Stabil Normal)</span>
-                        <span>+50% (Inflasi Ekstrem)</span>
-                      </div>
-                    </div>
-
-                    {/* Slider 2: Fluktuasi Hasil Panen (Yield) */}
-                    <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-bold text-foreground flex items-center gap-2">
-                          <Scale className="h-4 w-4 text-primary" />
-                          Simulasi Efisiensi Panen Dapur (Yield / Scrap Afkir)
-                        </Label>
-                        <Badge
-                          variant="outline"
-                          className={`font-mono text-xs font-bold ${
-                            sensitivityYieldPct < 0
-                              ? "bg-red-500/10 text-red-600 border-red-500/20"
-                              : sensitivityYieldPct > 0
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                              : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {sensitivityYieldPct > 0 ? `+${sensitivityYieldPct}%` : `${sensitivityYieldPct}%`}
-                        </Badge>
-                      </div>
-                      <input
-                        type="range"
-                        min="-30"
-                        max="20"
-                        step="5"
-                        value={sensitivityYieldPct}
-                        onChange={(e) => setSensitivityYieldPct(Number(e.target.value))}
-                        className="w-full accent-primary h-2 bg-slate-200 rounded-lg cursor-pointer"
-                      />
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                        <span>-30% (Banyak Gosong / Afkir)</span>
-                        <span>0% (Sesuai Resep)</span>
-                        <span>+20% (Hasil Lebih Banyak)</span>
-                      </div>
-                    </div>
-
-                    {/* Explanation Banner */}
-                    <div className="p-4 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground flex items-start gap-3">
-                      <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="font-semibold text-foreground">Dampak Langsung ke Bisnis Anda:</p>
-                        <p className="text-[11px] leading-relaxed">
-                          Jika harga bahan baku berubah sebesar <strong>{sensitivityMaterialPct}%</strong> dan efisiensi yield dapur berubah <strong>{sensitivityYieldPct}%</strong>, maka HPP per unit produk Anda akan berubah menjadi <strong>{formatCurrencyIdr(savedRecipeSimulation.finalSimulatedHpp)}</strong> (selisih {formatCurrencyIdr(savedRecipeSimulation.hppDelta)} per {selectedSavedProduct.unit}).
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Impact Summary Card (5 cols - Soft Off-White Theme) */}
-                  <div className="lg:col-span-5">
-                    <Card className="rounded-2xl border border-slate-300/80 bg-slate-100/70 shadow-sm overflow-hidden">
-                      <CardHeader className="p-5 pb-3 border-b border-slate-200/90 bg-slate-200/50">
-                        <CardTitle className="text-sm font-bold text-slate-800">
-                          Dampak Terhadap Margin & HPP
-                        </CardTitle>
-                        <CardDescription className="text-xs text-slate-600">
-                          Resep: {selectedSavedProduct.name}
-                        </CardDescription>
-                      </CardHeader>
-
-                      <CardContent className="p-5 space-y-4">
-                        {/* Comparison Box */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs">
-                            <span className="text-[10px] text-slate-400 uppercase font-semibold block">HPP Normal</span>
-                            <span className="text-base font-bold font-mono text-slate-700 mt-0.5 block">
-                              {formatCurrencyIdr(savedRecipeSimulation.baseHpp)}
-                            </span>
-                            <span className="text-[10px] text-slate-500">Margin: {savedRecipeSimulation.baseMargin}%</span>
-                          </div>
-
-                          <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs">
-                            <span className="text-[10px] text-slate-400 uppercase font-semibold block">HPP Setelah Simulasi</span>
-                            <span className="text-base font-bold font-mono text-primary mt-0.5 block">
-                              {formatCurrencyIdr(savedRecipeSimulation.finalSimulatedHpp)}
-                            </span>
-                            <span className="text-[10px] text-slate-500">Margin: {savedRecipeSimulation.simulatedMargin}%</span>
-                          </div>
-                        </div>
-
-                        {/* Impact Details */}
-                        <div className="space-y-2 text-xs">
-                          <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
-                            <span className="text-slate-600">Perubahan HPP per Unit:</span>
-                            <span className={`font-mono font-bold ${savedRecipeSimulation.hppDelta > 0 ? 'text-destructive' : 'text-emerald-700'}`}>
-                              {savedRecipeSimulation.hppDelta > 0 ? `+${formatCurrencyIdr(savedRecipeSimulation.hppDelta)}` : formatCurrencyIdr(savedRecipeSimulation.hppDelta)}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
-                            <span className="text-slate-600">Laba Bersih per Unit (Harga {formatCurrencyIdr(savedRecipeSimulation.baseSellingPrice)}):</span>
-                            <span className="font-mono font-bold text-slate-900">
-                              {formatCurrencyIdr(savedRecipeSimulation.simulatedProfit)}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between py-2 bg-white px-3 rounded-xl border border-slate-200">
-                            <span className="font-semibold text-xs text-slate-700">Dampak Penurunan Margin:</span>
-                            <span className={`font-mono font-black text-sm ${savedRecipeSimulation.marginDrop > 0 ? 'text-destructive' : 'text-emerald-700'}`}>
-                              {savedRecipeSimulation.marginDrop > 0 ? `-${savedRecipeSimulation.marginDrop}%` : `+${Math.abs(savedRecipeSimulation.marginDrop)}%`}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2">
-                          <Button
-                            asChild
-                            variant="outline"
-                            className="w-full h-9 rounded-xl text-xs font-semibold bg-white border-slate-300/80 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
-                          >
-                            <Link to={`/production/products/${selectedSavedProduct.id}`}>
-                              Buka Detail Produk Lengkap
-                            </Link>
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+        </div>
   )
 }
