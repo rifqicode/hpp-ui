@@ -14,7 +14,6 @@ import {
   FileText,
   Info,
   Scale,
-  PieChart,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -99,9 +98,6 @@ export default function RecipeSimulationPage() {
   const [targetMargin, setTargetMargin] = React.useState<number>(50) // %
   const [targetMarkup, setTargetMarkup] = React.useState<number>(100) // %
   const [manualPrice, setManualPrice] = React.useState<number>(0)
-
-  // Break Even Fixed Cost
-  const [monthlyFixedCost, setMonthlyFixedCost] = React.useState<number>(0)
 
   // Recipe Integration (Tab 2)
   const [savedProducts, setSavedProducts] = React.useState<Product[]>([])
@@ -190,11 +186,6 @@ export default function RecipeSimulationPage() {
       ? Math.round((grossProfitPerUnit / calculatedSellingPrice) * 1000) / 10
       : 0
 
-  // Break-Even Point (BEP)
-  const bepUnitsPerMonth =
-    grossProfitPerUnit > 0 && monthlyFixedCost > 0 ? Math.ceil(monthlyFixedCost / grossProfitPerUnit) : 0
-  const bepRevenuePerMonth = bepUnitsPerMonth * calculatedSellingPrice
-
   // ===================== SAVED RECIPE SIMULATION (TAB 2) =====================
   const savedRecipeSimulation = React.useMemo(() => {
     if (!selectedSavedProduct) return null
@@ -281,7 +272,6 @@ export default function RecipeSimulationPage() {
     setTargetMargin(50)
     setTargetMarkup(100)
     setManualPrice(0)
-    setMonthlyFixedCost(0)
   }
 
   function handleCopySummary() {
@@ -303,7 +293,6 @@ REKOMENDASI HARGA JUAL:
 - Rekomendasi Harga: ${formatCurrencyIdr(calculatedSellingPrice)} (Margin: ${actualMarginPercent}%)
 - Laba Kotor per Unit: ${formatCurrencyIdr(grossProfitPerUnit)}
 
-BEP (Titik Impas): ${bepUnitsPerMonth} ${unitName || "unit"} / bulan (Omzet minimal ${formatCurrencyIdr(bepRevenuePerMonth)})
 Dihitung otomatis dengan HPP Manager.
 `.trim()
 
@@ -804,37 +793,6 @@ Dihitung otomatis dengan HPP Manager.
                         {actualMarginPercent}%
                       </span>
                     </div>
-                  </div>
-
-                  {/* Break Even Point Card */}
-                  <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
-                        <PieChart className="h-3.5 w-3.5 text-primary" />
-                        Analisis Titik Impas (BEP)
-                      </span>
-                      <span className="font-mono font-bold text-primary text-xs">
-                        {bepUnitsPerMonth} {unitName}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-[10px] text-slate-500 font-medium">Beban Tetap Toko / Bulan</Label>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400">Rp</span>
-                        <Input
-                          type="number"
-                          step="100000"
-                          value={monthlyFixedCost}
-                          onChange={(e) => setMonthlyFixedCost(Number(e.target.value) || 0)}
-                          className="pl-7 rounded-lg h-7 text-xs font-mono"
-                        />
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                      Butuh menjual minimal <strong className="text-slate-800">{bepUnitsPerMonth} {unitName}</strong> (omzet <strong>{formatCurrencyIdr(bepRevenuePerMonth)}</strong>) per bulan untuk impas.
-                    </p>
                   </div>
 
                   {/* Action Buttons */}
