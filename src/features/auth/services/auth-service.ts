@@ -1,6 +1,15 @@
 import axios from 'axios';
 import apiClient from '../../../lib/api-client';
-import type { AuthResponse, LoginCredentials, RegisterCredentials, User, InviteDetailsResponse, AcceptInvitePayload } from '../types';
+import type {
+  AuthResponse,
+  LoginCredentials,
+  RegisterCredentials,
+  User,
+  InviteDetailsResponse,
+  AcceptInvitePayload,
+  ResetPasswordPayload,
+  ValidateResetTokenResponse,
+} from '../types';
 
 const NETWORK_ERROR_MSG = "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
 
@@ -89,6 +98,33 @@ export const authService = {
       return response.data;
     } catch (err: unknown) {
       throw toError(err, "Gagal menerima undangan.");
+    }
+  },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    try {
+      await apiClient.post('/auth/forgot-password', { email });
+    } catch (err: unknown) {
+      throw toError(err, "Gagal memproses permintaan reset kata sandi.");
+    }
+  },
+
+  validateResetToken: async (token: string): Promise<ValidateResetTokenResponse> => {
+    try {
+      const response = await apiClient.get<ValidateResetTokenResponse>(
+        `/auth/reset-password/validate?token=${encodeURIComponent(token)}`
+      );
+      return response.data;
+    } catch (err: unknown) {
+      throw toError(err, "Tautan reset kata sandi tidak valid atau telah kedaluwarsa.");
+    }
+  },
+
+  resetPassword: async (payload: ResetPasswordPayload): Promise<void> => {
+    try {
+      await apiClient.post('/auth/reset-password', payload);
+    } catch (err: unknown) {
+      throw toError(err, "Gagal mengatur ulang kata sandi. Silakan coba lagi.");
     }
   },
 };

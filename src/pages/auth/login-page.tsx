@@ -183,16 +183,12 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="text-xs font-semibold text-foreground">
                   Kata Sandi
                 </Label>
-                <a
-                  href="#forgot"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    alert("Tautan reset kata sandi telah dikirimkan ke email Anda.")
-                  }}
+                <Link
+                  to="/forgot-password"
                   className="text-xs text-primary hover:underline"
                 >
                   Lupa kata sandi?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

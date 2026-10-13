@@ -64,3 +64,17 @@ export interface AcceptInvitePayload {
   password?: string;
   name?: string;
 }
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  new_password: string;
+}
+
+export interface ValidateResetTokenResponse {
+  valid: boolean;
+  email: string;
+}

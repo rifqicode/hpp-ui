@@ -32,6 +32,8 @@ import CustomerListPage from "./pages/sales/customer-list-page"
 import LoginPage from "./pages/auth/login-page"
 import RegisterPage from "./pages/auth/register-page"
 import AcceptInvitePage from "./pages/auth/accept-invite-page"
+import ForgotPasswordPage from "./pages/auth/forgot-password-page"
+import ResetPasswordPage from "./pages/auth/reset-password-page"
 import LandingPage from "./pages/landing/landing-page"
 
 function App() {
@@ -44,6 +46,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/setup-store" element={<RegisterPage initialStep={2} />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Protected Dashboard Routes */}
         <Route element={<DashboardLayout />}>
