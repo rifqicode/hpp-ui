@@ -247,20 +247,6 @@ export default function AcceptInvitePage() {
                       className="rounded-xl bg-muted/40 text-xs font-mono"
                     />
                   </div>
-
-                  {invite.username && (
-                    <div className="space-y-1">
-                      <Label htmlFor="username" className="text-xs font-semibold">
-                        Username Login
-                      </Label>
-                      <Input
-                        id="username"
-                        value={invite.username}
-                        disabled
-                        className="rounded-xl bg-primary/5 border-primary/20 text-primary text-xs font-mono font-semibold"
-                      />
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-1">

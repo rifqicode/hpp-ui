@@ -1,6 +1,5 @@
 export interface User {
   id: string;
-  username?: string;
   account_type?: "OWNER" | "STAFF";
   email: string;
   name: string;
@@ -43,7 +42,6 @@ export interface RegisterStoreCredentials {
 
 export interface RegisterCredentials {
   name: string;
-  username: string;
   email: string;
   password: string;
   store: RegisterStoreCredentials;
@@ -51,7 +49,6 @@ export interface RegisterCredentials {
 
 export interface InviteDetailsResponse {
   email: string;
-  username?: string;
   name: string;
   store_name: string;
   role_name: string;

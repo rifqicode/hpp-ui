@@ -49,7 +49,6 @@ export interface StaffMember {
   id: string;
   userId?: string;
   user_id?: string;
-  username?: string;
   name: string;
   email: string;
   role: StaffRole;

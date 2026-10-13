@@ -456,11 +456,6 @@ export default function StoreSettingsPage() {
                               </div>
                               <div className="flex flex-col min-w-0">
                                 <span>{st.name}</span>
-                                {st.username && (
-                                  <span className="text-[10px] text-muted-foreground font-mono">
-                                    @{st.username}
-                                  </span>
-                                )}
                               </div>
                             </div>
                           </TableCell>

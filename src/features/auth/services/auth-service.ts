@@ -46,17 +46,6 @@ export const authService = {
     }
   },
 
-  checkUsername: async (username: string): Promise<{ username: string; available: boolean }> => {
-    try {
-      const response = await apiClient.get<{ username: string; available: boolean }>(
-        `/auth/check-username?username=${encodeURIComponent(username)}`
-      );
-      return response.data;
-    } catch {
-      return { username, available: false };
-    }
-  },
-
   logout: async (): Promise<void> => {
     try {
       await apiClient.post('/auth/logout');

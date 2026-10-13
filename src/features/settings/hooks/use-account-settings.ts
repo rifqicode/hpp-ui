@@ -25,9 +25,6 @@ function formatAccountErrorMessage(err: unknown, fallback: string): string {
   if (lower.includes("email is already registered") || lower.includes("email is already in use")) {
     return "Email sudah digunakan oleh akun lain."
   }
-  if (lower.includes("username is already")) {
-    return "Username sudah digunakan oleh akun lain."
-  }
   if (lower.includes("invalid password payload")) {
     return "Data kata sandi tidak valid. Periksa kembali input Anda."
   }
