@@ -9,7 +9,6 @@ import {
   Copy,
   Check,
   Sparkles,
-  ShoppingBag,
   Percent,
   Boxes,
   FileText,
@@ -61,100 +60,48 @@ interface CustomIngredient {
   wastePercentage: number // % susut / terbuang (0 - 20%)
 }
 
-interface QuickTemplate {
+interface CustomOverhead {
+  id: string
   name: string
-  category: string
-  yieldUnits: number
-  unitName: string
-  ingredients: CustomIngredient[]
-  packagingCost: number
-  laborCost: number
-  utilityCost: number
-  otherOverheadCost: number
-  targetMargin: number
+  amount: number // biaya per batch
 }
 
-const TEMPLATES: QuickTemplate[] = [
-  {
-    name: "Roti Manis Coklat",
-    category: "Bakery",
-    yieldUnits: 30,
-    unitName: "pcs",
-    packagingCost: 400, // plastik OPP + stiker per pcs
-    laborCost: 20000,
-    utilityCost: 15000,
-    otherOverheadCost: 5000,
-    targetMargin: 60,
-    ingredients: [
-      { id: "ing-1", name: "Tepung Terigu Protein Tinggi", packagePrice: 13000, packageSize: 1000, packageUnit: "g", usedQuantity: 1000, wastePercentage: 2 },
-      { id: "ing-2", name: "Gula Pasir", packagePrice: 16000, packageSize: 1000, packageUnit: "g", usedQuantity: 200, wastePercentage: 0 },
-      { id: "ing-3", name: "Mentega / Margarin", packagePrice: 38000, packageSize: 1000, packageUnit: "g", usedQuantity: 150, wastePercentage: 0 },
-      { id: "ing-4", name: "Ragi Instan", packagePrice: 15000, packageSize: 100, packageUnit: "g", usedQuantity: 15, wastePercentage: 0 },
-      { id: "ing-5", name: "Susu Bubuk", packagePrice: 65000, packageSize: 1000, packageUnit: "g", usedQuantity: 60, wastePercentage: 0 },
-      { id: "ing-6", name: "Telur Ayam", packagePrice: 28000, packageSize: 1000, packageUnit: "g", usedQuantity: 120, wastePercentage: 0 },
-      { id: "ing-7", name: "Isian Coklat Pasta", packagePrice: 45000, packageSize: 1000, packageUnit: "g", usedQuantity: 450, wastePercentage: 3 },
-    ],
-  },
-  {
-    name: "Donat Kentang Klasik",
-    category: "Donut",
-    yieldUnits: 24,
-    unitName: "pcs",
-    packagingCost: 500,
-    laborCost: 18000,
-    utilityCost: 12000,
-    otherOverheadCost: 4000,
-    targetMargin: 65,
-    ingredients: [
-      { id: "ing-11", name: "Tepung Terigu Protein Tinggi", packagePrice: 13000, packageSize: 1000, packageUnit: "g", usedQuantity: 500, wastePercentage: 2 },
-      { id: "ing-12", name: "Kentang Kukus Halus", packagePrice: 18000, packageSize: 1000, packageUnit: "g", usedQuantity: 200, wastePercentage: 5 },
-      { id: "ing-13", name: "Gula Pasir", packagePrice: 16000, packageSize: 1000, packageUnit: "g", usedQuantity: 80, wastePercentage: 0 },
-      { id: "ing-14", name: "Minyak Goreng Padat", packagePrice: 32000, packageSize: 1000, packageUnit: "g", usedQuantity: 300, wastePercentage: 10 },
-      { id: "ing-15", name: "Gula Donat Dingin", packagePrice: 22000, packageSize: 1000, packageUnit: "g", usedQuantity: 100, wastePercentage: 5 },
-    ],
-  },
-  {
-    name: "Kopi Susu Gula Aren",
-    category: "Minuman",
-    yieldUnits: 10,
-    unitName: "cup",
-    packagingCost: 1200, // Cup + Sealer + Sedotan
-    laborCost: 10000,
-    utilityCost: 5000,
-    otherOverheadCost: 2000,
-    targetMargin: 70,
-    ingredients: [
-      { id: "ing-21", name: "Biji Kopi Espresso Blend", packagePrice: 95000, packageSize: 1000, packageUnit: "g", usedQuantity: 180, wastePercentage: 3 },
-      { id: "ing-22", name: "Susu Fresh Milk UHT", packagePrice: 20000, packageSize: 1000, packageUnit: "ml", usedQuantity: 1200, wastePercentage: 2 },
-      { id: "ing-23", name: "Sirup Gula Aren Asli", packagePrice: 35000, packageSize: 1000, packageUnit: "ml", usedQuantity: 250, wastePercentage: 0 },
-      { id: "ing-24", name: "Es Batu Kristal Higienis", packagePrice: 10000, packageSize: 5000, packageUnit: "g", usedQuantity: 1500, wastePercentage: 5 },
-    ],
-  },
+const DEFAULT_INGREDIENT: CustomIngredient = {
+  id: "ing-1",
+  name: "",
+  packagePrice: 0,
+  packageSize: 1000,
+  packageUnit: "g",
+  usedQuantity: 0,
+  wastePercentage: 0,
+}
+
+const DEFAULT_OVERHEADS: CustomOverhead[] = [
+  { id: "oh-1", name: "Kemasan & Label", amount: 0 },
+  { id: "oh-2", name: "Tenaga Kerja (Upah)", amount: 0 },
+  { id: "oh-3", name: "Gas, Listrik & Air", amount: 0 },
 ]
 
 export default function RecipeSimulationPage() {
   const [activeTab, setActiveTab] = React.useState<string>("sandbox")
 
   // Sandbox Mode State
-  const [productName, setProductName] = React.useState<string>("Roti Manis Coklat")
-  const [yieldUnits, setYieldUnits] = React.useState<number>(30)
-  const [unitName, setUnitName] = React.useState<string>("pcs")
-  const [ingredients, setIngredients] = React.useState<CustomIngredient[]>(TEMPLATES[0].ingredients)
+  const [productName, setProductName] = React.useState<string>("")
+  const [yieldUnits, setYieldUnits] = React.useState<number | "">("")
+  const [unitName, setUnitName] = React.useState<string>("")
+  const [ingredients, setIngredients] = React.useState<CustomIngredient[]>([{ ...DEFAULT_INGREDIENT }])
 
-  // Overhead Costs
-  const [packagingCostPerUnit, setPackagingCostPerUnit] = React.useState<number>(400) // per unit
-  const [laborCostBatch, setLaborCostBatch] = React.useState<number>(20000) // per batch
-  const [utilityCostBatch, setUtilityCostBatch] = React.useState<number>(15000) // gas, listrik, air per batch
-  const [otherOverheadBatch, setOtherOverheadBatch] = React.useState<number>(5000) // per batch
+  // Dynamic Overhead Costs
+  const [overheads, setOverheads] = React.useState<CustomOverhead[]>([...DEFAULT_OVERHEADS])
 
   // Pricing Strategy State
   const [pricingMode, setPricingMode] = React.useState<"margin" | "markup" | "manual">("margin")
-  const [targetMargin, setTargetMargin] = React.useState<number>(60) // %
-  const [targetMarkup, setTargetMarkup] = React.useState<number>(150) // %
-  const [manualPrice, setManualPrice] = React.useState<number>(8500)
+  const [targetMargin, setTargetMargin] = React.useState<number>(50) // %
+  const [targetMarkup, setTargetMarkup] = React.useState<number>(100) // %
+  const [manualPrice, setManualPrice] = React.useState<number>(0)
 
   // Break Even Fixed Cost
-  const [monthlyFixedCost, setMonthlyFixedCost] = React.useState<number>(3500000)
+  const [monthlyFixedCost, setMonthlyFixedCost] = React.useState<number>(0)
 
   // Recipe Integration (Tab 2)
   const [savedProducts, setSavedProducts] = React.useState<Product[]>([])
@@ -212,22 +159,16 @@ export default function RecipeSimulationPage() {
     return ingredientCalculations.reduce((acc, curr) => acc + curr.totalCost, 0)
   }, [ingredientCalculations])
 
-  const totalPackagingCost = React.useMemo(() => {
-    return packagingCostPerUnit * Math.max(1, yieldUnits)
-  }, [packagingCostPerUnit, yieldUnits])
-
   const totalBatchOverhead = React.useMemo(() => {
-    return (laborCostBatch || 0) + (utilityCostBatch || 0) + (otherOverheadBatch || 0) + totalPackagingCost
-  }, [laborCostBatch, utilityCostBatch, otherOverheadBatch, totalPackagingCost])
+    return overheads.reduce((acc, curr) => acc + (curr.amount || 0), 0)
+  }, [overheads])
 
   const totalProductionCost = totalRawMaterialCost + totalBatchOverhead
 
-  const safeYield = Math.max(1, yieldUnits || 1)
+  const numericYield = typeof yieldUnits === "number" && yieldUnits > 0 ? yieldUnits : 1
+  const safeYield = numericYield
   const hppRawMaterialPerUnit = Math.round(totalRawMaterialCost / safeYield)
-  const hppPackagingPerUnit = packagingCostPerUnit
-  const hppLaborPerUnit = Math.round((laborCostBatch || 0) / safeYield)
-  const hppUtilityPerUnit = Math.round((utilityCostBatch || 0) / safeYield)
-  const hppOtherPerUnit = Math.round((otherOverheadBatch || 0) / safeYield)
+  const hppOverheadPerUnit = Math.round(totalBatchOverhead / safeYield)
   const hppTotalPerUnit = Math.round(totalProductionCost / safeYield)
 
   // Pricing Calculations
@@ -249,28 +190,9 @@ export default function RecipeSimulationPage() {
       ? Math.round((grossProfitPerUnit / calculatedSellingPrice) * 1000) / 10
       : 0
 
-  // Channels Matrix
-  // 1. Offline / Store Direct (0% fee)
-  const offlinePrice = calculatedSellingPrice
-  const offlineNetRev = offlinePrice
-  const offlineProfit = offlineNetRev - hppTotalPerUnit
-
-  // 2. Online Food Delivery (GoFood / GrabFood / ShopeeFood ~ 20% commission)
-  // Recommended price to KEEP same margin: OnlinePrice = calculatedSellingPrice / (1 - 0.20)
-  const deliveryRecommendedPrice = Math.ceil((calculatedSellingPrice / 0.8) / 500) * 500
-  const deliveryFee = Math.round(deliveryRecommendedPrice * 0.2)
-  const deliveryNetRev = deliveryRecommendedPrice - deliveryFee
-  const deliveryProfit = deliveryNetRev - hppTotalPerUnit
-
-  // 3. E-Commerce / Marketplace (~ 6.5% admin fee)
-  const marketplaceRecommendedPrice = Math.ceil((calculatedSellingPrice / (1 - 0.065)) / 500) * 500
-  const marketplaceFee = Math.round(marketplaceRecommendedPrice * 0.065)
-  const marketplaceNetRev = marketplaceRecommendedPrice - marketplaceFee
-  const marketplaceProfit = marketplaceNetRev - hppTotalPerUnit
-
   // Break-Even Point (BEP)
   const bepUnitsPerMonth =
-    grossProfitPerUnit > 0 ? Math.ceil(monthlyFixedCost / grossProfitPerUnit) : 0
+    grossProfitPerUnit > 0 && monthlyFixedCost > 0 ? Math.ceil(monthlyFixedCost / grossProfitPerUnit) : 0
   const bepRevenuePerMonth = bepUnitsPerMonth * calculatedSellingPrice
 
   // ===================== SAVED RECIPE SIMULATION (TAB 2) =====================
@@ -308,11 +230,11 @@ export default function RecipeSimulationPage() {
   function handleAddIngredient() {
     const newIng: CustomIngredient = {
       id: `custom-${Date.now()}`,
-      name: "Bahan Baru",
-      packagePrice: 20000,
+      name: "",
+      packagePrice: 0,
       packageSize: 1000,
       packageUnit: "g",
-      usedQuantity: 100,
+      usedQuantity: 0,
       wastePercentage: 0,
     }
     setIngredients([...ingredients, newIng])
@@ -329,48 +251,59 @@ export default function RecipeSimulationPage() {
     setIngredients((prev) => prev.filter((ing) => ing.id !== id))
   }
 
-  function handleApplyTemplate(tpl: QuickTemplate) {
-    setProductName(tpl.name)
-    setYieldUnits(tpl.yieldUnits)
-    setUnitName(tpl.unitName)
-    setIngredients(tpl.ingredients)
-    setPackagingCostPerUnit(tpl.packagingCost)
-    setLaborCostBatch(tpl.laborCost)
-    setUtilityCostBatch(tpl.utilityCost)
-    setOtherOverheadBatch(tpl.otherOverheadCost)
-    setTargetMargin(tpl.targetMargin)
-    setPricingMode("margin")
+  // Handlers for Dynamic Overheads
+  function handleAddOverhead() {
+    const newOh: CustomOverhead = {
+      id: `overhead-${Date.now()}`,
+      name: "",
+      amount: 0,
+    }
+    setOverheads([...overheads, newOh])
+  }
+
+  function handleUpdateOverhead(id: string, updates: Partial<CustomOverhead>) {
+    setOverheads((prev) =>
+      prev.map((oh) => (oh.id === id ? { ...oh, ...updates } : oh))
+    )
+  }
+
+  function handleDeleteOverhead(id: string) {
+    setOverheads((prev) => prev.filter((oh) => oh.id !== id))
   }
 
   function handleReset() {
-    handleApplyTemplate(TEMPLATES[0])
+    setProductName("")
+    setYieldUnits("")
+    setUnitName("")
+    setIngredients([{ ...DEFAULT_INGREDIENT }])
+    setOverheads([...DEFAULT_OVERHEADS])
+    setPricingMode("margin")
+    setTargetMargin(50)
+    setTargetMarkup(100)
+    setManualPrice(0)
+    setMonthlyFixedCost(0)
   }
 
   function handleCopySummary() {
     const text = `
 === RINGKASAN KALKULASI HPP & PRICING ===
-Produk: ${productName}
-Hasil Jadi (Yield): ${yieldUnits} ${unitName}
+Produk: ${productName || "Produk Tanpa Nama"}
+Hasil Jadi (Yield): ${yieldUnits || 1} ${unitName || "unit"}
 
 BIAYA PRODUKSI PER BATCH:
 - Bahan Baku: ${formatCurrencyIdr(totalRawMaterialCost)}
-- Kemasan: ${formatCurrencyIdr(totalPackagingCost)}
-- Tenaga Kerja: ${formatCurrencyIdr(laborCostBatch)}
-- Listrik & Gas: ${formatCurrencyIdr(utilityCostBatch)}
-- Overhead Lainnya: ${formatCurrencyIdr(otherOverheadBatch)}
+- Overhead: ${formatCurrencyIdr(totalBatchOverhead)}
 Total Biaya Batch: ${formatCurrencyIdr(totalProductionCost)}
 
-HPP PER UNIT: ${formatCurrencyIdr(hppTotalPerUnit)} / ${unitName}
-- HPP Bahan: ${formatCurrencyIdr(hppRawMaterialPerUnit)}
-- HPP Kemasan: ${formatCurrencyIdr(hppPackagingPerUnit)}
-- HPP Operasional: ${formatCurrencyIdr(hppLaborPerUnit + hppUtilityPerUnit + hppOtherPerUnit)}
+HPP PER UNIT: ${formatCurrencyIdr(hppTotalPerUnit)} / ${unitName || "unit"}
+- HPP Bahan Baku: ${formatCurrencyIdr(hppRawMaterialPerUnit)}
+- HPP Overhead: ${formatCurrencyIdr(hppOverheadPerUnit)}
 
 REKOMENDASI HARGA JUAL:
-- Offline / Dine-in: ${formatCurrencyIdr(offlinePrice)} (Margin: ${actualMarginPercent}%)
-- Online Delivery (Ojol 20%): ${formatCurrencyIdr(deliveryRecommendedPrice)}
-- E-Commerce (6.5%): ${formatCurrencyIdr(marketplaceRecommendedPrice)}
+- Rekomendasi Harga: ${formatCurrencyIdr(calculatedSellingPrice)} (Margin: ${actualMarginPercent}%)
+- Laba Kotor per Unit: ${formatCurrencyIdr(grossProfitPerUnit)}
 
-BEP (Titik Impas): ${bepUnitsPerMonth} ${unitName} / bulan (Omzet minimal ${formatCurrencyIdr(bepRevenuePerMonth)})
+BEP (Titik Impas): ${bepUnitsPerMonth} ${unitName || "unit"} / bulan (Omzet minimal ${formatCurrencyIdr(bepRevenuePerMonth)})
 Dihitung otomatis dengan HPP Manager.
 `.trim()
 
@@ -395,7 +328,7 @@ Dihitung otomatis dengan HPP Manager.
           </Badge>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Hitung HPP per unit secara akurat, alokasikan biaya bahan & overhead, serta simulasikan harga jual multi-channel (Offline vs Ojol).
+          Hitung HPP per unit secara akurat, alokasikan biaya bahan baku & overhead fleksibel, serta simulasikan harga jual ideal.
         </p>
       </div>
 
@@ -422,26 +355,6 @@ Dihitung otomatis dengan HPP Manager.
         {/* TAB 1: SANDBOX / CUSTOM CALCULATOR                        */}
         {/* ========================================================= */}
         <TabsContent value="sandbox" className="mt-5 space-y-6">
-          {/* Quick Preset Buttons */}
-          <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span className="text-muted-foreground font-semibold flex items-center gap-1">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              Template Cepat:
-            </span>
-            {TEMPLATES.map((tpl) => (
-              <Button
-                key={tpl.name}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleApplyTemplate(tpl)}
-                className="h-7 text-xs rounded-lg px-2.5 hover:border-primary/50"
-              >
-                {tpl.name} ({tpl.yieldUnits} {tpl.unitName})
-              </Button>
-            ))}
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* LEFT COLUMN (8 cols): Inputs & Formulations */}
             <div className="lg:col-span-8 flex flex-col gap-6">
@@ -474,8 +387,9 @@ Dihitung otomatis dengan HPP Manager.
                         <Input
                           type="number"
                           min="1"
-                          value={yieldUnits}
-                          onChange={(e) => setYieldUnits(Math.max(1, Number(e.target.value) || 1))}
+                          value={yieldUnits === "" ? "" : yieldUnits}
+                          onChange={(e) => setYieldUnits(e.target.value === "" ? "" : Math.max(1, Number(e.target.value) || 1))}
+                          placeholder="Contoh: 10"
                           className="rounded-xl h-10 text-xs font-mono font-bold text-center text-primary"
                         />
                       </div>
@@ -484,7 +398,7 @@ Dihitung otomatis dengan HPP Manager.
                         <Input
                           value={unitName}
                           onChange={(e) => setUnitName(e.target.value)}
-                          placeholder="pcs / cup"
+                          placeholder="Contoh: pcs"
                           className="rounded-xl h-10 text-xs text-center"
                         />
                       </div>
@@ -539,7 +453,7 @@ Dihitung otomatis dengan HPP Manager.
                             <Input
                               value={ing.name}
                               onChange={(e) => handleUpdateIngredient(ing.id, { name: e.target.value })}
-                              placeholder="Nama bahan baku..."
+                              placeholder="Contoh: Tepung Terigu"
                               className="rounded-lg h-8 text-xs font-medium"
                             />
                           </TableCell>
@@ -553,6 +467,7 @@ Dihitung otomatis dengan HPP Manager.
                                 step="500"
                                 value={ing.packagePrice || ""}
                                 onChange={(e) => handleUpdateIngredient(ing.id, { packagePrice: Number(e.target.value) || 0 })}
+                                placeholder="0"
                                 className="pl-7 rounded-lg h-8 text-xs font-mono"
                               />
                             </div>
@@ -565,11 +480,13 @@ Dihitung otomatis dengan HPP Manager.
                                 min="1"
                                 value={ing.packageSize || ""}
                                 onChange={(e) => handleUpdateIngredient(ing.id, { packageSize: Number(e.target.value) || 1 })}
+                                placeholder="1000"
                                 className="w-16 rounded-lg h-8 text-xs font-mono text-center"
                               />
                               <Input
                                 value={ing.packageUnit}
                                 onChange={(e) => handleUpdateIngredient(ing.id, { packageUnit: e.target.value })}
+                                placeholder="g"
                                 className="w-12 rounded-lg h-8 text-[11px] text-center px-1"
                               />
                             </div>
@@ -583,9 +500,10 @@ Dihitung otomatis dengan HPP Manager.
                                 step="1"
                                 value={ing.usedQuantity || ""}
                                 onChange={(e) => handleUpdateIngredient(ing.id, { usedQuantity: Number(e.target.value) || 0 })}
+                                placeholder="0"
                                 className="w-20 rounded-lg h-8 text-xs font-mono font-semibold"
                               />
-                              <span className="text-[11px] text-muted-foreground font-mono">{ing.packageUnit}</span>
+                              <span className="text-[11px] text-muted-foreground font-mono">{ing.packageUnit || "satuan"}</span>
                             </div>
                           </TableCell>
 
@@ -594,8 +512,9 @@ Dihitung otomatis dengan HPP Manager.
                               type="number"
                               min="0"
                               max="50"
-                              value={ing.wastePercentage || 0}
+                              value={ing.wastePercentage || ""}
                               onChange={(e) => handleUpdateIngredient(ing.id, { wastePercentage: Number(e.target.value) || 0 })}
+                              placeholder="0"
                               className="w-14 rounded-lg h-8 text-xs font-mono text-center mx-auto"
                             />
                           </TableCell>
@@ -630,207 +549,96 @@ Dihitung otomatis dengan HPP Manager.
                 </div>
               </Card>
 
-              {/* Card 3: Biaya Overhead Operasional & Kemasan */}
+              {/* Card 3: Biaya Overhead Operasional */}
               <Card className="rounded-2xl border-border shadow-sm">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-bold flex items-center gap-2">
-                    <Scale className="h-4 w-4 text-primary" />
-                    3. Alokasi Biaya Overhead & Kemasan
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Masukkan biaya kemasan per pcs serta alokasi upah baker, gas, dan listrik per batch untuk mendapatkan HPP akurat.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="space-y-1.5 p-3 rounded-xl border border-border bg-card">
-                      <Label className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
-                        <span>Kemasan / Unit</span>
-                        <Badge variant="outline" className="text-[9px] py-0">per pcs</Badge>
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">Rp</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="100"
-                          value={packagingCostPerUnit || ""}
-                          onChange={(e) => setPackagingCostPerUnit(Number(e.target.value) || 0)}
-                          className="pl-8 rounded-xl h-9 text-xs font-mono font-semibold"
-                        />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground block">
-                        Total batch: {formatCurrencyIdr(totalPackagingCost)}
-                      </span>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base font-bold flex items-center gap-2">
+                        <Scale className="h-4 w-4 text-primary" />
+                        3. Alokasi Biaya Overhead & Operasional
+                      </CardTitle>
+                      <CardDescription className="text-xs mt-0.5">
+                        Tambahkan biaya pendukung seperti kemasan, upah kerja, listrik, gas, atau biaya lainnya per batch.
+                      </CardDescription>
                     </div>
 
-                    <div className="space-y-1.5 p-3 rounded-xl border border-border bg-card">
-                      <Label className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
-                        <span>Tenaga Kerja</span>
-                        <Badge variant="outline" className="text-[9px] py-0">per batch</Badge>
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">Rp</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1000"
-                          value={laborCostBatch || ""}
-                          onChange={(e) => setLaborCostBatch(Number(e.target.value) || 0)}
-                          className="pl-8 rounded-xl h-9 text-xs font-mono font-semibold"
-                        />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground block">
-                        = {formatCurrencyIdr(hppLaborPerUnit)} / unit
-                      </span>
-                    </div>
-
-                    <div className="space-y-1.5 p-3 rounded-xl border border-border bg-card">
-                      <Label className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
-                        <span>Gas & Listrik Oven</span>
-                        <Badge variant="outline" className="text-[9px] py-0">per batch</Badge>
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">Rp</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1000"
-                          value={utilityCostBatch || ""}
-                          onChange={(e) => setUtilityCostBatch(Number(e.target.value) || 0)}
-                          className="pl-8 rounded-xl h-9 text-xs font-mono font-semibold"
-                        />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground block">
-                        = {formatCurrencyIdr(hppUtilityPerUnit)} / unit
-                      </span>
-                    </div>
-
-                    <div className="space-y-1.5 p-3 rounded-xl border border-border bg-card">
-                      <Label className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
-                        <span>Overhead Lainnya</span>
-                        <Badge variant="outline" className="text-[9px] py-0">per batch</Badge>
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">Rp</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="500"
-                          value={otherOverheadBatch || ""}
-                          onChange={(e) => setOtherOverheadBatch(Number(e.target.value) || 0)}
-                          className="pl-8 rounded-xl h-9 text-xs font-mono font-semibold"
-                        />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground block">
-                        = {formatCurrencyIdr(hppOtherPerUnit)} / unit
-                      </span>
-                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAddOverhead}
+                      size="sm"
+                      className="rounded-xl text-xs h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold flex items-center gap-1"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Tambah Overhead</span>
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Card 4: Simulasi Multi-Channel Delivery (Ojol vs Offline) */}
-              <Card className="rounded-2xl border-border shadow-sm">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-bold flex items-center gap-2">
-                    <ShoppingBag className="h-4 w-4 text-primary" />
-                    4. Matriks Harga Multi-Channel (Offline vs GoFood / GrabFood / Marketplace)
-                  </CardTitle>
-                  <CardDescription className="text-xs">
-                    Platform ojek online memotong komisi 20%. Gunakan harga markup rekomendasi agar margin bersih toko Anda tidak tergerus.
-                  </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {/* Channel 1: Dine-in / Offline */}
-                    <div className="p-4 rounded-xl border border-border bg-card flex flex-col justify-between gap-3">
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-foreground">Toko Offline / POS</span>
-                          <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                            0% Fee
-                          </Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">Penjualan langsung di kasir toko</p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Harga Jual:</span>
-                        <p className="font-mono font-bold text-lg text-foreground">
-                          {formatCurrencyIdr(offlinePrice)}
-                        </p>
-                        <div className="pt-2 border-t border-border/80 flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground text-[11px]">Laba Bersih:</span>
-                          <span className="font-mono font-bold text-emerald-600">+{formatCurrencyIdr(offlineProfit)}</span>
-                        </div>
-                      </div>
+                <CardContent className="space-y-3">
+                  {overheads.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+                      Belum ada komponen overhead. Klik &quot;Tambah Overhead&quot; untuk menambahkan biaya.
                     </div>
-
-                    {/* Channel 2: Online Delivery (GoFood/GrabFood 20%) */}
-                    <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 flex flex-col justify-between gap-3 relative">
-                      <div className="absolute -top-2.5 right-3">
-                        <Badge className="bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-wider py-0.5 shadow-sm">
-                          Rekomendasi
-                        </Badge>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-foreground">Online Delivery</span>
-                          <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/20">
-                            20% Komisi
-                          </Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">GoFood, GrabFood, ShopeeFood</p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Harga Menu Aplikasi:</span>
-                        <p className="font-mono font-bold text-lg text-primary">
-                          {formatCurrencyIdr(deliveryRecommendedPrice)}
-                        </p>
-                        <div className="pt-2 border-t border-primary/20 flex flex-col gap-1 text-[11px]">
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Potongan Komisi (20%):</span>
-                            <span className="font-mono text-destructive">-{formatCurrencyIdr(deliveryFee)}</span>
+                  ) : (
+                    <div className="space-y-2">
+                      {overheads.map((oh) => {
+                        const costPerUnit = Math.round((oh.amount || 0) / safeYield)
+                        return (
+                          <div
+                            key={oh.id}
+                            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 rounded-xl border border-border bg-card hover:bg-muted/10 transition-colors"
+                          >
+                            <div className="flex-1">
+                              <Input
+                                value={oh.name}
+                                onChange={(e) => handleUpdateOverhead(oh.id, { name: e.target.value })}
+                                placeholder="Nama biaya overhead (misal: Kemasan / Listrik)..."
+                                className="rounded-lg h-9 text-xs font-medium"
+                              />
+                            </div>
+                            <div className="w-full sm:w-48 relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground">
+                                Rp
+                              </span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="500"
+                                value={oh.amount || ""}
+                                onChange={(e) =>
+                                  handleUpdateOverhead(oh.id, { amount: Number(e.target.value) || 0 })
+                                }
+                                placeholder="0"
+                                className="pl-8 rounded-lg h-9 text-xs font-mono font-semibold"
+                              />
+                            </div>
+                            <div className="w-full sm:w-36 px-2 py-1 flex items-center justify-between sm:justify-end gap-1 text-xs text-muted-foreground font-mono">
+                              <span className="sm:hidden text-[11px]">Per unit:</span>
+                              <span className="font-semibold text-foreground">
+                                {formatCurrencyIdr(costPerUnit)}
+                              </span>
+                              <span className="text-[10px]">/ unit</span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteOverhead(oh.id)}
+                              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 self-end sm:self-center"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
-                          <div className="flex items-center justify-between font-semibold">
-                            <span className="text-foreground">Laba Bersih:</span>
-                            <span className="font-mono text-emerald-600">+{formatCurrencyIdr(deliveryProfit)}</span>
-                          </div>
-                        </div>
-                      </div>
+                        )
+                      })}
                     </div>
+                  )}
 
-                    {/* Channel 3: Marketplace */}
-                    <div className="p-4 rounded-xl border border-border bg-card flex flex-col justify-between gap-3">
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-foreground">Marketplace</span>
-                          <Badge variant="outline" className="text-[10px] bg-slate-500/10 text-slate-700 border-slate-500/20">
-                            6.5% Fee
-                          </Badge>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">Tokopedia, Shopee, TikTok Shop</p>
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[10px] uppercase font-semibold text-muted-foreground">Harga Rekomendasi:</span>
-                        <p className="font-mono font-bold text-lg text-foreground">
-                          {formatCurrencyIdr(marketplaceRecommendedPrice)}
-                        </p>
-                        <div className="pt-2 border-t border-border/80 flex flex-col gap-1 text-[11px]">
-                          <div className="flex items-center justify-between text-muted-foreground">
-                            <span>Biaya Layanan (6.5%):</span>
-                            <span className="font-mono text-destructive">-{formatCurrencyIdr(marketplaceFee)}</span>
-                          </div>
-                          <div className="flex items-center justify-between font-semibold">
-                            <span className="text-foreground">Laba Bersih:</span>
-                            <span className="font-mono text-emerald-600">+{formatCurrencyIdr(marketplaceProfit)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">Subtotal Biaya Overhead (per Batch):</span>
+                    <span className="font-mono font-bold text-sm text-foreground">
+                      {formatCurrencyIdr(totalBatchOverhead)}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
