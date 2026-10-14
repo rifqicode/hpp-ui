@@ -159,6 +159,7 @@ export default function RecipeCreatePage() {
   }, [])
 
   function addIngredientRow() {
+    if (loadingMaterials || availableMaterials.length === 0) return
     const unusedMaterial = availableMaterials.find(
       (m) => !ingredients.some((row) => row.stockId === m.id)
     )
@@ -610,6 +611,7 @@ export default function RecipeCreatePage() {
                 variant="outline"
                 size="sm"
                 onClick={addIngredientRow}
+                disabled={loadingMaterials || availableMaterials.length === 0}
                 className="rounded-xl text-xs flex items-center gap-1.5 border-dashed border-primary/40 text-primary hover:bg-primary/5"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -638,6 +640,7 @@ export default function RecipeCreatePage() {
                     variant="outline"
                     size="sm"
                     onClick={addIngredientRow}
+                    disabled={loadingMaterials || availableMaterials.length === 0}
                     className="rounded-xl text-xs flex items-center gap-1.5 border-dashed border-primary/40 text-primary hover:bg-primary/5 mt-1"
                   >
                     <Plus className="h-3.5 w-3.5" />

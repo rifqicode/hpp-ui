@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom"
+import * as React from "react"
+import { Link, useNavigate } from "react-router-dom"
 import {
   Factory,
   ArrowRight,
@@ -11,13 +12,38 @@ import {
   ShieldCheck,
   BarChart3,
   Layers,
+  Check,
+  Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/store/use-auth-store"
+import { UpgradeModal } from "@/features/subscription/components/UpgradeModal"
+import type { SubscriptionTier } from "@/features/subscription/types/subscription"
 
 export default function LandingPage() {
+  const navigate = useNavigate()
   const token = useAuthStore((state) => state.token)
   const isAuthenticated = Boolean(token)
+  const [isUpgradeOpen, setIsUpgradeOpen] = React.useState(false)
+  const [selectedTier, setSelectedTier] = React.useState<SubscriptionTier>('GROWTH')
+
+  const handlePlanAction = (tier: SubscriptionTier) => {
+    if (tier === 'FREE') {
+      if (isAuthenticated) {
+        navigate('/dashboard')
+      } else {
+        navigate('/register')
+      }
+      return
+    }
+
+    if (isAuthenticated) {
+      setSelectedTier(tier)
+      setIsUpgradeOpen(true)
+    } else {
+      navigate(`/register?tier=${tier}`)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-900 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
@@ -276,6 +302,167 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Pricing Section */}
+        <section id="pricing" className="py-20 bg-white border-t border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold mb-3">
+                <Sparkles className="size-3.5 text-indigo-600" />
+                <span>Pilihan Paket Berlangganan</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
+                Investasi Terbaik untuk Efisiensi Bisnis Kuliner Anda
+              </h2>
+              <p className="text-slate-600 text-base leading-relaxed">
+                Pilih paket yang sesuai dengan skala usaha Anda. Upgrade kapan saja melalui sistem pembayaran instan Midtrans.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+              {/* Free Plan */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-slate-900">Free Starter</h3>
+                    <p className="text-xs text-slate-500 mt-1">Cocok untuk UMKM rintisan & tester menu baru</p>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-3xl font-extrabold text-slate-900">Rp 0</span>
+                    <span className="text-xs text-slate-500">/selamanya</span>
+                  </div>
+                  <ul className="space-y-3 text-xs text-slate-700 mb-8">
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>1 Toko / Cabang Utama</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>15 Bahan Baku & 5 Produk Resep</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>10 Batch Produksi per Bulan</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>1 Staf Toko</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>Laporan Biaya & Margin Standar</span>
+                    </li>
+                  </ul>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePlanAction('FREE')}
+                  className="w-full text-xs font-semibold h-10 rounded-xl border-slate-200 hover:bg-slate-50"
+                >
+                  {isAuthenticated ? 'Buka Dashboard' : 'Mulai Gratis Sekarang'}
+                </Button>
+              </div>
+
+              {/* Growth Plan - Highlighted */}
+              <div className="rounded-2xl border-2 border-indigo-600 bg-indigo-50/20 p-7 shadow-lg relative flex flex-col justify-between ring-2 ring-indigo-500/20">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                  <Sparkles className="size-3" /> Paling Populer
+                </div>
+                <div>
+                  <div className="mb-4 mt-1">
+                    <h3 className="text-lg font-bold text-slate-900">Growth</h3>
+                    <p className="text-xs text-slate-500 mt-1">Untuk bisnis kuliner yang mulai ekspansi cabang</p>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-3xl font-extrabold text-slate-900">Rp 149.000</span>
+                    <span className="text-xs text-slate-500">/bulan</span>
+                  </div>
+                  <ul className="space-y-3 text-xs text-slate-700 mb-8">
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-indigo-600 shrink-0" />
+                      <span className="font-semibold text-slate-900">Hingga 3 Toko / Cabang</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-indigo-600 shrink-0" />
+                      <span>100 Bahan Baku & 50 Produk Resep</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-indigo-600 shrink-0" />
+                      <span>150 Batch Produksi per Bulan</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-indigo-600 shrink-0" />
+                      <span>3 Staf per Toko</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-indigo-600 shrink-0" />
+                      <span>Ekspor Laporan Lengkap (Excel & PDF)</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-indigo-600 shrink-0" />
+                      <span>Dukungan Teknis Prioritas</span>
+                    </li>
+                  </ul>
+                </div>
+                <Button
+                  onClick={() => handlePlanAction('GROWTH')}
+                  className="w-full text-xs font-semibold h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-200"
+                >
+                  Pilih Paket Growth
+                </Button>
+              </div>
+
+              {/* Max Growth Plan */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-xs hover:border-indigo-300 transition-all flex flex-col justify-between relative">
+                <div className="absolute -top-3 left-6 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <Zap className="size-3 text-amber-400" /> Waralaba & Resto Besar
+                </div>
+                <div>
+                  <div className="mb-4 mt-1">
+                    <h3 className="text-lg font-bold text-slate-900">Max Growth</h3>
+                    <p className="text-xs text-slate-500 mt-1">Kapasitas maksimal tanpa batas operasional</p>
+                  </div>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-3xl font-extrabold text-slate-900">Rp 499.000</span>
+                    <span className="text-xs text-slate-500">/bulan</span>
+                  </div>
+                  <ul className="space-y-3 text-xs text-slate-700 mb-8">
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span className="font-semibold text-slate-900">Hingga 10 Toko / Cabang</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span className="font-semibold text-slate-900">Bahan Baku & Resep Tak Terbatas</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span className="font-semibold text-slate-900">Batch Produksi Tak Terbatas</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>20 Staf per Toko</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>Analitik Produksi & Multi-Role Penuh</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>Dedicated Account Specialist</span>
+                    </li>
+                  </ul>
+                </div>
+                <Button
+                  onClick={() => handlePlanAction('MAX_GROWTH')}
+                  className="w-full text-xs font-semibold h-10 rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
+                >
+                  Pilih Paket Max Growth
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Bottom CTA Banner */}
         <section className="py-16 md:py-20 bg-indigo-900 text-white relative overflow-hidden">
           {/* Subtle gradient background accent */}
@@ -338,6 +525,13 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <UpgradeModal
+        isOpen={isUpgradeOpen}
+        onClose={() => setIsUpgradeOpen(false)}
+        initialSelectedTier={selectedTier}
+        reason="Dapatkan fitur premium untuk mengoptimalkan operasional dan profit bisnis kuliner Anda."
+      />
     </div>
   )
 }

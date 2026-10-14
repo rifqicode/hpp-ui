@@ -31,6 +31,7 @@ const AccountSettingPage = React.lazy(() => import("./pages/settings/account-set
 const PosPage = React.lazy(() => import("./pages/sales/pos-page"))
 const TransactionHistoryPage = React.lazy(() => import("./pages/sales/transaction-history-page"))
 const CustomerListPage = React.lazy(() => import("./pages/sales/customer-list-page"))
+const SubscriptionPage = React.lazy(() => import("./pages/subscription/subscription-page"))
 const LoginPage = React.lazy(() => import("./pages/auth/login-page"))
 const RegisterPage = React.lazy(() => import("./pages/auth/register-page"))
 const AcceptInvitePage = React.lazy(() => import("./pages/auth/accept-invite-page"))
@@ -106,6 +107,7 @@ function App() {
             <Route path="/settings/role/new" element={<RoleCreatePage />} />
             <Route path="/settings/role/:id" element={<RoleCreatePage />} />
             <Route path="/settings" element={<AccountSettingPage />} />
+            <Route path="/subscription" element={<SubscriptionPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

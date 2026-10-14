@@ -7,6 +7,9 @@ export default {
   ],
   theme: {
     extend: {
+      spacing: {
+        "5.5": "1.375rem",
+      },
       colors: {
         border: "var(--border)",
         input: "var(--input)",

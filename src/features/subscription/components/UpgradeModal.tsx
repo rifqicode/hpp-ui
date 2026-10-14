@@ -7,41 +7,95 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSubscriptionGuards } from '../hooks/useSubscriptionGuards';
-import { useSubscribe } from '../hooks/useSubscribe';
+import { useCheckout } from '../hooks/useCheckout';
+import { SUBSCRIPTION_USAGE_QUERY_KEY } from '../hooks/useSubscriptionUsage';
+import { useAuthStore } from '@/store/use-auth-store';
+import { loadMidtransSnap, payWithSnap } from '@/lib/midtrans';
 import type { SubscriptionTier } from '../types/subscription';
-import { Check, Sparkles, Zap, ShieldCheck } from 'lucide-react';
+import { Check, Sparkles, Zap, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   reason?: string;
+  initialSelectedTier?: SubscriptionTier;
 }
 
-export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, reason }) => {
+export const UpgradeModal: React.FC<UpgradeModalProps> = ({
+  isOpen,
+  onClose,
+  reason,
+  initialSelectedTier,
+}) => {
+  const queryClient = useQueryClient();
+  const activeStoreId = useAuthStore((state) => state.activeStoreId);
   const { tier } = useSubscriptionGuards();
-  const { mutate: subscribe, isPending } = useSubscribe();
+  const { mutate: checkout, isPending } = useCheckout();
   const [successMessage, setSuccessMessage] = React.useState<string>('');
   const [errorMessage, setErrorMessage] = React.useState<string>('');
+  const [processingTier, setProcessingTier] = React.useState<SubscriptionTier | null>(null);
 
   const handleSelectPlan = (selectedTier: SubscriptionTier) => {
     setErrorMessage('');
     setSuccessMessage('');
+    setProcessingTier(selectedTier);
 
-    subscribe(selectedTier, {
-      onSuccess: (data) => {
-        setSuccessMessage(`Paket ${selectedTier} berhasil diaktifkan! Invoice ${data.invoice.invoice_number} telah diterbitkan.`);
-        setTimeout(() => {
-          setSuccessMessage('');
-          onClose();
-        }, 1500);
+    checkout(selectedTier, {
+      onSuccess: async (data) => {
+        setProcessingTier(null);
+        // Immediately close UpgradeModal to release Radix Dialog focus trap and body pointer-events lock
+        onClose();
+
+        try {
+          await loadMidtransSnap(data.client_key);
+
+          // Allow Radix Dialog unmount cycle to complete and restore body pointer events
+          setTimeout(() => {
+            document.body.style.pointerEvents = 'auto';
+
+            payWithSnap(data.snap_token, {
+              onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: [SUBSCRIPTION_USAGE_QUERY_KEY, activeStoreId] });
+                queryClient.invalidateQueries({ queryKey: ['subscription-invoices'] });
+                queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+              },
+              onPending: () => {
+                queryClient.invalidateQueries({ queryKey: [SUBSCRIPTION_USAGE_QUERY_KEY, activeStoreId] });
+                queryClient.invalidateQueries({ queryKey: ['subscription-invoices'] });
+              },
+              onError: () => {
+                queryClient.invalidateQueries({ queryKey: ['subscription-invoices'] });
+              },
+              onClose: () => {
+                document.body.style.pointerEvents = 'auto';
+                queryClient.invalidateQueries({ queryKey: [SUBSCRIPTION_USAGE_QUERY_KEY, activeStoreId] });
+                queryClient.invalidateQueries({ queryKey: ['subscription-invoices'] });
+              },
+            });
+          }, 150);
+        } catch (e: unknown) {
+          if (data.snap_redirect_url) {
+            window.open(data.snap_redirect_url, '_blank');
+          } else {
+            console.error('Failed to load Midtrans Snap:', e);
+          }
+        }
       },
       onError: (err: unknown) => {
-        const msg = err instanceof Error ? err.message : 'Gagal memperbarui langganan. Silakan coba lagi.';
+        setProcessingTier(null);
+        const msg = err instanceof Error ? err.message : 'Gagal memulai transaksi pembayaran. Silakan coba lagi.';
         setErrorMessage(msg);
       },
     });
   };
+
+  React.useEffect(() => {
+    if (isOpen && initialSelectedTier && initialSelectedTier !== 'FREE' && initialSelectedTier !== tier) {
+      handleSelectPlan(initialSelectedTier);
+    }
+  }, [isOpen, initialSelectedTier]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -120,7 +174,16 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, rea
               className="w-full text-xs font-semibold h-9 rounded-lg"
               variant={tier === 'GROWTH' ? 'outline' : 'default'}
             >
-              {isPending ? 'Mengaktifkan...' : tier === 'GROWTH' ? 'Paket Aktif' : 'Pilih Paket Growth'}
+              {isPending && processingTier === 'GROWTH' ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Memproses...</span>
+                </span>
+              ) : tier === 'GROWTH' ? (
+                'Paket Aktif'
+              ) : (
+                'Pilih Paket Growth'
+              )}
             </Button>
           </div>
 
@@ -174,7 +237,16 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, rea
               onClick={() => handleSelectPlan('MAX_GROWTH')}
               className="w-full text-xs font-semibold h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white"
             >
-              {isPending ? 'Mengaktifkan...' : tier === 'MAX_GROWTH' ? 'Paket Aktif' : 'Pilih Paket Max Growth'}
+              {isPending && processingTier === 'MAX_GROWTH' ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Memproses...</span>
+                </span>
+              ) : tier === 'MAX_GROWTH' ? (
+                'Paket Aktif'
+              ) : (
+                'Pilih Paket Max Growth'
+              )}
             </Button>
           </div>
         </div>

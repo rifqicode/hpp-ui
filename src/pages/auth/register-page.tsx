@@ -64,6 +64,17 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   const isSetupStoreRoute = location.pathname === "/setup-store" || initialStep === 2
   const [step, setStep] = React.useState<number>(isSetupStoreRoute || (token && user) ? 2 : 1)
 
+  // Track tier parameter from query string (e.g. ?tier=GROWTH)
+  const searchParams = new URLSearchParams(location.search)
+  const tierParam = searchParams.get("tier")
+
+  React.useEffect(() => {
+    if (tierParam && (tierParam === "GROWTH" || tierParam === "MAX_GROWTH")) {
+      sessionStorage.setItem("pending_upgrade_tier", tierParam)
+      localStorage.setItem("pending_upgrade_tier", tierParam)
+    }
+  }, [tierParam])
+
   // Step 1: Account State
   const [name, setName] = React.useState<string>(user?.name || "")
   const [email, setEmail] = React.useState<string>(user?.email || "")
@@ -374,7 +385,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 </CardDescription>
               </CardHeader>
 
-              <form onSubmit={handleContinueToStore} className="space-y-3.5">
+              <form onSubmit={handleContinueToStore} noValidate className="space-y-3.5">
                 <div className="space-y-1">
                   <Label htmlFor="reg-name" className="text-xs font-semibold text-foreground">
                     Nama Lengkap <span className="text-destructive">*</span>
@@ -456,19 +467,19 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 <div className="flex items-start gap-2 pt-1">
                   <input
                     type="checkbox"
-                    id="terms"
+                    id="agreeTerms"
                     checked={agreeTerms}
                     onChange={(e) => setAgreeTerms(e.target.checked)}
                     className="mt-0.5 rounded border-input text-primary focus:ring-primary h-3.5 w-3.5"
                   />
-                  <label htmlFor="terms" className="text-xs text-muted-foreground cursor-pointer leading-tight">
+                  <label htmlFor="agreeTerms" className="text-xs text-muted-foreground cursor-pointer leading-tight">
                     Saya menyetujui <span className="text-primary hover:underline">Ketentuan Layanan</span> dan{" "}
                     <span className="text-primary hover:underline">Kebijakan Privasi</span>.
                   </label>
                 </div>
 
                 <Button type="submit" className="w-full rounded-xl h-10 shadow-sm mt-3 font-semibold">
-                  Lanjut ke Setup Usaha
+                  Lanjut ke Profil Usaha
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
@@ -495,15 +506,15 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 </CardDescription>
               </CardHeader>
 
-              <form onSubmit={handleSubmitRegistration} className="space-y-3.5">
+              <form onSubmit={handleSubmitRegistration} noValidate className="space-y-3.5">
                 <div className="space-y-1">
-                  <Label htmlFor="store-name" className="text-xs font-semibold text-foreground">
+                  <Label htmlFor="storeName" className="text-xs font-semibold text-foreground">
                     Nama Toko / Bisnis <span className="text-destructive">*</span>
                   </Label>
                   <div className="relative">
                     <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="store-name"
+                      id="storeName"
                       value={storeName}
                       onChange={(e) => setStoreName(e.target.value)}
                       placeholder="Contoh: Dapur Roti Senopati, Kopi Senja, dll."
@@ -539,13 +550,13 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="store-location" className="text-xs font-semibold text-foreground">
+                  <Label htmlFor="storeLocation" className="text-xs font-semibold text-foreground">
                     Alamat / Lokasi Operasional <span className="text-destructive">*</span>
                   </Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      id="store-location"
+                      id="storeLocation"
                       value={storeLocation}
                       onChange={(e) => setStoreLocation(e.target.value)}
                       placeholder="Contoh: Jl. Senopati No. 45, Jakarta Selatan"
@@ -557,13 +568,13 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="store-phone" className="text-xs font-semibold text-foreground">
+                    <Label htmlFor="phone" className="text-xs font-semibold text-foreground">
                       No. Kontak / WhatsApp
                     </Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="store-phone"
+                        id="phone"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="0812-3456-7890"
@@ -612,7 +623,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       disabled={loading}
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Kembali
+                      Kembali ke Akun
                     </Button>
                   )}
                   <Button type="submit" className="flex-1 rounded-xl h-10 shadow-sm font-semibold" disabled={loading}>
@@ -624,7 +635,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     ) : (
                       <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Selesaikan & Buka Dashboard
+                        Selesaikan Pendaftaran
                       </>
                     )}
                   </Button>

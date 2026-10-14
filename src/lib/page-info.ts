@@ -89,5 +89,10 @@ export function getActiveMenuTitle(pathname: string): string {
     return 'Pengaturan Akun';
   }
 
+  // Subscription
+  if (path === '/subscription' || path.startsWith('/subscription/')) {
+    return 'Paket & Langganan';
+  }
+
   return 'HPP Manager';
 }

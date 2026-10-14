@@ -24,7 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { PanelLeftIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -257,7 +257,9 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state, isMobile, openMobile } = useSidebar()
+  const isExpanded = isMobile ? openMobile : state === "expanded"
+  const defaultLabel = isExpanded ? "Tutup Sidebar" : "Buka Sidebar"
 
   return (
     <Button
@@ -265,6 +267,8 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
+      title={props.title || defaultLabel}
+      aria-label={props["aria-label"] || defaultLabel}
       className={cn(className)}
       onClick={(event) => {
         onClick?.(event)
@@ -272,7 +276,11 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      {isExpanded ? (
+        <ChevronLeft className="size-4 transition-transform duration-200" />
+      ) : (
+        <ChevronRight className="size-4 transition-transform duration-200" />
+      )}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

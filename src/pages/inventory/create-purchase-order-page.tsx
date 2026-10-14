@@ -55,6 +55,7 @@ export default function CreatePurchaseOrderPage() {
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
   const [materials, setMaterials] = React.useState<MaterialOption[]>([])
   const [loadingInitial, setLoadingInitial] = React.useState<boolean>(true)
+  const loadingMaterials = loadingInitial
 
   // PO Number preview or existing
   const [poNumber, setPoNumber] = React.useState<string>("PO-AUTO-GENERATED")
@@ -152,6 +153,7 @@ export default function CreatePurchaseOrderPage() {
 
   // Item row operations
   function handleAddItem() {
+    if (loadingMaterials || materials.length === 0) return
     const defaultMat = materials[0]
     setItems([
       ...items,
@@ -420,6 +422,7 @@ export default function CreatePurchaseOrderPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleAddItem}
+                disabled={loadingMaterials || materials.length === 0}
                 className="rounded-xl"
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5" />

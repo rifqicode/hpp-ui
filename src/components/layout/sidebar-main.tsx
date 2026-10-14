@@ -22,6 +22,7 @@ import {
   Layers,
   ChevronRight,
   Lock,
+  CreditCard,
 } from "lucide-react"
 
 import {
@@ -98,7 +99,7 @@ const NAVIGATION: NavGroup[] = [
     items: [
       { title: "Biaya Overhead", url: "/production/overheads", icon: Layers, permission: "menu:recipes" },
       { title: "Produk", url: "/production/products", icon: Factory, permission: "menu:recipes" },
-      { title: "Batches", url: "/production/batches", icon: History, badge: "3", permission: "menu:recipes" },
+      { title: "Batches", url: "/production/batches", icon: History, permission: "menu:recipes" },
       {
         title: "HPP Calculator",
         icon: Calculator,
@@ -122,6 +123,7 @@ const NAVIGATION: NavGroup[] = [
   {
     group: "Administration",
     items: [
+      { title: "Subscription", url: "/subscription", icon: CreditCard },
       { title: "Store Settings", url: "/settings/store", icon: Store, permission: "menu:settings" },
       { title: "Account Settings", url: "/settings", icon: Settings },
     ]

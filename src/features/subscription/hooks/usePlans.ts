@@ -9,10 +9,3 @@ export const usePlans = () => {
   });
 };
 
-export const useInvoices = () => {
-  return useQuery({
-    queryKey: ['subscription-invoices'],
-    queryFn: () => subscriptionService.getInvoices(),
-    staleTime: 60 * 1000,
-  });
-};

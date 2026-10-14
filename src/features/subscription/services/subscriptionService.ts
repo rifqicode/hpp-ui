@@ -6,6 +6,8 @@ import type {
   SubscriptionInvoice,
   SubscriptionTier,
   SubscribeResponseData,
+  CheckoutResponseData,
+  MidtransConfigData,
 } from '../types/subscription';
 
 export const subscriptionService = {
@@ -24,6 +26,19 @@ export const subscriptionService = {
       '/subscription/subscribe',
       { tier }
     );
+    return response.data;
+  },
+
+  checkout: async (tier: SubscriptionTier): Promise<CheckoutResponseData> => {
+    const response = await apiClient.post<CheckoutResponseData>(
+      '/subscription/checkout',
+      { tier }
+    );
+    return response.data;
+  },
+
+  getMidtransConfig: async (): Promise<MidtransConfigData> => {
+    const response = await apiClient.get<MidtransConfigData>('/subscription/config/client');
     return response.data;
   },
 

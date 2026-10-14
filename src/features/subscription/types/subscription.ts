@@ -57,6 +57,8 @@ export interface SubscriptionUsageData {
 
 export interface SubscriptionInvoice {
   id: string;
+  subscription_id?: string;
+  user_id?: string;
   invoice_number: string;
   tier: SubscriptionTier;
   amount: number;
@@ -65,7 +67,23 @@ export interface SubscriptionInvoice {
   payment_method: string;
   billing_period_start: string;
   billing_period_end: string;
-  paid_at: string;
+  paid_at?: string | null;
+  snap_token?: string | null;
+  snap_redirect_url?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CheckoutResponseData {
+  invoice: SubscriptionInvoice;
+  snap_token: string;
+  snap_redirect_url: string;
+  client_key: string;
+}
+
+export interface MidtransConfigData {
+  client_key: string;
+  is_production: boolean;
 }
 
 export interface SubscriptionRecord {
