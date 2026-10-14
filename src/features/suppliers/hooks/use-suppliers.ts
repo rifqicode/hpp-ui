@@ -58,6 +58,7 @@ export function useSuppliers() {
   const loadSuppliers = React.useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: supplierKeys.all }),
+      queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
     ])
   }, [queryClient])
 

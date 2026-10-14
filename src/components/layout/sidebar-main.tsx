@@ -2,6 +2,7 @@ import * as React from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/use-auth-store"
 import { usePermission } from "@/hooks/use-permission"
+import { useSubscriptionGuards, type SubscriptionFeatures } from "@/features/subscription"
 import {
   LayoutDashboard,
   Factory,
@@ -20,6 +21,7 @@ import {
   LogOut,
   Layers,
   ChevronRight,
+  Lock,
 } from "lucide-react"
 
 import {
@@ -56,6 +58,7 @@ interface NavSubItem {
   title: string
   url: string
   permission?: string
+  requiredFeature?: keyof SubscriptionFeatures
   badge?: string
 }
 
@@ -64,6 +67,7 @@ interface NavItem {
   url?: string
   icon: React.ComponentType<{ className?: string }>
   permission?: string
+  requiredFeature?: keyof SubscriptionFeatures
   badge?: string
   subItems?: NavSubItem[]
 }
@@ -99,9 +103,10 @@ const NAVIGATION: NavGroup[] = [
         title: "HPP Calculator",
         icon: Calculator,
         permission: "menu:recipes",
+        requiredFeature: "production_analytics",
         subItems: [
-          { title: "Simulasi Resep Baru", url: "/production/hpp/recipe-simulation" },
-          { title: "Simulasi Produksi & Restock", url: "/production/hpp/production-simulation" },
+          { title: "Simulasi Resep Baru", url: "/production/hpp/recipe-simulation", requiredFeature: "production_analytics" },
+          { title: "Simulasi Produksi & Restock", url: "/production/hpp/production-simulation", requiredFeature: "production_analytics" },
         ],
       },
     ]
@@ -223,8 +228,21 @@ export function SidebarMain() {
 
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
-
   const { can, permissions } = usePermission()
+  const { canAccessFeature } = useSubscriptionGuards()
+
+  const handleGatedClick = (e: React.MouseEvent, title: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    window.dispatchEvent(
+      new CustomEvent("open-upgrade-modal", {
+        detail: {
+          message: `Fitur "${title}" terkunci pada paket Anda saat ini. Silakan tingkatkan paket langganan Anda untuk membuka fitur ini.`,
+          code: "FEATURE_LOCKED",
+        },
+      })
+    )
+  }
 
   const userName = user?.name || USER_DATA.name
   const userEmail = user?.email || USER_DATA.email
@@ -486,18 +504,30 @@ export function SidebarMain() {
                                 <DropdownMenuSeparator />
                                 {item.subItems.map((sub) => {
                                   const isSubActive = location.pathname === sub.url
+                                  const isSubGated = sub.requiredFeature ? !canAccessFeature(sub.requiredFeature) : false
                                   return (
                                     <DropdownMenuItem key={sub.url} asChild className="p-0">
-                                      <Link
-                                        to={sub.url}
-                                        className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                                          isSubActive
-                                            ? "bg-primary/15 text-primary font-semibold"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-primary/5"
-                                        }`}
-                                      >
-                                        <span>{sub.title}</span>
-                                      </Link>
+                                      {isSubGated ? (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => handleGatedClick(e, sub.title)}
+                                          className="flex items-center justify-between w-full px-2.5 py-1.5 text-xs rounded-lg text-muted-foreground hover:text-foreground cursor-pointer"
+                                        >
+                                          <span>{sub.title}</span>
+                                          <Lock className="size-3 text-amber-500/80 shrink-0 ml-1.5" />
+                                        </button>
+                                      ) : (
+                                        <Link
+                                          to={sub.url}
+                                          className={`flex items-center w-full px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                                            isSubActive
+                                              ? "bg-primary/15 text-primary font-semibold"
+                                              : "text-muted-foreground hover:text-foreground hover:bg-primary/5"
+                                          }`}
+                                        >
+                                          <span>{sub.title}</span>
+                                        </Link>
+                                      )}
                                     </DropdownMenuItem>
                                   )
                                 })}
@@ -534,6 +564,7 @@ export function SidebarMain() {
                             <SidebarMenuSub className="mt-1 space-y-0.5">
                               {item.subItems.map((sub) => {
                                 const isSubActive = location.pathname === sub.url
+                                const isSubGated = sub.requiredFeature ? !canAccessFeature(sub.requiredFeature) : false
                                 return (
                                   <SidebarMenuSubItem key={sub.url}>
                                     <SidebarMenuSubButton
@@ -546,9 +577,20 @@ export function SidebarMain() {
                                           : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"}
                                       `}
                                     >
-                                      <Link to={sub.url}>
-                                        <span>{sub.title}</span>
-                                      </Link>
+                                      {isSubGated ? (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => handleGatedClick(e, sub.title)}
+                                          className="flex items-center justify-between w-full text-muted-foreground hover:text-foreground cursor-pointer"
+                                        >
+                                          <span>{sub.title}</span>
+                                          <Lock className="size-3 text-amber-500/80 shrink-0 ml-1.5" />
+                                        </button>
+                                      ) : (
+                                        <Link to={sub.url}>
+                                          <span>{sub.title}</span>
+                                        </Link>
+                                      )}
                                     </SidebarMenuSubButton>
                                   </SidebarMenuSubItem>
                                 )
@@ -560,6 +602,7 @@ export function SidebarMain() {
                     }
 
                     const active = item.url ? isItemActive(location.pathname, item.url) : false
+                    const isGated = item.requiredFeature ? !canAccessFeature(item.requiredFeature) : false
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton 
@@ -573,10 +616,22 @@ export function SidebarMain() {
                               : 'text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground'}
                           `}
                         >
-                          <Link to={item.url || "#"} className="flex items-center gap-3">
-                            <item.icon className={`h-4.5 w-4.5 shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover/menu-button:text-foreground'}`} />
-                            <span className="text-sm">{item.title}</span>
-                          </Link>
+                          {isGated ? (
+                            <button
+                              type="button"
+                              onClick={(e) => handleGatedClick(e, item.title)}
+                              className="flex items-center gap-3 w-full cursor-pointer"
+                            >
+                              <item.icon className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
+                              <span className="text-sm">{item.title}</span>
+                              <Lock className="size-3 text-amber-500/80 ml-auto shrink-0" />
+                            </button>
+                          ) : (
+                            <Link to={item.url || "#"} className="flex items-center gap-3">
+                              <item.icon className={`h-4.5 w-4.5 shrink-0 transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover/menu-button:text-foreground'}`} />
+                              <span className="text-sm">{item.title}</span>
+                            </Link>
+                          )}
                         </SidebarMenuButton>
                         {item.badge && (
                           <SidebarMenuBadge className="bg-primary text-primary-foreground font-bold text-[10px]">

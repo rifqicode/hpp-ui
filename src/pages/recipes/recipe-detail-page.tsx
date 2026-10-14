@@ -1,5 +1,7 @@
 import * as React from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
+import { recipeKeys } from "@/features/recipes/hooks"
 import {
   ArrowLeft,
   Factory,
@@ -84,6 +86,7 @@ function calculateGrossMargin(sellingPrice: number, cost: number): number {
 export default function RecipeDetailPage() {
   const { productId } = useParams<{ productId: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const [product, setProduct] = React.useState<Product | null>(null)
   const [availableMaterials, setAvailableMaterials] = React.useState<RawMaterialStock[]>([])
@@ -286,6 +289,10 @@ export default function RecipeDetailPage() {
     setSubmitting(true)
     try {
       await recipeService.deleteProduct(productId)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: recipeKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
+      ])
       navigate("/production/products")
     } catch (err) {
       console.error("Failed to delete product:", err)

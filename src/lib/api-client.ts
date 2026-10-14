@@ -78,6 +78,16 @@ apiClient.interceptors.response.use(
       if (specificMsg) {
         error.message = specificMsg;
       }
+
+      const respData = error.response.data as any;
+      const errorCode = respData.errors?.code || respData.data?.code || respData.code;
+      if (errorCode === 'QUOTA_EXCEEDED' || errorCode === 'FEATURE_LOCKED' || errorCode === 'STAFF_ACCESS_SUSPENDED') {
+        window.dispatchEvent(
+          new CustomEvent('open-upgrade-modal', {
+            detail: { message: specificMsg || respData.message, code: errorCode },
+          })
+        );
+      }
     }
 
     return Promise.reject(error);

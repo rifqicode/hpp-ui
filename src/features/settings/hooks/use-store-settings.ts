@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "@/store/use-auth-store"
 import { settingsService } from "@/features/settings/services/settings-service"
 import type { StoreInfo, StaffMember, Role, Permission } from "@/features/settings/types"
@@ -14,6 +15,7 @@ const TAB_RESOURCES: Record<string, Resource[]> = {
 }
 
 export function useStoreSettings(activeTab: string = "profile") {
+  const queryClient = useQueryClient()
   const setActiveStoreId = useAuthStore((state) => state.setActiveStoreId)
 
   const [loading, setLoading] = React.useState<boolean>(true)
@@ -177,6 +179,7 @@ export function useStoreSettings(activeTab: string = "profile") {
     setInviteError("")
     try {
       await settingsService.inviteStaff(inviteData)
+      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] })
       setIsInviteOpen(false)
       setInviteData({ name: "", email: "", role_id: "" })
       const updated = await settingsService.getStaffList()
@@ -195,6 +198,7 @@ export function useStoreSettings(activeTab: string = "profile") {
     setIsRevoking(true)
     try {
       await settingsService.revokeStaff(revokingStaff.userId || revokingStaff.id)
+      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] })
       setRevokingStaff(null)
       const updated = await settingsService.getStaffList()
       setStaffList(updated)
@@ -218,6 +222,7 @@ export function useStoreSettings(activeTab: string = "profile") {
     setCreateStoreError("")
     try {
       await settingsService.createStore(newStoreData)
+      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] })
       setIsNewStoreOpen(false)
       setNewStoreData({
         name: "",

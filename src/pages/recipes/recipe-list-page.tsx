@@ -53,6 +53,7 @@ import {
   recipeKeys,
 } from "@/features/recipes/hooks/use-recipes-query"
 import type { Product } from "@/features/recipes/types"
+import { QuotaBadge, useSubscriptionGuards } from "@/features/subscription"
 
 function formatCurrencyIdr(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -102,6 +103,8 @@ export default function RecipeListPage() {
     data: summaryData,
     refetch: refetchSummary,
   } = useProductSummaryQuery()
+
+  const { isQuotaReached } = useSubscriptionGuards()
 
   // Extract categories dynamically
   const categories = React.useMemo(() => {
@@ -188,7 +191,10 @@ export default function RecipeListPage() {
     setIsSubmitting(true)
     try {
       await recipeService.deleteProduct(productToDelete.id)
-      queryClient.invalidateQueries({ queryKey: recipeKeys.all })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: recipeKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
+      ])
       setIsDeleteOpen(false)
       setProductToDelete(null)
     } catch (err) {
@@ -202,6 +208,20 @@ export default function RecipeListPage() {
     await Promise.all([refetchProducts(), refetchSummary()])
   }
 
+  const handleNavigateNewProduct = () => {
+    if (isQuotaReached("products")) {
+      window.dispatchEvent(
+        new CustomEvent("open-upgrade-modal", {
+          detail: {
+            message: "Batas kuota produk resep Anda telah tercapai. Tingkatkan paket untuk membuat lebih banyak produk resep.",
+          },
+        })
+      )
+      return
+    }
+    navigate("/production/products/new")
+  }
+
   return (
     <div className="flex flex-col gap-6 pb-12 animate-in fade-in duration-500">
       {/* Page Header */}
@@ -211,9 +231,24 @@ export default function RecipeListPage() {
             <Factory className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Katalog Produk & Formula Resep
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                Katalog Produk & Formula Resep
+              </h1>
+              <QuotaBadge
+                resource="products"
+                label="Kapasitas Produk"
+                onUpgradeClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent("open-upgrade-modal", {
+                      detail: {
+                        message: "Tingkatkan paket Anda untuk menambah kapasitas produk dan resep.",
+                      },
+                    })
+                  )
+                }}
+              />
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               Kelola formula bahan baku, kalkulasi HPP otomatis, dan simulasi margin keuntungan produk jadi
             </p>
@@ -232,7 +267,7 @@ export default function RecipeListPage() {
             Segarkan
           </Button>
           <Button
-            onClick={() => navigate("/production/products/new")}
+            onClick={handleNavigateNewProduct}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
           >
             <Plus className="h-4 w-4" />
@@ -435,7 +470,7 @@ export default function RecipeListPage() {
               : "Belum ada produk yang dibuat. Mulai buat produk Anda sekarang untuk menghitung HPP otomatis!"}
           </p>
           <Button
-            onClick={() => navigate("/production/products/new")}
+            onClick={handleNavigateNewProduct}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs"
           >
             <Plus className="h-4 w-4" />

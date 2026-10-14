@@ -36,7 +36,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,6 +44,7 @@ import { usePermission } from "@/hooks/use-permission"
 import { useStocks, useStockSummaryQuery } from "@/features/inventory/hooks"
 import { RecordPurchaseDialog } from "@/features/inventory/components/record-purchase-dialog"
 import { RecordMovementDialog } from "@/features/inventory/components/record-movement-dialog"
+import { QuotaBadge, useSubscriptionGuards } from "@/features/subscription"
 
 const BASE_UNITS = [
   { value: "kg", label: "Kilogram (kg)" },
@@ -147,6 +147,7 @@ export default function StockListPage() {
 
   const { data: summary, refetch: refetchSummary } = useStockSummaryQuery()
   const { can } = usePermission()
+  const { isQuotaReached } = useSubscriptionGuards()
   const canCreate = can("stocks:create")
   const canAdjust = can("stocks:adjust")
 
@@ -184,7 +185,18 @@ export default function StockListPage() {
     await Promise.all([loadStocks(), refetchSummary()])
   }
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    if (isQuotaReached("stocks")) {
+      window.dispatchEvent(
+        new CustomEvent("open-upgrade-modal", {
+          detail: {
+            message: "Batas kuota bahan baku Anda telah tercapai. Tingkatkan paket untuk menambah bahan baku baru.",
+          },
+        })
+      )
+      return
+    }
     setNewName("")
     setNewBaseUnit("kg")
     setNewMethod("FIFO")
@@ -229,9 +241,24 @@ export default function StockListPage() {
               <Package className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                Bahan Baku & Inventaris
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  Bahan Baku & Inventaris
+                </h1>
+                <QuotaBadge
+                  resource="stocks"
+                  label="Kapasitas Stok"
+                  onUpgradeClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent("open-upgrade-modal", {
+                        detail: {
+                          message: "Tingkatkan paket Anda untuk kuota bahan baku lebih banyak.",
+                        },
+                      })
+                    )
+                  }}
+                />
+              </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Kelola stok bahan baku, pembelian, alur FIFO/FEFO, dan penyesuaian inventaris
               </p>
@@ -275,16 +302,15 @@ export default function StockListPage() {
                 Catat Pembelian
               </Button>
 
+              <Button
+                onClick={handleOpenCreateModal}
+                className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Bahan Baku
+              </Button>
+
               <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    onClick={handleOpenCreateModal}
-                    className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Tambah Bahan Baku
-                  </Button>
-                </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                   <form onSubmit={handleSubmitCreate}>
                     <DialogHeader>

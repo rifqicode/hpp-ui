@@ -137,6 +137,7 @@ export default function CustomerListPage() {
       setIsAddOpen(false);
       setAddForm({ name: '', phone: '', email: '', address: '', notes: '' });
       queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
+      queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
     } catch (err: any) {
       console.error('Failed to create customer', err);
       alert(err.response?.data?.message || 'Gagal menambahkan pelanggan');
@@ -170,6 +171,7 @@ export default function CustomerListPage() {
       await customerService.deleteCustomer(selectedCustomer.id);
       setIsDeleteOpen(false);
       queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
+      queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
     } catch (err: any) {
       console.error('Failed to delete customer', err);
       alert(err.response?.data?.message || 'Gagal menghapus pelanggan');

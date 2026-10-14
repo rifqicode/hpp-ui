@@ -60,7 +60,10 @@ export function useStocks(initialQuery?: StockQuery) {
     setMutationError('');
     try {
       const newStock = await stockService.createStock(payload);
-      await queryClient.invalidateQueries({ queryKey: stockKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: stockKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
+      ]);
       return newStock;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to create stock';
@@ -92,7 +95,10 @@ export function useStocks(initialQuery?: StockQuery) {
     setMutationError('');
     try {
       await stockService.deleteStock(id);
-      await queryClient.invalidateQueries({ queryKey: stockKeys.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: stockKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
+      ]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to delete stock';
       setMutationError(msg);

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useNavigate, Link } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeft,
   Factory,
@@ -56,6 +57,7 @@ function formatCurrencyIdr(val: number): string {
 
 export default function BatchCreatePage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const [products, setProducts] = React.useState<Product[]>([])
   const [loadingProducts, setLoadingProducts] = React.useState<boolean>(true)
@@ -231,6 +233,11 @@ export default function BatchCreatePage() {
         targetQuantity,
         notes: combinedNotes,
       })
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['production'] }),
+        queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
+      ])
 
       // Redirect immediately to the newly created batch detail page for live audit!
       navigate(`/production/batches/${newBatch.id}`)

@@ -1,5 +1,7 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
+import { recipeKeys } from "@/features/recipes/hooks"
 import {
   ArrowLeft,
   Plus,
@@ -94,6 +96,7 @@ const COMMON_UNITS = ["pcs", "box", "loaf", "roll", "cup", "porsi", "pack"]
 
 export default function RecipeCreatePage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const [availableMaterials, setAvailableMaterials] = React.useState<RawMaterialStock[]>([])
   const [loadingMaterials, setLoadingMaterials] = React.useState<boolean>(true)
@@ -293,6 +296,10 @@ export default function RecipeCreatePage() {
       }
 
       const created = await recipeService.createProduct(payload)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: recipeKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
+      ])
       // Navigate to created product recipe detail page
       navigate(`/production/products/${created.id}`)
     } catch (err: unknown) {
