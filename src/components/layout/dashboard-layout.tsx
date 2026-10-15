@@ -13,6 +13,7 @@ import { NotificationDropdown } from "./notification-dropdown"
 import { StoreDropdown } from "./store-dropdown"
 import { GracePeriodBanner, UpgradeModal } from "@/features/subscription"
 import type { SubscriptionTier } from "@/features/subscription/types/subscription"
+import { AIChatFloatingDrawer } from "@/features/ai-chat"
 
 export function DashboardLayout() {
   const location = useLocation()
@@ -95,6 +96,8 @@ export function DashboardLayout() {
             reason={upgradeReason}
             initialSelectedTier={initialSelectedTier}
           />
+
+          <AIChatFloatingDrawer />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

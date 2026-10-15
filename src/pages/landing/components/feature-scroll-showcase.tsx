@@ -1,0 +1,915 @@
+import * as React from "react"
+import {
+  Calculator,
+  Boxes,
+  ChefHat,
+  ShoppingCart,
+  CheckCircle2,
+  Sparkles,
+  TrendingUp,
+  Search,
+  Clock,
+} from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+
+interface FeatureItem {
+  id: string
+  title: string
+  tagline: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
+  badgeText: string
+  badgeColor: string
+}
+
+const FEATURES: FeatureItem[] = [
+  {
+    id: "hpp",
+    title: "Kalkulasi Resep & HPP",
+    tagline: "Presisi hingga ke Satuan Gram & Ml",
+    description:
+      "Hitung modal bahan mentah per porsi secara akurat. Gabungkan biaya kemasan (packaging) dan beban overhead agar penetapan harga jual menghasilkan margin keuntungan ideal.",
+    icon: Calculator,
+    badgeText: "Presisi Finansial",
+    badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  },
+  {
+    id: "inventory",
+    title: "Kontrol Stok FIFO & FEFO",
+    tagline: "Cegah Bahan Basi & Food Waste",
+    description:
+      "Pengurangan bahan otomatis berdasarkan tanggal masuk pembelian (FIFO) atau tanggal kedaluwarsa terdekat (FEFO). Histori harga beli per faktur tersimpan rapi tanpa rumus manual.",
+    icon: Boxes,
+    badgeText: "Auto-Batch Deduction",
+    badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  {
+    id: "production",
+    title: "Batch Produksi & Waste",
+    tagline: "Kelola Jadwal Masak & Rendemen",
+    description:
+      "Jadwalkan batch masakan dapur, pantau rendemen (yield) porsi, dan catat sisa bahan terbuang (waste). Stok mentah di gudang otomatis terpotong saat batch selesai diproduksi.",
+    icon: ChefHat,
+    badgeText: "Yield & Rendemen",
+    badgeColor: "bg-violet-50 text-violet-700 border-violet-200",
+  },
+  {
+    id: "pos",
+    title: "POS Kasir & Analisis Laba",
+    tagline: "Ketahui Profit Riil Tiap Struk",
+    description:
+      "Aplikasi kasir cepat yang terhubung langsung ke inventaris bahan. Setiap transaksi otomatis merekam laba kotor riil dan mengurangi stok toko secara instan.",
+    icon: ShoppingCart,
+    badgeText: "Sinkronisasi POS & Laba",
+    badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+]
+
+export function FeatureScrollShowcase() {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = React.useState(0)
+  const [progress, setProgress] = React.useState(0)
+
+  // Scroll tracking on desktop viewports
+  React.useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    let ticking = false
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (!containerRef.current) return
+          const rect = containerRef.current.getBoundingClientRect()
+          const totalScrollable = rect.height - window.innerHeight
+          if (totalScrollable <= 0) return
+
+          const scrolledPast = -rect.top
+          const ratio = Math.max(0, Math.min(1, scrolledPast / totalScrollable))
+          const newIndex = Math.min(
+            FEATURES.length - 1,
+            Math.floor(ratio * FEATURES.length)
+          )
+
+          setActiveIndex((prev) => (prev !== newIndex ? newIndex : prev))
+          setProgress(ratio)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    handleScroll()
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+    }
+  }, [])
+
+  const handleTabClick = (index: number) => {
+    setActiveIndex(index)
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const containerTop = window.pageYOffset + rect.top
+      const totalScrollable = rect.height - window.innerHeight
+      if (totalScrollable > 0) {
+        const targetScroll =
+          containerTop + (index / FEATURES.length) * totalScrollable + 20
+
+        window.scrollTo({
+          top: targetScroll,
+          behavior: "smooth",
+        })
+      }
+    }
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative lg:h-[320vh] bg-slate-50/60 border-b border-slate-200"
+    >
+      {/* Sticky Frame: on desktop locks to top-20 while user scrolls through the 320vh travel */}
+      <div className="lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] flex items-center py-12 lg:py-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto mb-8 lg:mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-primary text-xs font-semibold mb-3">
+              <Sparkles className="size-3.5 text-primary" />
+              <span>Sistem Operasional & Finansial Kuliner</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              Satu Sistem untuk Mengelola Seluruh Siklus Finansial Dapur
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base mt-2.5">
+              Dirancang khusus untuk pemilik kedai kopi, restoran, bakery, katering, dan cloud kitchen yang ingin mengamankan margin bisnis.
+            </p>
+          </div>
+
+          {/* Mobile Tab Selector Pill Bar (Visible on mobile/tablet) */}
+          <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
+            {FEATURES.map((item, idx) => {
+              const Icon = item.icon
+              const isActive = activeIndex === idx
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveIndex(idx)}
+                  className={cn(
+                    "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer",
+                    isActive
+                      ? "bg-primary text-white shadow-sm"
+                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                  )}
+                >
+                  <Icon className="size-4" />
+                  <span>{item.title}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Main 2-Column Split: Left Tabs & Right Dynamic Visual Preview */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+            {/* Left Column: Interactive Tab Cards with Vertical Progress */}
+            <div className="hidden lg:flex lg:col-span-5 flex-col gap-3">
+              {FEATURES.map((item, idx) => {
+                const Icon = item.icon
+                const isActive = activeIndex === idx
+                const segmentStart = idx / FEATURES.length
+                const segmentEnd = (idx + 1) / FEATURES.length
+                const segmentProgress = Math.max(
+                  0,
+                  Math.min(1, (progress - segmentStart) / (segmentEnd - segmentStart))
+                )
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleTabClick(idx)}
+                    className={cn(
+                      "p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group",
+                      isActive
+                        ? "bg-white border-primary shadow-lg ring-1 ring-primary/20"
+                        : "bg-white/70 border-slate-200 hover:border-slate-300 hover:bg-white"
+                    )}
+                  >
+                    {/* Active vertical progress indicator on left border */}
+                    {isActive && (
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-1 bg-primary transition-all"
+                        style={{ height: `${Math.max(15, segmentProgress * 100)}%` }}
+                      />
+                    )}
+
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={cn(
+                          "h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                          isActive
+                            ? "bg-primary text-white shadow-sm shadow-primary/30"
+                            : "bg-slate-50 border border-slate-200 text-slate-600"
+                        )}
+                      >
+                        <Icon className="size-5" />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h3
+                            className={cn(
+                              "text-base font-bold transition-colors",
+                              isActive ? "text-primary" : "text-slate-900"
+                            )}
+                          >
+                            {item.title}
+                          </h3>
+                          <Badge
+                            variant="outline"
+                            className={cn("text-[10px] font-bold py-0.5", item.badgeColor)}
+                          >
+                            {item.badgeText}
+                          </Badge>
+                        </div>
+
+                        <p
+                          className={cn(
+                            "text-xs leading-relaxed transition-colors",
+                            isActive ? "text-slate-700 font-medium" : "text-slate-500"
+                          )}
+                        >
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Right Column: Stacked UI Card Mockup (Real App Window + Floating Depth Cards) */}
+            <div className="lg:col-span-7 relative">
+              {/* Subtle ambient glow behind preview */}
+              <div className="absolute -inset-2 bg-gradient-to-tr from-primary/15 via-indigo-500/10 to-transparent rounded-3xl blur-2xl -z-10" />
+
+              {/* Dynamic Stacked Screen Based on Active Index */}
+              <div className="relative">
+                {activeIndex === 0 && <HppRecipeMockup />}
+                {activeIndex === 1 && <FifoInventoryMockup />}
+                {activeIndex === 2 && <ProductionBatchMockup />}
+                {activeIndex === 3 && <PosCashierMockup />}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* PREVIEW MOCKUP 1: Kalkulasi Resep & HPP (Based on recipe-simulation-page) */
+/* -------------------------------------------------------------------------- */
+function HppRecipeMockup() {
+  return (
+    <div className="relative animate-in fade-in duration-300">
+      {/* Base App Window */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
+        {/* Window Chrome Header */}
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="size-2.5 rounded-full bg-rose-400" />
+            <span className="size-2.5 rounded-full bg-amber-400" />
+            <span className="size-2.5 rounded-full bg-emerald-400" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
+              <span className="text-slate-400">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800">production/recipes/simulation</span>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-primary border border-indigo-100">
+              Cabang Pusat
+            </span>
+          </div>
+        </div>
+
+        {/* Page Inner Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
+                Kopi Susu Gula Aren 250ml
+              </h4>
+              <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
+                Minuman Dingin
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Simulasi formulasi bahan baku & penetapan margin laba saji
+            </p>
+          </div>
+          <div className="hidden sm:block text-right">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">
+              Yield Standar
+            </span>
+            <span className="text-xs font-bold text-slate-700">1 Porsi (250 ml)</span>
+          </div>
+        </div>
+
+        {/* Realistic Ingredients Table */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
+          <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
+            <span className="col-span-5">Komposisi Bahan</span>
+            <span className="col-span-3 text-right">Takaran</span>
+            <span className="col-span-4 text-right">Subtotal HPP</span>
+          </div>
+          <div className="divide-y divide-slate-200/70 text-slate-800">
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">Espresso House Blend</span>
+                <span className="text-[10px] text-slate-400">Biji Kopi Arabika 100%</span>
+              </div>
+              <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
+                18 g
+              </span>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                Rp 2.520
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">Fresh Milk UHT Full Cream</span>
+                <span className="text-[10px] text-slate-400">Susu Pasteurisasi</span>
+              </div>
+              <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
+                120 ml
+              </span>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                Rp 1.440
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">Sirup Aren Organik Cair</span>
+                <span className="text-[10px] text-slate-400">Gula Aren Asli</span>
+              </div>
+              <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
+                25 ml
+              </span>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                Rp 500
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center bg-slate-50/80">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-700">Cup 12oz & Sedotan PLA</span>
+                <span className="text-[10px] text-slate-400">Packaging Kemasan</span>
+              </div>
+              <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
+                1 set
+              </span>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                Rp 1.150
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center bg-slate-50/80">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-700">Listrik, Gas & Upah Dapur</span>
+                <span className="text-[10px] text-slate-400">Beban Overhead</span>
+              </div>
+              <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
+                Per porsi
+              </span>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                Rp 600
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer info strip */}
+        <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+          <span className="flex items-center gap-1.5 text-[11px]">
+            <CheckCircle2 className="size-3.5 text-emerald-600" />
+            <span>5 item komponen resep tersinkronisasi</span>
+          </span>
+          <span className="text-[11px] font-mono text-slate-400">Update real-time</span>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 1: Financial Outcome & Margin (Elevated Layer) */}
+      <div className="mt-4 lg:mt-0 lg:absolute lg:-bottom-6 lg:-right-6 lg:w-80 rounded-2xl bg-white border border-indigo-200/80 shadow-2xl p-4 text-slate-900 ring-1 ring-slate-900/5 transition-transform hover:-translate-y-1">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+            <Calculator className="size-3 text-primary" />
+            <span>Kalkulasi Margin Resep</span>
+          </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Margin 65.5% (Sehat)
+          </span>
+        </div>
+
+        <div className="space-y-1.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Total Modal HPP / Porsi</span>
+            <span className="font-mono font-bold text-slate-900">Rp 6.210</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Rekomendasi Harga Jual</span>
+            <span className="font-mono font-bold text-indigo-600 text-sm">Rp 18.000</span>
+          </div>
+          <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
+            <span className="font-semibold text-slate-700">Laba Bersih per Cup</span>
+            <span className="font-mono font-extrabold text-emerald-600 text-sm">
+              +Rp 11.790
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 2: Toast Alert (System Intelligence) */}
+      <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
+        <div className="size-2 rounded-full bg-indigo-400 animate-pulse" />
+        <span className="font-medium">
+          Presisi Desimal Finansial: HPP otomatis terhitung ke gram & ml
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* PREVIEW MOCKUP 2: Stok & FIFO/FEFO (Based on stock-list-page)              */
+/* -------------------------------------------------------------------------- */
+function FifoInventoryMockup() {
+  return (
+    <div className="relative animate-in fade-in duration-300">
+      {/* Base App Window */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
+        {/* Window Chrome Header */}
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="size-2.5 rounded-full bg-rose-400" />
+            <span className="size-2.5 rounded-full bg-amber-400" />
+            <span className="size-2.5 rounded-full bg-emerald-400" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
+              <span className="text-slate-400">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800">inventory/stocks</span>
+            </div>
+          </div>
+          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+            Gudang Utama
+          </span>
+        </div>
+
+        {/* Search & Status Filter Pills */}
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between mb-4">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+            <input
+              type="text"
+              readOnly
+              value="Susu Segar Pasteurisasi"
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 font-medium"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-primary text-white">
+              Semua (24)
+            </span>
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600">
+              Healthy (19)
+            </span>
+            <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
+              Menipis (5)
+            </span>
+          </div>
+        </div>
+
+        {/* Real Inventory Stock Table */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
+          <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
+            <span className="col-span-5">Bahan Mentah</span>
+            <span className="col-span-3 text-center">Metode Alur</span>
+            <span className="col-span-4 text-right">Sisa Stok</span>
+          </div>
+          <div className="divide-y divide-slate-200/70 text-slate-800">
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center bg-blue-50/40">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">Susu Sapi Pasteurisasi</span>
+                <span className="text-[10px] text-amber-600 font-medium flex items-center gap-1">
+                  <Clock className="size-3" />
+                  <span>Batch #08 exp 3 hari lagi</span>
+                </span>
+              </div>
+              <div className="col-span-3 flex justify-center">
+                <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] font-bold">
+                  FEFO
+                </Badge>
+              </div>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                36.5 Liter
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">Biji Kopi House Blend</span>
+                <span className="text-[10px] text-slate-400">Batch #PO-14 • Masuk 10 Okt</span>
+              </div>
+              <div className="col-span-3 flex justify-center">
+                <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] font-bold">
+                  FIFO
+                </Badge>
+              </div>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                14.2 kg
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">Sirup Aren Organik</span>
+                <span className="text-[10px] text-slate-400">Batch #PO-21 • Exp 28 Nov</span>
+              </div>
+              <div className="col-span-3 flex justify-center">
+                <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] font-bold">
+                  FEFO
+                </Badge>
+              </div>
+              <span className="col-span-4 text-right font-mono font-bold text-amber-700 text-[11px]">
+                4.8 Liter
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">Paper Cup Hot 12oz</span>
+                <span className="text-[10px] text-slate-400">Batch #PO-09</span>
+              </div>
+              <div className="col-span-3 flex justify-center">
+                <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] font-bold">
+                  FIFO
+                </Badge>
+              </div>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                320 pcs
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer info strip */}
+        <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+          <span className="flex items-center gap-1.5 text-[11px]">
+            <CheckCircle2 className="size-3.5 text-blue-600" />
+            <span>Deteksi FIFO & FEFO otomatis per faktur masuk</span>
+          </span>
+          <span className="text-[11px] font-mono text-slate-400">24 SKU aktif</span>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 1: FEFO Batch Priority Breakdown */}
+      <div className="mt-4 lg:mt-0 lg:absolute lg:-bottom-6 lg:-right-6 lg:w-80 rounded-2xl bg-white border border-blue-200/80 shadow-2xl p-4 text-slate-900 ring-1 ring-slate-900/5 transition-transform hover:-translate-y-1">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 flex items-center gap-1">
+            <Boxes className="size-3 text-blue-600" />
+            <span>Alur Potong FEFO Otomatis</span>
+          </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            Batch Engine
+          </span>
+        </div>
+
+        <div className="space-y-2 text-xs">
+          <div className="p-2 rounded-lg bg-amber-50/70 border border-amber-200 flex items-center justify-between">
+            <div>
+              <span className="font-mono font-bold text-slate-900 block text-[11px]">
+                #INV-2026-08 (4.5 L)
+              </span>
+              <span className="text-[10px] text-amber-700 font-medium">Exp: 3 hari lagi</span>
+            </div>
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-600 text-white">
+              Prioritas #1
+            </span>
+          </div>
+
+          <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-slate-600">
+            <div>
+              <span className="font-mono font-bold text-slate-800 block text-[11px]">
+                #INV-2026-14 (12.0 L)
+              </span>
+              <span className="text-[10px] text-slate-400">Exp: 9 hari lagi</span>
+            </div>
+            <span className="text-[10px] font-medium text-slate-500">Antrean #2</span>
+          </div>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 2: Toast Alert */}
+      <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
+        <div className="size-2 rounded-full bg-blue-400 animate-pulse" />
+        <span className="font-medium">
+          Metode FEFO Aktif: Bahan paling mendekati basi dipotong duluan
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* PREVIEW MOCKUP 3: Batch Produksi & Waste (Based on batch-list-page)        */
+/* -------------------------------------------------------------------------- */
+function ProductionBatchMockup() {
+  return (
+    <div className="relative animate-in fade-in duration-300">
+      {/* Base App Window */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
+        {/* Window Chrome Header */}
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="size-2.5 rounded-full bg-rose-400" />
+            <span className="size-2.5 rounded-full bg-amber-400" />
+            <span className="size-2.5 rounded-full bg-emerald-400" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
+              <span className="text-slate-400">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800">production/batches/42</span>
+            </div>
+          </div>
+          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-100">
+            Kitchen Sentral
+          </span>
+        </div>
+
+        {/* Batch Overview Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
+                Brownies Fudge Dark Choco
+              </h4>
+              <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-[10px]">
+                Dalam Produksi
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Batch #PRD-2026-042 • Jadwal masak dapur cabang
+            </p>
+          </div>
+          <div className="hidden sm:block text-right">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">
+              Target Batch
+            </span>
+            <span className="text-xs font-bold text-violet-700">30 Potong</span>
+          </div>
+        </div>
+
+        {/* Auto Deduct Ingredients Grid */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
+          <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
+            <span className="col-span-6">Bahan Mentah Gudang</span>
+            <span className="col-span-3 text-right">Jml Terpakai</span>
+            <span className="col-span-3 text-right">Status Gudang</span>
+          </div>
+          <div className="divide-y divide-slate-200/70 text-slate-800">
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <span className="col-span-6 font-semibold text-slate-900">
+                Cokelat Couverture 70%
+              </span>
+              <span className="col-span-3 text-right font-mono text-slate-600">750 gr</span>
+              <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
+                Auto-Deduct OK
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <span className="col-span-6 font-semibold text-slate-900">
+                Unsalted Butter Anchor
+              </span>
+              <span className="col-span-3 text-right font-mono text-slate-600">450 gr</span>
+              <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
+                Auto-Deduct OK
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <span className="col-span-6 font-semibold text-slate-900">
+                Tepung Protein Sedang
+              </span>
+              <span className="col-span-3 text-right font-mono text-slate-600">300 gr</span>
+              <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
+                Auto-Deduct OK
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <span className="col-span-6 font-semibold text-slate-900">Telur Ayam Fresh</span>
+              <span className="col-span-3 text-right font-mono text-slate-600">6 butir</span>
+              <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
+                Auto-Deduct OK
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer info strip */}
+        <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+          <span className="flex items-center gap-1.5 text-[11px]">
+            <CheckCircle2 className="size-3.5 text-violet-600" />
+            <span>Stok bahan mentah otomatis terpangkas dari gudang</span>
+          </span>
+          <span className="text-[11px] font-mono text-slate-400">Yield aktual: 96.5%</span>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 1: Yield & Rendemen Metric Card */}
+      <div className="mt-4 lg:mt-0 lg:absolute lg:-bottom-6 lg:-right-6 lg:w-80 rounded-2xl bg-white border border-violet-200/80 shadow-2xl p-4 text-slate-900 ring-1 ring-slate-900/5 transition-transform hover:-translate-y-1">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-violet-700 flex items-center gap-1">
+            <ChefHat className="size-3 text-violet-600" />
+            <span>Rendemen & Waste Terbuang</span>
+          </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+            Yield 96.5%
+          </span>
+        </div>
+
+        <div className="space-y-2 text-xs">
+          <div>
+            <div className="flex justify-between text-[11px] mb-1">
+              <span className="text-slate-600 font-medium">Rendemen (Yield Jadi)</span>
+              <span className="font-bold text-emerald-600">96.5% (Efisien)</span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500 rounded-full w-[96.5%]" />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-[11px] mb-1">
+              <span className="text-slate-600 font-medium">Sisa Waste Terbuang</span>
+              <span className="font-bold text-amber-600">3.5% (Terkontrol)</span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-500 rounded-full w-[3.5%]" />
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between font-medium">
+            <span className="text-slate-500">Modal Bersih / Potong</span>
+            <span className="font-mono font-bold text-slate-900">Rp 6.450</span>
+          </div>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 2: Toast Alert */}
+      <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
+        <div className="size-2 rounded-full bg-violet-400 animate-pulse" />
+        <span className="font-medium">
+          Auto-Deduct: Stok gudang terpangkas presisi saat batch disimpan
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* PREVIEW MOCKUP 4: POS Kasir & Laba (Based on pos-page)                     */
+/* -------------------------------------------------------------------------- */
+function PosCashierMockup() {
+  return (
+    <div className="relative animate-in fade-in duration-300">
+      {/* Base App Window */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
+        {/* Window Chrome Header */}
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="size-2.5 rounded-full bg-rose-400" />
+            <span className="size-2.5 rounded-full bg-amber-400" />
+            <span className="size-2.5 rounded-full bg-emerald-400" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
+              <span className="text-slate-400">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800">sales/pos/checkout</span>
+            </div>
+          </div>
+          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
+            Kasir 01 (Online)
+          </span>
+        </div>
+
+        {/* Order Details Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
+                Struk Kasir: #TRX-2026-881
+              </h4>
+              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">
+                Lunas (QRIS)
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Meja 04 (Dine-in) • Kasir: Rian Saputra • 14:28 WIB
+            </p>
+          </div>
+          <div className="hidden sm:block text-right">
+            <span className="text-[10px] text-slate-400 uppercase font-bold block">
+              Metode Bayar
+            </span>
+            <span className="text-xs font-bold text-slate-700">QRIS Dinamis</span>
+          </div>
+        </div>
+
+        {/* Order Items Table */}
+        <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
+          <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
+            <span className="col-span-5">Menu Dipesan</span>
+            <span className="col-span-3 text-right">Modal HPP</span>
+            <span className="col-span-4 text-right">Harga Jual POS</span>
+          </div>
+          <div className="divide-y divide-slate-200/70 text-slate-800">
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">2x Kopi Susu Gula Aren</span>
+                <span className="text-[10px] text-slate-400">Less ice, normal sugar</span>
+              </div>
+              <span className="col-span-3 text-right text-slate-500 font-mono text-[11px]">
+                Rp 12.420
+              </span>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                Rp 36.000
+              </span>
+            </div>
+            <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
+              <div className="col-span-5 flex flex-col">
+                <span className="font-semibold text-slate-900">1x Butter Croissant Almond</span>
+                <span className="text-[10px] text-slate-400">Warm served</span>
+              </div>
+              <span className="col-span-3 text-right text-slate-500 font-mono text-[11px]">
+                Rp 10.700
+              </span>
+              <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
+                Rp 28.000
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Real-time Order Summary Bar */}
+        <div className="mt-3 p-3 rounded-xl bg-slate-100/80 border border-slate-200 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-4">
+            <div>
+              <span className="text-[10px] text-slate-500 block">Total Item</span>
+              <span className="font-bold text-slate-800">3 Porsi</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-500 block">Total Omset</span>
+              <span className="font-mono font-extrabold text-slate-900">Rp 64.000</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-[10px] text-emerald-600 uppercase font-bold block">
+              Stok Berkurang
+            </span>
+            <span className="text-[11px] font-semibold text-slate-700">2 Kopi & 1 Croissant</span>
+          </div>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 1: Real-Time Gross Profit Card */}
+      <div className="mt-4 lg:mt-0 lg:absolute lg:-bottom-6 lg:-right-6 lg:w-80 rounded-2xl bg-white border border-emerald-200/80 shadow-2xl p-4 text-slate-900 ring-1 ring-slate-900/5 transition-transform hover:-translate-y-1">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+            <TrendingUp className="size-3 text-emerald-600" />
+            <span>Laba Kotor Struk Riil</span>
+          </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Margin: 63.8%
+          </span>
+        </div>
+
+        <div className="space-y-1.5 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Total Omset Transaksi</span>
+            <span className="font-mono font-bold text-slate-900">Rp 64.000</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Total Modal HPP</span>
+            <span className="font-mono font-bold text-slate-500">Rp 23.120</span>
+          </div>
+          <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
+            <span className="font-semibold text-slate-800">Laba Bersih Struk</span>
+            <span className="font-mono font-extrabold text-emerald-600 text-base">
+              +Rp 40.880
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* STACKED FLOATING CARD 2: Toast Alert */}
+      <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
+        <div className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span className="font-medium">
+          Sinkronisasi Instan: Struk kasir otomatis rekam laba & potong inventaris
+        </span>
+      </div>
+    </div>
+  )
+}
