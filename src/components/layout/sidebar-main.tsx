@@ -43,7 +43,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -173,7 +173,6 @@ function isItemActive(pathname: string, itemUrl: string): boolean {
 const USER_DATA = {
   name: "Budi Santoso",
   email: "budi@tokoroti.com",
-  avatar: "https://github.com/shadcn.png",
   plan: "Ultimate Pro" // Trial, Pro, Ultimate Pro
 }
 
@@ -248,6 +247,7 @@ export function SidebarMain() {
 
   const userName = user?.name || USER_DATA.name
   const userEmail = user?.email || USER_DATA.email
+  const userAvatar = user?.avatar
 
   React.useEffect(() => {
     if (isStoresSuccess && stores.length === 0) {
@@ -292,12 +292,12 @@ export function SidebarMain() {
                     tooltip={userName}
                     className="h-11 rounded-lg px-2 hover:bg-sidebar-accent/70 data-[state=open]:bg-sidebar-accent transition-colors group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:p-0"
                   >
-                    <Avatar className="size-7 rounded-md border border-border/80 shadow-xs shrink-0 group-data-[collapsible=icon]:size-8">
-                      <AvatarImage src={USER_DATA.avatar} alt={userName} />
-                      <AvatarFallback className="rounded-md bg-primary/10 text-primary font-bold text-[10px]">
-                        {userName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      src={userAvatar}
+                      name={userName}
+                      className="size-7 rounded-md border border-border/80 shadow-xs shrink-0 group-data-[collapsible=icon]:size-8"
+                      fallbackClassName="rounded-md text-[10px]"
+                    />
                     <div className="grid flex-1 text-left text-xs leading-tight group-data-[collapsible=icon]:hidden overflow-hidden">
                       <span className="truncate font-semibold text-foreground">
                         {userName}
@@ -317,12 +317,12 @@ export function SidebarMain() {
                 >
                   <DropdownMenuLabel className="p-0 font-normal">
                     <div className="flex items-center gap-2.5 px-2 py-2 text-left text-xs">
-                      <Avatar className="size-8 rounded-lg border border-border shadow-xs shrink-0">
-                        <AvatarImage src={USER_DATA.avatar} alt={userName} />
-                        <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold text-xs">
-                          {userName.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        src={userAvatar}
+                        name={userName}
+                        className="size-8 rounded-lg border border-border shadow-xs shrink-0"
+                        fallbackClassName="rounded-lg text-xs"
+                      />
                       <div className="grid flex-1 text-left text-xs leading-tight min-w-0">
                         <span className="truncate font-semibold">{userName}</span>
                         <span className="truncate text-[10px] text-muted-foreground">{userEmail}</span>

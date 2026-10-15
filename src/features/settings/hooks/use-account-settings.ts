@@ -159,6 +159,34 @@ export function useAccountSettings() {
     }
   }
 
+  // Update Avatar Handler
+  const handleUpdateAvatar = async (newUrl: string) => {
+    setIsSavingProfile(true)
+    setProfileError("")
+    setProfileMsg("")
+    try {
+      const updated = await authService.updateProfile({
+        name,
+        email,
+        phone,
+        bio,
+        avatar: newUrl,
+      })
+      setAvatarUrl(newUrl)
+      if (token) {
+        setAuth(updated as UserType, token)
+      }
+      setProfileMsg(newUrl ? "Foto profil berhasil diperbarui." : "Foto profil berhasil dihapus.")
+      setTimeout(() => setProfileMsg(""), 3500)
+    } catch (err: unknown) {
+      const msg = formatAccountErrorMessage(err, "Gagal memperbarui foto profil.")
+      setProfileError(msg)
+      throw err
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
+
   // Change Password Handler
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -252,6 +280,7 @@ export function useAccountSettings() {
     setBio,
     avatarUrl,
     setAvatarUrl,
+    handleUpdateAvatar,
     isSavingProfile,
     profileMsg,
     profileError,

@@ -25,7 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/ui/user-avatar"
 
 interface Crumb {
   label: string
@@ -165,6 +165,7 @@ export function Topbar() {
 
   const userName = user?.name || "Budi Santoso"
   const userEmail = user?.email || "budi@tokoroti.com"
+  const userAvatar = user?.avatar
   const crumbs = getBreadcrumbs(location.pathname)
 
   return (
@@ -325,12 +326,12 @@ export function Topbar() {
               variant="ghost"
               className="relative h-9 w-9 rounded-full p-0 overflow-hidden border border-primary-foreground/30 hover:border-primary-foreground/60 hover:bg-primary-foreground/10 transition-all cursor-pointer"
             >
-              <Avatar className="h-full w-full">
-                <AvatarImage src="https://github.com/shadcn.png" alt={userName} />
-                <AvatarFallback className="bg-primary-foreground/15 text-primary-foreground text-[10px] font-black">
-                  {userName.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                src={userAvatar}
+                name={userName}
+                className="h-full w-full border-0"
+                fallbackClassName="text-xs font-bold"
+              />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>

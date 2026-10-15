@@ -35,8 +35,9 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
+import { UserAvatar } from "@/components/ui/user-avatar"
+import { ProfilePhotoDialog } from "@/features/settings/components/profile-photo-dialog"
 import {
   Dialog,
   DialogContent,
@@ -84,6 +85,7 @@ export default function GeneralSettingsPage() {
   }
 
   // --- UI Only States ---
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = React.useState<boolean>(false)
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = React.useState<boolean>(false)
   const [showOldPassword, setShowOldPassword] = React.useState<boolean>(false)
   const [showNewPassword, setShowNewPassword] = React.useState<boolean>(false)
@@ -102,7 +104,7 @@ export default function GeneralSettingsPage() {
     bio,
     setBio,
     avatarUrl,
-    setAvatarUrl,
+    handleUpdateAvatar,
     isSavingProfile,
     profileMsg,
     profileError,
@@ -210,21 +212,21 @@ export default function GeneralSettingsPage() {
               {/* Avatar Section */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-border">
                 <div className="flex items-center gap-4">
-                  <div className="relative group">
-                    <Avatar className="h-20 w-20 border-2 border-primary/20 shadow-md">
-                      <AvatarImage src={avatarUrl} alt={name} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
-                        {name ? name.substring(0, 2).toUpperCase() : "US"}
-                      </AvatarFallback>
-                    </Avatar>
+                  <div className="relative group cursor-pointer" onClick={() => setIsPhotoDialogOpen(true)}>
+                    <UserAvatar
+                      src={avatarUrl}
+                      name={name}
+                      className="size-20 border-2 border-primary/20 shadow-md transition-transform group-hover:scale-[1.02]"
+                      fallbackClassName="text-2xl font-bold"
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        const newUrl = prompt("Masukkan URL avatar foto baru:", avatarUrl)
-                        if (newUrl) setAvatarUrl(newUrl)
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setIsPhotoDialogOpen(true)
                       }}
                       className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                      title="Ganti Foto"
+                      title="Ganti Foto Profil"
                     >
                       <Camera className="h-5 w-5" />
                     </button>
@@ -248,10 +250,7 @@ export default function GeneralSettingsPage() {
                   variant="outline"
                   size="sm"
                   className="rounded-xl text-xs"
-                  onClick={() => {
-                    const newUrl = prompt("Masukkan URL foto profil baru:", avatarUrl)
-                    if (newUrl) setAvatarUrl(newUrl)
-                  }}
+                  onClick={() => setIsPhotoDialogOpen(true)}
                 >
                   <Camera className="mr-1.5 h-3.5 w-3.5" />
                   Ubah Foto Profil
@@ -698,6 +697,15 @@ export default function GeneralSettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Profile Photo Upload Dialog */}
+      <ProfilePhotoDialog
+        open={isPhotoDialogOpen}
+        onOpenChange={setIsPhotoDialogOpen}
+        currentAvatarUrl={avatarUrl}
+        userName={name}
+        onSave={handleUpdateAvatar}
+      />
     </div>
   )
 }
