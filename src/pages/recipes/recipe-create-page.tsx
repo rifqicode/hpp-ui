@@ -186,7 +186,6 @@ export default function RecipeCreatePage() {
 
   // Live Calculations (Automatic Price Derivation from Yield, Waste%, Overheads, and Margin %)
   const calculations = React.useMemo(() => {
-    let totalRawMaterials = 0
     const items = ingredients.map((row) => {
       const mat = availableMaterials.find((m) => m.id === row.stockId)
       const baseCost = mat ? mat.avgCostPerUnit : 0
@@ -195,7 +194,6 @@ export default function RecipeCreatePage() {
       const activeUnit = row.recipeUnit || fallbackUnit
       const unitCost = getCostPerRecipeUnit(baseCost, activeUnit, mat?.baseUnit)
       const subtotal = (Number(row.quantity) || 0) * unitCost
-      totalRawMaterials += subtotal
       return {
         ...row,
         material: mat,
@@ -204,6 +202,7 @@ export default function RecipeCreatePage() {
         subtotal,
       }
     })
+    const totalRawMaterials = items.reduce((sum, item) => sum + item.subtotal, 0)
 
     const safeYield = yieldQty > 0 ? yieldQty : 1
     const safeWaste = wastePct >= 0 ? wastePct : 0
@@ -325,11 +324,11 @@ export default function RecipeCreatePage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Buat Produk & Resep Baru
               </h1>
-              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
+              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold shrink-0">
                 Margin-Driven Pricing
               </Badge>
             </div>
@@ -339,12 +338,12 @@ export default function RecipeCreatePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto self-end sm:self-auto">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate("/production/products")}
-            className="rounded-xl"
+            className="rounded-xl flex-1 sm:flex-initial"
             disabled={submitting}
           >
             Batal
@@ -353,7 +352,7 @@ export default function RecipeCreatePage() {
             type="submit"
             form="recipe-create-form"
             disabled={submitting}
-            className="rounded-xl font-semibold shadow-sm bg-primary text-primary-foreground flex items-center gap-2"
+            className="rounded-xl font-semibold shadow-sm bg-primary text-primary-foreground flex items-center justify-center gap-2 flex-1 sm:flex-initial"
           >
             {submitting ? (
               <>
@@ -471,7 +470,7 @@ export default function RecipeCreatePage() {
               {/* Product Mode Toggle */}
               <div className="space-y-1.5 pt-1">
                 <Label className="text-xs font-semibold">Model Produksi (Product Mode)</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setMode("MAKE_TO_STOCK")}
@@ -591,9 +590,9 @@ export default function RecipeCreatePage() {
 
           {/* Section 2: Komposisi Bahan Baku (BOM) */}
           <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-card overflow-hidden">
-            <CardHeader className="p-5 pb-3 border-b border-border/50 bg-muted/20 flex flex-row items-center justify-between">
+            <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/50 bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600">
+                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0">
                   <Layers className="h-4 w-4" />
                 </div>
                 <div>
@@ -612,13 +611,13 @@ export default function RecipeCreatePage() {
                 size="sm"
                 onClick={addIngredientRow}
                 disabled={loadingMaterials || availableMaterials.length === 0}
-                className="rounded-xl text-xs flex items-center gap-1.5 border-dashed border-primary/40 text-primary hover:bg-primary/5"
+                className="rounded-xl text-xs flex items-center gap-1.5 border-dashed border-primary/40 text-primary hover:bg-primary/5 self-start sm:self-auto shrink-0"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Tambah Bahan</span>
               </Button>
             </CardHeader>
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="p-4 sm:p-5 space-y-3">
               {loadingMaterials ? (
                 <div className="flex items-center justify-center p-8 text-xs text-muted-foreground gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -662,145 +661,149 @@ export default function RecipeCreatePage() {
                     return (
                       <div
                         key={idx}
-                        className="p-3 rounded-2xl bg-muted/30 border border-border/70 flex flex-col sm:flex-row items-start sm:items-center gap-3 transition-all hover:bg-muted/50"
+                        className="p-3 rounded-2xl bg-muted/30 border border-border/70 flex flex-col xl:flex-row items-stretch xl:items-center gap-3 transition-all hover:bg-muted/50"
                       >
-                        {/* Number Index */}
-                        <span className="h-6 w-6 rounded-lg bg-muted text-muted-foreground text-[11px] font-mono font-bold flex items-center justify-center shrink-0">
-                          {idx + 1}
-                        </span>
+                        {/* Number Index & Material Selector */}
+                        <div className="flex items-center gap-2 flex-1 min-w-0 w-full">
+                          <span className="h-6 w-6 rounded-lg bg-muted text-muted-foreground text-[11px] font-mono font-bold flex items-center justify-center shrink-0">
+                            {idx + 1}
+                          </span>
 
-                        {/* Material Selector */}
-                        <div className="flex-1 min-w-[200px] w-full sm:w-auto">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full justify-between rounded-xl h-10 text-xs bg-background"
-                              >
-                                <span className="font-semibold truncate">
-                                  {selectedMat?.name || "Pilih Bahan Baku..."}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground ml-1">
-                                  ({selectedMat ? (
-                                    selectedMat.baseUnit.toLowerCase() === "kg"
-                                      ? `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/kg (${formatCurrencyIdr(selectedMat.avgCostPerUnit / 1000)}/g)`
-                                      : `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/${selectedMat.baseUnit}`
-                                  ) : ""}) ▼
-                                </span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-80 max-h-64 overflow-y-auto rounded-xl">
-                              <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase">
-                                Bahan Baku Tersedia di Gudang
-                              </DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              {availableMaterials.map((m) => {
-                                const isKg = m.baseUnit.toLowerCase() === "kg"
-                                return (
-                                  <DropdownMenuItem
-                                    key={m.id}
-                                    onClick={() => updateIngredientRow(idx, m.id, row.quantity)}
-                                    className="cursor-pointer text-xs flex items-center justify-between py-2"
-                                  >
-                                    <div>
-                                      <div className="font-semibold text-foreground">{m.name}</div>
-                                      <div className="text-[10px] text-muted-foreground">
-                                        Stok: {m.currentStock} {m.baseUnit}
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <span className="font-mono text-[11px] font-bold text-primary block">
-                                        {formatCurrencyIdr(m.avgCostPerUnit)}/{m.baseUnit}
-                                      </span>
-                                      {isKg && (
-                                        <span className="text-[9px] font-mono text-muted-foreground block">
-                                          ({formatCurrencyIdr(m.avgCostPerUnit / 1000)}/g)
-                                        </span>
-                                      )}
-                                    </div>
-                                  </DropdownMenuItem>
-                                )
-                              })}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        {/* Quantity & Unit Selector */}
-                        <div className="flex items-center gap-1.5 w-full sm:w-44">
-                          <FormattedNumberInput
-                            allowDecimal
-                            maxDecimals={4}
-                            min={0.001}
-                            value={row.quantity}
-                            onChange={(val) => updateIngredientRow(idx, row.stockId, val === "" ? "" : Number(val), activeUnit)}
-                            placeholder="Takaran"
-                            className="rounded-xl h-10 text-xs font-mono font-bold bg-background text-right"
-                            required
-                          />
-
-                          {compatibleUnits.length > 1 ? (
+                          <div className="flex-1 min-w-0">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
                                   type="button"
                                   variant="outline"
-                                  size="sm"
-                                  className="h-10 px-2 rounded-xl font-mono text-xs font-semibold shrink-0"
+                                  className="w-full justify-between rounded-xl h-10 text-xs bg-background overflow-hidden px-3"
                                 >
-                                  <span>{activeUnit}</span>
-                                  <span className="text-[9px] text-muted-foreground ml-1">▼</span>
+                                  <span className="font-semibold truncate text-left">
+                                    {selectedMat?.name || "Pilih Bahan Baku..."}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground ml-1 shrink-0">
+                                    ({selectedMat ? (
+                                      selectedMat.baseUnit.toLowerCase() === "kg"
+                                        ? `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/kg (${formatCurrencyIdr(selectedMat.avgCostPerUnit / 1000)}/g)`
+                                        : `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/${selectedMat.baseUnit}`
+                                    ) : ""}) ▼
+                                  </span>
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent className="w-20 rounded-xl">
-                                {compatibleUnits.map((u) => (
-                                  <DropdownMenuItem
-                                    key={u}
-                                    onClick={() => updateIngredientRow(idx, row.stockId, row.quantity, u)}
-                                    className="font-mono text-xs font-semibold cursor-pointer"
-                                  >
-                                    {u}
-                                  </DropdownMenuItem>
-                                ))}
+                              <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-[260px] max-w-[calc(100vw-2rem)] max-h-64 overflow-y-auto rounded-xl">
+                                <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase">
+                                  Bahan Baku Tersedia di Gudang
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {availableMaterials.map((m) => {
+                                  const isKg = m.baseUnit.toLowerCase() === "kg"
+                                  return (
+                                    <DropdownMenuItem
+                                      key={m.id}
+                                      onClick={() => updateIngredientRow(idx, m.id, row.quantity)}
+                                      className="cursor-pointer text-xs flex items-center justify-between py-2"
+                                    >
+                                      <div>
+                                        <div className="font-semibold text-foreground">{m.name}</div>
+                                        <div className="text-[10px] text-muted-foreground">
+                                          Stok: {m.currentStock} {m.baseUnit}
+                                        </div>
+                                      </div>
+                                      <div className="text-right">
+                                        <span className="font-mono text-[11px] font-bold text-primary block">
+                                          {formatCurrencyIdr(m.avgCostPerUnit)}/{m.baseUnit}
+                                        </span>
+                                        {isKg && (
+                                          <span className="text-[9px] font-mono text-muted-foreground block">
+                                            ({formatCurrencyIdr(m.avgCostPerUnit / 1000)}/g)
+                                          </span>
+                                        )}
+                                      </div>
+                                    </DropdownMenuItem>
+                                  )
+                                })}
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          ) : (
-                            <span className="text-xs font-mono font-medium text-muted-foreground shrink-0 w-8 text-center">
-                              {selectedMat?.baseUnit || "unit"}
+                          </div>
+                        </div>
+
+                        {/* Controls Row on Mobile / Inline on XL */}
+                        <div className="flex items-center justify-between gap-3 w-full xl:w-auto">
+                          {/* Quantity & Unit Selector */}
+                          <div className="flex items-center gap-1.5 w-full sm:w-44 xl:w-40 shrink-0">
+                            <FormattedNumberInput
+                              allowDecimal
+                              maxDecimals={4}
+                              min={0.001}
+                              value={row.quantity}
+                              onChange={(val) => updateIngredientRow(idx, row.stockId, val === "" ? "" : Number(val), activeUnit)}
+                              placeholder="Takaran"
+                              className="rounded-xl h-10 text-xs font-mono font-bold bg-background text-right"
+                              required
+                            />
+
+                            {compatibleUnits.length > 1 ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-10 px-2 rounded-xl font-mono text-xs font-semibold shrink-0"
+                                  >
+                                    <span>{activeUnit}</span>
+                                    <span className="text-[9px] text-muted-foreground ml-1">▼</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-20 rounded-xl">
+                                  {compatibleUnits.map((u) => (
+                                    <DropdownMenuItem
+                                      key={u}
+                                      onClick={() => updateIngredientRow(idx, row.stockId, row.quantity, u)}
+                                      className="font-mono text-xs font-semibold cursor-pointer"
+                                    >
+                                      {u}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <span className="text-xs font-mono font-medium text-muted-foreground shrink-0 w-8 text-center">
+                                {selectedMat?.baseUnit || "unit"}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Subtotal Cost */}
+                          <div className="w-full xl:w-36 text-right shrink-0">
+                            <span className="text-[10px] text-muted-foreground block xl:hidden">
+                              Subtotal:
                             </span>
-                          )}
-                        </div>
+                            <span className="font-mono text-xs font-bold text-foreground block">
+                              {formatCurrencyIdr(subtotal)}
+                            </span>
+                            <span className="text-[9px] font-mono text-muted-foreground block">
+                              @{formatCurrencyIdr(unitCost)}/{activeUnit}
+                            </span>
+                          </div>
 
-                        {/* Subtotal Cost */}
-                        <div className="w-full sm:w-36 text-right">
-                          <span className="text-[10px] text-muted-foreground block sm:hidden">
-                            Subtotal:
-                          </span>
-                          <span className="font-mono text-xs font-bold text-foreground block">
-                            {formatCurrencyIdr(subtotal)}
-                          </span>
-                          <span className="text-[9px] font-mono text-muted-foreground block">
-                            @{formatCurrencyIdr(unitCost)}/{activeUnit}
-                          </span>
+                          {/* Delete Button */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeIngredientRow(idx)}
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-
-                        {/* Delete Button */}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeIngredientRow(idx)}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0 self-end sm:self-auto"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
                     )
                   })}
                 </div>
               )}
 
-              <div className="pt-2 flex items-center justify-between text-xs text-muted-foreground border-t border-border/50">
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-muted-foreground border-t border-border/50">
                 <span>Total item bahan: {ingredients.length}</span>
                 <span className="font-medium text-foreground">
                   Subtotal Bahan per Batch:{" "}
@@ -892,7 +895,7 @@ export default function RecipeCreatePage() {
                   </div>
 
                   {/* Quick percentage chips */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[10px] text-muted-foreground">Pilihan Cepat:</span>
                     {[35, 45, 50, 60, 70].map((pct) => (
                       <button
@@ -919,7 +922,7 @@ export default function RecipeCreatePage() {
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
                     Harga Jual Rekomendasi (Otomatis)
                   </span>
-                  <div className="flex items-baseline gap-2">
+                  <div className="flex flex-wrap items-baseline gap-2">
                     <span className="text-2xl sm:text-3xl font-black font-mono text-foreground">
                       {formatCurrencyIdr(calculations.calculatedPrice)}
                     </span>
@@ -928,7 +931,7 @@ export default function RecipeCreatePage() {
                     </span>
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 border-emerald-500/30 bg-emerald-500/10 ml-1 font-bold"
+                      className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 border-emerald-500/30 bg-emerald-500/10 ml-1 font-bold shrink-0"
                     >
                       +{calculations.actualMarginPercent}% Margin
                     </Badge>
@@ -954,7 +957,7 @@ export default function RecipeCreatePage() {
           {/* Card: Kalkulator & Simulasi Margin */}
           <Card className="rounded-2xl border-slate-200/80 shadow-md bg-card overflow-hidden sticky top-20">
             <CardHeader className="p-5 pb-3 border-b border-border/50 bg-gradient-to-br from-primary/5 via-primary/10 to-transparent">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-primary text-primary-foreground">
                     <TrendingUp className="h-4 w-4" />
@@ -968,7 +971,7 @@ export default function RecipeCreatePage() {
                 </div>
                 <Badge
                   variant="outline"
-                  className={`font-mono text-xs font-bold ${
+                  className={`font-mono text-xs font-bold shrink-0 ${
                     calculations.actualMarginPercent >= 50
                       ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
                       : calculations.actualMarginPercent >= 30

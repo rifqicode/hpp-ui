@@ -279,11 +279,11 @@ export default function OverheadListPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
                 <Layers className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                   Biaya Overhead & Operasional
                 </h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
@@ -292,20 +292,20 @@ export default function OverheadListPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={handleRefresh}
               disabled={loading}
-              className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
+              className="flex items-center justify-center gap-1.5 shadow-2xs hover:bg-muted flex-1 sm:flex-initial"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
               Segarkan
             </Button>
             <Button
               onClick={handleOpenCreate}
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
+              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs flex-1 sm:flex-initial"
             >
               <Plus className="h-4 w-4" />
               Tambah Biaya
@@ -444,16 +444,16 @@ export default function OverheadListPage() {
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
                 {/* Status Filter */}
-                <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+                <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
                   <button
                     type="button"
                     onClick={() => {
                       setStatusFilter('ALL');
                       setPage(1);
                     }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
                       statusFilter === 'ALL'
                         ? 'bg-background text-foreground shadow-2xs font-semibold'
                         : 'text-muted-foreground hover:text-foreground'
@@ -467,7 +467,7 @@ export default function OverheadListPage() {
                       setStatusFilter('ACTIVE');
                       setPage(1);
                     }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
                       statusFilter === 'ACTIVE'
                         ? 'bg-background text-foreground shadow-2xs font-semibold'
                         : 'text-muted-foreground hover:text-foreground'
@@ -481,7 +481,7 @@ export default function OverheadListPage() {
                       setStatusFilter('INACTIVE');
                       setPage(1);
                     }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
                       statusFilter === 'INACTIVE'
                         ? 'bg-background text-foreground shadow-2xs font-semibold'
                         : 'text-muted-foreground hover:text-foreground'
@@ -492,16 +492,16 @@ export default function OverheadListPage() {
                 </div>
 
                 {/* Category Filters */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-                  <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
-                  <Filter className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full no-scrollbar pb-0.5">
+                  <div className="h-4 w-px bg-border mx-1 hidden sm:block shrink-0" />
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground hidden sm:block shrink-0" />
                   <button
                     type="button"
                     onClick={() => {
                       setCategoryFilter('ALL');
                       setPage(1);
                     }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                       categoryFilter === 'ALL'
                         ? 'bg-primary text-primary-foreground shadow-2xs'
                         : 'bg-muted/70 hover:bg-muted text-muted-foreground'
@@ -515,7 +515,7 @@ export default function OverheadListPage() {
                       setCategoryFilter('PRODUCTION');
                       setPage(1);
                     }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
                       categoryFilter === 'PRODUCTION'
                         ? 'bg-primary text-primary-foreground shadow-2xs'
                         : 'bg-muted/70 hover:bg-muted text-muted-foreground'
@@ -539,7 +539,7 @@ export default function OverheadListPage() {
                       setCategoryFilter('OPERATIONAL');
                       setPage(1);
                     }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
                       categoryFilter === 'OPERATIONAL'
                         ? 'bg-primary text-primary-foreground shadow-2xs'
                         : 'bg-muted/70 hover:bg-muted text-muted-foreground'
@@ -564,7 +564,7 @@ export default function OverheadListPage() {
             {/* Polished Table Container */}
             <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
+                <table className="w-full min-w-[680px] text-sm text-left">
                   <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                     <tr>
                       <th className="px-5 py-3.5">Nama Biaya Overhead</th>
@@ -680,7 +680,7 @@ export default function OverheadListPage() {
 
         {/* Modal Tambah / Edit Overhead */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Layers className="h-5 w-5 text-primary" />
@@ -825,7 +825,7 @@ export default function OverheadListPage() {
                 />
               </div>
 
-              <DialogFooter className="pt-2">
+              <DialogFooter className="pt-2 gap-2 sm:gap-0">
                 <Button
                   type="button"
                   variant="outline"
@@ -861,7 +861,7 @@ export default function OverheadListPage() {
                 ? Tindakan ini tidak dapat dibatalkan.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="pt-3">
+            <DialogFooter className="pt-3 gap-2 sm:gap-0">
               <Button
                 type="button"
                 variant="outline"

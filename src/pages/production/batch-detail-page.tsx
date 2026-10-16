@@ -230,8 +230,8 @@ export default function BatchDetailPage() {
   return (
     <div className="flex flex-col gap-6 pb-16 animate-in fade-in duration-500">
       {/* Breadcrumb & Navigation */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs">
             <Link to="/production/batches">
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
@@ -245,11 +245,11 @@ export default function BatchDetailPage() {
         </div>
 
         {batch.status === "IN_PROGRESS" && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={openCompleteModal}
               size="sm"
-              className="rounded-xl text-xs font-semibold bg-primary text-primary-foreground h-9"
+              className="rounded-xl text-xs font-semibold bg-primary text-primary-foreground h-9 flex-1 sm:flex-initial"
             >
               <Check className="h-3.5 w-3.5 mr-1.5" /> Selesaikan & Hitung HPP
             </Button>
@@ -261,7 +261,7 @@ export default function BatchDetailPage() {
               }}
               variant="destructive"
               size="sm"
-              className="rounded-xl text-xs h-9"
+              className="rounded-xl text-xs h-9 flex-1 sm:flex-initial"
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Batalkan Batch
             </Button>
@@ -269,7 +269,7 @@ export default function BatchDetailPage() {
         )}
 
         {batch.status === "COMPLETED" && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
               onClick={() => {
                 setCancelReason("")
@@ -278,7 +278,7 @@ export default function BatchDetailPage() {
               }}
               variant="outline"
               size="sm"
-              className="rounded-xl text-xs h-9 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="rounded-xl text-xs h-9 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 flex-1 sm:flex-initial"
             >
               <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Void Produksi
             </Button>
@@ -288,13 +288,13 @@ export default function BatchDetailPage() {
 
       {/* Hero Header Card */}
       <Card className="rounded-3xl border-slate-200/80 shadow-sm overflow-hidden bg-card w-full">
-        <div className="p-6 pb-4">
+        <div className="p-4 sm:p-6 pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
               <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
                 <Factory className="h-7 w-7" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono text-xl font-black text-foreground">
                     {batch.batchNumber}
@@ -316,7 +316,7 @@ export default function BatchDetailPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex flex-wrap items-center gap-2 mt-1">
                   <Link
                     to={`/production/products/${batch.productId}`}
                     className="text-sm font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1"
@@ -327,7 +327,7 @@ export default function BatchDetailPage() {
                   <span className="text-xs text-muted-foreground">• {batch.productCategory}</span>
                 </div>
 
-                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-3">
+                <p className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-3 gap-y-1">
                   <span>
                     Mulai:{" "}
                     {new Date(batch.startedAt).toLocaleDateString("id-ID", {
@@ -364,54 +364,54 @@ export default function BatchDetailPage() {
         </div>
 
         {/* 5-Column Metric Highlights */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 border-t border-slate-100 bg-slate-50/70 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/60 p-2">
-          <div className="p-3 px-4">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 border-t border-slate-100 gap-px bg-slate-200/60 dark:bg-slate-800">
+          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
               Target vs Hasil
             </span>
-            <div className="text-lg font-black font-mono text-foreground mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-foreground mt-0.5 truncate">
               {batch.goodQuantity !== undefined ? batch.goodQuantity : "-"} / {batch.targetQuantity}{" "}
               <span className="text-xs font-normal text-muted-foreground">{batch.productUnit}</span>
             </div>
             {yieldRate !== null && (
-              <span className="text-[10px] text-emerald-600 font-bold">
+              <span className="text-[10px] text-emerald-600 font-bold block truncate">
                 Yield: {yieldRate}% ({batch.wasteQuantity || 0} afkir)
               </span>
             )}
           </div>
 
-          <div className="p-3 px-4">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
               Biaya Bahan Baku (BOM)
             </span>
-            <div className="text-lg font-black font-mono text-slate-800 mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
               {formatCurrencyIdr(batch.stockCost)}
             </div>
-            <span className="text-[10px] text-muted-foreground">{batch.ingredients.length} bahan terpotong</span>
+            <span className="text-[10px] text-muted-foreground block truncate">{batch.ingredients.length} bahan terpotong</span>
           </div>
 
-          <div className="p-3 px-4">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
               Biaya Overhead
             </span>
-            <div className="text-lg font-black font-mono text-slate-800 mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
               {batch.overheadCost !== undefined ? formatCurrencyIdr(batch.overheadCost) : "-"}
             </div>
-            <span className="text-[10px] text-muted-foreground">Listrik, Gas, Tenaga Kerja</span>
+            <span className="text-[10px] text-muted-foreground block truncate">Listrik, Gas, Tenaga Kerja</span>
           </div>
 
-          <div className="p-3 px-4">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
               HPP per Unit Aktual
             </span>
-            <div className="text-lg font-black font-mono text-primary mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-primary mt-0.5 truncate">
               {batch.hppPerUnit ? formatCurrencyIdr(batch.hppPerUnit) : "-"}
             </div>
-            <span className="text-[10px] text-muted-foreground">Harga Jual: {formatCurrencyIdr(batch.sellingPrice)}</span>
+            <span className="text-[10px] text-muted-foreground block truncate">Harga Jual: {formatCurrencyIdr(batch.sellingPrice)}</span>
           </div>
 
-          <div className="p-3 px-4 col-span-2 sm:col-span-1">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <div className="p-3 px-4 col-span-2 sm:col-span-1 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
               Gross Margin Batch
             </span>
             <div className="mt-1">
@@ -432,7 +432,7 @@ export default function BatchDetailPage() {
                 <span className="text-xs text-muted-foreground italic">Menunggu kalkulasi</span>
               )}
             </div>
-            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+            <span className="text-[10px] text-muted-foreground mt-0.5 block truncate">
               {batch.totalCost ? `Total Modal: ${formatCurrencyIdr(batch.totalCost)}` : "Dalam proses"}
             </span>
           </div>
@@ -442,21 +442,21 @@ export default function BatchDetailPage() {
       {/* SECTION 1: RINCIAN KONSUMSI BAHAN BAKU (FIFO AUDIT TRAIL) */}
       <Card className="rounded-2xl border-slate-200/80 shadow-sm w-full bg-card">
         <CardHeader className="p-5 pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <CardTitle className="text-lg font-bold">Audit Konsumsi Bahan Baku (BOM FIFO)</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
                 Rincian kuantitas bahan yang diambil dari gudang untuk mengeksekusi batch produksi ini.
               </CardDescription>
             </div>
-            <Badge variant="outline" className="text-xs font-mono font-semibold">
+            <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
               Total Bahan: {formatCurrencyIdr(batch.stockCost)}
             </Badge>
           </div>
         </CardHeader>
 
         <CardContent className="p-0">
-          <Table>
+          <Table className="min-w-[600px]">
             <TableHeader className="bg-slate-50/70">
               <TableRow>
                 <TableHead className="text-xs font-bold uppercase text-muted-foreground">Nama Bahan Baku</TableHead>
@@ -511,21 +511,21 @@ export default function BatchDetailPage() {
       {batch.overheadBreakdown && (
         <Card className="rounded-2xl border-slate-200/80 shadow-sm w-full bg-card">
           <CardHeader className="p-5 pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <CardTitle className="text-lg font-bold">Rincian Biaya Overhead Operasional</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">
                   Alokasi biaya langsung non-bahan yang diserap ke dalam HPP unit barang bagus.
                 </CardDescription>
               </div>
-              <Badge variant="outline" className="text-xs font-mono font-semibold">
+              <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
                 Total Overhead: {formatCurrencyIdr(batch.overheadCost || 0)}
               </Badge>
             </div>
           </CardHeader>
 
           <CardContent className="p-5 pt-1">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
                 <span className="text-xs text-muted-foreground block">Tenaga Kerja Langsung</span>
                 <span className="font-mono font-bold text-base text-foreground mt-1 block">
@@ -560,7 +560,7 @@ export default function BatchDetailPage() {
 
       {/* COMPLETE DIALOG */}
       <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
-        <DialogContent className="sm:max-w-[540px] rounded-2xl p-6">
+        <DialogContent className="sm:max-w-[540px] rounded-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">Selesaikan Batch & Kalkulasi HPP</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
@@ -576,7 +576,7 @@ export default function BatchDetailPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <Label className="text-xs font-semibold">Unit Bagus</Label>
                 <Input
@@ -650,14 +650,14 @@ export default function BatchDetailPage() {
               )}
             </div>
 
-            <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-between text-xs">
+            <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span>Proyeksi HPP per Unit:</span>
               <span className="font-mono font-black text-lg text-primary">
                 {formatCurrencyIdr(completeHppPerUnit)}
               </span>
             </div>
 
-            <DialogFooter className="pt-2 gap-2">
+            <DialogFooter className="pt-2 gap-2 sm:gap-0">
               <Button type="button" variant="outline" onClick={() => setIsCompleteOpen(false)} className="rounded-xl">
                 Batal
               </Button>

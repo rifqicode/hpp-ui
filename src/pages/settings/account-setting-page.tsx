@@ -159,7 +159,7 @@ export default function GeneralSettingsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-flow-col auto-cols-fr gap-1 rounded-xl bg-muted/60 p-1 border border-border h-auto w-full">
+        <TabsList className="flex overflow-x-auto sm:grid sm:grid-flow-col sm:auto-cols-fr gap-1 bg-muted/60 p-1 rounded-xl border border-border h-auto w-full md:w-auto md:inline-grid no-scrollbar">
           {ACCOUNT_TABS.map((tab) => {
             const Icon = tab.icon
             return (
@@ -167,7 +167,7 @@ export default function GeneralSettingsPage() {
                 key={tab.value}
                 value={tab.value}
                 className={cn(
-                  "rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold whitespace-nowrap",
+                  "shrink-0 rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold whitespace-nowrap",
                   tab.className
                 )}
               >
@@ -182,14 +182,14 @@ export default function GeneralSettingsPage() {
         <TabsContent value="profile" className="mt-4 space-y-6">
           <Card className="rounded-xl shadow-sm border-border w-full">
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <CardTitle className="text-base">Informasi Profil Akun</CardTitle>
                   <CardDescription>
                     Data profil pengelola yang ditampilkan di header dan catatan riwayat operasional toko.
                   </CardDescription>
                 </div>
-                <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] font-bold">
+                <Badge variant="default" className="self-start sm:self-center shrink-0 bg-primary text-primary-foreground text-[10px] font-bold">
                   {isStaff ? "STAFF" : "ACCOUNT OWNER"}
                 </Badge>
               </div>
@@ -232,7 +232,7 @@ export default function GeneralSettingsPage() {
                     </button>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-bold text-lg text-foreground">{name || "Pengguna HPP"}</span>
                       <span className="text-emerald-600 font-semibold text-xs flex items-center gap-1">
                         <ShieldCheck className="h-3.5 w-3.5" /> Terverifikasi
@@ -491,8 +491,8 @@ export default function GeneralSettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 rounded-xl border border-dashed border-border bg-muted/20 space-y-3 opacity-75">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-start sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-sm font-semibold text-muted-foreground">Aplikasi Authenticator (TOTP)</span>
                       <Badge variant="secondary" className="text-[10px] text-muted-foreground">
                         Dalam Pengembangan
@@ -549,18 +549,18 @@ export default function GeneralSettingsPage() {
                 {sessions.map((sess) => (
                   <div
                     key={sess.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/20 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-muted text-muted-foreground">
+                      <div className="p-2 rounded-lg bg-muted text-muted-foreground shrink-0">
                         {sess.type === "mobile" ? (
                           <Smartphone className="h-5 w-5" />
                         ) : (
                           <Laptop className="h-5 w-5" />
                         )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold text-foreground">
                             {sess.device || "Browser Sesi"}
                           </span>
@@ -570,7 +570,7 @@ export default function GeneralSettingsPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                        <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2 mt-0.5">
                           <span>{sess.browser || "Chrome"}</span>
                           <span>&bull;</span>
                           <span>{sess.location || "Indonesia"}</span>
@@ -587,7 +587,7 @@ export default function GeneralSettingsPage() {
                         size="sm"
                         onClick={() => handleRevokeSession(sess.id)}
                         disabled={revokingSessionId === sess.id}
-                        className="rounded-xl text-xs text-destructive border-destructive/30 hover:bg-destructive/10 h-8 px-3 shrink-0 font-medium"
+                        className="w-full sm:w-auto rounded-xl text-xs text-destructive border-destructive/30 hover:bg-destructive/10 h-8 px-3 shrink-0 font-medium"
                       >
                         {revokingSessionId === sess.id ? (
                           <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

@@ -138,15 +138,15 @@ export default function DashboardPage() {
       {/* ========================================================= */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               Dashboard Analytics & HPP
             </h1>
-            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
+            <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold shrink-0">
               Real-Time
             </Badge>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 flex items-center gap-2">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2 gap-y-1">
             <Store className="h-3.5 w-3.5 text-primary" />
             <span>{displayStoreName}</span>
             <span>•</span>
@@ -161,13 +161,13 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="rounded-xl h-9 text-xs font-semibold flex items-center gap-1.5"
+            className="rounded-xl h-9 text-xs font-semibold flex items-center gap-1.5 flex-1 sm:flex-initial"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
             <span>{refreshing ? "Memperbarui..." : "Segarkan Data"}</span>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
           <Button
             asChild
             size="sm"
-            className="rounded-xl h-9 text-xs font-semibold bg-primary text-primary-foreground flex items-center gap-1.5 shadow-sm"
+            className="rounded-xl h-9 text-xs font-semibold bg-primary text-primary-foreground flex items-center gap-1.5 shadow-sm flex-1 sm:flex-initial"
           >
             <Link to="/production/batches/new">
               <Plus className="h-3.5 w-3.5" />
@@ -195,14 +195,14 @@ export default function DashboardPage() {
         className="w-full space-y-6"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <TabsList className="rounded-xl bg-muted/60 p-1">
-            <TabsTrigger value="operational" className="rounded-lg text-xs font-bold px-4 py-2 flex items-center gap-2">
-              <Factory className="h-4 w-4" />
-              <span>Operational Dashboard</span>
+          <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:inline-flex h-auto rounded-xl bg-muted/60 p-1">
+            <TabsTrigger value="operational" className="rounded-lg text-[11px] sm:text-xs font-bold px-2.5 sm:px-4 py-2 flex items-center gap-2 truncate">
+              <Factory className="h-4 w-4 shrink-0" />
+              <span className="truncate">Operational Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="hpp" className="rounded-lg text-xs font-bold px-4 py-2 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span>HPP & Margin Dashboard</span>
+            <TabsTrigger value="hpp" className="rounded-lg text-[11px] sm:text-xs font-bold px-2.5 sm:px-4 py-2 flex items-center gap-2 truncate">
+              <TrendingUp className="h-4 w-4 shrink-0" />
+              <span className="truncate">HPP & Margin Dashboard</span>
             </TabsTrigger>
           </TabsList>
 
@@ -231,7 +231,7 @@ export default function DashboardPage() {
         {/* ========================================================= */}
         <TabsContent value="operational" className="space-y-6 m-0">
           {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Active Batches */}
             <Card className="rounded-2xl border-border shadow-sm bg-card">
               <CardHeader className="p-4 pb-1">
@@ -297,7 +297,7 @@ export default function DashboardPage() {
                     <Package className="h-4 w-4" />
                   </div>
                 </div>
-                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground">
+                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground truncate">
                   {formatCurrencyIdr(inventoryValuation)}
                 </CardTitle>
               </CardHeader>
@@ -335,11 +335,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Action Shortcuts */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <Button
               asChild
               variant="outline"
-              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group"
+              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group min-w-0 overflow-hidden"
             >
               <Link to="/production/batches/new">
                 <div className="flex items-center justify-between w-full mb-1">
@@ -348,15 +348,15 @@ export default function DashboardPage() {
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <span className="font-bold text-xs text-foreground block">Mulai Batch Baru</span>
-                <span className="text-[10px] text-muted-foreground block truncate">Kunci bahan baku FIFO dapur</span>
+                <span className="font-bold text-xs text-foreground block w-full truncate">Mulai Batch Baru</span>
+                <span className="text-[10px] text-muted-foreground block w-full truncate">Kunci bahan baku FIFO dapur</span>
               </Link>
             </Button>
 
             <Button
               asChild
               variant="outline"
-              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group"
+              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group min-w-0 overflow-hidden"
             >
               <Link to="/inventory/purchase-orders/new">
                 <div className="flex items-center justify-between w-full mb-1">
@@ -365,15 +365,15 @@ export default function DashboardPage() {
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <span className="font-bold text-xs text-foreground block">Buat PO Bahan Baku</span>
-                <span className="text-[10px] text-muted-foreground block truncate">Pesan bahan ke supplier</span>
+                <span className="font-bold text-xs text-foreground block w-full truncate">Buat PO Bahan Baku</span>
+                <span className="text-[10px] text-muted-foreground block w-full truncate">Pesan bahan ke supplier</span>
               </Link>
             </Button>
 
             <Button
               asChild
               variant="outline"
-              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group"
+              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group min-w-0 overflow-hidden"
             >
               <Link to="/production/products/new">
                 <div className="flex items-center justify-between w-full mb-1">
@@ -382,15 +382,15 @@ export default function DashboardPage() {
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <span className="font-bold text-xs text-foreground block">Tambah Produk Baru</span>
-                <span className="text-[10px] text-muted-foreground block truncate">Atur formula & standar HPP</span>
+                <span className="font-bold text-xs text-foreground block w-full truncate">Tambah Produk Baru</span>
+                <span className="text-[10px] text-muted-foreground block w-full truncate">Atur formula & standar HPP</span>
               </Link>
             </Button>
 
             <Button
               asChild
               variant="outline"
-              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group"
+              className="h-20 flex-col items-start justify-center p-4 rounded-2xl border hover:border-primary/50 hover:bg-primary/5 transition-all text-left group min-w-0 overflow-hidden"
             >
               <Link to="/production/hpp">
                 <div className="flex items-center justify-between w-full mb-1">
@@ -399,8 +399,8 @@ export default function DashboardPage() {
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <span className="font-bold text-xs text-foreground block">Kalkulator HPP & Ojol</span>
-                <span className="text-[10px] text-muted-foreground block truncate">Simulasi harga GoFood & BEP</span>
+                <span className="font-bold text-xs text-foreground block w-full truncate">Kalkulator HPP & Ojol</span>
+                <span className="text-[10px] text-muted-foreground block w-full truncate">Simulasi harga GoFood & BEP</span>
               </Link>
             </Button>
           </div>
@@ -410,7 +410,7 @@ export default function DashboardPage() {
             {/* Left 7 cols: Active Batches */}
             <div className="lg:col-span-7 flex flex-col gap-6">
               <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
-                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between">
+                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <Factory className="h-4 w-4 text-primary" />
@@ -423,7 +423,7 @@ export default function DashboardPage() {
                     </CardDescription>
                   </div>
 
-                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-mono font-semibold">
+                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-mono font-semibold shrink-0">
                     {activeBatches.length} Batch Aktif
                   </Badge>
                 </CardHeader>
@@ -463,7 +463,7 @@ export default function DashboardPage() {
                           <h4 className="font-bold text-sm text-foreground truncate">
                             {b.product_name}
                           </h4>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          <div className="flex flex-wrap items-center gap-3 gap-y-1 text-xs text-muted-foreground mt-1">
                             <span>
                               Target: <strong className="text-foreground">{b.target_quantity} {b.product_unit}</strong>
                             </span>
@@ -494,7 +494,7 @@ export default function DashboardPage() {
 
               {/* Expiring Stock Batches Alert */}
               <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
-                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between">
+                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-amber-500" />
@@ -507,7 +507,7 @@ export default function DashboardPage() {
                     </CardDescription>
                   </div>
 
-                  <Badge variant="outline" className="text-xs font-mono font-semibold">
+                  <Badge variant="outline" className="text-xs font-mono font-semibold shrink-0">
                     {expiringBatches.length} Batch
                   </Badge>
                 </CardHeader>
@@ -549,7 +549,7 @@ export default function DashboardPage() {
             {/* Right 5 cols: Low Stock Alerts */}
             <div className="lg:col-span-5 flex flex-col gap-6">
               <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
-                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between">
+                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
@@ -563,11 +563,11 @@ export default function DashboardPage() {
                   </div>
 
                   {lowStockAlerts.length > 0 ? (
-                    <Badge variant="destructive" className="text-xs font-mono font-semibold">
+                    <Badge variant="destructive" className="text-xs font-mono font-semibold shrink-0">
                       {lowStockAlerts.length} Kritis
                     </Badge>
                   ) : (
-                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold">
+                    <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-semibold shrink-0">
                       Aman
                     </Badge>
                   )}
@@ -620,7 +620,7 @@ export default function DashboardPage() {
         {/* ========================================================= */}
         <TabsContent value="hpp" className="space-y-6 m-0">
           {/* Executive Overview Cards for HPP */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Average Recipe Margin */}
             <Card className="rounded-2xl border-border shadow-sm bg-card">
               <CardHeader className="p-4 pb-1">
@@ -656,7 +656,7 @@ export default function DashboardPage() {
                     <DollarSign className="h-4 w-4" />
                   </div>
                 </div>
-                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground">
+                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground truncate">
                   {formatCurrencyIdr(salesSummary?.total_revenue || 0)}
                 </CardTitle>
               </CardHeader>
@@ -678,7 +678,7 @@ export default function DashboardPage() {
                     <PieChart className="h-4 w-4" />
                   </div>
                 </div>
-                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-emerald-600">
+                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-emerald-600 truncate">
                   {formatCurrencyIdr(salesSummary?.gross_profit || 0)}
                 </CardTitle>
               </CardHeader>
@@ -700,7 +700,7 @@ export default function DashboardPage() {
                     <Factory className="h-4 w-4" />
                   </div>
                 </div>
-                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground">
+                <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground truncate">
                   {formatCurrencyIdr(costBreakdown?.total_cost || 0)}
                 </CardTitle>
               </CardHeader>
@@ -793,7 +793,7 @@ export default function DashboardPage() {
             <div className="lg:col-span-6 flex flex-col gap-6">
               {/* Star Products */}
               <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
-                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between">
+                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-emerald-600" />
@@ -821,7 +821,7 @@ export default function DashboardPage() {
                             {p.margin_pct}% Margin
                           </span>
                         </div>
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] text-muted-foreground font-mono">
                           <span>Jual: {formatCurrencyIdr(p.selling_price)}</span>
                           <span>HPP: {formatCurrencyIdr(p.hpp)}</span>
                           <span className="text-emerald-700">Laba: {formatCurrencyIdr(p.profit_unit)}/unit</span>
@@ -841,7 +841,7 @@ export default function DashboardPage() {
               {/* At-Risk Products */}
               {atRiskProducts.length > 0 && (
                 <Card className="rounded-2xl border-destructive/30 shadow-sm overflow-hidden">
-                  <CardHeader className="p-4 sm:p-5 pb-3 border-b border-destructive/20 bg-destructive/5 flex flex-row items-center justify-between">
+                  <CardHeader className="p-4 sm:p-5 pb-3 border-b border-destructive/20 bg-destructive/5 flex flex-row items-center justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -853,7 +853,7 @@ export default function DashboardPage() {
                         Margin aktual produk di bawah target margin yang ditetapkan.
                       </CardDescription>
                     </div>
-                    <Badge variant="destructive" className="text-xs font-mono font-semibold">
+                    <Badge variant="destructive" className="text-xs font-mono font-semibold shrink-0">
                       {atRiskProducts.length} Produk
                     </Badge>
                   </CardHeader>
@@ -888,7 +888,7 @@ export default function DashboardPage() {
             {/* Right 6 cols: Realized vs Recipe Standard HPP */}
             <div className="lg:col-span-6 flex flex-col gap-6">
               <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
-                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between">
+                <CardHeader className="p-4 sm:p-5 pb-3 border-b border-border/80 flex flex-row items-center justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
                       <Calculator className="h-4 w-4 text-primary" />

@@ -185,13 +185,13 @@ export default function TransactionHistoryPage() {
 
       {/* KPI Dashboard Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-            <CardContent className="p-0 flex items-center justify-between">
-              <div className="space-y-0.5">
+            <CardContent className="p-0 flex items-center justify-between gap-2">
+              <div className="space-y-0.5 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground">Total Omzet</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-bold tracking-tight text-foreground">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-foreground">
                     {formatRupiah(summary.totalRevenue)}
                   </span>
                 </div>
@@ -199,18 +199,18 @@ export default function TransactionHistoryPage() {
                   {summary.totalTransactions} transaksi
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
                 <DollarSign className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-            <CardContent className="p-0 flex items-center justify-between">
-              <div className="space-y-0.5">
+            <CardContent className="p-0 flex items-center justify-between gap-2">
+              <div className="space-y-0.5 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground">Total HPP Modal</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-amber-600 dark:text-amber-400">
                     {formatRupiah(summary.totalHpp)}
                   </span>
                 </div>
@@ -218,18 +218,18 @@ export default function TransactionHistoryPage() {
                   Modal bahan & overhead
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0">
                 <Receipt className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-            <CardContent className="p-0 flex items-center justify-between">
-              <div className="space-y-0.5">
+            <CardContent className="p-0 flex items-center justify-between gap-2">
+              <div className="space-y-0.5 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground">Total Laba Kotor</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                     {formatRupiah(summary.totalGrossProfit)}
                   </span>
                 </div>
@@ -237,18 +237,18 @@ export default function TransactionHistoryPage() {
                   Omzet dikurangi HPP
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+              <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
                 <TrendingUp className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-            <CardContent className="p-0 flex items-center justify-between">
-              <div className="space-y-0.5">
+            <CardContent className="p-0 flex items-center justify-between gap-2">
+              <div className="space-y-0.5 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground">Rata-rata Margin</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-blue-600 dark:text-blue-400">
                     {summary.averageMarginPct.toFixed(1)}%
                   </span>
                 </div>
@@ -256,18 +256,18 @@ export default function TransactionHistoryPage() {
                   Margin laba kotor
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+              <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
                 <TrendingUp className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-            <CardContent className="p-0 flex items-center justify-between">
-              <div className="space-y-0.5">
+            <CardContent className="p-0 flex items-center justify-between gap-2">
+              <div className="space-y-0.5 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground">Rata-rata Order (AOV)</p>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
                     {formatRupiah(
                       summary.averageOrderValue ||
                         (summary.totalTransactions > 0
@@ -280,7 +280,7 @@ export default function TransactionHistoryPage() {
                   Belanja per transaksi
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+              <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0">
                 <ShoppingBag className="h-5 w-5" />
               </div>
             </CardContent>
@@ -292,12 +292,12 @@ export default function TransactionHistoryPage() {
       <div className="flex flex-col gap-3 bg-card p-3 rounded-xl border border-border shadow-2xs">
         {/* Top row: Date Presets & Custom Pickers */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-border/70">
-          <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="flex items-center gap-1.5 overflow-x-auto max-w-full no-scrollbar">
             <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1 mr-1 shrink-0">
               <Calendar className="size-3.5" />
               Periode:
             </span>
-            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
               {[
                 { label: 'Hari Ini', key: 'TODAY' as const },
                 { label: '7 Hari', key: '7D' as const },
@@ -308,7 +308,7 @@ export default function TransactionHistoryPage() {
                 <button
                   key={p.key}
                   onClick={() => handlePresetChange(p.key)}
-                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all whitespace-nowrap shrink-0 ${
                     datePreset === p.key
                       ? 'bg-background text-foreground shadow-2xs font-semibold'
                       : 'text-muted-foreground hover:text-foreground'
@@ -322,19 +322,19 @@ export default function TransactionHistoryPage() {
 
           {/* Custom Date Inputs */}
           {datePreset === 'CUSTOM' && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 w-full sm:w-auto">
               <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-8 text-xs w-36 bg-background/50"
+                className="h-8 text-xs flex-1 min-w-[130px] sm:w-36 bg-background/50"
               />
               <span className="text-xs text-muted-foreground">s/d</span>
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="h-8 text-xs w-36 bg-background/50"
+                className="h-8 text-xs flex-1 min-w-[130px] sm:w-36 bg-background/50"
               />
             </div>
           )}
@@ -360,14 +360,14 @@ export default function TransactionHistoryPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 max-w-full">
             {/* Status Filter Pills */}
-            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0 no-scrollbar bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
               {['ALL', 'COMPLETED', 'IN_PROGRESS'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all whitespace-nowrap shrink-0 ${
                     filterStatus === status
                       ? 'bg-background text-foreground shadow-2xs font-semibold'
                       : 'text-muted-foreground hover:text-foreground'
@@ -383,12 +383,12 @@ export default function TransactionHistoryPage() {
             </div>
 
             {/* Payment Method Pills */}
-            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+            <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0 no-scrollbar bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
               {['ALL', 'CASH', 'QRIS', 'TRANSFER', 'DEBIT'].map((method) => (
                 <button
                   key={method}
                   onClick={() => setFilterMethod(method)}
-                  className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded-md font-medium transition-all whitespace-nowrap shrink-0 ${
                     filterMethod === method
                       ? 'bg-background text-foreground shadow-2xs font-semibold'
                       : 'text-muted-foreground hover:text-foreground'
@@ -410,7 +410,7 @@ export default function TransactionHistoryPage() {
       <div className="space-y-4">
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
+            <table className="w-full min-w-[960px] text-sm text-left">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                 <tr>
                   <th className="px-5 py-3.5">Invoice & Waktu</th>
@@ -643,7 +643,7 @@ export default function TransactionHistoryPage() {
                       <span>{selectedSale.customer.phone}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center pt-0.5">
+                  <div className="flex flex-wrap gap-1.5 justify-between items-center pt-0.5">
                     <span className="text-muted-foreground">Status Pesanan:</span>
                     {selectedSale.status === 'IN_PROGRESS' ? (
                       <span className="font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
@@ -656,7 +656,7 @@ export default function TransactionHistoryPage() {
                     )}
                   </div>
                   {selectedSale.productionLogId && (
-                    <div className="flex justify-between items-center text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
+                    <div className="flex flex-wrap gap-1.5 justify-between items-center text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
                       <span>Pesanan MTO (Make to Order):</span>
                       <span className="font-semibold">Terhubung ke Antrean Dapur</span>
                     </div>

@@ -101,7 +101,7 @@ export default function SupplierListPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -114,7 +114,7 @@ export default function SupplierListPage() {
           </Button>
           <Button
             onClick={handleOpenCreate}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
+            className="flex-1 sm:flex-initial flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
           >
             <Plus className="h-4 w-4" />
             Tambah Supplier
@@ -283,7 +283,7 @@ export default function SupplierListPage() {
           {/* Polished Table Container */}
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full min-w-[760px] text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                   <tr>
                     <th className="px-5 py-3.5">Nama Supplier</th>

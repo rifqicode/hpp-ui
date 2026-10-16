@@ -292,7 +292,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 lg:bg-white grid lg:grid-cols-12">
+    <div className="min-h-screen w-full min-w-0 bg-slate-50 lg:bg-white grid lg:grid-cols-12">
       {/* ======================================================== */}
       {/* LEFT PANEL: Immersive Showcase & Onboarding Guidance     */}
       {/* ======================================================== */}
@@ -419,7 +419,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       {/* ======================================================== */}
       {/* RIGHT PANEL: Multi-Step Interactive Form Canvas (7 cols) */}
       {/* ======================================================== */}
-      <div className="col-span-12 lg:col-span-7 flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-white min-h-screen">
+      <div className="col-span-12 lg:col-span-7 flex flex-col justify-between w-full min-w-0 p-4 sm:p-10 lg:p-14 bg-white min-h-screen">
         {/* Top Bar: Back to Home & Mobile Header */}
         <div className="flex items-center justify-between pb-6 sm:pb-8">
           {/* Mobile Header Logo */}
@@ -785,7 +785,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   <Label className="text-xs font-bold text-slate-700 block">
                     Kategori Bisnis Utama <span className="text-rose-500">*</span>
                   </Label>
-                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 no-scrollbar">
+                  <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 no-scrollbar">
                     {STORE_CATEGORIES.map((cat) => {
                       const Icon = cat.icon
                       const isSelected = category === cat.name

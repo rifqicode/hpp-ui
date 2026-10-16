@@ -274,7 +274,7 @@ export default function SubscriptionPage() {
             Pantau status paket toko, kapasitas kuota operasional, dan riwayat tagihan Anda.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -288,7 +288,7 @@ export default function SubscriptionPage() {
           <Button
             size="sm"
             onClick={() => handleOpenUpgrade()}
-            className="gap-1.5 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 text-primary-foreground shadow-xs font-medium"
+            className="flex-1 sm:flex-initial gap-1.5 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 text-primary-foreground shadow-xs font-medium"
           >
             <Sparkles className="h-4 w-4" />
             Upgrade / Ganti Paket
@@ -406,7 +406,7 @@ export default function SubscriptionPage() {
             // Determine status color styling
             let barColor = "bg-emerald-500"
             let badgeBg = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300"
-            let statusText = "Tersedia"
+            let statusText: string
 
             if (isUnlimited) {
               barColor = "bg-emerald-500"
@@ -558,7 +558,7 @@ export default function SubscriptionPage() {
       {/* Invoices / Billing History Table Section */}
       <Card className="shadow-xs">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-primary" />
@@ -573,7 +573,7 @@ export default function SubscriptionPage() {
               size="sm"
               onClick={() => refetchInvoices()}
               disabled={isInvoicesLoading || isInvoicesRefetching}
-              className="h-8 px-2 text-xs gap-1"
+              className="self-start sm:self-center shrink-0 h-8 px-2 text-xs gap-1"
             >
               <RefreshCw
                 className={cn("h-3.5 w-3.5", isInvoicesRefetching && "animate-spin")}
@@ -597,7 +597,7 @@ export default function SubscriptionPage() {
               </p>
             </div>
           ) : (
-            <Table>
+            <Table className="min-w-[720px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[180px]">No. Invoice</TableHead>

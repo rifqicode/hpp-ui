@@ -286,7 +286,7 @@ export default function CreatePurchaseOrderPage() {
 
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             {isEditMode ? "Edit Purchase Request" : "Buat Purchase Request (Pengajuan PO)"}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -295,7 +295,7 @@ export default function CreatePurchaseOrderPage() {
               : "Pengajuan pengadaan bahan baku yang akan ditinjau dan diproses oleh Tim Finance."}
           </p>
         </div>
-        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+        <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
           <Badge variant="outline" className="px-3 py-1 font-mono text-sm bg-muted/50 border-primary/30 text-primary flex items-center gap-1.5">
             <Hash className="h-3.5 w-3.5" />
             {poNumber}
@@ -423,7 +423,7 @@ export default function CreatePurchaseOrderPage() {
                 size="sm"
                 onClick={handleAddItem}
                 disabled={loadingMaterials || materials.length === 0}
-                className="rounded-xl"
+                className="rounded-xl self-start sm:self-auto"
               >
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
                 Tambah Bahan
@@ -434,23 +434,23 @@ export default function CreatePurchaseOrderPage() {
             {items.map((item, idx) => (
               <div
                 key={idx}
-                className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 rounded-xl border border-border bg-card/50"
+                className="flex flex-col lg:flex-row items-start lg:items-center gap-3 p-3.5 rounded-xl border border-border bg-card/50"
               >
                 {/* Material Selector */}
-                <div className="flex-1 w-full sm:w-auto">
+                <div className="flex-1 w-full lg:w-auto min-w-0">
                   <Label className="text-xs text-muted-foreground mb-1 block">Bahan Baku #{idx + 1}</Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full justify-between rounded-lg h-9 text-left font-normal"
+                        className="w-full justify-between rounded-lg h-9 text-left font-normal min-w-0"
                       >
                         <span className="truncate">{item.stockName || "Pilih Bahan"}</span>
                         <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 max-h-56 overflow-y-auto" align="start">
+                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-[200px] max-h-56 overflow-y-auto" align="start">
                       {materials.map((m) => (
                         <DropdownMenuItem
                           key={m.id}
@@ -465,7 +465,7 @@ export default function CreatePurchaseOrderPage() {
                 </div>
 
                 {/* Quantity */}
-                <div className="w-full sm:w-32">
+                <div className="w-full lg:w-32">
                   <Label className="text-xs text-muted-foreground mb-1 block">
                     Kuantitas ({item.baseUnit || "-"})
                   </Label>
@@ -482,7 +482,7 @@ export default function CreatePurchaseOrderPage() {
                 </div>
 
                 {/* Estimated Unit Price */}
-                <div className="w-full sm:w-40">
+                <div className="w-full lg:w-40">
                   <Label className="text-xs text-muted-foreground mb-1 block">
                     Estimasi Harga Satuan
                   </Label>
@@ -497,7 +497,7 @@ export default function CreatePurchaseOrderPage() {
                 </div>
 
                 {/* Subtotal preview */}
-                <div className="w-full sm:w-36 text-right sm:self-center pt-2 sm:pt-4">
+                <div className="w-full lg:w-36 text-right lg:self-center pt-2 lg:pt-4">
                   <span className="text-xs text-muted-foreground block">Subtotal</span>
                   <span className="font-mono text-sm font-semibold text-foreground">
                     {formatRupiah(
@@ -507,7 +507,7 @@ export default function CreatePurchaseOrderPage() {
                 </div>
 
                 {/* Remove button */}
-                <div className="sm:self-center pt-2 sm:pt-4">
+                <div className="lg:self-center pt-2 lg:pt-4">
                   <Button
                     type="button"
                     variant="ghost"
@@ -523,7 +523,7 @@ export default function CreatePurchaseOrderPage() {
             ))}
 
             {/* Total Estimated Box */}
-            <div className="p-4 rounded-xl bg-muted/40 border border-border flex items-center justify-between mt-4">
+            <div className="p-4 rounded-xl bg-muted/40 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-4">
               <div>
                 <span className="text-sm font-semibold text-foreground block">Total Estimasi Anggaran:</span>
                 <span className="text-xs text-muted-foreground">
@@ -546,17 +546,17 @@ export default function CreatePurchaseOrderPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-3 pt-2 w-full sm:w-auto">
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate("/inventory/purchase-orders")}
-            className="rounded-xl"
+            className="rounded-xl flex-1 sm:flex-initial"
             disabled={submitting}
           >
             Batal
           </Button>
-          <Button type="submit" className="rounded-xl shadow-sm px-6" disabled={submitting}>
+          <Button type="submit" className="rounded-xl shadow-sm px-6 flex-1 sm:flex-initial" disabled={submitting}>
             {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditMode ? "Simpan Perubahan Request" : "Kirim Purchase Request"}
           </Button>

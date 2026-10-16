@@ -198,7 +198,7 @@ export default function StoreSettingsPage() {
 
       {/* Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-flow-col auto-cols-fr gap-1 rounded-xl bg-muted/60 p-1 border border-border h-auto w-full">
+        <TabsList className="grid grid-cols-2 sm:grid-flow-col sm:auto-cols-fr gap-1 bg-muted/60 p-1 rounded-xl border border-border h-auto w-full md:w-auto md:inline-grid">
           {TABS.map((tab) => {
             const Icon = tab.icon
             return (
@@ -410,7 +410,7 @@ export default function StoreSettingsPage() {
                     Kelola hak akses staf yang dapat mencatat stok bahan, resep produksi, dan kasir POS di toko ini.
                   </CardDescription>
                 </div>
-                <Button onClick={() => setIsInviteOpen(true)} className="rounded-xl shadow-sm font-semibold" size="sm">
+                <Button onClick={() => setIsInviteOpen(true)} className="w-full sm:w-auto rounded-xl shadow-sm font-semibold" size="sm">
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
                   Undang Staf Baru
                 </Button>
@@ -435,21 +435,21 @@ export default function StoreSettingsPage() {
                 </div>
               ) : (
                 <div className="rounded-xl border border-border overflow-hidden">
-                  <Table>
+                  <Table className="min-w-[650px]">
                     <TableHeader>
                       <TableRow className="bg-muted/40">
-                        <TableHead>Nama Anggota</TableHead>
-                        <TableHead>Email Akun</TableHead>
-                        <TableHead>Peran / Role</TableHead>
-                        <TableHead>Tanggal Bergabung</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[80px] text-center"></TableHead>
+                        <TableHead className="whitespace-nowrap">Nama Anggota</TableHead>
+                        <TableHead className="whitespace-nowrap">Email Akun</TableHead>
+                        <TableHead className="whitespace-nowrap">Peran / Role</TableHead>
+                        <TableHead className="whitespace-nowrap">Tanggal Bergabung</TableHead>
+                        <TableHead className="whitespace-nowrap">Status</TableHead>
+                        <TableHead className="w-[80px] text-center whitespace-nowrap"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {staffList.map((st) => (
                         <TableRow key={st.id} className="hover:bg-muted/30">
-                          <TableCell className="font-medium text-foreground">
+                          <TableCell className="font-medium text-foreground whitespace-nowrap">
                             <div className="flex items-center gap-2.5">
                               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase shrink-0">
                                 {st.name ? st.name.substring(0, 2) : "ST"}
@@ -460,11 +460,11 @@ export default function StoreSettingsPage() {
                             </div>
                           </TableCell>
 
-                          <TableCell className="text-muted-foreground text-xs font-mono">
+                          <TableCell className="text-muted-foreground text-xs font-mono whitespace-nowrap">
                             {st.email}
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell className="whitespace-nowrap">
                             {st.role === "OWNER" ? (
                               <Badge variant="default" className="bg-amber-600 hover:bg-amber-600 text-white gap-1 text-[10px]">
                                 <ShieldCheck className="h-3 w-3" /> Pemilik (Owner)
@@ -476,11 +476,11 @@ export default function StoreSettingsPage() {
                             )}
                           </TableCell>
 
-                          <TableCell className="text-xs text-muted-foreground">
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                             {formatDate(st.joinedAt)}
                           </TableCell>
 
-                          <TableCell>
+                          <TableCell className="whitespace-nowrap">
                             {st.status === "active" ? (
                               <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">
                                 Aktif
@@ -492,7 +492,7 @@ export default function StoreSettingsPage() {
                             )}
                           </TableCell>
 
-                          <TableCell className="text-center">
+                          <TableCell className="text-center whitespace-nowrap">
                             {st.role !== "OWNER" && (
                               <Button
                                 variant="ghost"
@@ -567,7 +567,7 @@ export default function StoreSettingsPage() {
                 </div>
                 <Button
                   onClick={() => navigate("/settings/role/new")}
-                  className="rounded-xl shadow-sm font-semibold"
+                  className="w-full sm:w-auto rounded-xl shadow-sm font-semibold"
                   size="sm"
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -599,7 +599,7 @@ export default function StoreSettingsPage() {
                 </div>
               ) : (
                 <div className="rounded-xl border border-border overflow-hidden bg-card shadow-xs">
-                  <Table>
+                  <Table className="min-w-[680px]">
                     <TableHeader>
                       <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                         <TableHead className="font-bold text-foreground text-xs py-3.5 pl-4">
@@ -661,7 +661,7 @@ export default function StoreSettingsPage() {
                                         </Badge>
                                       )}
                                     </div>
-                                    <p className="text-xs text-foreground/80 leading-relaxed max-w-md">
+                                    <p className="text-xs text-foreground/80 leading-relaxed max-w-md whitespace-normal">
                                       {r.description || "Tidak ada deskripsi tambahan untuk peran ini."}
                                     </p>
                                   </div>
@@ -742,9 +742,9 @@ export default function StoreSettingsPage() {
                             {/* Expandable Accordion Content Row */}
                             {isExpanded && (
                               <TableRow className="bg-muted/15 hover:bg-muted/15 border-b border-border/80">
-                                <TableCell colSpan={5} className="p-4 pl-6 sm:pl-10">
-                                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-4 animate-in fade-in-50 duration-200">
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-border">
+                                <TableCell colSpan={4} className="p-4 sm:p-6">
+                                  <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm space-y-4 animate-in fade-in-50 duration-200">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border">
                                       <div>
                                         <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                                           <Layers className="h-4 w-4 text-primary" />
@@ -796,7 +796,7 @@ export default function StoreSettingsPage() {
                                                     <div className="p-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
                                                       <Check className="h-3 w-3 stroke-[3]" />
                                                     </div>
-                                                    <div className="min-w-0 flex-1">
+                                                    <div className="min-w-0 flex-1 whitespace-normal">
                                                       <p className="font-bold text-foreground text-xs leading-tight">
                                                         {p.name}
                                                       </p>
@@ -834,14 +834,14 @@ export default function StoreSettingsPage() {
 
         {/* ================= TAB 4: DAFTAR TOKO ================= */}
         <TabsContent value="stores" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-semibold text-foreground">Daftar Toko</h3>
               <p className="text-xs text-muted-foreground">
                 Pilih atau beralih toko untuk mengelola stok bahan dan laporan HPP cabang terkait.
               </p>
             </div>
-            <Button onClick={() => setIsNewStoreOpen(true)} className="rounded-xl shadow-sm font-semibold" size="sm">
+            <Button onClick={() => setIsNewStoreOpen(true)} className="w-full sm:w-auto rounded-xl shadow-sm font-semibold" size="sm">
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               Tambah Toko Baru
             </Button>

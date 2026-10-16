@@ -226,13 +226,13 @@ export default function RecipeListPage() {
     <div className="flex flex-col gap-6 pb-12 animate-in fade-in duration-500">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-primary/10 text-primary">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
             <Factory className="h-6 w-6" />
           </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
                 Katalog Produk & Formula Resep
               </h1>
               <QuotaBadge
@@ -249,26 +249,26 @@ export default function RecipeListPage() {
                 }}
               />
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               Kelola formula bahan baku, kalkulasi HPP otomatis, dan simulasi margin keuntungan produk jadi
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shadow-2xs hover:bg-muted"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             Segarkan
           </Button>
           <Button
             onClick={handleNavigateNewProduct}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
           >
             <Plus className="h-4 w-4" />
             Tambah Produk
@@ -657,7 +657,7 @@ export default function RecipeListPage() {
         <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full min-w-[900px] text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                   <tr>
                     <th className="px-5 py-3.5 w-14 text-center">Foto</th>

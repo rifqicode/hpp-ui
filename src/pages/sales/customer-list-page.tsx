@@ -218,7 +218,7 @@ export default function CustomerListPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -231,7 +231,7 @@ export default function CustomerListPage() {
           </Button>
           <Button
             onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
+            className="flex-1 sm:flex-initial flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
           >
             <Plus className="h-4 w-4" />
             Tambah Pelanggan
@@ -320,7 +320,7 @@ export default function CustomerListPage() {
       <div className="space-y-4">
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full min-w-[800px] text-sm text-left">
               <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                 <tr>
                   <th className="px-5 py-3.5">Nama & Kontak</th>
@@ -655,7 +655,7 @@ export default function CustomerListPage() {
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-muted-foreground pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-muted-foreground pt-1">
                   <div>
                     <span className="block text-[10px]">No. WhatsApp:</span>
                     <span className="font-mono text-foreground font-medium">
@@ -669,13 +669,13 @@ export default function CustomerListPage() {
                     </span>
                   </div>
                   {selectedCustomer.email && (
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <span className="block text-[10px]">Email:</span>
                       <span className="text-foreground">{selectedCustomer.email}</span>
                     </div>
                   )}
                   {selectedCustomer.address && (
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <span className="block text-[10px]">Alamat:</span>
                       <span className="text-foreground">{selectedCustomer.address}</span>
                     </div>

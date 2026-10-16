@@ -361,13 +361,13 @@ export default function PurchaseOrderDetailPage() {
             <Package className="h-6 w-6" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight font-mono text-foreground">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground">
                 {order.poNumber}
               </h1>
               {getStatusBadge(order.status)}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+            <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
               <span>Diajukan pada {formatDate(order.orderDate)}</span>
               {order.createdByName && (
                 <span>&bull; Oleh: <strong>{order.createdByName}</strong></span>
@@ -377,7 +377,7 @@ export default function PurchaseOrderDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {order.status === "PURCHASE_REQUEST" && (
             <>
               {canEdit && (
@@ -444,7 +444,7 @@ export default function PurchaseOrderDetailPage() {
       </div>
 
       {/* Info Cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         {/* Vendor Card */}
         <Card className="rounded-xl shadow-sm border-border">
           <CardHeader className="pb-2">
@@ -528,7 +528,7 @@ export default function PurchaseOrderDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="rounded-xl border border-border overflow-hidden">
-            <Table>
+            <Table className="min-w-[600px]">
               <TableHeader>
                 <TableRow className="bg-muted/40">
                   <TableHead className="w-[50px] text-center">#</TableHead>
@@ -690,7 +690,7 @@ export default function PurchaseOrderDetailPage() {
               />
             </div>
 
-            <DialogFooter className="pt-2 sm:space-x-2">
+            <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
               <Button
                 type="button"
                 variant="outline"
@@ -741,7 +741,7 @@ export default function PurchaseOrderDetailPage() {
               />
             </div>
 
-            <DialogFooter className="pt-2 sm:space-x-2">
+            <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
               <Button
                 type="button"
                 variant="outline"
@@ -767,7 +767,7 @@ export default function PurchaseOrderDetailPage() {
 
       {/* Modal 3: Set Harga & Selesaikan */}
       <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
-        <DialogContent className="sm:max-w-[660px] rounded-xl">
+        <DialogContent className="sm:max-w-[660px] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -816,7 +816,7 @@ export default function PurchaseOrderDetailPage() {
             </div>
 
             <div className="rounded-xl border border-border overflow-hidden">
-              <Table>
+              <Table className="min-w-[520px]">
                 <TableHeader>
                   <TableRow className="bg-muted/40">
                     <TableHead className="py-2.5 px-3 text-left">Bahan Baku</TableHead>
@@ -863,14 +863,14 @@ export default function PurchaseOrderDetailPage() {
               </Table>
             </div>
 
-            <div className="p-3 rounded-xl bg-muted/40 border border-border flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-muted/40 border border-border flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-semibold text-foreground">Total Nilai Pembelian:</span>
               <span className="text-base font-bold font-mono text-primary">
                 {formatRupiah(calculatedTotal)}
               </span>
             </div>
 
-            <DialogFooter className="pt-2 sm:space-x-2">
+            <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
               <Button
                 type="button"
                 variant="outline"

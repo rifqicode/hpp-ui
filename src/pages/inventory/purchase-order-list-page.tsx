@@ -183,9 +183,11 @@ export default function PurchaseOrderListPage() {
               <ClipboardList className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                Purchase Orders & Pengadaan
-              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                  Purchase Orders & Pengadaan
+                </h1>
+              </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Kelola pengajuan pembelian ke vendor dan pantau alur barang hingga masuk ke stok inventaris
               </p>
@@ -193,7 +195,7 @@ export default function PurchaseOrderListPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
@@ -203,7 +205,7 @@ export default function PurchaseOrderListPage() {
               setSearch((s) => s)
             }}
             disabled={loading}
-            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
+            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted flex-1 sm:flex-initial"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Segarkan
@@ -212,7 +214,7 @@ export default function PurchaseOrderListPage() {
           {canRequest && (
             <Button
               asChild
-              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs flex-1 sm:flex-initial"
             >
               <Link to="/inventory/purchase-orders/new">
                 <Plus className="h-4 w-4" />
@@ -281,19 +283,19 @@ export default function PurchaseOrderListPage() {
 
         {/* Card 4: Selesai / Masuk Stok */}
         <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
+          <CardContent className="p-0 flex items-center justify-between gap-2">
+            <div className="space-y-0.5 min-w-0">
               <p className="text-xs font-medium text-muted-foreground">Selesai / Masuk Stok</p>
-              <div className="flex items-baseline gap-1.5">
+              <div className="flex flex-wrap items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                   {completedCount}
                 </span>
-                <span className="text-xs text-muted-foreground font-mono">
+                <span className="text-xs text-muted-foreground font-mono truncate max-w-full">
                   ({formatRupiah(totalCompletedAmount)})
                 </span>
               </div>
             </div>
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
               <CheckCircle2 className="h-5 w-5" />
             </div>
           </CardContent>
@@ -331,8 +333,8 @@ export default function PurchaseOrderListPage() {
       ) : (
         <div className="space-y-4">
           {/* Standalone Filter & Search Bar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs">
-            <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs min-w-0">
+            <div className="relative flex-1 max-w-md min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Cari nomor PO, vendor, atau item bahan..."
@@ -351,11 +353,11 @@ export default function PurchaseOrderListPage() {
             </div>
 
             {/* Status Segmented Filter Pills */}
-            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto">
+            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
               <button
                 type="button"
                 onClick={() => setStatusFilter("ALL")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   statusFilter === "ALL"
                     ? "bg-background text-foreground shadow-2xs font-semibold"
                     : "text-muted-foreground hover:text-foreground"
@@ -366,7 +368,7 @@ export default function PurchaseOrderListPage() {
               <button
                 type="button"
                 onClick={() => setStatusFilter("PURCHASE_REQUEST")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   statusFilter === "PURCHASE_REQUEST"
                     ? "bg-background text-foreground shadow-2xs font-semibold"
                     : "text-muted-foreground hover:text-foreground"
@@ -377,7 +379,7 @@ export default function PurchaseOrderListPage() {
               <button
                 type="button"
                 onClick={() => setStatusFilter("PURCHASE_ORDER")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   statusFilter === "PURCHASE_ORDER"
                     ? "bg-background text-foreground shadow-2xs font-semibold"
                     : "text-muted-foreground hover:text-foreground"
@@ -388,7 +390,7 @@ export default function PurchaseOrderListPage() {
               <button
                 type="button"
                 onClick={() => setStatusFilter("COMPLETED")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   statusFilter === "COMPLETED"
                     ? "bg-background text-foreground shadow-2xs font-semibold"
                     : "text-muted-foreground hover:text-foreground"
@@ -399,7 +401,7 @@ export default function PurchaseOrderListPage() {
               <button
                 type="button"
                 onClick={() => setStatusFilter("REJECTED")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   statusFilter === "REJECTED"
                     ? "bg-background text-foreground shadow-2xs font-semibold"
                     : "text-muted-foreground hover:text-foreground"
@@ -410,7 +412,7 @@ export default function PurchaseOrderListPage() {
               <button
                 type="button"
                 onClick={() => setStatusFilter("CANCELLED")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   statusFilter === "CANCELLED"
                     ? "bg-background text-foreground shadow-2xs font-semibold"
                     : "text-muted-foreground hover:text-foreground"
@@ -424,7 +426,7 @@ export default function PurchaseOrderListPage() {
           {/* Polished Table Container */}
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full min-w-[800px] text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                   <tr>
                     <th className="px-5 py-3.5">No. Pengajuan / PO</th>
@@ -662,7 +664,7 @@ export default function PurchaseOrderListPage() {
                 />
               </div>
 
-              <DialogFooter className="pt-2 sm:space-x-2">
+              <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -714,7 +716,7 @@ export default function PurchaseOrderListPage() {
                 />
               </div>
 
-              <DialogFooter className="pt-2 sm:space-x-2">
+              <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -739,7 +741,7 @@ export default function PurchaseOrderListPage() {
 
       {/* Modal 3: Set Harga & Selesaikan PO */}
       <Dialog open={!!completingPO} onOpenChange={(open) => !open && setCompletingPO(null)}>
-        <DialogContent className="sm:max-w-[660px] rounded-xl">
+        <DialogContent className="sm:max-w-[660px] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -788,8 +790,8 @@ export default function PurchaseOrderListPage() {
                 </DropdownMenu>
               </div>
 
-              <div className="rounded-xl border border-border overflow-hidden">
-                <table className="w-full text-sm text-left">
+              <div className="rounded-xl border border-border overflow-x-auto">
+                <table className="w-full min-w-[520px] text-sm text-left">
                   <thead className="bg-muted/40 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                     <tr>
                       <th className="py-2.5 px-3 text-left">Bahan Baku</th>
@@ -837,14 +839,14 @@ export default function PurchaseOrderListPage() {
               </div>
 
               {/* Total Summary */}
-              <div className="p-3 rounded-xl bg-muted/40 border border-border flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-semibold text-foreground">Total Nilai Pembelian:</span>
                 <span className="text-base font-bold font-mono text-primary">
                   {formatRupiah(calculatedDialogTotal)}
                 </span>
               </div>
 
-              <DialogFooter className="pt-2 sm:space-x-2">
+              <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
                 <Button
                   type="button"
                   variant="outline"

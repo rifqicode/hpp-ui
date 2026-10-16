@@ -10,16 +10,17 @@ export function AIChatFloatingButton({ onClick, isOpen }: AIChatFloatingButtonPr
   if (isOpen) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
       <Button
         onClick={onClick}
         data-testid="ai-chat-floating-btn"
-        className="h-12 px-4 rounded-full shadow-lg bg-gradient-to-r from-violet-600 via-indigo-600 to-primary text-white hover:opacity-95 hover:shadow-xl transition-all duration-200 flex items-center gap-2 border border-white/20 cursor-pointer group"
+        title="Tanya Asisten AI"
+        className="h-11 w-11 sm:h-12 sm:w-auto p-0 sm:px-4 rounded-full shadow-lg bg-gradient-to-r from-violet-600 via-indigo-600 to-primary text-white hover:opacity-95 hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 border border-white/20 cursor-pointer group"
       >
         <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
           <Sparkles className="h-4 w-4 text-white" />
         </div>
-        <span className="font-semibold text-sm tracking-wide">Tanya Asisten AI</span>
+        <span className="hidden sm:inline font-semibold text-sm tracking-wide">Tanya Asisten AI</span>
       </Button>
     </div>
   );

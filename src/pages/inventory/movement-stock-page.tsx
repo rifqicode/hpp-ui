@@ -100,8 +100,10 @@ export default function MovementStockPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Record Inventory Movement</h1>
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Record Inventory Movement</h1>
+        </div>
         <p className="text-sm text-muted-foreground">
           Record stock adjustments (In/Out) to correct inventory levels.
         </p>
@@ -113,23 +115,23 @@ export default function MovementStockPage() {
         </div>
       )}
 
-      <Card className="max-w-2xl">
+      <Card className="max-w-2xl min-w-0">
         <CardHeader>
           <CardTitle>Movement Form</CardTitle>
           <CardDescription>Pilih bahan baku, jenis pergerakan stok, dan kuantitas penyesuaian.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="grid gap-5">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="grid gap-2">
+          <form onSubmit={onSubmit} className="grid gap-5 min-w-0">
+            <div className="grid gap-5 sm:grid-cols-2 min-w-0">
+              <div className="grid gap-2 min-w-0">
                 <Label>Bahan Baku</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl">
+                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl min-w-0">
                       <span className={cn("truncate", !selectedMaterial && "text-muted-foreground")}>
                         {selectedMaterial ? selectedMaterial.name : "Pilih bahan baku"}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
@@ -156,13 +158,13 @@ export default function MovementStockPage() {
                 )}
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid gap-2 min-w-0">
                 <Label>Type</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl">
+                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl min-w-0">
                       <span className="truncate">{selectedType?.label ?? "Select type"}</span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
@@ -182,14 +184,16 @@ export default function MovementStockPage() {
             </div>
 
             {movementType === "ADJUSTMENT_OUT" && (
-              <div className="bg-primary/5 border border-primary/20 text-xs p-3 rounded-xl text-foreground flex items-center gap-2">
-                <span className="font-semibold text-primary">Strict FIFO:</span>
-                <span>Pengurangan stok selalu memotong kuantitas dari batch yang <strong>paling lama</strong> (tertua) terlebih dahulu hingga habis, bukan stok terbaru.</span>
+              <div className="bg-primary/5 border border-primary/20 text-xs p-3 rounded-xl text-foreground">
+                <p className="leading-relaxed">
+                  <span className="font-semibold text-primary">Strict FIFO: </span>
+                  Pengurangan stok selalu memotong kuantitas dari batch yang <strong>paling lama</strong> (tertua) terlebih dahulu hingga habis, bukan stok terbaru.
+                </p>
               </div>
             )}
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="grid gap-2">
+            <div className="grid gap-5 sm:grid-cols-2 min-w-0">
+              <div className="grid gap-2 min-w-0">
                 <Label htmlFor="qty">Quantity {selectedMaterial ? `(${selectedMaterial.base_unit})` : ""}</Label>
                 <Input
                   id="qty"
@@ -205,7 +209,7 @@ export default function MovementStockPage() {
               </div>
 
               {movementType === "ADJUSTMENT_IN" && (
-                <div className="grid gap-2">
+                <div className="grid gap-2 min-w-0">
                   <Label htmlFor="price-unit">Price / Unit (IDR)</Label>
                   <Input
                     id="price-unit"
@@ -223,7 +227,7 @@ export default function MovementStockPage() {
               )}
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2 min-w-0">
               <Label htmlFor="reason">Reason / Note</Label>
               <Input
                 id="reason"
@@ -235,10 +239,10 @@ export default function MovementStockPage() {
             </div>
 
             <div className="flex items-center gap-2 mt-2">
-              <Button type="button" variant="outline" className="rounded-xl" onClick={() => navigate("/inventory/stocks")}>
+              <Button type="button" variant="outline" className="rounded-xl flex-1 sm:flex-initial" onClick={() => navigate("/inventory/stocks")}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="rounded-xl">
+              <Button type="submit" disabled={isSubmitting} className="rounded-xl flex-1 sm:flex-initial">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Movement
               </Button>

@@ -171,8 +171,8 @@ export default function StockDetailPage() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">{stock.name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{stock.name}</h1>
               <Badge variant={stock.inventory_method === "FEFO" ? "warning" : "info"} className="font-mono text-xs">
                 {stock.inventory_method || "FIFO"}
               </Badge>
@@ -183,11 +183,11 @@ export default function StockDetailPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {canCreate && (
             <Button
               onClick={() => setIsPurchaseOpen(true)}
-              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90"
+              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 flex-1 sm:flex-initial"
             >
               <Plus className="mr-2 h-4 w-4" />
               Record Purchase
@@ -197,7 +197,7 @@ export default function StockDetailPage() {
             <Button
               onClick={() => setIsMovementOpen(true)}
               variant="outline"
-              className="rounded-xl"
+              className="rounded-xl flex-1 sm:flex-initial"
             >
               <ArrowLeftRight className="mr-2 h-4 w-4" />
               Record Movement
@@ -206,7 +206,7 @@ export default function StockDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-info bg-info/10">
           <CardHeader className="pb-2">
             <CardDescription className="text-info flex items-center gap-2">
@@ -267,14 +267,14 @@ export default function StockDetailPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="batches" className="w-full">
-            <TabsList>
+            <TabsList className="w-full sm:w-auto grid grid-cols-2 sm:inline-flex">
               <TabsTrigger value="batches">Active Batches</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
 
             <TabsContent value="batches" className="mt-4">
               <div className="rounded-xl border border-border overflow-hidden">
-                <Table>
+                <Table className="min-w-[650px]">
                   <TableHeader>
                     <TableRow className="bg-muted/20">
                       <TableHead>Batch ID</TableHead>
@@ -292,15 +292,15 @@ export default function StockDetailPage() {
 
                       return (
                         <TableRow key={b.id} className={cn(isExpired && "bg-destructive/5 opacity-75")}>
-                          <TableCell className="py-2 font-mono text-xs">{b.id}</TableCell>
-                          <TableCell className="py-2 font-mono text-sm">{formatQty(b.initial_quantity, stock.base_unit)}</TableCell>
-                          <TableCell className="py-2 font-mono text-sm">
+                          <TableCell className="py-2 font-mono text-xs whitespace-nowrap">{b.id}</TableCell>
+                          <TableCell className="py-2 font-mono text-sm whitespace-nowrap">{formatQty(b.initial_quantity, stock.base_unit)}</TableCell>
+                          <TableCell className="py-2 font-mono text-sm whitespace-nowrap">
                             <span className={cn(isExpired && "line-through text-destructive")}>
                               {formatQty(b.remaining_quantity, stock.base_unit)}
                             </span>
                           </TableCell>
-                          <TableCell className="py-2 text-right font-mono text-sm">{formatCurrencyIdr(b.price_per_unit)}</TableCell>
-                          <TableCell className="py-2 text-right">
+                          <TableCell className="py-2 text-right font-mono text-sm whitespace-nowrap">{formatCurrencyIdr(b.price_per_unit)}</TableCell>
+                          <TableCell className="py-2 text-right whitespace-nowrap">
                             {b.expired_at ? (
                               <div className="flex items-center justify-end gap-1.5">
                                 <span className="font-mono text-xs">{formatDateOnly(b.expired_at)}</span>
@@ -314,7 +314,7 @@ export default function StockDetailPage() {
                               <span className="text-muted-foreground text-xs italic">Tanpa Expired</span>
                             )}
                           </TableCell>
-                          <TableCell className="py-2 text-right text-muted-foreground text-xs">{formatDateTime(b.created_at)}</TableCell>
+                          <TableCell className="py-2 text-right text-muted-foreground text-xs whitespace-nowrap">{formatDateTime(b.created_at)}</TableCell>
                         </TableRow>
                       )
                     })}
@@ -333,7 +333,7 @@ export default function StockDetailPage() {
 
             <TabsContent value="history" className="mt-4">
               <div className="rounded-xl border border-border overflow-hidden">
-                <Table>
+                <Table className="min-w-[650px]">
                   <TableHeader>
                     <TableRow className="bg-muted/20">
                       <TableHead>Type</TableHead>
@@ -345,14 +345,14 @@ export default function StockDetailPage() {
                   <TableBody>
                     {movements.map((m) => (
                       <TableRow key={m.id}>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           <Badge variant={movementVariant(m.type)}>{movementLabel(m.type)}</Badge>
                         </TableCell>
-                        <TableCell className="font-mono">
+                        <TableCell className="font-mono whitespace-nowrap">
                           {formatQty(m.quantity, stock.base_unit)}
                         </TableCell>
-                        <TableCell className="text-muted-foreground font-mono text-xs">{m.reference_id || "—"}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{formatDateTime(m.created_at)}</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-xs whitespace-nowrap">{m.reference_id || "—"}</TableCell>
+                        <TableCell className="text-right text-muted-foreground whitespace-nowrap">{formatDateTime(m.created_at)}</TableCell>
                       </TableRow>
                     ))}
 

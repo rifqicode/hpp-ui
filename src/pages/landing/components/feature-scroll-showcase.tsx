@@ -159,13 +159,13 @@ export function FeatureScrollShowcase() {
                   key={item.id}
                   onClick={() => setActiveIndex(idx)}
                   className={cn(
-                    "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer",
+                    "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer",
                     isActive
                       ? "bg-primary text-white shadow-sm"
                       : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
                   )}
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-4 shrink-0" />
                   <span>{item.title}</span>
                 </button>
               )
@@ -279,17 +279,17 @@ function HppRecipeMockup() {
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-full bg-rose-400" />
-            <span className="size-2.5 rounded-full bg-amber-400" />
-            <span className="size-2.5 rounded-full bg-emerald-400" />
-            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
-              <span className="text-slate-400">app.hpptracker.id/</span>
-              <span className="font-semibold text-slate-800">production/recipes/simulation</span>
+        <div className="flex items-center justify-between gap-2 overflow-hidden pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="size-2.5 rounded-full bg-rose-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
+              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800 truncate">production/recipes/simulation</span>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
             <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 text-primary border border-indigo-100">
               Cabang Pusat
             </span>
@@ -297,13 +297,13 @@ function HppRecipeMockup() {
         </div>
 
         {/* Page Inner Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
                 Kopi Susu Gula Aren 250ml
               </h4>
-              <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
+              <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px] shrink-0">
                 Minuman Dingin
               </Badge>
             </div>
@@ -311,7 +311,7 @@ function HppRecipeMockup() {
               Simulasi formulasi bahan baku & penetapan margin laba saji
             </p>
           </div>
-          <div className="hidden sm:block text-right">
+          <div className="hidden sm:block text-right shrink-0">
             <span className="text-[10px] text-slate-400 uppercase font-bold block">
               Yield Standar
             </span>
@@ -450,17 +450,17 @@ function FifoInventoryMockup() {
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-full bg-rose-400" />
-            <span className="size-2.5 rounded-full bg-amber-400" />
-            <span className="size-2.5 rounded-full bg-emerald-400" />
-            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
-              <span className="text-slate-400">app.hpptracker.id/</span>
-              <span className="font-semibold text-slate-800">inventory/stocks</span>
+        <div className="flex items-center justify-between gap-2 overflow-hidden pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="size-2.5 rounded-full bg-rose-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
+              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800 truncate">inventory/stocks</span>
             </div>
           </div>
-          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100 shrink-0">
             Gudang Utama
           </span>
         </div>
@@ -476,7 +476,7 @@ function FifoInventoryMockup() {
               className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 font-medium"
             />
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-primary text-white">
               Semua (24)
             </span>
@@ -626,29 +626,29 @@ function ProductionBatchMockup() {
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-full bg-rose-400" />
-            <span className="size-2.5 rounded-full bg-amber-400" />
-            <span className="size-2.5 rounded-full bg-emerald-400" />
-            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
-              <span className="text-slate-400">app.hpptracker.id/</span>
-              <span className="font-semibold text-slate-800">production/batches/42</span>
+        <div className="flex items-center justify-between gap-2 overflow-hidden pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="size-2.5 rounded-full bg-rose-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
+              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800 truncate">production/batches/42</span>
             </div>
           </div>
-          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-100">
+          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-100 shrink-0">
             Kitchen Sentral
           </span>
         </div>
 
         {/* Batch Overview Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
                 Brownies Fudge Dark Choco
               </h4>
-              <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-[10px]">
+              <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-[10px] shrink-0">
                 Dalam Produksi
               </Badge>
             </div>
@@ -656,7 +656,7 @@ function ProductionBatchMockup() {
               Batch #PRD-2026-042 • Jadwal masak dapur cabang
             </p>
           </div>
-          <div className="hidden sm:block text-right">
+          <div className="hidden sm:block text-right shrink-0">
             <span className="text-[10px] text-slate-400 uppercase font-bold block">
               Target Batch
             </span>
@@ -779,29 +779,29 @@ function PosCashierMockup() {
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 rounded-full bg-rose-400" />
-            <span className="size-2.5 rounded-full bg-amber-400" />
-            <span className="size-2.5 rounded-full bg-emerald-400" />
-            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5">
-              <span className="text-slate-400">app.hpptracker.id/</span>
-              <span className="font-semibold text-slate-800">sales/pos/checkout</span>
+        <div className="flex items-center justify-between gap-2 overflow-hidden pb-3.5 border-b border-slate-200/80 mb-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="size-2.5 rounded-full bg-rose-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
+            <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
+            <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
+              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="font-semibold text-slate-800 truncate">sales/pos/checkout</span>
             </div>
           </div>
-          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100">
+          <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
             Kasir 01 (Online)
           </span>
         </div>
 
         {/* Order Details Header */}
-        <div className="flex items-start justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
                 Struk Kasir: #TRX-2026-881
               </h4>
-              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">
+              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] shrink-0">
                 Lunas (QRIS)
               </Badge>
             </div>
@@ -809,7 +809,7 @@ function PosCashierMockup() {
               Meja 04 (Dine-in) • Kasir: Rian Saputra • 14:28 WIB
             </p>
           </div>
-          <div className="hidden sm:block text-right">
+          <div className="hidden sm:block text-right shrink-0">
             <span className="text-[10px] text-slate-400 uppercase font-bold block">
               Metode Bayar
             </span>

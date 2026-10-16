@@ -108,7 +108,7 @@ export default function SupplierDetailPage() {
               {supplier.name.substring(0, 2)}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">{supplier.name}</h1>
                 <Badge variant="success" className="text-xs">Partner Aktif</Badge>
               </div>
@@ -118,17 +118,17 @@ export default function SupplierDetailPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
             <Button
               variant="outline"
-              className="rounded-xl"
+              className="flex-1 sm:flex-initial rounded-xl"
               onClick={() => setIsEditOpen(true)}
             >
               <Pencil className="mr-2 h-4 w-4" />
               Edit Data
             </Button>
             <Button
-              className="rounded-xl shadow-sm"
+              className="flex-1 sm:flex-initial rounded-xl shadow-sm"
               onClick={() => setIsPurchaseOpen(true)}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -203,7 +203,7 @@ export default function SupplierDetailPage() {
 
       {/* Tabs for Details */}
       <Tabs defaultValue="history" className="w-full">
-        <TabsList className="rounded-xl bg-muted/60 p-1 border border-border">
+        <TabsList className="grid grid-cols-1 min-[420px]:grid-cols-2 w-full sm:w-auto h-auto gap-1 p-1 rounded-xl bg-muted/60 border border-border">
           <TabsTrigger value="history" className="rounded-lg data-[state=active]:bg-card">
             <FileText className="mr-2 h-4 w-4" />
             Riwayat Pembelian ({purchases.length})
@@ -225,7 +225,7 @@ export default function SupplierDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="rounded-xl border border-border overflow-hidden">
-                <Table>
+                <Table className="min-w-[640px]">
                   <TableHeader>
                     <TableRow className="bg-muted/40">
                       <TableHead>No. Bukti</TableHead>

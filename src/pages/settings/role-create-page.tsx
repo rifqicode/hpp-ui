@@ -170,7 +170,7 @@ export default function RoleCreatePage() {
                             : "border-border/70 bg-muted/20"
                         }`}
                       >
-                        <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-border/50">
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-bold text-foreground">
@@ -192,7 +192,7 @@ export default function RoleCreatePage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleGroupPermissions(grp, !allGroupSelected)}
-                            className={`text-[10px] h-6 px-2.5 rounded-md font-semibold transition-colors ${
+                            className={`self-start sm:self-center text-[10px] h-6 px-2.5 rounded-md font-semibold transition-colors ${
                               allGroupSelected
                                 ? "text-destructive hover:text-destructive hover:bg-destructive/10"
                                 : "text-primary hover:text-primary hover:bg-primary/10"
@@ -269,7 +269,7 @@ export default function RoleCreatePage() {
               </div>
             </CardContent>
 
-            <div className="p-4 border-t border-border/60 bg-muted/20 flex justify-end gap-2 rounded-b-2xl">
+            <div className="p-4 pt-4 border-t border-border/60 bg-muted/20 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 rounded-b-2xl">
               <Button type="button" variant="outline" onClick={backToRoles} className="rounded-xl text-xs" disabled={isSubmitting}>
                 Batal
               </Button>

@@ -347,26 +347,26 @@ export default function RecipeDetailPage() {
   return (
     <div className="flex flex-col gap-6 pb-16 animate-in fade-in duration-500">
       {/* Top Navigation & Breadcrumbs */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="rounded-xl text-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Button asChild variant="outline" size="sm" className="rounded-xl text-xs shrink-0">
             <Link to="/production/products">
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
               Daftar Produk
             </Link>
           </Button>
-          <span className="text-xs text-muted-foreground">/</span>
+          <span className="text-xs text-muted-foreground shrink-0">/</span>
           <span className="text-xs font-semibold text-foreground truncate max-w-[200px] sm:max-w-md">
             {product.name}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setActiveTab("info")}
-            className="rounded-xl text-xs"
+            className="rounded-xl text-xs flex-1 sm:flex-initial"
           >
             <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit Info
           </Button>
@@ -375,7 +375,7 @@ export default function RecipeDetailPage() {
             variant="destructive"
             size="sm"
             onClick={() => setIsDeleteProductOpen(true)}
-            className="rounded-xl text-xs"
+            className="rounded-xl text-xs flex-1 sm:flex-initial"
           >
             <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Hapus
           </Button>
@@ -384,9 +384,9 @@ export default function RecipeDetailPage() {
 
       {/* Hero Header Card */}
       <Card className="rounded-3xl border-slate-200/80 shadow-sm overflow-hidden bg-card">
-        <div className="p-6 pb-4">
+        <div className="p-4 sm:p-6 pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 min-w-0">
               {product.imageUrl ? (
                 <img
                   src={product.imageUrl}
@@ -398,17 +398,17 @@ export default function RecipeDetailPage() {
                   <Factory className="h-8 w-8" />
                 </div>
               )}
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl font-black tracking-tight text-foreground">
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
                     {product.name}
                   </h1>
-                  <Badge variant="outline" className="text-xs font-semibold bg-muted/40">
+                  <Badge variant="outline" className="text-xs font-semibold bg-muted/40 shrink-0">
                     {product.category}
                   </Badge>
                   <Badge
                     variant="outline"
-                    className={`text-xs font-bold ${
+                    className={`text-xs font-bold shrink-0 ${
                       product.mode === "MAKE_TO_ORDER"
                         ? "bg-purple-50 text-purple-700 border-purple-200"
                         : "bg-blue-50 text-blue-700 border-blue-200"
@@ -416,7 +416,7 @@ export default function RecipeDetailPage() {
                   >
                     {product.mode === "MAKE_TO_ORDER" ? "Make to Order (MTO)" : "Make to Stock (MTS)"}
                   </Badge>
-                  <Badge variant="outline" className="text-xs font-mono font-medium bg-blue-50 text-blue-700 border-blue-200">
+                  <Badge variant="outline" className="text-xs font-mono font-medium bg-blue-50 text-blue-700 border-blue-200 shrink-0">
                     Metode Stok: FIFO
                   </Badge>
                 </div>
@@ -432,10 +432,10 @@ export default function RecipeDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start md:self-center">
+            <div className="flex items-center gap-2 w-full md:w-auto">
               <Button
                 onClick={() => setActiveTab("simulator")}
-                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2 text-xs shadow-sm h-10 px-4"
+                className="w-full md:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2 text-xs shadow-sm h-10 px-4"
               >
                 <Calculator className="h-4 w-4" />
                 <span>Simulasi Produksi & HPP</span>
@@ -445,42 +445,42 @@ export default function RecipeDetailPage() {
         </div>
 
         {/* 5-Column Financial Metrics Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 border-t border-slate-100 bg-slate-50/70 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/60 p-2">
-          <div className="p-3 px-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 border-t border-slate-200/60 bg-slate-200/60 dark:bg-slate-800 gap-px p-px">
+          <div className="bg-slate-50/90 dark:bg-slate-900/90 p-3 px-4">
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
               Harga Jual
             </span>
-            <div className="text-lg font-black font-mono text-foreground mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-foreground mt-0.5 truncate">
               {formatCurrencyIdr(product.sellingPrice)}
             </div>
             <span className="text-[10px] text-muted-foreground">per {product.unit}</span>
           </div>
 
-          <div className="p-3 px-4">
+          <div className="bg-slate-50/90 dark:bg-slate-900/90 p-3 px-4">
             <div className="flex items-center gap-1">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
                 Biaya Bahan (BOM)
               </span>
             </div>
-            <div className="text-lg font-black font-mono text-slate-800 mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-200 mt-0.5 truncate">
               {formatCurrencyIdr(totalBOMCost)}
             </div>
             <span className="text-[10px] text-muted-foreground">Komposisi {product.ingredients.length} bahan</span>
           </div>
 
-          <div className="p-3 px-4">
+          <div className="bg-slate-50/90 dark:bg-slate-900/90 p-3 px-4">
             <div className="flex items-center gap-1">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
                 HPP Batch Terakhir
               </span>
             </div>
-            <div className="text-lg font-black font-mono text-primary mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-primary mt-0.5 truncate">
               {formatCurrencyIdr(activeHpp)}
             </div>
             <span className="text-[10px] text-muted-foreground">Bahan + Overhead riil</span>
           </div>
 
-          <div className="p-3 px-4">
+          <div className="bg-slate-50/90 dark:bg-slate-900/90 p-3 px-4">
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
               Gross Margin
             </span>
@@ -498,16 +498,16 @@ export default function RecipeDetailPage() {
                 +{marginPercentage}%
               </Badge>
             </div>
-            <span className="text-[10px] text-muted-foreground mt-0.5 block">
+            <span className="text-[10px] text-muted-foreground mt-0.5 block truncate">
               Profit {formatCurrencyIdr(product.sellingPrice - activeHpp)}/unit
             </span>
           </div>
 
-          <div className="p-3 px-4 col-span-2 sm:col-span-1">
+          <div className="bg-slate-50/90 dark:bg-slate-900/90 p-3 px-4 col-span-2 sm:col-span-1">
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
               Stok Jadi Saat Ini
             </span>
-            <div className="text-lg font-black font-mono text-foreground mt-0.5">
+            <div className="text-base sm:text-lg font-black font-mono text-foreground mt-0.5 truncate">
               {product.currentStock}{" "}
               <span className="text-xs font-normal text-muted-foreground">{product.unit}</span>
             </div>
@@ -621,7 +621,7 @@ export default function RecipeDetailPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="min-w-[720px]">
                     <TableHeader className="bg-slate-50/70">
                       <TableRow>
                         <TableHead className="text-xs font-bold uppercase text-muted-foreground">Bahan Baku</TableHead>
@@ -729,7 +729,7 @@ export default function RecipeDetailPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-4 w-full sm:w-auto">
                     <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                       Total Biaya Bahan Baku (BOM):
                     </span>
@@ -775,7 +775,7 @@ export default function RecipeDetailPage() {
                       onChange={(e) => setSimTargetUnits(Math.max(1, Number(e.target.value)))}
                       className="rounded-xl h-10 font-mono text-base font-bold"
                     />
-                    <div className="flex items-center gap-1.5 pt-1">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
                       {[25, 50, 100, 200].map((qty) => (
                         <Button
                           key={qty}
@@ -877,24 +877,24 @@ export default function RecipeDetailPage() {
               {/* Projection Card */}
               <Card className="rounded-2xl border-slate-200/80 shadow-sm bg-gradient-to-br from-card to-slate-50 overflow-hidden">
                 <CardHeader className="p-5 pb-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <CardTitle className="text-base font-bold">Hasil Proyeksi HPP & Keuntungan</CardTitle>
                       <CardDescription className="text-xs">
                         Estimasi simulasi untuk <strong>{simTargetUnits} {product.unit}</strong> {product.name}
                       </CardDescription>
                     </div>
-                    <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-300 font-mono text-xs font-bold">
+                    <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-300 font-mono text-xs font-bold shrink-0">
                       +{projectedMargin}% Margin
                     </Badge>
                   </div>
                 </CardHeader>
 
                 <CardContent className="p-5 pt-0 space-y-5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-white rounded-2xl border border-slate-200/70 shadow-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/70 shadow-sm">
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Proyeksi HPP/Unit</span>
-                      <div className="text-lg font-black font-mono text-primary mt-1">
+                      <div className="text-base sm:text-lg font-black font-mono text-primary mt-1 truncate">
                         {formatCurrencyIdr(projectedHppPerUnit)}
                       </div>
                       <span className="text-[10px] text-muted-foreground">Termasuk overhead</span>
@@ -902,7 +902,7 @@ export default function RecipeDetailPage() {
 
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Total Biaya Batch</span>
-                      <div className="text-lg font-black font-mono text-foreground mt-1">
+                      <div className="text-base sm:text-lg font-black font-mono text-foreground mt-1 truncate">
                         {formatCurrencyIdr(totalProductionCostForBatch)}
                       </div>
                       <span className="text-[10px] text-muted-foreground">Modal produksi</span>
@@ -910,7 +910,7 @@ export default function RecipeDetailPage() {
 
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Proyeksi Omset</span>
-                      <div className="text-lg font-black font-mono text-foreground mt-1">
+                      <div className="text-base sm:text-lg font-black font-mono text-foreground mt-1 truncate">
                         {formatCurrencyIdr(projectedRevenue)}
                       </div>
                       <span className="text-[10px] text-muted-foreground">Jika terjual semua</span>
@@ -918,7 +918,7 @@ export default function RecipeDetailPage() {
 
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Proyeksi Laba Kotor</span>
-                      <div className="text-lg font-black font-mono text-emerald-600 mt-1">
+                      <div className="text-base sm:text-lg font-black font-mono text-emerald-600 mt-1 truncate">
                         {formatCurrencyIdr(projectedGrossProfit)}
                       </div>
                       <span className="text-[10px] text-muted-foreground">Laba kotor batch</span>
@@ -928,7 +928,7 @@ export default function RecipeDetailPage() {
                   {/* Rincian Biaya Overhead Batch */}
                   {simulatedOverheadItems.length > 0 && (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-1">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                           Rincian Biaya Overhead Batch
                         </h4>
@@ -937,8 +937,8 @@ export default function RecipeDetailPage() {
                         </span>
                       </div>
 
-                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-                        <Table>
+                      <div className="border border-slate-200 rounded-xl overflow-x-auto bg-white">
+                        <Table className="min-w-[520px]">
                           <TableHeader className="bg-slate-50">
                             <TableRow>
                               <TableHead className="text-[11px] font-bold">Nama Overhead</TableHead>
@@ -982,8 +982,8 @@ export default function RecipeDetailPage() {
                       Kebutuhan Bahan Baku Untuk Batch ({simTargetUnits} {product.unit})
                     </h4>
 
-                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-                      <Table>
+                    <div className="border border-slate-200 rounded-xl overflow-x-auto bg-white">
+                      <Table className="min-w-[520px]">
                         <TableHeader className="bg-slate-50">
                           <TableRow>
                             <TableHead className="text-[11px] font-bold">Bahan</TableHead>
@@ -1052,7 +1052,8 @@ export default function RecipeDetailPage() {
                   </p>
                 </div>
               ) : (
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[640px]">
                   <TableHeader className="bg-slate-50/70">
                     <TableRow>
                       <TableHead className="text-xs font-bold uppercase text-muted-foreground">Nomor Batch</TableHead>
@@ -1099,6 +1100,7 @@ export default function RecipeDetailPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1107,7 +1109,7 @@ export default function RecipeDetailPage() {
         {/* TAB 4: INFO & PENGATURAN PRODUK */}
         <TabsContent value="info" className="mt-5 space-y-5">
           <Card className="rounded-2xl border-slate-200/80 shadow-sm w-full bg-card">
-            <CardHeader className="p-6 pb-4 border-b border-slate-100">
+            <CardHeader className="p-4 sm:p-6 pb-4 border-b border-slate-100">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <CardTitle className="text-xl font-bold">Informasi & Pengaturan Produk</CardTitle>
@@ -1121,7 +1123,7 @@ export default function RecipeDetailPage() {
               </div>
             </CardHeader>
 
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <form onSubmit={handleUpdateProduct} className="space-y-6">
                 {editProductError && (
                   <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
@@ -1180,7 +1182,7 @@ export default function RecipeDetailPage() {
                     {/* Mode Produksi */}
                     <div className="grid gap-2">
                       <Label className="text-xs font-semibold">Model Produksi (Product Mode)</Label>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button
                           type="button"
                           onClick={() => setEditProductData({ ...editProductData, mode: "MAKE_TO_STOCK" })}
@@ -1266,7 +1268,7 @@ export default function RecipeDetailPage() {
                         </div>
 
                         {/* Quick pills */}
-                        <div className="flex items-center gap-1 pt-0.5">
+                        <div className="flex flex-wrap items-center gap-1 pt-0.5">
                           {[35, 45, 50, 60, 70].map((pct) => (
                             <button
                               type="button"

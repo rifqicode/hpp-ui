@@ -383,11 +383,11 @@ Dihitung otomatis dengan HPP Manager.
     <div className="flex flex-col gap-6 pb-20 animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="border-b border-border pb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Calculator className="h-5 w-5" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             HPP Calculator & Pricing Simulator
           </h1>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
@@ -401,20 +401,20 @@ Dihitung otomatis dengan HPP Manager.
 
       {/* Main Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-muted/60 p-1 rounded-xl h-11 border border-border">
+        <TabsList className="w-full sm:w-auto grid grid-cols-1 sm:grid-cols-2 bg-muted/60 p-1 rounded-xl h-auto border border-border gap-1">
           <TabsTrigger
             value="sandbox"
-            className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center gap-2 h-9"
+            className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center justify-center gap-2 h-9"
           >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Simulasi Bebas & Resep Baru</span>
+            <Sparkles className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Simulasi Bebas & Resep Baru</span>
           </TabsTrigger>
           <TabsTrigger
             value="saved"
-            className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center gap-2 h-9"
+            className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center justify-center gap-2 h-9"
           >
-            <Boxes className="h-3.5 w-3.5" />
-            <span>Simulasi What-If Resep Tersimpan</span>
+            <Boxes className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Simulasi What-If Resep Tersimpan</span>
           </TabsTrigger>
         </TabsList>
 
@@ -496,7 +496,7 @@ Dihitung otomatis dengan HPP Manager.
               {/* Card 2: Formulasi Bahan Baku (Bill of Materials) */}
               <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div>
                       <CardTitle className="text-base font-bold flex items-center gap-2">
                         <FileText className="h-4 w-4 text-primary" />
@@ -511,7 +511,7 @@ Dihitung otomatis dengan HPP Manager.
                       type="button"
                       onClick={handleAddIngredient}
                       size="sm"
-                      className="rounded-xl text-xs h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold flex items-center gap-1"
+                      className="rounded-xl text-xs h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold flex items-center gap-1 self-start sm:self-auto shrink-0"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Tambah Bahan</span>
@@ -622,7 +622,7 @@ Dihitung otomatis dengan HPP Manager.
                   </Table>
                 </div>
 
-                <div className="p-3.5 bg-muted/20 border-t border-border flex items-center justify-between text-xs">
+                <div className="p-3.5 bg-muted/20 border-t border-border flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="text-muted-foreground font-medium">Subtotal Biaya Bahan Baku:</span>
                   <span className="font-mono font-bold text-sm text-foreground">
                     {formatCurrencyIdr(totalRawMaterialCost)}
@@ -884,11 +884,11 @@ Dihitung otomatis dengan HPP Manager.
 
                   {/* Pricing Strategy Selector */}
                   <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2">
                       <Label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         Strategi Harga Jual
                       </Label>
-                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px]">
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] self-start xl:self-auto">
                         <button
                           type="button"
                           onClick={() => setPricingMode("margin")}
@@ -1041,7 +1041,7 @@ Dihitung otomatis dengan HPP Manager.
                       </Link>
                     </Button>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Button
                         type="button"
                         variant="outline"
@@ -1122,14 +1122,14 @@ Dihitung otomatis dengan HPP Manager.
                   <div className="lg:col-span-7 space-y-6">
                     {/* Slider 1: Fluktuasi Bahan Baku */}
                     <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <Label className="text-xs font-bold text-foreground flex items-center gap-2">
-                          <Percent className="h-4 w-4 text-amber-500" />
-                          Simulasi Kenaikan / Penurunan Biaya Bahan Baku (%)
+                          <Percent className="h-4 w-4 text-amber-500 shrink-0" />
+                          <span>Simulasi Kenaikan / Penurunan Biaya Bahan Baku (%)</span>
                         </Label>
                         <Badge
                           variant="outline"
-                          className={`font-mono text-xs font-bold ${
+                          className={`font-mono text-xs font-bold shrink-0 ${
                             sensitivityMaterialPct > 0
                               ? "bg-red-500/10 text-red-600 border-red-500/20"
                               : sensitivityMaterialPct < 0
@@ -1158,14 +1158,14 @@ Dihitung otomatis dengan HPP Manager.
 
                     {/* Slider 2: Fluktuasi Hasil Panen (Yield) */}
                     <div className="p-4 rounded-xl border border-border bg-card space-y-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <Label className="text-xs font-bold text-foreground flex items-center gap-2">
-                          <Scale className="h-4 w-4 text-primary" />
-                          Simulasi Efisiensi Panen Dapur (Yield / Scrap Afkir)
+                          <Scale className="h-4 w-4 text-primary shrink-0" />
+                          <span>Simulasi Efisiensi Panen Dapur (Yield / Scrap Afkir)</span>
                         </Label>
                         <Badge
                           variant="outline"
-                          className={`font-mono text-xs font-bold ${
+                          className={`font-mono text-xs font-bold shrink-0 ${
                             sensitivityYieldPct < 0
                               ? "bg-red-500/10 text-red-600 border-red-500/20"
                               : sensitivityYieldPct > 0
@@ -1219,17 +1219,17 @@ Dihitung otomatis dengan HPP Manager.
                       <CardContent className="p-5 space-y-4">
                         {/* Comparison Box */}
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs">
+                          <div className="p-2.5 sm:p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs min-w-0">
                             <span className="text-[10px] text-slate-400 uppercase font-semibold block">HPP Normal</span>
-                            <span className="text-base font-bold font-mono text-slate-700 mt-0.5 block">
+                            <span className="text-base font-bold font-mono text-slate-700 mt-0.5 block truncate">
                               {formatCurrencyIdr(savedRecipeSimulation.baseHpp)}
                             </span>
                             <span className="text-[10px] text-slate-500">Margin: {savedRecipeSimulation.baseMargin}%</span>
                           </div>
 
-                          <div className="p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs">
+                          <div className="p-2.5 sm:p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs min-w-0">
                             <span className="text-[10px] text-slate-400 uppercase font-semibold block">HPP Setelah Simulasi</span>
-                            <span className="text-base font-bold font-mono text-primary mt-0.5 block">
+                            <span className="text-base font-bold font-mono text-primary mt-0.5 block truncate">
                               {formatCurrencyIdr(savedRecipeSimulation.finalSimulatedHpp)}
                             </span>
                             <span className="text-[10px] text-slate-500">Margin: {savedRecipeSimulation.simulatedMargin}%</span>

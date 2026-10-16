@@ -257,7 +257,7 @@ export default function BatchCreatePage() {
   return (
     <div className="flex flex-col gap-6 pb-20 animate-in fade-in duration-300">
       {/* Breadcrumb & Navigation */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Link to="/production/batches" className="hover:text-foreground transition-colors">
           Dapur Produksi
         </Link>
@@ -282,8 +282,8 @@ export default function BatchCreatePage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 Mulai Batch Produksi Baru
               </h1>
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs font-semibold">
@@ -296,18 +296,18 @@ export default function BatchCreatePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
             variant="ghost"
             onClick={() => navigate("/production/batches")}
-            className="rounded-xl h-10 text-xs font-semibold"
+            className="rounded-xl h-10 text-xs font-semibold flex-1 sm:flex-initial"
           >
             Batal
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={submitting || !selectedProduct || targetQuantity <= 0}
-            className="rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center gap-2 h-10 px-5"
+            className="rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2 h-10 px-5 flex-1 sm:flex-initial"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -337,7 +337,7 @@ export default function BatchCreatePage() {
           {/* 1. SELEKSI PRODUK / RESEP */}
           <Card className="rounded-2xl border-border shadow-sm">
             <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <div>
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Boxes className="h-4 w-4 text-primary" />
@@ -347,7 +347,7 @@ export default function BatchCreatePage() {
                     Hanya produk yang memiliki formulasi resep aktif yang dapat diproduksi di dapur.
                   </CardDescription>
                 </div>
-                <Badge variant="secondary" className="text-xs font-mono">
+                <Badge variant="secondary" className="text-xs font-mono shrink-0">
                   {products.length} Resep Tersedia
                 </Badge>
               </div>
@@ -389,7 +389,7 @@ export default function BatchCreatePage() {
               </div>
 
               {selectedProduct && (
-                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/80 flex items-center justify-between gap-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-muted/40 border border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2.5">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Sparkles className="h-4 w-4" />
@@ -406,7 +406,7 @@ export default function BatchCreatePage() {
                   <Link
                     to={`/production/products/${selectedProduct.id}`}
                     target="_blank"
-                    className="text-primary hover:underline font-semibold flex items-center gap-1 shrink-0"
+                    className="text-primary hover:underline font-semibold flex items-center gap-1 shrink-0 sm:text-right"
                   >
                     Buka Resep <ChevronRight className="h-3 w-3" />
                   </Link>
@@ -429,7 +429,7 @@ export default function BatchCreatePage() {
             <CardContent className="space-y-5">
               {/* Target Quantity Input with Quick Stepper */}
               <div className="p-4 rounded-xl bg-card border border-border space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-1">
                   <Label className="text-xs font-bold uppercase tracking-wider text-foreground">
                     Target Jumlah Unit Produk ({selectedProduct?.unit || "pcs"}) <span className="text-destructive">*</span>
                   </Label>
@@ -478,7 +478,7 @@ export default function BatchCreatePage() {
                 </div>
 
                 {/* Quick Presets */}
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2 pt-1">
                   <span className="text-[11px] text-muted-foreground mr-1">Preset cepat:</span>
                   {[20, 30, 50, 75, 100].map((preset) => (
                     <Button
@@ -553,7 +553,7 @@ export default function BatchCreatePage() {
 
             {/* Warning if stock is insufficient */}
             {!allIngredientsAvailable && (
-              <div className="mx-6 mb-3 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 text-xs flex items-start gap-2.5">
+              <div className="mx-4 sm:mx-6 mb-3 p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 text-xs flex items-start gap-2.5">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                 <div>
                   <p className="font-bold text-amber-800">Perhatian: Stok Gudang Kurang</p>
@@ -565,7 +565,7 @@ export default function BatchCreatePage() {
             )}
 
             <div className="border-t border-border">
-              <Table>
+              <Table className="min-w-[650px]">
                 <TableHeader className="bg-muted/40">
                   <TableRow>
                     <TableHead className="text-xs font-semibold">Bahan Baku</TableHead>
@@ -613,7 +613,7 @@ export default function BatchCreatePage() {
               </Table>
             </div>
 
-            <div className="p-4 bg-muted/20 border-t border-border flex items-center justify-between text-xs">
+            <div className="px-4 sm:px-6 py-4 bg-muted/20 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
               <span className="text-muted-foreground font-medium">
                 Total Estimasi Konsumsi Biaya Bahan Baku:
               </span>

@@ -186,7 +186,7 @@ export function SidebarMain() {
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { isMobile, state: sidebarState } = useSidebar()
+  const { isMobile, state: sidebarState, setOpenMobile } = useSidebar()
   const activeStoreId = useAuthStore((state) => state.activeStoreId)
   const { data: stores = [], isSuccess: isStoresSuccess } = useStoresQuery()
   useStorePermissionsQuery(activeStoreId)
@@ -208,8 +208,11 @@ export function SidebarMain() {
     return initial
   })
 
-  // Keep openMenus synchronized when path changes
+  // Keep openMenus synchronized when path changes and close mobile drawer on navigation
   React.useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
     NAVIGATION.forEach((g) => {
       g.items.forEach((item) => {
         if (item.subItems) {
@@ -221,7 +224,7 @@ export function SidebarMain() {
         }
       })
     })
-  }, [location.pathname])
+  }, [location.pathname, isMobile, setOpenMobile])
 
   const toggleMenu = (title: string) => {
     setOpenMenus((prev) => ({ ...prev, [title]: !prev[title] }))

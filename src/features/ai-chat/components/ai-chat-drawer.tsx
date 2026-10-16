@@ -244,7 +244,7 @@ export function AIChatFloatingDrawer() {
                           variant="ghost"
                           size="icon"
                           data-testid={`ai-delete-btn-${conv.id}`}
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0 cursor-pointer"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteConversation(conv.id);

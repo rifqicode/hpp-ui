@@ -215,7 +215,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans selection:bg-primary selection:text-white antialiased">
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans selection:bg-primary selection:text-white antialiased overflow-x-hidden">
       {/* ======================================================== */}
       {/* 1. HERO SECTION (FULL SCREEN 100vh / min-h-screen)       */}
       {/* ======================================================== */}
@@ -513,9 +513,9 @@ export default function LandingPage() {
                 {/* Main Dashboard Preview Card */}
                 <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xl p-6 relative">
                   {/* Mockup Header */}
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100 mb-5">
                     <div className="flex items-center gap-2.5">
-                      <div className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 text-primary flex items-center justify-center">
+                      <div className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 text-primary flex items-center justify-center shrink-0">
                         <UtensilsCrossed className="size-4.5" />
                       </div>
                       <div>
@@ -527,33 +527,33 @@ export default function LandingPage() {
                         </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold shrink-0">
                       Margin Sehat
                     </Badge>
                   </div>
 
                   {/* Recipe Cost Breakdown List */}
                   <div className="space-y-2.5 mb-5">
-                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
+                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-indigo-500" />
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 shrink-0" />
                         <span className="font-medium text-slate-700">Bahan Baku (Espresso, Susu, Aren)</span>
                       </div>
-                      <span className="font-bold text-slate-900">Rp 4.250</span>
+                      <span className="font-bold text-slate-900 shrink-0">Rp 4.250</span>
                     </div>
-                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
+                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0" />
                         <span className="font-medium text-slate-700">Packaging (Cup 14oz, Seal, Straw)</span>
                       </div>
-                      <span className="font-bold text-slate-900">Rp 1.150</span>
+                      <span className="font-bold text-slate-900 shrink-0">Rp 1.150</span>
                     </div>
-                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
+                    <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                        <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
                         <span className="font-medium text-slate-700">Overhead (Listrik, Gas, Tenaga)</span>
                       </div>
-                      <span className="font-bold text-slate-900">Rp 600</span>
+                      <span className="font-bold text-slate-900 shrink-0">Rp 600</span>
                     </div>
                   </div>
 

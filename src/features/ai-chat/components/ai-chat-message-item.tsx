@@ -81,7 +81,7 @@ export function AIChatMessageItem({ message, onRetry, isRetrying }: AIChatMessag
             : "bg-muted/70 text-foreground border border-border/60 rounded-tl-xs"
         )}
       >
-        <div className="whitespace-pre-wrap word-break">{renderFormattedContent(message.content)}</div>
+        <div className="whitespace-pre-wrap break-words overflow-x-auto">{renderFormattedContent(message.content)}</div>
 
         {isError && onRetry && (
           <div className="mt-2.5 pt-2 border-t border-destructive/20 flex items-center justify-between gap-3">

@@ -40,10 +40,10 @@ export function TablePagination({
       <div className="text-xs text-muted-foreground">
         Menampilkan {displayedCount} dari {total} {label}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
         <Button
           variant="outline"
-          className="rounded-xl"
+          className="rounded-xl flex-1 sm:flex-initial"
           onClick={onPrev}
           disabled={isPrevDisabled}
         >
@@ -51,7 +51,7 @@ export function TablePagination({
         </Button>
         <Button
           variant="outline"
-          className="rounded-xl"
+          className="rounded-xl flex-1 sm:flex-initial"
           onClick={onNext}
           disabled={isNextDisabled}
         >

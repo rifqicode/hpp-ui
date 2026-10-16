@@ -234,11 +234,11 @@ Dihitung otomatis dengan HPP Manager.
     <div className="flex flex-col gap-6 pb-20 animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="border-b border-border pb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Calculator className="h-5 w-5" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             Simulasi Resep Baru
           </h1>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
@@ -305,7 +305,7 @@ Dihitung otomatis dengan HPP Manager.
               {/* Card 2: Formulasi Bahan Baku (Bill of Materials) */}
               <Card className="rounded-2xl border-border shadow-sm overflow-hidden">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div>
                       <CardTitle className="text-base font-bold flex items-center gap-2">
                         <FileText className="h-4 w-4 text-primary" />
@@ -320,7 +320,7 @@ Dihitung otomatis dengan HPP Manager.
                       type="button"
                       onClick={handleAddIngredient}
                       size="sm"
-                      className="rounded-xl text-xs h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold flex items-center gap-1"
+                      className="rounded-xl text-xs h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold flex items-center gap-1 self-start sm:self-auto shrink-0"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Tambah Bahan</span>
@@ -447,7 +447,7 @@ Dihitung otomatis dengan HPP Manager.
               {/* Card 3: Biaya Overhead Operasional */}
               <Card className="rounded-2xl border-border shadow-sm">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div>
                       <CardTitle className="text-base font-bold flex items-center gap-2">
                         <Scale className="h-4 w-4 text-primary" />
@@ -462,7 +462,7 @@ Dihitung otomatis dengan HPP Manager.
                       type="button"
                       onClick={handleAddOverhead}
                       size="sm"
-                      className="rounded-xl text-xs h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold flex items-center gap-1"
+                      className="rounded-xl text-xs h-8 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold flex items-center gap-1 self-start sm:self-auto shrink-0"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Tambah Overhead</span>
@@ -587,7 +587,7 @@ Dihitung otomatis dengan HPP Manager.
 
                   {/* Pricing Strategy Selector */}
                   <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <Label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         Strategi Harga Jual
                       </Label>
@@ -713,7 +713,7 @@ Dihitung otomatis dengan HPP Manager.
                       </Link>
                     </Button>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Button
                         type="button"
                         variant="outline"

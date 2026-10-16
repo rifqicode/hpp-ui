@@ -99,7 +99,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl sm:p-6 p-4">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto sm:p-6 p-4">
         <DialogHeader className="text-left">
           <div className="flex items-center gap-2 mb-1">
             <span className="p-1 rounded-md bg-primary/10 text-primary">

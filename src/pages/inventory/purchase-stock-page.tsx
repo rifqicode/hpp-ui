@@ -162,7 +162,7 @@ export default function PurchaseStockPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <Button asChild variant="outline" className="rounded-xl">
           <Link to="/inventory/stocks">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -171,8 +171,8 @@ export default function PurchaseStockPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Record Stock Purchase</h1>
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Record Stock Purchase</h1>
         <p className="text-sm text-muted-foreground">
           Increase material inventory by recording a purchase lot from a supplier.
         </p>
@@ -184,17 +184,17 @@ export default function PurchaseStockPage() {
         </div>
       )}
 
-      <Card className="max-w-2xl">
+      <Card className="max-w-2xl min-w-0">
         <CardHeader>
           <CardTitle>Purchase Details</CardTitle>
           <CardDescription>Enter quantity, total cost, and select the material & supplier.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form id="purchase-form" onSubmit={onSubmit} className="grid gap-5">
-            <div className="grid gap-5 sm:grid-cols-2">
+          <form id="purchase-form" onSubmit={onSubmit} className="grid gap-5 min-w-0">
+            <div className="grid gap-5 sm:grid-cols-2 min-w-0">
               {/* Material Dropdown */}
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
+              <div className="grid gap-2 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-1">
                   <Label>Material</Label>
                   <Dialog open={isCreateMatOpen} onOpenChange={setIsCreateMatOpen}>
                     <DialogTrigger asChild>
@@ -257,7 +257,7 @@ export default function PurchaseStockPage() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                        <DialogFooter className="pt-2">
+                        <DialogFooter className="pt-2 gap-2 sm:gap-0">
                           <Button type="button" variant="outline" onClick={() => setIsCreateMatOpen(false)}>
                             Cancel
                           </Button>
@@ -273,11 +273,11 @@ export default function PurchaseStockPage() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl">
+                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl min-w-0">
                       <span className={cn("truncate", !selectedMaterial && "text-muted-foreground")}>
                         {selectedMaterial ? selectedMaterial.name : "Select material"}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
@@ -309,8 +309,8 @@ export default function PurchaseStockPage() {
               </div>
 
               {/* Supplier Dropdown */}
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between">
+              <div className="grid gap-2 min-w-0">
+                <div className="flex flex-wrap items-center justify-between gap-1">
                   <Label>Supplier</Label>
                   <Link to="/inventory/suppliers" className="text-xs text-primary font-medium hover:underline inline-flex items-center gap-1">
                     <Plus className="h-3 w-3" /> New Supplier
@@ -319,11 +319,11 @@ export default function PurchaseStockPage() {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl">
+                    <Button type="button" variant="outline" className="w-full justify-between rounded-xl min-w-0">
                       <span className={cn("truncate", !selectedSupplier && "text-muted-foreground")}>
                         {selectedSupplier ? selectedSupplier.name : "Select supplier"}
                       </span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
@@ -349,8 +349,8 @@ export default function PurchaseStockPage() {
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="grid gap-2">
+            <div className="grid gap-5 sm:grid-cols-2 min-w-0">
+              <div className="grid gap-2 min-w-0">
                 <Label htmlFor="qty">
                   Quantity {selectedMaterial ? `(${selectedMaterial.base_unit})` : ""}
                 </Label>
@@ -367,7 +367,7 @@ export default function PurchaseStockPage() {
                 />
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid gap-2 min-w-0">
                 <Label htmlFor="price">Total Purchase Price (IDR)</Label>
                 <FormattedNumberInput
                   id="price"
@@ -383,14 +383,14 @@ export default function PurchaseStockPage() {
 
             {/* Calculated summary card */}
             {qtyNum > 0 && totalNum > 0 && (
-              <div className="bg-muted/40 p-4 rounded-xl border border-border flex items-center justify-between text-sm">
+              <div className="bg-muted/40 p-4 rounded-xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Calculated Unit Cost:</span>
                   <div className="font-semibold text-foreground font-mono text-base">
                     Rp {formatCurrencyIdr(pricePerUnit)} / {selectedMaterial?.base_unit || "unit"}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <span className="text-muted-foreground">Total Batch Value:</span>
                   <div className="font-semibold text-primary font-mono text-base">
                     Rp {formatCurrencyIdr(totalNum)}
@@ -403,12 +403,12 @@ export default function PurchaseStockPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-xl"
+                className="rounded-xl flex-1 sm:flex-initial"
                 onClick={() => navigate("/inventory/stocks")}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="rounded-xl">
+              <Button type="submit" disabled={isSubmitting} className="rounded-xl flex-1 sm:flex-initial">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Record Purchase
               </Button>

@@ -337,15 +337,15 @@ export function RecordPurchaseDialog({
 
               {/* Expired Date Input */}
               <div className="grid gap-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <Label htmlFor="purchase-expired">Tanggal Kadaluwarsa</Label>
                     <span className={cn("text-[11px]", isFefo ? "text-destructive font-semibold" : "text-muted-foreground")}>
                       {isFefo ? "* (Wajib untuk FEFO)" : "(Opsional untuk FIFO)"}
                     </span>
                   </div>
                   {selectedMaterial && (
-                    <Badge variant={isFefo ? "warning" : "secondary"} className="text-[10px] font-mono">
+                    <Badge variant={isFefo ? "warning" : "secondary"} className="text-[10px] font-mono shrink-0">
                       Metode: {selectedMaterial.inventory_method || "FIFO"}
                     </Badge>
                   )}
@@ -366,14 +366,14 @@ export function RecordPurchaseDialog({
               </div>
 
               {qtyNum > 0 && totalNum > 0 && (
-                <div className="bg-muted/40 p-3 rounded-xl border border-border flex items-center justify-between text-xs sm:text-sm">
+                <div className="bg-muted/40 p-3 rounded-xl border border-border flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
                   <div>
                     <span className="text-muted-foreground">Unit Cost:</span>
                     <div className="font-semibold text-foreground font-mono">
                       Rp {formatCurrencyIdr(pricePerUnit)} / {selectedMaterial?.base_unit || "unit"}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="sm:text-right">
                     <span className="text-muted-foreground">Batch Total:</span>
                     <div className="font-semibold text-primary font-mono">
                       Rp {formatCurrencyIdr(totalNum)}

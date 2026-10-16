@@ -241,8 +241,8 @@ export default function StockListPage() {
               <Package className="h-6 w-6" />
             </div>
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                   Bahan Baku & Inventaris
                 </h1>
                 <QuotaBadge
@@ -266,7 +266,7 @@ export default function StockListPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
@@ -413,7 +413,7 @@ export default function StockListPage() {
                       </div>
                     </div>
 
-                    <DialogFooter className="pt-2">
+                    <DialogFooter className="pt-2 gap-2 sm:gap-0">
                       <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                         Batal
                       </Button>
@@ -559,16 +559,16 @@ export default function StockListPage() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
               {/* Status Filter Pills */}
-              <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+              <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
                 <button
                   type="button"
                   onClick={() => {
                     setStatusFilter("all")
                     setPage(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     statusFilter === "all"
                       ? "bg-background text-foreground shadow-2xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -582,7 +582,7 @@ export default function StockListPage() {
                     setStatusFilter("healthy")
                     setPage(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     statusFilter === "healthy"
                       ? "bg-background text-foreground shadow-2xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -596,7 +596,7 @@ export default function StockListPage() {
                     setStatusFilter("low")
                     setPage(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     statusFilter === "low"
                       ? "bg-background text-foreground shadow-2xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -610,7 +610,7 @@ export default function StockListPage() {
                     setStatusFilter("out")
                     setPage(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     statusFilter === "out"
                       ? "bg-background text-foreground shadow-2xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -621,14 +621,14 @@ export default function StockListPage() {
               </div>
 
               {/* Inventory Method Filter Pills */}
-              <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
+              <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
                 <button
                   type="button"
                   onClick={() => {
                     setInventoryMethod(undefined)
                     setPage(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     inventoryMethod === undefined
                       ? "bg-background text-foreground shadow-2xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -642,7 +642,7 @@ export default function StockListPage() {
                     setInventoryMethod("FIFO")
                     setPage(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     inventoryMethod === "FIFO"
                       ? "bg-background text-foreground shadow-2xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -656,7 +656,7 @@ export default function StockListPage() {
                     setInventoryMethod("FEFO")
                     setPage(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                     inventoryMethod === "FEFO"
                       ? "bg-background text-foreground shadow-2xs font-semibold"
                       : "text-muted-foreground hover:text-foreground"
@@ -719,21 +719,21 @@ export default function StockListPage() {
           {/* Polished Table Container */}
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full min-w-[680px] text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                   <tr>
-                    <th className="px-5 py-3.5">Nama Bahan Baku</th>
-                    <th className="px-5 py-3.5">Metode Alur</th>
-                    <th className="px-5 py-3.5">Satuan (Base Unit)</th>
-                    <th className="px-5 py-3.5 font-mono">Stok Saat Ini</th>
-                    <th className="px-5 py-3.5 text-center">Status</th>
-                    <th className="px-5 py-3.5 text-right">Aksi</th>
+                    <th className="px-3.5 sm:px-5 py-3">Nama Bahan Baku</th>
+                    <th className="px-3.5 sm:px-5 py-3">Metode Alur</th>
+                    <th className="px-3.5 sm:px-5 py-3">Satuan (Base Unit)</th>
+                    <th className="px-3.5 sm:px-5 py-3 font-mono">Stok Saat Ini</th>
+                    <th className="px-3.5 sm:px-5 py-3 text-center">Status</th>
+                    <th className="px-3.5 sm:px-5 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/70">
                   {filteredRows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
+                      <td colSpan={6} className="px-3.5 sm:px-5 py-12 text-center text-muted-foreground">
                         <p className="font-medium text-foreground">Tidak ada bahan baku yang cocok</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           Coba sesuaikan kata kunci pencarian atau filter status inventaris.
@@ -746,7 +746,7 @@ export default function StockListPage() {
                         key={row.id}
                         className="hover:bg-muted/30 transition-colors group"
                       >
-                        <td className="px-5 py-3.5 font-medium text-foreground">
+                        <td className="px-3.5 sm:px-5 py-3 font-medium text-foreground">
                           <div className="flex flex-col">
                             <Link
                               to={`/inventory/stocks/${row.id}`}
@@ -760,7 +760,7 @@ export default function StockListPage() {
                           </div>
                         </td>
 
-                        <td className="px-5 py-3.5">
+                        <td className="px-3.5 sm:px-5 py-3">
                           <Badge
                             variant={row.inventoryMethod === "FEFO" ? "warning" : "info"}
                             className="text-[11px] font-mono uppercase tracking-wider"
@@ -769,19 +769,19 @@ export default function StockListPage() {
                           </Badge>
                         </td>
 
-                        <td className="px-5 py-3.5 text-xs text-muted-foreground">
+                        <td className="px-3.5 sm:px-5 py-3 text-xs text-muted-foreground">
                           <span className="font-medium text-foreground">{row.baseUnit}</span>
                         </td>
 
-                        <td className="px-5 py-3.5 font-mono text-xs font-semibold text-foreground">
+                        <td className="px-3.5 sm:px-5 py-3 font-mono text-xs font-semibold text-foreground">
                           {formatStock(row)}
                         </td>
 
-                        <td className="px-5 py-3.5 text-center">
+                        <td className="px-3.5 sm:px-5 py-3 text-center">
                           <StatusBadge status={getStatus(row)} />
                         </td>
 
-                        <td className="px-5 py-3.5 text-right">
+                        <td className="px-3.5 sm:px-5 py-3 text-right">
                           <Button
                             asChild
                             variant="ghost"

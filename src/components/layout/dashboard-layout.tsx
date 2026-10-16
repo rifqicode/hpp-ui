@@ -57,15 +57,15 @@ export function DashboardLayout() {
     <TooltipProvider>
       <SidebarProvider>
         <SidebarMain />
-        <SidebarInset>
+        <SidebarInset className="min-w-0 overflow-x-hidden">
           <GracePeriodBanner
             onUpgradeClick={() => {
               setUpgradeReason("Paket langganan Anda sedang dalam masa tenggang. Perpanjang paket untuk mempertahankan akses penuh dan kuota Anda.")
               setIsUpgradeOpen(true)
             }}
           />
-          <div className="sticky top-0 z-10 flex h-13 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
-            <div className="flex items-center gap-2.5 min-w-0">
+          <div className="sticky top-0 z-10 flex h-13 items-center justify-between gap-2 border-b bg-background/95 px-3 sm:px-4 backdrop-blur">
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
               <SidebarTrigger className="h-8 w-8 rounded-lg border border-border/60 bg-card/60 text-foreground hover:bg-accent hover:text-accent-foreground shadow-2xs transition-all shrink-0 cursor-pointer" />
               <div className="h-4 w-px bg-border shrink-0" />
               <h1 className="text-sm font-semibold tracking-tight text-foreground sm:text-base truncate">
@@ -73,14 +73,14 @@ export function DashboardLayout() {
               </h1>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               <StoreDropdown />
               <NotificationDropdown />
             </div>
           </div>
-          <div className="relative flex min-h-0 flex-1 flex-col">
-            <main className="flex-1 overflow-y-auto p-4 lg:p-6 w-full">
-              <div className="w-full">
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-4 lg:p-6 w-full min-w-0">
+              <div className="w-full min-w-0">
                 <Outlet />
               </div>
             </main>

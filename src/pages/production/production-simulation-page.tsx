@@ -165,11 +165,11 @@ export default function ProductionSimulationPage() {
     <div className="flex flex-col gap-6 pb-20 animate-in fade-in duration-300">
       {/* Page Header */}
       <div className="border-b border-border pb-5">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <Factory className="h-5 w-5" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             Simulasi Produksi & Estimasi Restock
           </h1>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
@@ -260,7 +260,7 @@ export default function ProductionSimulationPage() {
           {selectedProduct && (
             <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/20 p-4 rounded-xl">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold text-foreground">Target Produksi Rencana:</span>
                   <Badge variant="secondary" className="font-bold text-xs text-primary">
                     {selectedProduct.name}
@@ -271,7 +271,7 @@ export default function ProductionSimulationPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <div className="flex items-center gap-2">
                   <Input
                     type="number"
@@ -510,7 +510,7 @@ export default function ProductionSimulationPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-4 text-sm">
+                    <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-4 text-sm">
                       <span className="font-semibold text-foreground">Total Anggaran Belanja Restock:</span>
                       <span className="font-mono font-black text-lg text-primary">
                         {formatCurrencyIdr(totalRestockBudget)}

@@ -275,29 +275,31 @@ export default function BatchListPage() {
             <History className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Dapur Produksi & Batch HPP
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                Dapur Produksi & Batch HPP
+              </h1>
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">
               Pantau batch yang sedang berjalan, input hasil panen (yield), dan hitung HPP aktual otomatis berbasis FIFO
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           <Button
             variant="outline"
             size="sm"
             onClick={() => refetchBatches()}
             disabled={loading}
-            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
+            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted flex-1 sm:flex-initial"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             Segarkan
           </Button>
           <Button
             onClick={() => navigate("/production/batches/new")}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
+            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs flex-1 sm:flex-initial"
           >
             <Plus className="h-4 w-4" />
             Mulai Batch Baru
@@ -383,8 +385,8 @@ export default function BatchListPage() {
       {/* SECTION: QUEUED BATCHES (MTO & ANTREAN PESANAN BARU) */}
       {(statusFilter === "ALL" || statusFilter === "QUEUED") && queuedBatches.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="h-2.5 w-2.5 rounded-full bg-purple-500 animate-pulse" />
               <h2 className="text-base font-bold text-foreground">Antrean Pesanan Masuk (Make-to-Order)</h2>
               <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-300 font-mono text-xs font-bold">
@@ -464,8 +466,8 @@ export default function BatchListPage() {
       {/* SECTION: ACTIVE BATCHES IN PROGRESS (DAPUR LANGSUNG) */}
       {(statusFilter === "ALL" || statusFilter === "IN_PROGRESS") && activeBatches.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
               <h2 className="text-base font-bold text-foreground">Sedang Berlangsung di Dapur</h2>
               <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-300 font-mono text-xs font-bold">
@@ -572,8 +574,8 @@ export default function BatchListPage() {
       )}
 
       {/* Standalone Search & Filter Bar */}
-      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs min-w-0">
+        <div className="relative flex-1 max-w-md min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Cari nomor batch, produk, catatan..."
@@ -597,7 +599,7 @@ export default function BatchListPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto">
+        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
           {[
             { key: "ALL", label: "Semua", count: batches.length },
             { key: "QUEUED", label: "Antrean MTO", count: stats.queuedCount },
@@ -612,7 +614,7 @@ export default function BatchListPage() {
                 setStatusFilter(tab.key)
                 setPage(1)
               }}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
                 statusFilter === tab.key
                   ? "bg-background text-foreground shadow-2xs font-semibold"
                   : "text-muted-foreground hover:text-foreground"
@@ -662,7 +664,7 @@ export default function BatchListPage() {
         <div className="space-y-4">
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full min-w-[850px] text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                   <tr>
                     <th className="px-5 py-3.5">Nomor Batch & Waktu</th>
@@ -845,7 +847,7 @@ export default function BatchListPage() {
 
       {/* DIALOG 2: SELESAIKAN BATCH PRODUKSI & HITUNG HPP */}
       <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
-        <DialogContent className="sm:max-w-[560px] rounded-2xl p-6">
+        <DialogContent className="sm:max-w-[560px] rounded-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-2">
               <CheckCircle2 className="h-5 w-5" />
@@ -872,7 +874,7 @@ export default function BatchListPage() {
                 1. Hasil Panen Produksi (Yield)
               </span>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
                   <Label className="text-xs font-semibold">
                     Unit Bagus / Berhasil <span className="text-red-500">*</span>
@@ -955,7 +957,7 @@ export default function BatchListPage() {
                 3. Hasil Kalkulasi HPP Akhir
               </span>
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="text-muted-foreground">Total Modal Batch:</span>
                   <div className="font-mono font-bold text-foreground">
@@ -966,7 +968,7 @@ export default function BatchListPage() {
                   </span>
                 </div>
 
-                <div className="text-right">
+                <div className="sm:text-right">
                   <span className="text-muted-foreground">HPP per Unit:</span>
                   <div className="font-mono font-black text-xl text-primary">
                     {formatCurrencyIdr(completeHppPerUnit)}
@@ -978,7 +980,7 @@ export default function BatchListPage() {
               </div>
             </div>
 
-            <DialogFooter className="pt-2 gap-2">
+            <DialogFooter className="pt-2 gap-2 sm:gap-0">
               <Button
                 type="button"
                 variant="outline"

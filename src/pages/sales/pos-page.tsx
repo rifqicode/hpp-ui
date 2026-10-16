@@ -61,6 +61,7 @@ export default function PosPage() {
   const [onlyInStock, setOnlyInStock] = React.useState(false);
 
   // Cart State
+  const [mobileTab, setMobileTab] = React.useState<'catalog' | 'cart'>('catalog');
   const [cart, setCart] = React.useState<CartItem[]>([]);
   const [customerPhone, setCustomerPhone] = React.useState('');
   const [customerName, setCustomerName] = React.useState('');
@@ -276,38 +277,74 @@ export default function PosPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background">
       {/* Top Header Bar */}
-      <div className="border-b border-border bg-card px-4 py-2.5 flex items-center justify-between shrink-0 shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shadow-2xs">
+      <div className="border-b border-border bg-card px-4 py-2.5 flex items-center justify-between gap-2 shrink-0 shadow-2xs">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="size-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shadow-2xs shrink-0">
             <ShoppingCart className="size-5" />
           </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground leading-none flex items-center gap-2">
-              Kasir & Transaksi POS
-              <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-semibold py-0.5">
+          <div className="min-w-0">
+            <h1 className="text-base font-bold text-foreground leading-none flex flex-wrap items-center gap-2">
+              <span className="truncate">Kasir & Transaksi POS</span>
+              <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-semibold py-0.5 shrink-0">
                 Live POS
               </Badge>
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="hidden md:block text-xs text-muted-foreground mt-0.5">
               Pilih produk pesanan pelanggan, hitung HPP otomatis, dan cetak struk
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Mobile Tab Switcher (<1024px) */}
+          <div className="flex lg:hidden items-center bg-muted/60 p-0.5 rounded-lg border border-border text-xs">
+            <button
+              type="button"
+              onClick={() => setMobileTab('catalog')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                mobileTab === 'catalog'
+                  ? 'bg-background text-foreground shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Katalog
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileTab('cart')}
+              className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
+                mobileTab === 'cart'
+                  ? 'bg-background text-foreground shadow-2xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span>Keranjang</span>
+              {totalItemsCount > 0 && (
+                <span className="bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                  {totalItemsCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           <Button variant="outline" size="sm" asChild className="gap-2 text-xs h-8">
             <Link to="/sales/history">
               <History className="size-3.5" />
-              <span>Riwayat Transaksi</span>
+              <span className="hidden sm:inline">Riwayat Transaksi</span>
+              <span className="sm:hidden">Riwayat</span>
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Main Content: Split Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden">
+      <div className="flex flex-col lg:grid lg:grid-cols-12 flex-1 min-h-0 overflow-hidden">
         {/* Left Column: Product Selection Catalog (8 Cols) */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col h-full overflow-hidden border-r border-border bg-muted/10">
+        <div
+          className={`${
+            mobileTab === 'catalog' ? 'flex' : 'hidden lg:flex'
+          } lg:col-span-7 xl:col-span-8 flex-col flex-1 min-h-0 h-full overflow-hidden lg:border-r border-border bg-muted/10`}
+        >
           {/* Filter & Search Bar */}
           <div className="p-3 bg-card border-b border-border/80 flex flex-col sm:flex-row gap-2.5 shrink-0">
             <div className="relative flex-1">
@@ -411,7 +448,7 @@ export default function PosPage() {
 
                       <CardContent className="p-3 flex flex-col h-full justify-between gap-2">
                         <div>
-                          <div className="flex items-center gap-1.5 mb-1.5">
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                             <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/80 bg-muted px-1.5 py-0.5 rounded">
                               {product.category || 'Roti'}
                             </span>
@@ -448,8 +485,8 @@ export default function PosPage() {
                           </h3>
                         </div>
 
-                        <div className="pt-2 border-t border-border/50 flex flex-col gap-1">
-                          <div className="flex items-baseline justify-between">
+                        <div className="pt-2 border-t border-border/50 flex flex-col gap-1 mt-auto">
+                          <div className="flex flex-wrap items-center justify-between gap-1 mt-auto pt-2">
                             <span className="text-xs font-bold text-primary">
                               {formatRupiah(product.sellingPrice)}
                             </span>
@@ -481,13 +518,46 @@ export default function PosPage() {
               </div>
             )}
           </div>
+
+          {/* Mobile Sticky Cart Summary Bar (<1024px) */}
+          <div className="lg:hidden border-t border-border bg-card p-3 flex items-center justify-between gap-3 shrink-0 shadow-lg">
+            <div className="min-w-0">
+              <span className="text-[11px] font-medium text-muted-foreground block">
+                {totalItemsCount} item dipilih
+              </span>
+              <span className="text-sm font-black text-foreground truncate block">
+                {formatRupiah(totalBill)}
+              </span>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setMobileTab('cart')}
+              className="h-9 px-4 text-xs font-bold gap-2 shrink-0 shadow-xs"
+            >
+              <ShoppingCart className="size-3.5" />
+              <span>Lihat Keranjang & Bayar</span>
+            </Button>
+          </div>
         </div>
 
         {/* Right Column: Cart & Checkout Summary (4 Cols) */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col h-full bg-card overflow-hidden">
+        <div
+          className={`${
+            mobileTab === 'cart' ? 'flex' : 'hidden lg:flex'
+          } lg:col-span-5 xl:col-span-4 flex-col flex-1 min-h-0 h-full bg-card overflow-hidden`}
+        >
           {/* Cart Header */}
           <div className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-muted/20">
             <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileTab('catalog')}
+                className="lg:hidden h-7 px-2 text-xs font-semibold -ml-1"
+              >
+                Kembali
+              </Button>
               <span className="font-bold text-sm text-foreground">Pesanan Pelanggan</span>
               <Badge variant="secondary" className="text-[10px] font-bold px-1.5">
                 {totalItemsCount} pcs
@@ -508,7 +578,7 @@ export default function PosPage() {
 
           {/* Customer & Notes Input */}
           <div className="p-2.5 border-b border-border/70 bg-card space-y-2 shrink-0">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
               <Input
                 placeholder="No. HP / WA Pelanggan"
                 value={customerPhone}
@@ -714,7 +784,7 @@ export default function PosPage() {
 
       {/* Payment Dialog */}
       <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl max-h-[90dvh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">Pembayaran Transaksi</DialogTitle>
             <DialogDescription className="text-xs">
@@ -722,7 +792,7 @@ export default function PosPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 overflow-y-auto flex-1">
             {/* Total Box */}
             <div className="p-3.5 bg-primary/10 border border-primary/20 rounded-xl text-center">
               <span className="text-xs text-muted-foreground block font-medium">Total yang Harus Dibayar</span>
@@ -788,7 +858,7 @@ export default function PosPage() {
                 />
 
                 {/* Quick Cash Buttons */}
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   <Button
                     type="button"
                     variant="outline"
@@ -900,7 +970,7 @@ export default function PosPage() {
 
       {/* Receipt Modal */}
       <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl max-h-[90dvh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
               <CheckCircle2 className="size-5 text-emerald-500" />
@@ -909,7 +979,7 @@ export default function PosPage() {
           </DialogHeader>
 
           {completedSale && (
-            <div className="space-y-4 py-2">
+            <div className="space-y-4 py-2 overflow-y-auto flex-1">
               {/* Thermal Paper Receipt Style */}
               <div
                 id="thermal-receipt"
