@@ -68,8 +68,14 @@ export default function BatchDetailPage() {
   // Modals
   const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
   const [activeOverheads, setActiveOverheads] = React.useState<OverheadType[]>([])
-  const [completeOverheadItems, setCompleteOverheadItems] = React.useState<ProductionOverheadDetail[]>([])
-  const [completeData, setCompleteData] = React.useState<CompleteProductionInput>({
+  const [completeOverheadItems, setCompleteOverheadItems] = React.useState<
+    Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }>
+  >([])
+  const [completeData, setCompleteData] = React.useState<{
+    goodQuantity: number | ""
+    wasteQuantity: number | ""
+    notes?: string
+  }>({
     goodQuantity: 0,
     wasteQuantity: 0,
     notes: "",
@@ -82,12 +88,15 @@ export default function BatchDetailPage() {
   const [submitting, setSubmitting] = React.useState<boolean>(false)
 
   // Helper to build initial overhead items
-  function buildInitialOverheads(batchData: ProductionBatch, masterOhs: OverheadType[]): ProductionOverheadDetail[] {
+  function buildInitialOverheads(
+    batchData: ProductionBatch,
+    masterOhs: OverheadType[]
+  ): Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }> {
     if (batchData.recipeSnapshot?.overheads && batchData.recipeSnapshot.overheads.length > 0) {
       return batchData.recipeSnapshot.overheads.map((so) => ({
         overheadTypeId: so.overhead_type_id,
         name: so.name,
-        amount: so.amount || 0,
+        amount: Number(so.amount) || 0,
       }))
     }
 
@@ -97,7 +106,7 @@ export default function BatchDetailPage() {
         .map((ao) => ({
           overheadTypeId: ao.id,
           name: ao.name,
-          amount: ao.defaultAmount || 0,
+          amount: Number(ao.defaultAmount) || 0,
         }))
     }
 
@@ -150,7 +159,8 @@ export default function BatchDetailPage() {
   async function handleCompleteSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!batch) return
-    if (completeData.goodQuantity <= 0) {
+    const goodQty = typeof completeData.goodQuantity === "number" ? completeData.goodQuantity : (Number(completeData.goodQuantity) || 0)
+    if (goodQty <= 0) {
       setCompleteError("Jumlah unit bagus harus lebih dari 0")
       return
     }
@@ -159,8 +169,13 @@ export default function BatchDetailPage() {
     setCompleteError("")
     try {
       const payload: CompleteProductionInput = {
-        ...completeData,
-        overheads: completeOverheadItems,
+        goodQuantity: goodQty,
+        wasteQuantity: typeof completeData.wasteQuantity === "number" ? completeData.wasteQuantity : (Number(completeData.wasteQuantity) || 0),
+        notes: completeData.notes,
+        overheads: completeOverheadItems.map((oh) => ({
+          ...oh,
+          amount: Number(oh.amount) || 0,
+        })),
       }
       const updated = await productionService.completeProduction(batch.id, payload)
       setBatch(updated)
@@ -216,10 +231,11 @@ export default function BatchDetailPage() {
   const margin = batch.hppPerUnit ? calculateGrossMargin(batch.sellingPrice, batch.hppPerUnit) : null
 
   // Complete calculations
-  const completeStockCost = batch.stockCost
-  const completeOverheadTotal = completeOverheadItems.reduce((acc, it) => acc + (it.amount || 0), 0)
+  const completeStockCost = Number(batch?.stockCost) || 0
+  const completeOverheadTotal = completeOverheadItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)
   const completeTotalCost = completeStockCost + completeOverheadTotal
-  const completeHppPerUnit = completeData.goodQuantity > 0 ? Math.round(completeTotalCost / completeData.goodQuantity) : 0
+  const goodQty = typeof completeData.goodQuantity === "number" ? completeData.goodQuantity : (Number(completeData.goodQuantity) || 0)
+  const completeHppPerUnit = goodQty > 0 ? Math.round(completeTotalCost / goodQty) : 0
 
   return (
     <div className="flex flex-col gap-6 pb-16 animate-in fade-in duration-500">
@@ -375,9 +391,15 @@ export default function BatchDetailPage() {
               Biaya Overhead
             </span>
             <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
-              {batch.overheadCost !== undefined ? <CurrencyText value={batch.overheadCost} /> : "-"}
+              {batch.status === "COMPLETED" ? (
+                <CurrencyText value={batch.overheadCost || 0} />
+              ) : (
+                "-"
+              )}
             </div>
-            <span className="text-[10px] text-muted-foreground block truncate">Listrik, Gas, Tenaga Kerja</span>
+            <span className="text-[10px] text-muted-foreground block truncate">
+              {batch.status === "COMPLETED" ? "Total biaya overhead" : "Dihitung saat selesai"}
+            </span>
           </div>
 
           <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
@@ -488,7 +510,7 @@ export default function BatchDetailPage() {
       </Card>
 
       {/* SECTION 2: RINCIAN BIAYA OVERHEAD */}
-      {batch.overheadBreakdown && (
+      {batch.status === "COMPLETED" && Array.isArray(batch.overheads) && batch.overheads.length > 0 && (
         <Card className="rounded-2xl border-slate-200/80 shadow-sm w-full bg-card">
           <CardHeader className="p-5 pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -505,34 +527,17 @@ export default function BatchDetailPage() {
           </CardHeader>
 
           <CardContent className="p-5 pt-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
-                <span className="text-xs text-muted-foreground block">Tenaga Kerja Langsung</span>
-                <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  <CurrencyText value={batch.overheadBreakdown.labor} />
-                </span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
-                <span className="text-xs text-muted-foreground block">Gas, Listrik & Oven</span>
-                <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  <CurrencyText value={batch.overheadBreakdown.energy} />
-                </span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
-                <span className="text-xs text-muted-foreground block">Kemasan & Plastik</span>
-                <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  <CurrencyText value={batch.overheadBreakdown.packaging} />
-                </span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
-                <span className="text-xs text-muted-foreground block">Biaya Lain-lain</span>
-                <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  <CurrencyText value={batch.overheadBreakdown.other || 0} />
-                </span>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {batch.overheads.map((oh, idx) => (
+                <div key={oh.id || idx} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                  <span className="text-xs text-muted-foreground block truncate" title={oh.name}>
+                    {oh.name}
+                  </span>
+                  <span className="font-mono font-bold text-base text-foreground mt-1 block">
+                    <CurrencyText value={Number(oh.amount) || 0} />
+                  </span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -562,8 +567,22 @@ export default function BatchDetailPage() {
                 <Input
                   type="number"
                   min="1"
+                  placeholder="1"
                   value={completeData.goodQuantity}
-                  onChange={(e) => setCompleteData({ ...completeData, goodQuantity: Number(e.target.value) })}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === "") {
+                      setCompleteData((prev) => ({ ...prev, goodQuantity: "" }))
+                    } else {
+                      const parsed = parseInt(val, 10)
+                      setCompleteData((prev) => ({ ...prev, goodQuantity: isNaN(parsed) ? "" : parsed }))
+                    }
+                  }}
+                  onBlur={() => {
+                    if (completeData.goodQuantity === "" || Number(completeData.goodQuantity) <= 0) {
+                      setCompleteData((prev) => ({ ...prev, goodQuantity: 1 }))
+                    }
+                  }}
                   className="rounded-xl h-10 font-mono font-bold"
                   required
                 />
@@ -574,8 +593,22 @@ export default function BatchDetailPage() {
                 <Input
                   type="number"
                   min="0"
+                  placeholder="0"
                   value={completeData.wasteQuantity}
-                  onChange={(e) => setCompleteData({ ...completeData, wasteQuantity: Number(e.target.value) })}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val === "") {
+                      setCompleteData((prev) => ({ ...prev, wasteQuantity: "" }))
+                    } else {
+                      const parsed = parseInt(val, 10)
+                      setCompleteData((prev) => ({ ...prev, wasteQuantity: isNaN(parsed) ? "" : parsed }))
+                    }
+                  }}
+                  onBlur={() => {
+                    if (completeData.wasteQuantity === "" || Number(completeData.wasteQuantity) < 0) {
+                      setCompleteData((prev) => ({ ...prev, wasteQuantity: 0 }))
+                    }
+                  }}
                   className="rounded-xl h-10 font-mono"
                 />
               </div>
@@ -614,12 +647,29 @@ export default function BatchDetailPage() {
                           type="number"
                           min="0"
                           step="500"
-                          value={oh.amount === 0 ? "0" : (oh.amount || "")}
+                          placeholder="0"
+                          value={oh.amount === "" ? "" : oh.amount}
                           onChange={(e) => {
-                            const val = Number(e.target.value) || 0
+                            const val = e.target.value
                             setCompleteOverheadItems((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, amount: val } : item))
+                              prev.map((item, i) =>
+                                i === idx
+                                  ? {
+                                      ...item,
+                                      amount: val === "" ? "" : Number(val),
+                                    }
+                                  : item
+                              )
                             )
+                          }}
+                          onBlur={() => {
+                            if (oh.amount === "" || (typeof oh.amount === "number" && oh.amount < 0)) {
+                              setCompleteOverheadItems((prev) =>
+                                prev.map((item, i) =>
+                                  i === idx ? { ...item, amount: 0 } : item
+                                )
+                              )
+                            }
                           }}
                           className="rounded-lg h-8 text-xs font-mono"
                         />

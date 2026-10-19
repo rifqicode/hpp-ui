@@ -88,8 +88,14 @@ export default function BatchListPage() {
   const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
   const [batchToComplete, setBatchToComplete] = React.useState<ProductionBatch | null>(null)
   const [activeOverheads, setActiveOverheads] = React.useState<OverheadType[]>([])
-  const [completeOverheadItems, setCompleteOverheadItems] = React.useState<ProductionOverheadDetail[]>([])
-  const [completeData, setCompleteData] = React.useState<CompleteProductionInput>({
+  const [completeOverheadItems, setCompleteOverheadItems] = React.useState<
+    Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }>
+  >([])
+  const [completeData, setCompleteData] = React.useState<{
+    goodQuantity: number | ""
+    wasteQuantity: number | ""
+    notes?: string
+  }>({
     goodQuantity: 0,
     wasteQuantity: 0,
     notes: "",
@@ -182,12 +188,12 @@ export default function BatchListPage() {
     setBatchToComplete(batch)
 
     // Build initial overhead items
-    let initialOhs: ProductionOverheadDetail[] = []
+    let initialOhs: Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }> = []
     if (batch.recipeSnapshot?.overheads && batch.recipeSnapshot.overheads.length > 0) {
       initialOhs = batch.recipeSnapshot.overheads.map((so) => ({
         overheadTypeId: so.overhead_type_id,
         name: so.name,
-        amount: so.amount || 0,
+        amount: Number(so.amount) || 0,
       }))
     } else if (activeOverheads.length > 0) {
       initialOhs = activeOverheads
@@ -195,7 +201,7 @@ export default function BatchListPage() {
         .map((ao) => ({
           overheadTypeId: ao.id,
           name: ao.name,
-          amount: ao.defaultAmount || 0,
+          amount: Number(ao.defaultAmount) || 0,
         }))
     }
 
@@ -213,7 +219,8 @@ export default function BatchListPage() {
   async function handleCompleteSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!batchToComplete) return
-    if (completeData.goodQuantity <= 0) {
+    const goodQty = typeof completeData.goodQuantity === "number" ? completeData.goodQuantity : (Number(completeData.goodQuantity) || 0)
+    if (goodQty <= 0) {
       setCompleteError("Jumlah unit bagus harus lebih dari 0")
       return
     }
@@ -222,8 +229,13 @@ export default function BatchListPage() {
     setCompleteError("")
     try {
       const payload: CompleteProductionInput = {
-        ...completeData,
-        overheads: completeOverheadItems,
+        goodQuantity: goodQty,
+        wasteQuantity: typeof completeData.wasteQuantity === "number" ? completeData.wasteQuantity : (Number(completeData.wasteQuantity) || 0),
+        notes: completeData.notes,
+        overheads: completeOverheadItems.map((oh) => ({
+          ...oh,
+          amount: Number(oh.amount) || 0,
+        })),
       }
       await productionService.completeProduction(batchToComplete.id, payload)
       queryClient.invalidateQueries({ queryKey: productionKeys.all })
@@ -257,10 +269,11 @@ export default function BatchListPage() {
   }
 
   // Calculations for Complete modal
-  const completeStockCost = batchToComplete ? batchToComplete.stockCost : 0
-  const completeOverheadTotal = completeOverheadItems.reduce((acc, it) => acc + (it.amount || 0), 0)
+  const completeStockCost = Number(batchToComplete?.stockCost) || 0
+  const completeOverheadTotal = completeOverheadItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)
   const completeTotalCost = completeStockCost + completeOverheadTotal
-  const completeHppPerUnit = completeData.goodQuantity > 0 ? Math.round(completeTotalCost / completeData.goodQuantity) : 0
+  const goodQty = typeof completeData.goodQuantity === "number" ? completeData.goodQuantity : (Number(completeData.goodQuantity) || 0)
+  const completeHppPerUnit = goodQty > 0 ? Math.round(completeTotalCost / goodQty) : 0
   const completeSellingPrice = batchToComplete?.sellingPrice || 0
   const completeMargin = completeSellingPrice > 0 ? Math.round(((completeSellingPrice - completeHppPerUnit) / completeSellingPrice) * 1000) / 10 : 0
 
@@ -893,8 +906,22 @@ export default function BatchListPage() {
                   <Input
                     type="number"
                     min="1"
+                    placeholder="1"
                     value={completeData.goodQuantity}
-                    onChange={(e) => setCompleteData({ ...completeData, goodQuantity: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === "") {
+                        setCompleteData((prev) => ({ ...prev, goodQuantity: "" }))
+                      } else {
+                        const parsed = parseInt(val, 10)
+                        setCompleteData((prev) => ({ ...prev, goodQuantity: isNaN(parsed) ? "" : parsed }))
+                      }
+                    }}
+                    onBlur={() => {
+                      if (completeData.goodQuantity === "" || Number(completeData.goodQuantity) <= 0) {
+                        setCompleteData((prev) => ({ ...prev, goodQuantity: 1 }))
+                      }
+                    }}
                     className="rounded-xl h-10 font-mono font-bold text-base"
                     required
                   />
@@ -905,8 +932,22 @@ export default function BatchListPage() {
                   <Input
                     type="number"
                     min="0"
+                    placeholder="0"
                     value={completeData.wasteQuantity}
-                    onChange={(e) => setCompleteData({ ...completeData, wasteQuantity: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === "") {
+                        setCompleteData((prev) => ({ ...prev, wasteQuantity: "" }))
+                      } else {
+                        const parsed = parseInt(val, 10)
+                        setCompleteData((prev) => ({ ...prev, wasteQuantity: isNaN(parsed) ? "" : parsed }))
+                      }
+                    }}
+                    onBlur={() => {
+                      if (completeData.wasteQuantity === "" || Number(completeData.wasteQuantity) < 0) {
+                        setCompleteData((prev) => ({ ...prev, wasteQuantity: 0 }))
+                      }
+                    }}
                     className="rounded-xl h-10 font-mono text-base"
                   />
                 </div>
@@ -946,12 +987,29 @@ export default function BatchListPage() {
                           type="number"
                           min="0"
                           step="500"
-                          value={oh.amount === 0 ? "0" : (oh.amount || "")}
+                          placeholder="0"
+                          value={oh.amount === "" ? "" : oh.amount}
                           onChange={(e) => {
-                            const val = Number(e.target.value) || 0
+                            const val = e.target.value
                             setCompleteOverheadItems((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, amount: val } : item))
+                              prev.map((item, i) =>
+                                i === idx
+                                  ? {
+                                      ...item,
+                                      amount: val === "" ? "" : Number(val),
+                                    }
+                                  : item
+                              )
                             )
+                          }}
+                          onBlur={() => {
+                            if (oh.amount === "" || (typeof oh.amount === "number" && oh.amount < 0)) {
+                              setCompleteOverheadItems((prev) =>
+                                prev.map((item, i) =>
+                                  i === idx ? { ...item, amount: 0 } : item
+                                )
+                              )
+                            }
                           }}
                           className="rounded-lg h-8 text-xs font-mono"
                         />

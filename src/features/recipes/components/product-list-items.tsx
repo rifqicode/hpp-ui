@@ -3,6 +3,7 @@ import { ChevronRight, MoreHorizontal, Package, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CurrencyText } from '@/components/ui/currency-text';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { getProductMetrics } from '../lib/product-list';
 import type { Product } from '../types';
@@ -36,13 +37,80 @@ function ProductPrice({ product }: { product: Product }) {
 }
 
 function ProductCost({ product }: { product: Product }) {
-  const { cost, hasActualHpp } = getProductMetrics(product);
-  return <div title={hasActualHpp ? 'HPP dari produksi terakhir' : 'Estimasi biaya bahan per unit dari resep, belum termasuk overhead'}>
-    {cost === null ? <span className="text-xs text-muted-foreground">Belum tersedia</span> : <>
-      <span className="font-medium tabular-nums"><CurrencyText value={cost} /></span>
-      <span className="mt-0.5 block text-[10px] text-muted-foreground">{hasActualHpp ? 'HPP aktual' : 'Estimasi bahan /unit'}</span>
-    </>}
-  </div>;
+  const { hasActualHpp, actualHpp, estimatedHpp } = getProductMetrics(product);
+
+  if (!hasActualHpp) {
+    if (estimatedHpp !== null) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="cursor-help text-right">
+              <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+                <CurrencyText value={estimatedHpp} />
+              </span>
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                Estimasi resep
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            className="block max-w-xs border border-border bg-popover text-left text-popover-foreground shadow-md [&_svg]:fill-popover"
+          >
+            <p className="font-semibold text-amber-500">Estimasi HPP (Belum Produksi)</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Dihitung otomatis on-the-fly dari resep dan harga stok bahan gudang saat ini. Belum ada catatan batch produksi riil.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return <span className="text-xs text-muted-foreground">Belum tersedia</span>;
+  }
+
+  if (hasActualHpp && actualHpp !== null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="cursor-help text-right">
+            <span className="font-semibold tabular-nums text-foreground">
+              <CurrencyText value={actualHpp} />
+            </span>
+            <span className="mt-0.5 block text-[10px] text-muted-foreground">
+              HPP aktual
+            </span>
+            {estimatedHpp !== null && (
+              <span className="mt-0.5 block text-[10px] text-muted-foreground/80 tabular-nums">
+                Est. kini: <CurrencyText value={estimatedHpp} />
+              </span>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="block max-w-xs border border-border bg-popover text-left text-popover-foreground shadow-md [&_svg]:fill-popover"
+        >
+          <p className="font-semibold text-foreground">
+            HPP Aktual: <CurrencyText value={actualHpp} />
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Snapshot modal riil dari batch produksi terakhir.
+          </p>
+          {estimatedHpp !== null && (
+            <div className="mt-1.5 border-t border-border/50 pt-1 text-[11px] text-muted-foreground">
+              Estimasi bahan gudang hari ini:{" "}
+              <span className="font-medium text-foreground">
+                <CurrencyText value={estimatedHpp} />
+              </span>
+            </div>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return <span className="text-xs text-muted-foreground">Belum tersedia</span>;
 }
 
 function ProductMargin({ product }: { product: Product }) {

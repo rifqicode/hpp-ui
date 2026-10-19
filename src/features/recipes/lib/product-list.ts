@@ -15,12 +15,21 @@ export type ProductSort = keyof typeof PRODUCT_SORTS;
 export function getProductMetrics(product: Product) {
   const hasActualHpp = product.latestHpp > 0;
   const ingredientCost = product.ingredients.reduce((total, item) => total + item.subtotalCost, 0);
-  // Waste is a fraction in the API, matching the backend's per-unit estimate.
   const estimate = product.estimatedHpp ?? (ingredientCost / (product.yieldQty > 0 ? product.yieldQty : 1)) * (1 + product.wastePct);
-  const cost = hasActualHpp ? product.latestHpp : estimate > 0 ? estimate : null;
+  const actualHpp = hasActualHpp ? product.latestHpp : null;
+  const estimatedHpp = estimate > 0 ? estimate : null;
+  const cost = hasActualHpp ? product.latestHpp : (estimate > 0 ? estimate : null);
   const margin = cost !== null && product.sellingPrice > 0 ? Math.round(((product.sellingPrice - cost) / product.sellingPrice) * 1000) / 10 : null;
   const lowStock = product.mode === 'MAKE_TO_STOCK' && product.currentStock <= product.minStock;
-  return { cost, margin, lowStock, hasActualHpp, needsAttention: lowStock || !hasActualHpp || (margin !== null && margin < 0) };
+  return {
+    cost,
+    actualHpp,
+    estimatedHpp,
+    margin,
+    lowStock,
+    hasActualHpp,
+    needsAttention: lowStock || !hasActualHpp || (margin !== null && margin < 0)
+  };
 }
 
 export function filterProducts(products: Product[], search: string, category: string, attention: ProductAttentionFilter, sort: ProductSort) {

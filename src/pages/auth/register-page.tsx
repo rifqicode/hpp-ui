@@ -267,6 +267,17 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
         },
       })
 
+      if (res.requires_verification || !res.token) {
+        navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, {
+          replace: true,
+          state: {
+            email: email.trim(),
+            message: "Pendaftaran berhasil! Silakan periksa email Anda dan masukkan 6 digit kode verifikasi.",
+          },
+        })
+        return
+      }
+
       setAuth(res.user, res.token)
       if (res.active_store_id) {
         setActiveStoreId(res.active_store_id)

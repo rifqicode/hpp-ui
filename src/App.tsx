@@ -37,6 +37,7 @@ const RegisterPage = React.lazy(() => import("./pages/auth/register-page"))
 const AcceptInvitePage = React.lazy(() => import("./pages/auth/accept-invite-page"))
 const ForgotPasswordPage = React.lazy(() => import("./pages/auth/forgot-password-page"))
 const ResetPasswordPage = React.lazy(() => import("./pages/auth/reset-password-page"))
+const VerifyEmailPage = React.lazy(() => import("./pages/auth/verify-email-page"))
 const LandingPage = React.lazy(() => import("./pages/landing/landing-page"))
 
 function PageLoader() {
@@ -60,6 +61,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/setup-store" element={<RegisterPage initialStep={2} />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/accept-invite" element={<AcceptInvitePage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />

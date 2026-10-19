@@ -13,14 +13,19 @@ import type {
 
 const NETWORK_ERROR_MSG = "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
 
-function toError(err: unknown, fallback: string): Error {
+function toError(err: unknown, fallback: string): Error & { status?: number; response?: any } {
   if (axios.isAxiosError(err)) {
     if (err.response) {
       const msg = err.response.data?.message;
+      let error: Error & { status?: number; response?: any };
       if (msg?.toLowerCase() === 'unauthorized' || err.response.status === 401) {
-        return new Error("Email atau kata sandi salah. Silakan coba lagi.");
+        error = new Error("Email atau kata sandi salah. Silakan coba lagi.");
+      } else {
+        error = new Error(msg || fallback);
       }
-      return new Error(msg || fallback);
+      error.status = err.response.status;
+      error.response = err.response;
+      return error;
     }
     return new Error(NETWORK_ERROR_MSG);
   }
@@ -114,6 +119,23 @@ export const authService = {
       await apiClient.post('/auth/reset-password', payload);
     } catch (err: unknown) {
       throw toError(err, "Gagal mengatur ulang kata sandi. Silakan coba lagi.");
+    }
+  },
+
+  verifyEmail: async (payload: { email: string; code: string }): Promise<AuthResponse> => {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/verify-email', payload);
+      return response.data;
+    } catch (err: unknown) {
+      throw toError(err, "Gagal memverifikasi email. Pastikan kode verifikasi sesuai.");
+    }
+  },
+
+  resendVerification: async (email: string): Promise<void> => {
+    try {
+      await apiClient.post('/auth/resend-verification', { email });
+    } catch (err: unknown) {
+      throw toError(err, "Gagal mengirim ulang kode verifikasi.");
     }
   },
 };

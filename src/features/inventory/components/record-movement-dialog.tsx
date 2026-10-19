@@ -230,7 +230,7 @@ export function RecordMovementDialog({
 
               {movementType === "ADJUSTMENT_IN" && (
                 <div className="grid gap-1.5">
-                  <Label htmlFor="movement-price">Price / Unit (IDR)</Label>
+                  <Label htmlFor="movement-price">Total Harga </Label>
                   <Input
                     id="movement-price"
                     type="number"

@@ -58,7 +58,7 @@ export default function BatchCreatePage() {
 
   // Form State
   const [selectedProductId, setSelectedProductId] = React.useState<string>("")
-  const [targetQuantity, setTargetQuantity] = React.useState<number>(50)
+  const [targetQuantity, setTargetQuantity] = React.useState<number | "">(1)
   const [chefName, setChefName] = React.useState<string>("Baker Utama")
   const [notes, setNotes] = React.useState<string>("")
 
@@ -98,16 +98,19 @@ export default function BatchCreatePage() {
     return products.find((p) => p.id === selectedProductId) || null
   }, [products, selectedProductId])
 
+  const effectiveQty = typeof targetQuantity === "number" ? targetQuantity : (Number(targetQuantity) || 0)
+
   // Live Backend Preview Hook
   React.useEffect(() => {
-    if (!selectedProductId || targetQuantity <= 0) {
+    const qty = typeof targetQuantity === "number" ? targetQuantity : (Number(targetQuantity) || 0)
+    if (!selectedProductId || qty <= 0) {
       setPreview(null)
       return
     }
     let ignore = false
     setLoadingPreview(true)
     productionService
-      .previewProduction({ productId: selectedProductId, quantity: targetQuantity })
+      .previewProduction({ productId: selectedProductId, quantity: qty })
       .then((res) => {
         if (!ignore) {
           setPreview(res)
@@ -127,10 +130,11 @@ export default function BatchCreatePage() {
 
   // Ingredient audit & readiness calculations
   const ingredientAudit = React.useMemo(() => {
+    const qty = typeof targetQuantity === "number" ? targetQuantity : (Number(targetQuantity) || 0)
     if (preview && preview.items && preview.items.length > 0) {
       return preview.items.map((i) => {
         const shortage = i.is_sufficient ? 0 : i.required_qty - i.available_qty
-        const baseQty = targetQuantity && targetQuantity > 0 ? i.required_qty / targetQuantity : i.required_qty
+        const baseQty = qty > 0 ? i.required_qty / qty : i.required_qty
         return {
           id: i.stock_id,
           stockId: i.stock_id,
@@ -147,14 +151,14 @@ export default function BatchCreatePage() {
     }
 
     if (!selectedProduct) return []
-    const qty = Math.max(1, targetQuantity || 0)
+    const scaleQty = Math.max(1, qty)
 
     return selectedProduct.ingredients.map((ing) => {
-      const neededQty = ing.quantity * qty
+      const neededQty = ing.quantity * scaleQty
       const availableStock = ing.availableStock || 0
       const isSufficient = availableStock >= neededQty
       const shortage = isSufficient ? 0 : neededQty - availableStock
-      const estimatedCost = ing.subtotalCost * qty
+      const estimatedCost = ing.subtotalCost * scaleQty
 
       return {
         ...ing,
@@ -180,12 +184,12 @@ export default function BatchCreatePage() {
 
   const estimatedHppPerUnit = React.useMemo(() => {
     if (preview) return preview.estimated_hpp
-    const qty = Math.max(1, targetQuantity || 0)
+    const qty = Math.max(1, typeof targetQuantity === "number" ? targetQuantity : (Number(targetQuantity) || 0))
     return Math.round(totalEstimatedRawCost / qty)
   }, [preview, totalEstimatedRawCost, targetQuantity])
 
   const sellingPrice = selectedProduct?.sellingPrice || 0
-  const projectedRevenue = sellingPrice * (targetQuantity || 0)
+  const projectedRevenue = sellingPrice * effectiveQty
   const projectedGrossProfit = projectedRevenue - totalEstimatedRawCost
   const projectedMargin =
     projectedRevenue > 0
@@ -194,7 +198,7 @@ export default function BatchCreatePage() {
 
   // Adjust quantity helpers
   function handleQuantityChange(delta: number) {
-    setTargetQuantity((prev) => Math.max(1, (prev || 0) + delta))
+    setTargetQuantity((prev) => Math.max(1, (Number(prev) || 0) + delta))
   }
 
   // Handle Submit Form
@@ -204,7 +208,8 @@ export default function BatchCreatePage() {
       setError("Pilih produk resep terlebih dahulu")
       return
     }
-    if (targetQuantity <= 0) {
+    const submitQty = typeof targetQuantity === "number" ? targetQuantity : (Number(targetQuantity) || 0)
+    if (submitQty <= 0) {
       setError("Target kuantitas produksi harus lebih dari 0")
       return
     }
@@ -222,7 +227,7 @@ export default function BatchCreatePage() {
 
       const newBatch = await productionService.startProduction({
         productId: selectedProduct.id,
-        targetQuantity,
+        targetQuantity: submitQty,
         notes: combinedNotes,
       })
 
@@ -298,7 +303,7 @@ export default function BatchCreatePage() {
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !selectedProduct || targetQuantity <= 0}
+            disabled={submitting || !selectedProduct || effectiveQty <= 0}
             className="rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center gap-2 h-10 px-5 flex-1 sm:flex-initial"
           >
             {submitting ? (
@@ -426,7 +431,7 @@ export default function BatchCreatePage() {
                     Target Jumlah Unit Produk ({selectedProduct?.unit || "pcs"}) <span className="text-destructive">*</span>
                   </Label>
                   <span className="text-xs text-muted-foreground">
-                    Skala Resep: <strong className="text-primary font-mono font-bold">{targetQuantity}x</strong>
+                    Skala Resep: <strong className="text-primary font-mono font-bold">{targetQuantity || 1}x</strong>
                   </span>
                 </div>
 
@@ -436,7 +441,7 @@ export default function BatchCreatePage() {
                     variant="outline"
                     size="icon"
                     onClick={() => handleQuantityChange(-10)}
-                    disabled={targetQuantity <= 10}
+                    disabled={(Number(targetQuantity) || 0) <= 10}
                     className="h-11 w-11 rounded-xl shrink-0"
                     title="-10 unit"
                   >
@@ -447,8 +452,22 @@ export default function BatchCreatePage() {
                     <Input
                       type="number"
                       min="1"
+                      placeholder="1"
                       value={targetQuantity}
-                      onChange={(e) => setTargetQuantity(Math.max(1, Number(e.target.value) || 0))}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === "") {
+                          setTargetQuantity("")
+                        } else {
+                          const parsed = parseInt(val, 10)
+                          setTargetQuantity(isNaN(parsed) ? "" : parsed)
+                        }
+                      }}
+                      onBlur={() => {
+                        if (targetQuantity === "" || targetQuantity <= 0) {
+                          setTargetQuantity(1)
+                        }
+                      }}
                       className="rounded-xl h-11 text-center font-mono font-bold text-xl text-primary"
                       required
                     />
@@ -476,7 +495,7 @@ export default function BatchCreatePage() {
                     <Button
                       key={preset}
                       type="button"
-                      variant={targetQuantity === preset ? "default" : "outline"}
+                      variant={Number(targetQuantity) === preset ? "default" : "outline"}
                       size="sm"
                       onClick={() => setTargetQuantity(preset)}
                       className="h-7 text-xs rounded-lg px-2.5 font-mono"
@@ -550,7 +569,7 @@ export default function BatchCreatePage() {
                 <div>
                   <p className="font-bold text-amber-800">Perhatian: Stok Gudang Kurang</p>
                   <p className="mt-0.5 text-[11px] leading-relaxed">
-                    Beberapa bahan baku tidak mencukupi untuk target {targetQuantity} {selectedProduct?.unit}. Anda dapat mengurangi kuantitas target produksi atau membuat Purchase Order ke supplier terlebih dahulu.
+                    Beberapa bahan baku tidak mencukupi untuk target {effectiveQty} {selectedProduct?.unit}. Anda dapat mengurangi kuantitas target produksi atau membuat Purchase Order ke supplier terlebih dahulu.
                   </p>
                 </div>
               </div>
@@ -655,7 +674,7 @@ export default function BatchCreatePage() {
                 <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
                   <span className="text-slate-600">Target Produksi:</span>
                   <span className="font-mono font-bold text-slate-900">
-                    {targetQuantity} {selectedProduct?.unit || "pcs"}
+                    {effectiveQty} {selectedProduct?.unit || "pcs"}
                   </span>
                 </div>
 
@@ -693,7 +712,7 @@ export default function BatchCreatePage() {
               {/* Submit CTA Button */}
               <Button
                 type="submit"
-                disabled={submitting || !selectedProduct || targetQuantity <= 0}
+                disabled={submitting || !selectedProduct || effectiveQty <= 0}
                 className="w-full h-11 rounded-xl shadow-sm bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex items-center justify-center gap-2 text-sm transition-all"
               >
                 {submitting ? (

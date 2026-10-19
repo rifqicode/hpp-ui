@@ -54,6 +54,25 @@ export default function LoginPage() {
         navigate("/setup-store")
       }
     } catch (err: unknown) {
+      const errObj = err as any
+      const isUnverified =
+        errObj?.status === 403 ||
+        (errObj?.message && (
+          errObj.message.toLowerCase().includes("not verified") ||
+          errObj.message.toLowerCase().includes("belum diverifikasi") ||
+          errObj.message.toLowerCase().includes("verify your email")
+        ))
+
+      if (isUnverified) {
+        navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, {
+          state: {
+            email: email.trim(),
+            message: "Email Anda belum diverifikasi. Silakan masukkan kode verifikasi yang telah dikirimkan ke email Anda.",
+          },
+        })
+        return
+      }
+
       let msg =
         err instanceof Error
           ? err.message

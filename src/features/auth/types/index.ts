@@ -18,6 +18,7 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
+  requires_verification?: boolean;
   active_store_id?: string;
   permissions?: string[];
   store?: {
@@ -73,5 +74,14 @@ export interface ResetPasswordPayload {
 
 export interface ValidateResetTokenResponse {
   valid: boolean;
+  email: string;
+}
+
+export interface VerifyEmailPayload {
+  email: string;
+  code: string;
+}
+
+export interface ResendVerificationPayload {
   email: string;
 }

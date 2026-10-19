@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeft,
   Plus,
@@ -37,6 +38,7 @@ import { ChevronDown } from "lucide-react"
 import { supplierService } from "@/features/suppliers/services/supplier-service"
 import { stockService, type MaterialOption } from "@/features/inventory/services/stock-service"
 import { purchaseOrderService } from "@/features/purchase-orders/services/po-service"
+import { purchaseOrderKeys } from "@/features/purchase-orders/hooks/use-purchase-orders-query"
 import type { Supplier } from "@/features/suppliers/types"
 
 interface ItemRowState {
@@ -44,11 +46,12 @@ interface ItemRowState {
   stockName: string;
   quantity: string;
   baseUnit: string;
-  estimatedUnitPrice: string;
+  estimatedTotalPrice: string;
 }
 
 export default function CreatePurchaseOrderPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { poId } = useParams<{ poId?: string }>()
   const [searchParams] = useSearchParams()
   const isEditMode = Boolean(poId)
@@ -75,7 +78,7 @@ export default function CreatePurchaseOrderPage() {
       stockName: "",
       quantity: "",
       baseUnit: "",
-      estimatedUnitPrice: "",
+      estimatedTotalPrice: "",
     },
   ])
 
@@ -113,9 +116,9 @@ export default function CreatePurchaseOrderPage() {
                 stockName: it.stockName,
                 quantity: it.quantity.toString(),
                 baseUnit: it.baseUnit,
-                estimatedUnitPrice:
+                estimatedTotalPrice:
                   it.unitPrice && it.unitPrice > 0
-                    ? it.unitPrice.toString()
+                    ? (it.unitPrice * it.quantity).toString()
                     : "0",
               }))
             )
@@ -135,7 +138,7 @@ export default function CreatePurchaseOrderPage() {
                 stockName: matData[0].name,
                 quantity: "10",
                 baseUnit: matData[0].baseUnit,
-                estimatedUnitPrice: matData[0].latestPrice?.toString() || "0",
+                estimatedTotalPrice: ((matData[0].latestPrice || 0) * 10).toString(),
               },
             ])
           }
@@ -163,7 +166,7 @@ export default function CreatePurchaseOrderPage() {
         stockName: defaultMat?.name || "",
         quantity: "1",
         baseUnit: defaultMat?.baseUnit || "pcs",
-        estimatedUnitPrice: defaultMat?.latestPrice?.toString() || "0",
+        estimatedTotalPrice: (defaultMat?.latestPrice || 0).toString(),
       },
     ])
   }
@@ -180,12 +183,12 @@ export default function CreatePurchaseOrderPage() {
       stockId: mat.id,
       stockName: mat.name,
       baseUnit: mat.baseUnit,
-      estimatedUnitPrice: mat.latestPrice?.toString() || "0",
+      estimatedTotalPrice: ((mat.latestPrice || 0) * (parseFloat(updated[index].quantity) || 0)).toString(),
     }
     setItems(updated)
   }
 
-  function handleItemChange(index: number, field: "quantity" | "estimatedUnitPrice", value: string) {
+  function handleItemChange(index: number, field: "quantity" | "estimatedTotalPrice", value: string) {
     const updated = [...items]
     updated[index] = {
       ...updated[index],
@@ -196,9 +199,8 @@ export default function CreatePurchaseOrderPage() {
 
   // Calculate total estimate
   const totalEstimate = items.reduce((acc, it) => {
-    const q = parseFloat(it.quantity) || 0
-    const p = parseFloat(it.estimatedUnitPrice) || 0
-    return acc + q * p
+    const total = parseFloat(it.estimatedTotalPrice) || 0
+    return acc + total
   }, 0)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -229,7 +231,10 @@ export default function CreatePurchaseOrderPage() {
       const payloadItems = items.map((it) => ({
         stock_id: it.stockId,
         quantity: parseFloat(it.quantity),
-        estimated_unit_price: parseFloat(it.estimatedUnitPrice) || 0,
+        estimated_unit_price:
+          parseFloat(it.quantity) > 0
+            ? (parseFloat(it.estimatedTotalPrice) || 0) / parseFloat(it.quantity)
+            : 0,
       }))
 
       if (isEditMode && poId) {
@@ -247,6 +252,9 @@ export default function CreatePurchaseOrderPage() {
         })
       }
 
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all }),
+      ])
       navigate("/inventory/purchase-orders")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menyimpan Purchase Request"
@@ -474,19 +482,26 @@ export default function CreatePurchaseOrderPage() {
                   />
                 </div>
 
-                {/* Estimated Unit Price */}
+                {/* Estimated Total Price */}
                 <div className="w-full lg:w-40">
                   <Label className="text-xs text-muted-foreground mb-1 block">
-                    Estimasi Harga Satuan
+                    Total Harga (Estimasi)
                   </Label>
                   <Input
                     type="number"
                     min="0"
-                    placeholder="0 (opsional)"
-                    value={item.estimatedUnitPrice}
-                    onChange={(e) => handleItemChange(idx, "estimatedUnitPrice", e.target.value)}
+                    placeholder="Masukkan total harga"
+                    value={item.estimatedTotalPrice}
+                    onChange={(e) => handleItemChange(idx, "estimatedTotalPrice", e.target.value)}
                     className="rounded-lg h-9 font-mono text-sm text-right"
                   />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Harga/unit: <CurrencyText value={
+                      (parseFloat(item.quantity) || 0) > 0
+                        ? (parseFloat(item.estimatedTotalPrice) || 0) / parseFloat(item.quantity)
+                        : 0
+                    } />
+                  </p>
                 </div>
 
                 {/* Subtotal preview */}
@@ -494,9 +509,7 @@ export default function CreatePurchaseOrderPage() {
                   <span className="text-xs text-muted-foreground block">Subtotal</span>
                   <span className="font-mono text-sm font-semibold text-foreground">
                     <CurrencyText
-                      value={
-                        (parseFloat(item.quantity) || 0) * (parseFloat(item.estimatedUnitPrice) || 0)
-                      }
+                      value={parseFloat(item.estimatedTotalPrice) || 0}
                     />
                   </span>
                 </div>
