@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import { CurrencyText } from '@/components/ui/currency-text';
 import {
   Tooltip,
   TooltipContent,
@@ -230,15 +231,6 @@ export default function OverheadListPage() {
     }
   };
 
-  const formatCurrency = (val: number | null) => {
-    if (val === null || val === undefined) return '-';
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
-
   const getCategoryIcon = (category: OverheadCategory) => {
     switch (category) {
       case 'PRODUCTION':
@@ -301,7 +293,7 @@ export default function OverheadListPage() {
               className="flex items-center justify-center gap-1.5 shadow-2xs hover:bg-muted flex-1 sm:flex-initial"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Segarkan
+              Refresh
             </Button>
             <Button
               onClick={handleOpenCreate}
@@ -618,7 +610,7 @@ export default function OverheadListPage() {
                               </Tooltip>
                             </td>
                             <td className="px-5 py-3.5 font-mono text-xs font-semibold text-foreground">
-                              {formatCurrency(item.defaultAmount)}
+                              <CurrencyText value={item.defaultAmount} />
                             </td>
                             <td className="px-5 py-3.5 text-xs text-muted-foreground max-w-xs truncate">
                               {item.notes || '-'}

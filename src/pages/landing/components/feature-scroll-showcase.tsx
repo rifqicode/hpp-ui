@@ -5,10 +5,16 @@ import {
   ChefHat,
   ShoppingCart,
   CheckCircle2,
-  Sparkles,
   TrendingUp,
   Search,
   Clock,
+  ClipboardCheck,
+  ReceiptText,
+  ChartNoAxesCombined,
+  Building2,
+  ShieldCheck,
+  UsersRound,
+  MessageSquareText,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -16,6 +22,7 @@ import { cn } from "@/lib/utils"
 interface FeatureItem {
   id: string
   title: string
+  shortTitle: string
   tagline: string
   description: string
   icon: React.ComponentType<{ className?: string }>
@@ -23,30 +30,337 @@ interface FeatureItem {
   badgeColor: string
 }
 
+interface AdditionalFeature extends FeatureItem {
+  preview: {
+    title: string
+    path: string
+    subtitle: string
+    columns: [string, string]
+    rows: [string, string][]
+    resultLabel: string
+    result: string
+    note: string
+  }
+}
+
+const ADDITIONAL_FEATURES: AdditionalFeature[] = [
+  {
+    "id": "purchases",
+    "title": "Pembelian & Supplier",
+    "shortTitle": "Belanja",
+    "tagline": "Riwayat belanja lebih mudah ditelusuri.",
+    "description": "Kelola pemasok dan pesanan pembelian dari pengajuan hingga barang diterima. Stok bahan tercatat saat penerimaan selesai.",
+    "icon": ClipboardCheck,
+    "badgeText": "PO & Supplier",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Pembelian bahan minggu ini",
+        "path": "inventory/purchase-orders",
+        "subtitle": "Pengajuan, persetujuan, dan penerimaan tercatat.",
+        "columns": [
+            "Pesanan",
+            "Status"
+        ],
+        "rows": [
+            [
+                "PO-014 · Susu segar",
+                "Diterima"
+            ],
+            [
+                "PO-015 · Biji kopi",
+                "Disetujui"
+            ],
+            [
+                "PO-016 · Kemasan",
+                "Draf"
+            ]
+        ],
+        "resultLabel": "Setelah barang diterima",
+        "result": "Stok bahan bertambah",
+        "note": "Harga dan batch pembelian tersimpan untuk penelusuran biaya."
+    }
+},
+  {
+    "id": "simulation",
+    "title": "Simulasi Resep & Produksi",
+    "shortTitle": "Simulasi",
+    "tagline": "Rencanakan biaya sebelum mulai masak.",
+    "description": "Coba takaran, biaya, dan target harga jual. Periksa kebutuhan bahan serta perkiraan biaya sebelum menjalankan produksi.",
+    "icon": Calculator,
+    "badgeText": "Simulasi biaya",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Rencana produksi brownies",
+        "path": "production/hpp/production-simulation",
+        "subtitle": "Periksa kebutuhan sebelum menjalankan produksi.",
+        "columns": [
+            "Perencanaan",
+            "Estimasi"
+        ],
+        "rows": [
+            [
+                "Target produksi",
+                "20 potong"
+            ],
+            [
+                "Total kebutuhan biaya",
+                "Rp 100.000"
+            ],
+            [
+                "Harga jual per potong",
+                "Rp 10.000"
+            ]
+        ],
+        "resultLabel": "Estimasi HPP per potong",
+        "result": "Rp 5.000",
+        "note": "Angka simulasi membantu perencanaan; HPP aktual mengikuti hasil produksi."
+    }
+},
+  {
+    "id": "overheads",
+    "title": "Tenaga Kerja & Overhead",
+    "shortTitle": "Biaya",
+    "tagline": "Harga jual punya dasar biaya lebih lengkap.",
+    "description": "Masukkan upah, listrik, gas, dan biaya produksi lainnya ke perhitungan HPP. Biaya per porsi mencakup lebih dari bahan baku.",
+    "icon": ReceiptText,
+    "badgeText": "Biaya produksi",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Biaya produksi satu batch",
+        "path": "production/overheads",
+        "subtitle": "Bahan, tenaga kerja, dan overhead masuk perhitungan.",
+        "columns": [
+            "Komponen biaya",
+            "Jumlah"
+        ],
+        "rows": [
+            [
+                "Bahan baku",
+                "Rp 80.000"
+            ],
+            [
+                "Tenaga kerja",
+                "Rp 15.000"
+            ],
+            [
+                "Gas dan listrik",
+                "Rp 5.000"
+            ]
+        ],
+        "resultLabel": "Total biaya batch",
+        "result": "Rp 100.000",
+        "note": "Dengan hasil 20 potong, HPP aktual menjadi Rp 5.000 per potong."
+    }
+},
+  {
+    "id": "dashboard",
+    "title": "Dashboard Operasional & HPP",
+    "shortTitle": "Dashboard",
+    "tagline": "Lebih cepat tahu yang perlu diperhatikan.",
+    "description": "Lihat produksi aktif, stok menipis, bahan mendekati kedaluwarsa, hingga ringkasan penjualan dan margin produk.",
+    "icon": ChartNoAxesCombined,
+    "badgeText": "Ringkasan usaha",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Ringkasan penjualan hari ini",
+        "path": "dashboard",
+        "subtitle": "Pantau biaya dan laba kotor dari satu ringkasan.",
+        "columns": [
+            "Ringkasan",
+            "Nilai"
+        ],
+        "rows": [
+            [
+                "Penjualan",
+                "Rp 1.200.000"
+            ],
+            [
+                "HPP produk terjual",
+                "Rp 600.000"
+            ],
+            [
+                "Laba kotor",
+                "Rp 600.000"
+            ]
+        ],
+        "resultLabel": "Margin laba kotor",
+        "result": "50%",
+        "note": "Dashboard operasional juga menampilkan stok menipis dan batch mendekati kedaluwarsa."
+    }
+},
+  {
+    "id": "stores",
+    "title": "Kelola Beberapa Toko",
+    "shortTitle": "Toko",
+    "tagline": "Tetap teratur saat usaha bertambah cabang.",
+    "description": "Pindah antar toko dari satu akun. Stok, resep, produksi, dan transaksi tersimpan sesuai toko yang sedang dikelola.",
+    "icon": Building2,
+    "badgeText": "Multi-toko",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Satu akun, beberapa toko",
+        "path": "settings/store",
+        "subtitle": "Setiap toko memiliki catatan operasionalnya sendiri.",
+        "columns": [
+            "Toko",
+            "Catatan data"
+        ],
+        "rows": [
+            [
+                "Kedai Pusat",
+                "Stok & transaksi terpisah"
+            ],
+            [
+                "Kedai Selatan",
+                "Stok & transaksi terpisah"
+            ],
+            [
+                "Dapur Produksi",
+                "Stok & transaksi terpisah"
+            ]
+        ],
+        "resultLabel": "Saat berpindah toko",
+        "result": "Data mengikuti toko aktif",
+        "note": "Jumlah toko yang dapat dikelola mengikuti paket langganan."
+    }
+},
+  {
+    "id": "staff",
+    "title": "Tim & Hak Akses Staf",
+    "shortTitle": "Tim",
+    "tagline": "Delegasikan pekerjaan dengan akses yang jelas.",
+    "description": "Undang staf dan tentukan perannya. Atur akses agar setiap anggota tim menggunakan fitur sesuai tanggung jawabnya.",
+    "icon": ShieldCheck,
+    "badgeText": "Peran & izin",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Pembagian akses tim",
+        "path": "settings?tab=staff",
+        "subtitle": "Tentukan peran sesuai pekerjaan masing-masing.",
+        "columns": [
+            "Anggota tim",
+            "Peran contoh"
+        ],
+        "rows": [
+            [
+                "Dina",
+                "Kasir"
+            ],
+            [
+                "Raka",
+                "Produksi"
+            ],
+            [
+                "Nadia",
+                "Pengelola stok"
+            ]
+        ],
+        "resultLabel": "Akses fitur",
+        "result": "Sesuai izin peran",
+        "note": "Contoh pembagian peran; kustomisasi peran tersedia sesuai paket."
+    }
+},
+  {
+    "id": "customers",
+    "title": "Data & Riwayat Pelanggan",
+    "shortTitle": "Pelanggan",
+    "tagline": "Kenali pelanggan yang kembali berbelanja.",
+    "description": "Simpan kontak pelanggan dan hubungkan dengan transaksi. Lihat riwayat pesanan, jumlah pembelian, dan total belanjanya.",
+    "icon": UsersRound,
+    "badgeText": "Riwayat pelanggan",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Catatan pelanggan: Maya",
+        "path": "sales/customers",
+        "subtitle": "Kontak dan transaksi pelanggan tersimpan bersama.",
+        "columns": [
+            "Informasi",
+            "Catatan"
+        ],
+        "rows": [
+            [
+                "Jumlah pesanan",
+                "8 transaksi"
+            ],
+            [
+                "Total belanja",
+                "Rp 640.000"
+            ],
+            [
+                "Pesanan terakhir",
+                "Brownies cokelat"
+            ]
+        ],
+        "resultLabel": "Riwayat pesanan",
+        "result": "Mudah ditelusuri",
+        "note": "Hubungkan pelanggan ke transaksi POS untuk mencatat pembeliannya."
+    }
+},
+  {
+    "id": "ai",
+    "title": "Asisten AI untuk Data Toko",
+    "shortTitle": "AI Chat",
+    "tagline": "Mulai dari pertanyaan, pahami data usaha.",
+    "description": "Tanyakan stok, produk, produksi, atau penjualan lewat chat. Asisten AI membantu membaca data toko yang sedang aktif.",
+    "icon": MessageSquareText,
+    "badgeText": "Asisten AI",
+    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
+    "preview": {
+        "title": "Tanyakan data usaha lewat chat",
+        "path": "store/ai/conversations",
+        "subtitle": "Contoh pertanyaan: bahan apa yang stoknya menipis?",
+        "columns": [
+            "Bahan contoh",
+            "Stok tersedia"
+        ],
+        "rows": [
+            [
+                "Susu segar",
+                "2 liter"
+            ],
+            [
+                "Biji kopi",
+                "500 gram"
+            ],
+            [
+                "Cup minuman",
+                "40 pcs"
+            ]
+        ],
+        "resultLabel": "Dari pertanyaan ke ringkasan",
+        "result": "Lebih mudah memahami data",
+        "note": "Ilustrasi hasil percakapan; jawaban mengikuti data toko dan batas penggunaan AI."
+    }
+},
+]
+
 const FEATURES: FeatureItem[] = [
   {
     id: "hpp",
     title: "Kalkulasi Resep & HPP",
-    tagline: "Presisi hingga ke Satuan Gram & Ml",
+    shortTitle: "HPP",
+    tagline: "Hitung biaya sesuai takaran resep",
     description:
-      "Hitung modal bahan mentah per porsi secara akurat. Gabungkan biaya kemasan (packaging) dan beban overhead agar penetapan harga jual menghasilkan margin keuntungan ideal.",
+      "Lihat biaya bahan sesuai takaran resep, lalu pertimbangkan kemasan dan biaya produksi saat menentukan harga jual.",
     icon: Calculator,
-    badgeText: "Presisi Finansial",
+    badgeText: "Biaya per porsi",
     badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
   },
   {
     id: "inventory",
     title: "Kontrol Stok FIFO & FEFO",
-    tagline: "Cegah Bahan Basi & Food Waste",
+    shortTitle: "Stok",
+    tagline: "Prioritaskan bahan yang perlu dipakai lebih dulu",
     description:
       "Pengurangan bahan otomatis berdasarkan tanggal masuk pembelian (FIFO) atau tanggal kedaluwarsa terdekat (FEFO). Histori harga beli per faktur tersimpan rapi tanpa rumus manual.",
     icon: Boxes,
-    badgeText: "Auto-Batch Deduction",
+    badgeText: "Stok otomatis",
     badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
   },
   {
     id: "production",
     title: "Batch Produksi & Waste",
+    shortTitle: "Produksi",
     tagline: "Kelola Jadwal Masak & Rendemen",
     description:
       "Jadwalkan batch masakan dapur, pantau rendemen (yield) porsi, dan catat sisa bahan terbuang (waste). Stok mentah di gudang otomatis terpotong saat batch selesai diproduksi.",
@@ -57,6 +371,7 @@ const FEATURES: FeatureItem[] = [
   {
     id: "pos",
     title: "POS Kasir & Analisis Laba",
+    shortTitle: "Kasir",
     tagline: "Ketahui Profit Riil Tiap Struk",
     description:
       "Aplikasi kasir cepat yang terhubung langsung ke inventaris bahan. Setiap transaksi otomatis merekam laba kotor riil dan mengurangi stok toko secara instan.",
@@ -64,109 +379,84 @@ const FEATURES: FeatureItem[] = [
     badgeText: "Sinkronisasi POS & Laba",
     badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
+  ...ADDITIONAL_FEATURES,
+]
+
+const MOBILE_PREVIEWS = [
+  { title: "Kopi Susu Gula Aren", rows: [["Biaya per porsi", "Rp 6.100"], ["Harga jual", "Rp 18.000"], ["Estimasi laba kotor", "Rp 11.900"]] },
+  { title: "Prioritas pemakaian susu", rows: [["Batch pertama", "Kedaluwarsa 3 hari lagi"], ["Batch berikutnya", "Kedaluwarsa 9 hari lagi"], ["Metode pencatatan", "FEFO"]] },
+  { title: "Produksi brownies", rows: [["Target produksi", "30 potong"], ["Biaya bahan", "Tercatat per batch"], ["Pengurangan stok", "Saat produksi selesai"]] },
+  { title: "Contoh transaksi kasir", rows: [["Total penjualan", "Rp 64.000"], ["Total HPP", "Rp 23.120"], ["Laba kotor", "Rp 40.880"]] },
+  ...ADDITIONAL_FEATURES.map((feature) => ({ title: feature.preview.title, rows: feature.preview.rows })),
+]
+
+const FEATURE_GROUPS = [
+  { id: "cost-production", label: "Biaya & Produksi", featureIds: ["hpp", "simulation", "overheads", "production"] },
+  { id: "stock-sales", label: "Stok & Penjualan", featureIds: ["inventory", "purchases", "pos", "customers"] },
+  { id: "management", label: "Manajemen Usaha", featureIds: ["dashboard", "stores", "staff", "ai"] },
 ]
 
 export function FeatureScrollShowcase() {
-  const containerRef = React.useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = React.useState(0)
-  const [progress, setProgress] = React.useState(0)
-
-  // Scroll tracking on desktop viewports
-  React.useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    let ticking = false
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          if (!containerRef.current) return
-          const rect = containerRef.current.getBoundingClientRect()
-          const totalScrollable = rect.height - window.innerHeight
-          if (totalScrollable <= 0) return
-
-          const scrolledPast = -rect.top
-          const ratio = Math.max(0, Math.min(1, scrolledPast / totalScrollable))
-          const newIndex = Math.min(
-            FEATURES.length - 1,
-            Math.floor(ratio * FEATURES.length)
-          )
-
-          setActiveIndex((prev) => (prev !== newIndex ? newIndex : prev))
-          setProgress(ratio)
-          ticking = false
-        })
-        ticking = true
-      }
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    handleScroll()
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-    }
-  }, [])
-
-  const handleTabClick = (index: number) => {
-    setActiveIndex(index)
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      const containerTop = window.pageYOffset + rect.top
-      const totalScrollable = rect.height - window.innerHeight
-      if (totalScrollable > 0) {
-        const targetScroll =
-          containerTop + (index / FEATURES.length) * totalScrollable + 20
-
-        window.scrollTo({
-          top: targetScroll,
-          behavior: "smooth",
-        })
-      }
-    }
-  }
+  const activeGroup = FEATURE_GROUPS.find((group) => group.featureIds.includes(FEATURES[activeIndex].id)) ?? FEATURE_GROUPS[0]
+  const visibleFeatureIndices = activeGroup.featureIds.map((id) => FEATURES.findIndex((feature) => feature.id === id))
+  const additionalFeature = ADDITIONAL_FEATURES.find((feature) => feature.id === FEATURES[activeIndex].id)
 
   return (
     <div
-      ref={containerRef}
-      className="relative lg:h-[320vh] bg-slate-50/60 border-b border-slate-200"
+      className="relative bg-slate-50/60 border-b border-slate-200"
     >
-      {/* Sticky Frame: on desktop locks to top-20 while user scrolls through the 320vh travel */}
-      <div className="lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] flex items-center py-12 lg:py-0 overflow-hidden">
+      {/* Feature selector and illustrative product previews */}
+      <div className="flex items-center py-16 lg:py-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-8 lg:mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-primary text-xs font-semibold mb-3">
-              <Sparkles className="size-3.5 text-primary" />
-              <span>Sistem Operasional & Finansial Kuliner</span>
-            </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Satu Sistem untuk Mengelola Seluruh Siklus Finansial Dapur
+              Fitur Utama Dari HPP Tracker
             </h2>
             <p className="text-slate-600 text-sm sm:text-base mt-2.5">
               Dirancang khusus untuk pemilik kedai kopi, restoran, bakery, katering, dan cloud kitchen yang ingin mengamankan margin bisnis.
             </p>
           </div>
 
-          {/* Mobile Tab Selector Pill Bar (Visible on mobile/tablet) */}
-          <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
-            {FEATURES.map((item, idx) => {
+          <div role="group" aria-label="Kategori fitur" className="mx-auto mb-7 grid max-w-2xl grid-flow-col auto-cols-fr gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 sm:mb-9">
+            {FEATURE_GROUPS.map((group) => (
+              <button
+                key={group.id}
+                type="button"
+                aria-pressed={activeGroup.id === group.id}
+                aria-controls="feature-options feature-preview"
+                onClick={() => setActiveIndex(FEATURES.findIndex((feature) => feature.id === group.featureIds[0]))}
+                className={cn("flex min-h-12 min-w-0 items-center justify-center rounded-xl px-2 py-2.5 text-center text-xs font-semibold leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:px-4 sm:text-sm", activeGroup.id === group.id ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900")}
+              >
+                {group.label}
+              </button>
+            ))}
+          </div>
+
+          <div id="feature-options">
+          {/* Compact feature selector for mobile and tablet */}
+          <div className="mb-5 grid grid-flow-col auto-cols-fr gap-1 rounded-2xl border border-slate-200 bg-slate-100/80 p-1.5 lg:hidden">
+            {visibleFeatureIndices.map((idx) => {
+              const item = FEATURES[idx]
               const Icon = item.icon
               const isActive = activeIndex === idx
               return (
                 <button
                   key={item.id}
+                  aria-label={item.title}
+                  aria-pressed={isActive}
+                  aria-controls="feature-preview"
                   onClick={() => setActiveIndex(idx)}
                   className={cn(
-                    "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer",
+                    "flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-1 py-3 text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     isActive
-                      ? "bg-primary text-white shadow-sm"
-                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                      ? "bg-white text-primary shadow-sm ring-1 ring-slate-200/70"
+                      : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
                   )}
                 >
-                  <Icon className="size-4 shrink-0" />
-                  <span>{item.title}</span>
+                  <Icon aria-hidden="true" className="size-5 shrink-0" />
+                  <span>{item.shortTitle}</span>
                 </button>
               )
             })}
@@ -174,24 +464,23 @@ export function FeatureScrollShowcase() {
 
           {/* Main 2-Column Split: Left Tabs & Right Dynamic Visual Preview */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            {/* Left Column: Interactive Tab Cards with Vertical Progress */}
+            {/* Four feature choices in the selected category */}
             <div className="hidden lg:flex lg:col-span-5 flex-col gap-3">
-              {FEATURES.map((item, idx) => {
+              {visibleFeatureIndices.map((idx) => {
+                const item = FEATURES[idx]
                 const Icon = item.icon
                 const isActive = activeIndex === idx
-                const segmentStart = idx / FEATURES.length
-                const segmentEnd = (idx + 1) / FEATURES.length
-                const segmentProgress = Math.max(
-                  0,
-                  Math.min(1, (progress - segmentStart) / (segmentEnd - segmentStart))
-                )
+
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={item.id}
-                    onClick={() => handleTabClick(idx)}
+                    aria-pressed={isActive}
+                    aria-controls="feature-preview"
+                    onClick={() => setActiveIndex(idx)}
                     className={cn(
-                      "p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group",
+                      "shrink-0 text-left p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group focus-visible:outline-primary",
                       isActive
                         ? "bg-white border-primary shadow-lg ring-1 ring-primary/20"
                         : "bg-white/70 border-slate-200 hover:border-slate-300 hover:bg-white"
@@ -201,7 +490,7 @@ export function FeatureScrollShowcase() {
                     {isActive && (
                       <div
                         className="absolute left-0 top-0 bottom-0 w-1 bg-primary transition-all"
-                        style={{ height: `${Math.max(15, segmentProgress * 100)}%` }}
+                        style={{ height: "100%" }}
                       />
                     )}
 
@@ -218,7 +507,7 @@ export function FeatureScrollShowcase() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                           <h3
                             className={cn(
                               "text-base font-bold transition-colors",
@@ -245,26 +534,80 @@ export function FeatureScrollShowcase() {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 )
               })}
             </div>
 
             {/* Right Column: Stacked UI Card Mockup (Real App Window + Floating Depth Cards) */}
-            <div className="lg:col-span-7 relative">
+            <div className="lg:col-span-7 min-w-0 relative">
               {/* Subtle ambient glow behind preview */}
               <div className="absolute -inset-2 bg-gradient-to-tr from-primary/15 via-indigo-500/10 to-transparent rounded-3xl blur-2xl -z-10" />
 
               {/* Dynamic Stacked Screen Based on Active Index */}
-              <div className="relative">
-                {activeIndex === 0 && <HppRecipeMockup />}
-                {activeIndex === 1 && <FifoInventoryMockup />}
-                {activeIndex === 2 && <ProductionBatchMockup />}
-                {activeIndex === 3 && <PosCashierMockup />}
+              <div id="feature-preview" role="region" aria-label={FEATURES[activeIndex].title} className="relative">
+                <div className="sm:hidden rounded-2xl border border-slate-200 bg-white p-5">
+                  <p className="text-xs font-medium text-slate-500">Ilustrasi penggunaan</p>
+                  <h3 className="mt-2 text-lg font-bold text-slate-900">{MOBILE_PREVIEWS[activeIndex].title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{FEATURES[activeIndex].description}</p>
+                  <dl className="mt-5 divide-y divide-slate-100">
+                    {MOBILE_PREVIEWS[activeIndex].rows.map(([label, value]) => (
+                      <div key={label} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-sm">
+                        <dt className="text-slate-600">{label}</dt>
+                        <dd className="font-semibold text-slate-900">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+                <div className="hidden sm:block">
+                  {activeIndex === 0 && <HppRecipeMockup />}
+                  {activeIndex === 1 && <FifoInventoryMockup />}
+                  {activeIndex === 2 && <ProductionBatchMockup />}
+                  {activeIndex === 3 && <PosCashierMockup />}
+                  {additionalFeature && <AdditionalFeatureMockup feature={additionalFeature} />}
+                </div>
               </div>
             </div>
           </div>
+          </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function AdditionalFeatureMockup({ feature }: { feature: AdditionalFeature }) {
+  const Icon = feature.icon
+  return (
+    <div className="relative motion-safe:animate-in motion-safe:fade-in duration-300">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 text-slate-900 shadow-xl sm:p-6">
+        <div className="mb-5 flex min-w-0 items-center gap-2 border-b border-slate-200/80 pb-4">
+          <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-rose-400" />
+          <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-amber-400" />
+          <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-emerald-400" />
+          <span className="ml-2 min-w-0 truncate rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 font-mono text-[11px] text-slate-600">app.hpptracker.id/{feature.preview.path}</span>
+        </div>
+        <div className="mb-5 flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-primary"><Icon aria-hidden="true" className="size-5" /></span>
+          <div className="min-w-0">
+            <h4 className="text-lg font-bold leading-snug">{feature.preview.title}</h4>
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">{feature.preview.subtitle}</p>
+          </div>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="grid grid-cols-2 gap-4 bg-slate-100 px-4 py-3 text-xs font-bold text-slate-600"><span>{feature.preview.columns[0]}</span><span className="text-right">{feature.preview.columns[1]}</span></div>
+          <dl className="divide-y divide-slate-100">
+            {feature.preview.rows.map(([label, value]) => (
+              <div key={label} className="grid grid-cols-2 items-center gap-4 px-4 py-3.5 text-sm"><dt className="text-slate-600">{label}</dt><dd className="text-right font-semibold text-slate-900">{value}</dd></div>
+            ))}
+          </dl>
+        </div>
+        <p className="mt-4 flex items-center gap-2 text-xs text-slate-400"><CheckCircle2 aria-hidden="true" className="size-3.5 text-primary" />Ilustrasi fitur · Data contoh</p>
+      </div>
+      <div className="relative mt-4 rounded-2xl border border-indigo-100 bg-white p-5 shadow-lg lg:-mt-2 lg:ml-auto lg:mr-[-12px] lg:w-[85%]">
+        <p className="text-xs font-semibold text-primary">{feature.preview.resultLabel}</p>
+        <p className="mt-2 text-xl font-bold leading-snug text-slate-900">{feature.preview.result}</p>
+        <p className="mt-2 text-xs leading-relaxed text-slate-500">{feature.preview.note}</p>
       </div>
     </div>
   )
@@ -275,7 +618,7 @@ export function FeatureScrollShowcase() {
 /* -------------------------------------------------------------------------- */
 function HppRecipeMockup() {
   return (
-    <div className="relative animate-in fade-in duration-300">
+    <div className="relative motion-safe:animate-in motion-safe:fade-in duration-300">
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
@@ -432,7 +775,7 @@ function HppRecipeMockup() {
 
       {/* STACKED FLOATING CARD 2: Toast Alert (System Intelligence) */}
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
-        <div className="size-2 rounded-full bg-indigo-400 animate-pulse" />
+        <div className="size-2 rounded-full bg-indigo-400 motion-safe:animate-pulse" />
         <span className="font-medium">
           Presisi Desimal Finansial: HPP otomatis terhitung ke gram & ml
         </span>
@@ -446,7 +789,7 @@ function HppRecipeMockup() {
 /* -------------------------------------------------------------------------- */
 function FifoInventoryMockup() {
   return (
-    <div className="relative animate-in fade-in duration-300">
+    <div className="relative motion-safe:animate-in motion-safe:fade-in duration-300">
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
@@ -608,7 +951,7 @@ function FifoInventoryMockup() {
 
       {/* STACKED FLOATING CARD 2: Toast Alert */}
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
-        <div className="size-2 rounded-full bg-blue-400 animate-pulse" />
+        <div className="size-2 rounded-full bg-blue-400 motion-safe:animate-pulse" />
         <span className="font-medium">
           Metode FEFO Aktif: Bahan paling mendekati basi dipotong duluan
         </span>
@@ -622,7 +965,7 @@ function FifoInventoryMockup() {
 /* -------------------------------------------------------------------------- */
 function ProductionBatchMockup() {
   return (
-    <div className="relative animate-in fade-in duration-300">
+    <div className="relative motion-safe:animate-in motion-safe:fade-in duration-300">
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
@@ -761,7 +1104,7 @@ function ProductionBatchMockup() {
 
       {/* STACKED FLOATING CARD 2: Toast Alert */}
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
-        <div className="size-2 rounded-full bg-violet-400 animate-pulse" />
+        <div className="size-2 rounded-full bg-violet-400 motion-safe:animate-pulse" />
         <span className="font-medium">
           Auto-Deduct: Stok gudang terpangkas presisi saat batch disimpan
         </span>
@@ -775,7 +1118,7 @@ function ProductionBatchMockup() {
 /* -------------------------------------------------------------------------- */
 function PosCashierMockup() {
   return (
-    <div className="relative animate-in fade-in duration-300">
+    <div className="relative motion-safe:animate-in motion-safe:fade-in duration-300">
       {/* Base App Window */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xl overflow-hidden p-4 sm:p-5 text-slate-900">
         {/* Window Chrome Header */}
@@ -813,7 +1156,7 @@ function PosCashierMockup() {
             <span className="text-[10px] text-slate-400 uppercase font-bold block">
               Metode Bayar
             </span>
-            <span className="text-xs font-bold text-slate-700">QRIS Dinamis</span>
+            <span className="text-xs font-bold text-slate-700">QRIS</span>
           </div>
         </div>
 
@@ -895,7 +1238,7 @@ function PosCashierMockup() {
             <span className="font-mono font-bold text-slate-500">Rp 23.120</span>
           </div>
           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-            <span className="font-semibold text-slate-800">Laba Bersih Struk</span>
+            <span className="font-semibold text-slate-800">Laba Kotor Struk</span>
             <span className="font-mono font-extrabold text-emerald-600 text-base">
               +Rp 40.880
             </span>
@@ -905,7 +1248,7 @@ function PosCashierMockup() {
 
       {/* STACKED FLOATING CARD 2: Toast Alert */}
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
-        <div className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+        <div className="size-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
         <span className="font-medium">
           Sinkronisasi Instan: Struk kasir otomatis rekam laba & potong inventaris
         </span>

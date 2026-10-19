@@ -104,14 +104,6 @@ export function useSupplierDetail(supplierId?: string) {
     }
   }
 
-  function formatRupiah(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
   function formatDate(dateStr?: string) {
     if (!dateStr) return "-"
     return new Intl.DateTimeFormat("id-ID", {
@@ -136,7 +128,6 @@ export function useSupplierDetail(supplierId?: string) {
     submitting,
     loadData,
     handleUpdateSubmit,
-    formatRupiah,
     formatDate,
     totalSpent,
     averageOrder,

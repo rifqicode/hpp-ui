@@ -28,6 +28,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
 import {
   Table,
   TableBody,
@@ -212,14 +213,6 @@ export default function PurchaseOrderDetailPage() {
       const msg = err instanceof Error ? err.message : "Gagal membatalkan PO"
       alert(msg)
     }
-  }
-
-  function formatRupiah(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount)
   }
 
   function formatDate(dateStr?: string) {
@@ -510,7 +503,7 @@ export default function PurchaseOrderDetailPage() {
               {order.status === "PURCHASE_REQUEST" || order.totalAmount === 0 ? (
                 <span className="text-sm font-normal text-amber-600 italic">Menunggu penetapan harga</span>
               ) : (
-                formatRupiah(order.totalAmount)
+                <CurrencyText value={order.totalAmount} />
               )}
             </div>
             <p className="text-xs text-muted-foreground">{order.items.length} macam item bahan baku</p>
@@ -552,14 +545,14 @@ export default function PurchaseOrderDetailPage() {
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {it.unitPrice > 0 ? (
-                        formatRupiah(it.unitPrice)
+                        <CurrencyText value={it.unitPrice} />
                       ) : (
                         <span className="text-xs text-amber-600 italic">Belum diset</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono font-semibold text-foreground">
                       {it.totalPrice > 0 ? (
-                        formatRupiah(it.totalPrice)
+                        <CurrencyText value={it.totalPrice} />
                       ) : (
                         <span className="text-xs text-amber-600 italic">-</span>
                       )}
@@ -854,7 +847,7 @@ export default function PurchaseOrderDetailPage() {
                           />
                         </TableCell>
                         <TableCell className="align-middle py-2.5 px-3 text-right font-mono text-xs text-muted-foreground whitespace-nowrap font-medium">
-                          {unitPrice > 0 ? `${formatRupiah(Math.round(unitPrice))} / ${it.baseUnit}` : "-"}
+                          {unitPrice > 0 ? `${formatCurrency(Math.round(unitPrice))} / ${it.baseUnit}` : "-"}
                         </TableCell>
                       </TableRow>
                     )
@@ -866,7 +859,7 @@ export default function PurchaseOrderDetailPage() {
             <div className="p-3 rounded-xl bg-muted/40 border border-border flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-semibold text-foreground">Total Nilai Pembelian:</span>
               <span className="text-base font-bold font-mono text-primary">
-                {formatRupiah(calculatedTotal)}
+                <CurrencyText value={calculatedTotal} />
               </span>
             </div>
 

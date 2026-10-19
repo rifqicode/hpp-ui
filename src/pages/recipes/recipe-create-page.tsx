@@ -43,14 +43,7 @@ import {
 import { recipeService } from "@/features/recipes/services/recipe-service"
 import type { RawMaterialStock, CreateProductInput, ProductMode, ProductCategory } from "@/features/recipes/types"
 import { ImageUploadDropzone } from "@/features/recipes/components/image-upload-dropzone"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(val)
-}
+import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
 
 interface IngredientRow {
   stockId: string
@@ -683,8 +676,8 @@ export default function RecipeCreatePage() {
                                   <span className="text-[10px] text-muted-foreground ml-1 shrink-0">
                                     ({selectedMat ? (
                                       selectedMat.baseUnit.toLowerCase() === "kg"
-                                        ? `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/kg (${formatCurrencyIdr(selectedMat.avgCostPerUnit / 1000)}/g)`
-                                        : `${formatCurrencyIdr(selectedMat.avgCostPerUnit)}/${selectedMat.baseUnit}`
+                                        ? `${formatCurrency(selectedMat.avgCostPerUnit)}/kg (${formatCurrency(selectedMat.avgCostPerUnit / 1000)}/g)`
+                                        : `${formatCurrency(selectedMat.avgCostPerUnit)}/${selectedMat.baseUnit}`
                                     ) : ""}) ▼
                                   </span>
                                 </Button>
@@ -710,11 +703,11 @@ export default function RecipeCreatePage() {
                                       </div>
                                       <div className="text-right">
                                         <span className="font-mono text-[11px] font-bold text-primary block">
-                                          {formatCurrencyIdr(m.avgCostPerUnit)}/{m.baseUnit}
+                                          <CurrencyText value={m.avgCostPerUnit} suffix={`/${m.baseUnit}`} />
                                         </span>
                                         {isKg && (
                                           <span className="text-[9px] font-mono text-muted-foreground block">
-                                            ({formatCurrencyIdr(m.avgCostPerUnit / 1000)}/g)
+                                            (<CurrencyText value={m.avgCostPerUnit / 1000} suffix="/g" />)
                                           </span>
                                         )}
                                       </div>
@@ -779,10 +772,10 @@ export default function RecipeCreatePage() {
                               Subtotal:
                             </span>
                             <span className="font-mono text-xs font-bold text-foreground block">
-                              {formatCurrencyIdr(subtotal)}
+                              <CurrencyText value={subtotal} />
                             </span>
                             <span className="text-[9px] font-mono text-muted-foreground block">
-                              @{formatCurrencyIdr(unitCost)}/{activeUnit}
+                              @<CurrencyText value={unitCost} suffix={`/${activeUnit}`} />
                             </span>
                           </div>
 
@@ -808,7 +801,7 @@ export default function RecipeCreatePage() {
                 <span className="font-medium text-foreground">
                   Subtotal Bahan per Batch:{" "}
                   <strong className="text-primary font-mono text-sm">
-                    {formatCurrencyIdr(calculations.totalRawMaterials)}
+                    <CurrencyText value={calculations.totalRawMaterials} />
                   </strong>
                 </span>
               </div>
@@ -849,7 +842,7 @@ export default function RecipeCreatePage() {
                     Bahan Baku (BOM / Unit)
                   </span>
                   <span className="text-lg font-mono font-bold text-foreground block mt-0.5">
-                    {formatCurrencyIdr(calculations.bomCostPerUnit)}
+                    <CurrencyText value={calculations.bomCostPerUnit} />
                   </span>
                   <span className="text-[10px] text-muted-foreground block mt-0.5">
                     Metode Stok: FIFO
@@ -861,7 +854,7 @@ export default function RecipeCreatePage() {
                     Estimasi HPP per {unit}
                   </span>
                   <span className="text-lg font-mono font-black text-primary block mt-0.5">
-                    {formatCurrencyIdr(calculations.estimatedHPP)}
+                    <CurrencyText value={calculations.estimatedHPP} />
                   </span>
                   <span className="text-[10px] text-primary/80 block mt-0.5">
                     HPP Bahan Baku (BOM)
@@ -924,7 +917,7 @@ export default function RecipeCreatePage() {
                   </span>
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="text-2xl sm:text-3xl font-black font-mono text-foreground">
-                      {formatCurrencyIdr(calculations.calculatedPrice)}
+                      <CurrencyText value={calculations.calculatedPrice} />
                     </span>
                     <span className="text-xs text-muted-foreground font-mono">
                       /{unit}
@@ -939,8 +932,8 @@ export default function RecipeCreatePage() {
                 </div>
 
                 <div className="text-xs text-muted-foreground sm:text-right space-y-0.5">
-                  <div>Modal HPP: <strong className="text-foreground font-mono">{formatCurrencyIdr(calculations.estimatedHPP)}</strong></div>
-                  <div>Potensi Laba Kotor: <strong className="text-emerald-600 font-mono font-bold">+{formatCurrencyIdr(calculations.grossProfit)}</strong></div>
+                  <div>Modal HPP: <strong className="text-foreground font-mono"><CurrencyText value={calculations.estimatedHPP} /></strong></div>
+                  <div>Potensi Laba Kotor: <strong className="text-emerald-600 font-mono font-bold"><CurrencyText value={calculations.grossProfit} showPositiveSign /></strong></div>
                   <div className="text-[10px] text-muted-foreground/80 pt-0.5">
                     Formula: HPP / (1 - {targetMargin}%)
                   </div>
@@ -992,7 +985,7 @@ export default function RecipeCreatePage() {
                     Harga Jual Otomatis (Margin {targetMargin}%)
                   </span>
                   <span className="text-2xl font-black font-mono text-foreground">
-                    {formatCurrencyIdr(calculations.calculatedPrice)}
+                    <CurrencyText value={calculations.calculatedPrice} />
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
@@ -1065,25 +1058,25 @@ export default function RecipeCreatePage() {
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Total Biaya Bahan:</span>
                     <span className="font-mono font-semibold">
-                      {formatCurrencyIdr(calculations.bomCostPerUnit * 50)}
+                      <CurrencyText value={calculations.bomCostPerUnit * 50} />
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Potensi Omzet:</span>
                     <span className="font-mono font-semibold text-foreground">
-                      {formatCurrencyIdr(calculations.calculatedPrice * 50)}
+                      <CurrencyText value={calculations.calculatedPrice * 50} />
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Estimasi HPP Total:</span>
                     <span className="font-mono font-semibold text-primary">
-                      {formatCurrencyIdr(calculations.estimatedHPP * 50)}
+                      <CurrencyText value={calculations.estimatedHPP * 50} />
                     </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground text-[10px] block">Estimasi Laba Kotor:</span>
                     <span className="font-mono font-semibold text-emerald-600 font-bold">
-                      +{formatCurrencyIdr(calculations.grossProfit * 50)}
+                      <CurrencyText value={calculations.grossProfit * 50} showPositiveSign />
                     </span>
                   </div>
                 </div>

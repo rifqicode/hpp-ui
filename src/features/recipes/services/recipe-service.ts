@@ -179,6 +179,7 @@ export function transformProductFromApi(raw: RawProduct): Product {
     description: raw.description || '',
     currentStock,
     latestHpp,
+    estimatedHpp: raw.estimated_hpp != null || raw.estimatedHpp != null ? parseNumber(raw.estimated_hpp ?? raw.estimatedHpp) : undefined,
     createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
     updatedAt: raw.updated_at || raw.updatedAt,
     ingredients,
@@ -187,32 +188,28 @@ export function transformProductFromApi(raw: RawProduct): Product {
 }
 
 export const recipeService = {
-  getProducts: async (query?: { search?: string; category?: string }): Promise<Product[]> => {
-    try {
-      const params = new URLSearchParams();
-      if (query?.search) params.append('search', query.search);
-      if (query?.category && query.category !== 'All') params.append('category', query.category);
-      params.append('limit', '1000');
-      const queryString = params.toString();
-      const url = queryString ? `/products?${queryString}` : '/products?limit=1000';
-      const response = await apiClient.get<PaginatedResponse<RawProduct> | RawProduct[]>(url);
-
-      let rawItems: RawProduct[] = [];
+  getProducts: async (query?: { search?: string; category?: string }, options?: { storeId?: string; signal?: AbortSignal }): Promise<Product[]> => {
+    const products: Product[] = [];
+    let page = 1;
+    let totalPages: number;
+    do {
+      const response = await apiClient.get<PaginatedResponse<RawProduct> | RawProduct[]>('/products', {
+        params: { search: query?.search, category: query?.category !== 'All' ? query?.category : undefined, page, limit: 100 },
+        headers: options?.storeId ? { 'X-Store-ID': options.storeId } : undefined,
+        signal: options?.signal,
+      });
       if (Array.isArray(response.data)) {
-        rawItems = response.data;
-      } else if (response.data && Array.isArray(response.data.items)) {
-        rawItems = response.data.items;
+        products.push(...response.data.map(transformProductFromApi));
+        break;
       }
-
-      if (rawItems.length > 0 || (response.data && 'items' in response.data)) {
-        const transformed = rawItems.map(transformProductFromApi);
-        LOCAL_PRODUCTS = transformed;
-        return transformed;
-      }
-      return [...LOCAL_PRODUCTS];
-    } catch {
-      return [...LOCAL_PRODUCTS];
-    }
+      if (!response.data || !Array.isArray(response.data.items)) throw new Error('Invalid product list response');
+      products.push(...response.data.items.map(transformProductFromApi));
+      totalPages = response.data.total_pages || 1;
+      if (page < totalPages && response.data.items.length === 0) throw new Error('Incomplete product list response');
+      page++;
+    } while (page <= totalPages);
+    LOCAL_PRODUCTS = products;
+    return products;
   },
 
   getProductSummary: async (): Promise<ProductSummary> => {
@@ -377,11 +374,8 @@ export const recipeService = {
   },
 
   deleteProduct: async (id: string): Promise<void> => {
-    try {
-      await apiClient.delete(`/products/${id}`);
-    } finally {
-      LOCAL_PRODUCTS = LOCAL_PRODUCTS.filter((p) => p.id !== id);
-    }
+    await apiClient.delete(`/products/${id}`);
+    LOCAL_PRODUCTS = LOCAL_PRODUCTS.filter((product) => product.id !== id);
   },
 
   addIngredient: async (productId: string, data: AddIngredientInput): Promise<Product> => {

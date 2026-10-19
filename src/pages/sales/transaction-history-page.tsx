@@ -31,14 +31,7 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { TablePagination } from '../../components/ui/table-pagination';
-
-function formatRupiah(num: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(num);
-}
+import { CurrencyText } from '@/components/ui/currency-text';
 
 function getTodayString(): string {
   return new Date().toISOString().slice(0, 10);
@@ -172,7 +165,7 @@ export default function TransactionHistoryPage() {
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Segarkan
+            Refresh
           </Button>
           <Button asChild className="gap-2 font-medium shadow-2xs">
             <Link to="/sales/pos">
@@ -192,7 +185,7 @@ export default function TransactionHistoryPage() {
                 <p className="text-xs font-medium text-muted-foreground">Total Omzet</p>
                 <div className="flex items-baseline gap-1.5 min-w-0">
                   <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-foreground">
-                    {formatRupiah(summary.totalRevenue)}
+                    <CurrencyText value={summary.totalRevenue} />
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
@@ -211,7 +204,7 @@ export default function TransactionHistoryPage() {
                 <p className="text-xs font-medium text-muted-foreground">Total HPP Modal</p>
                 <div className="flex items-baseline gap-1.5 min-w-0">
                   <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-amber-600 dark:text-amber-400">
-                    {formatRupiah(summary.totalHpp)}
+                    <CurrencyText value={summary.totalHpp} />
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
@@ -230,7 +223,7 @@ export default function TransactionHistoryPage() {
                 <p className="text-xs font-medium text-muted-foreground">Total Laba Kotor</p>
                 <div className="flex items-baseline gap-1.5 min-w-0">
                   <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                    {formatRupiah(summary.totalGrossProfit)}
+                    <CurrencyText value={summary.totalGrossProfit} />
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
@@ -268,12 +261,14 @@ export default function TransactionHistoryPage() {
                 <p className="text-xs font-medium text-muted-foreground">Rata-rata Order (AOV)</p>
                 <div className="flex items-baseline gap-1.5 min-w-0">
                   <span className="text-xl xl:text-2xl truncate font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
-                    {formatRupiah(
-                      summary.averageOrderValue ||
+                    <CurrencyText
+                      value={
+                        summary.averageOrderValue ||
                         (summary.totalTransactions > 0
                           ? summary.totalRevenue / summary.totalTransactions
                           : 0)
-                    )}
+                      }
+                    />
                   </span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
@@ -531,15 +526,15 @@ export default function TransactionHistoryPage() {
                         </td>
 
                         <td className="px-5 py-3.5 text-right font-bold text-foreground">
-                          {formatRupiah(sale.totalAmount)}
+                          <CurrencyText value={sale.totalAmount} />
                         </td>
 
                         <td className="px-5 py-3.5 text-right text-muted-foreground">
-                          {formatRupiah(sale.totalCost)}
+                          <CurrencyText value={sale.totalCost} />
                         </td>
 
                         <td className="px-5 py-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400">
-                          {formatRupiah(sale.grossProfit)}
+                          <CurrencyText value={sale.grossProfit} />
                           <span className="block text-[10px] font-normal text-muted-foreground">
                             ({sale.profitMarginPct}%)
                           </span>
@@ -670,11 +665,11 @@ export default function TransactionHistoryPage() {
                       <div className="truncate flex-1 pr-2">
                         <p className="font-medium truncate">{it.productName}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {it.quantity} x {formatRupiah(it.priceAtSale)}
+                          {it.quantity} x <CurrencyText value={it.priceAtSale} />
                         </p>
                       </div>
                       <span className="font-semibold shrink-0">
-                        {formatRupiah(it.subtotal)}
+                        <CurrencyText value={it.subtotal} />
                       </span>
                     </div>
                   ))}
@@ -685,19 +680,19 @@ export default function TransactionHistoryPage() {
                   {selectedSale.discountAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Diskon:</span>
-                      <span>-{formatRupiah(selectedSale.discountAmount)}</span>
+                      <span>-<CurrencyText value={selectedSale.discountAmount} /></span>
                     </div>
                   )}
                   {selectedSale.taxAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Pajak:</span>
-                      <span>+{formatRupiah(selectedSale.taxAmount)}</span>
+                      <span>+<CurrencyText value={selectedSale.taxAmount} /></span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold text-xs pt-1">
                     <span>Total Bayar:</span>
                     <span className="text-foreground">
-                      {formatRupiah(selectedSale.totalAmount)}
+                      <CurrencyText value={selectedSale.totalAmount} />
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
@@ -707,13 +702,13 @@ export default function TransactionHistoryPage() {
                   {selectedSale.cashReceived != null && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Uang Diterima:</span>
-                      <span>{formatRupiah(selectedSale.cashReceived)}</span>
+                      <span><CurrencyText value={selectedSale.cashReceived} /></span>
                     </div>
                   )}
                   {selectedSale.cashChange != null && (
                     <div className="flex justify-between text-muted-foreground font-semibold">
                       <span>Kembalian:</span>
-                      <span>{formatRupiah(selectedSale.cashChange)}</span>
+                      <span><CurrencyText value={selectedSale.cashChange} /></span>
                     </div>
                   )}
                 </div>
@@ -722,12 +717,12 @@ export default function TransactionHistoryPage() {
                 <div className="bg-muted/40 p-2.5 rounded-lg text-[10px] font-sans space-y-1 text-muted-foreground border border-border/50">
                   <div className="flex justify-between">
                     <span>Total HPP Modal:</span>
-                    <span>{formatRupiah(selectedSale.totalCost)}</span>
+                    <span><CurrencyText value={selectedSale.totalCost} /></span>
                   </div>
                   <div className="flex justify-between font-semibold text-emerald-600">
                     <span>Laba Kotor (Gross Profit):</span>
                     <span>
-                      {formatRupiah(selectedSale.grossProfit)} ({selectedSale.profitMarginPct}%)
+                      <CurrencyText value={selectedSale.grossProfit} /> ({selectedSale.profitMarginPct}%)
                     </span>
                   </div>
                 </div>

@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import { CurrencyText } from "@/components/ui/currency-text"
 import { usePurchaseStock } from "../hooks/use-purchase-stock"
 
 const BASE_UNITS = [
@@ -37,10 +38,6 @@ const BASE_UNITS = [
   { value: "bottle", label: "Bottle" },
   { value: "can", label: "Can" },
 ] as const
-
-function formatCurrencyIdr(value: number) {
-  return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(value)
-}
 
 interface RecordPurchaseDialogProps {
   open: boolean
@@ -370,13 +367,13 @@ export function RecordPurchaseDialog({
                   <div>
                     <span className="text-muted-foreground">Unit Cost:</span>
                     <div className="font-semibold text-foreground font-mono">
-                      Rp {formatCurrencyIdr(pricePerUnit)} / {selectedMaterial?.base_unit || "unit"}
+                      <CurrencyText value={pricePerUnit} suffix={` / ${selectedMaterial?.base_unit || "unit"}`} />
                     </div>
                   </div>
                   <div className="sm:text-right">
                     <span className="text-muted-foreground">Batch Total:</span>
                     <div className="font-semibold text-primary font-mono">
-                      Rp {formatCurrencyIdr(totalNum)}
+                      <CurrencyText value={totalNum} />
                     </div>
                   </div>
                 </div>

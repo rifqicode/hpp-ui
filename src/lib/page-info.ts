@@ -49,7 +49,7 @@ export function getActiveMenuTitle(pathname: string): string {
     return 'Detail Produk';
   }
   if (path === '/production/batches') {
-    return 'Batches Produksi';
+    return 'Production';
   }
   if (path === '/production/batches/new') {
     return 'Mulai Batch';

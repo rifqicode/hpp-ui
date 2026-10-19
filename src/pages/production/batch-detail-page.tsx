@@ -1,13 +1,11 @@
 import * as React from "react"
+import { ProductionStatusBadge } from "@/features/production/components/production-status"
 import { useInitialLoading } from "@/hooks/use-initial-loading"
-import { useParams, Link } from "react-router-dom"
+import { useParams, Link, useLocation } from "react-router-dom"
 import {
   ArrowLeft,
   Factory,
-  CheckCircle2,
-  Clock,
   AlertTriangle,
-  XCircle,
   ChevronRight,
   Check,
   RotateCcw,
@@ -50,14 +48,7 @@ import type {
 } from "@/features/production/types"
 import { overheadService } from "@/features/overheads/services/overhead-service"
 import type { OverheadType } from "@/features/overheads/types"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(val)
-}
+import { CurrencyText } from "@/components/ui/currency-text"
 
 function calculateGrossMargin(sellingPrice: number, cost: number): number {
   if (!sellingPrice || sellingPrice <= 0) return 0
@@ -66,6 +57,9 @@ function calculateGrossMargin(sellingPrice: number, cost: number): number {
 }
 
 export default function BatchDetailPage() {
+  const location = useLocation()
+  const returnToValue: unknown = location.state?.returnTo
+  const returnTo = typeof returnToValue === "string" && /^\/production\/batches(?:\?|$)/.test(returnToValue) ? returnToValue : "/production/batches"
   const { batchId } = useParams<{ batchId: string }>()
 
   const [batch, setBatch] = React.useState<ProductionBatch | null>(null)
@@ -209,7 +203,7 @@ export default function BatchDetailPage() {
         <AlertTriangle className="h-10 w-10 text-amber-500" />
         <h2 className="text-xl font-bold">Batch Produksi Tidak Ditemukan</h2>
         <Button asChild variant="outline" className="rounded-xl">
-          <Link to="/production/batches">Kembali ke Daftar Batch</Link>
+          <Link to={returnTo}>Kembali ke Daftar Batch</Link>
         </Button>
       </div>
     )
@@ -233,7 +227,7 @@ export default function BatchDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs">
-            <Link to="/production/batches">
+            <Link to={returnTo}>
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
               Daftar Batch
             </Link>
@@ -299,21 +293,7 @@ export default function BatchDetailPage() {
                   <span className="font-mono text-xl font-black text-foreground">
                     {batch.batchNumber}
                   </span>
-                  {batch.status === "IN_PROGRESS" && (
-                    <Badge variant="warning" className="text-xs font-bold flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" /> Sedang Diproduksi
-                    </Badge>
-                  )}
-                  {batch.status === "COMPLETED" && (
-                    <Badge variant="success" className="text-xs font-bold flex items-center gap-1">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Selesai & Terverifikasi
-                    </Badge>
-                  )}
-                  {(batch.status === "CANCELLED" || batch.status === "VOID") && (
-                    <Badge variant="destructive" className="text-xs font-bold flex items-center gap-1">
-                      <XCircle className="h-3.5 w-3.5" /> {batch.status === "VOID" ? "Void (Dibatalkan)" : "Dibatalkan"}
-                    </Badge>
-                  )}
+                  <ProductionStatusBadge status={batch.status} />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -385,7 +365,7 @@ export default function BatchDetailPage() {
               Biaya Bahan Baku (BOM)
             </span>
             <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
-              {formatCurrencyIdr(batch.stockCost)}
+              <CurrencyText value={batch.stockCost} />
             </div>
             <span className="text-[10px] text-muted-foreground block truncate">{batch.ingredients.length} bahan terpotong</span>
           </div>
@@ -395,7 +375,7 @@ export default function BatchDetailPage() {
               Biaya Overhead
             </span>
             <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
-              {batch.overheadCost !== undefined ? formatCurrencyIdr(batch.overheadCost) : "-"}
+              {batch.overheadCost !== undefined ? <CurrencyText value={batch.overheadCost} /> : "-"}
             </div>
             <span className="text-[10px] text-muted-foreground block truncate">Listrik, Gas, Tenaga Kerja</span>
           </div>
@@ -405,9 +385,9 @@ export default function BatchDetailPage() {
               HPP per Unit Aktual
             </span>
             <div className="text-base sm:text-lg font-black font-mono text-primary mt-0.5 truncate">
-              {batch.hppPerUnit ? formatCurrencyIdr(batch.hppPerUnit) : "-"}
+              {batch.hppPerUnit ? <CurrencyText value={batch.hppPerUnit} /> : "-"}
             </div>
-            <span className="text-[10px] text-muted-foreground block truncate">Harga Jual: {formatCurrencyIdr(batch.sellingPrice)}</span>
+            <span className="text-[10px] text-muted-foreground block truncate">Harga Jual: <CurrencyText value={batch.sellingPrice} /></span>
           </div>
 
           <div className="p-3 px-4 col-span-2 sm:col-span-1 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
@@ -433,7 +413,7 @@ export default function BatchDetailPage() {
               )}
             </div>
             <span className="text-[10px] text-muted-foreground mt-0.5 block truncate">
-              {batch.totalCost ? `Total Modal: ${formatCurrencyIdr(batch.totalCost)}` : "Dalam proses"}
+              {batch.totalCost ? <>Total Modal: <CurrencyText value={batch.totalCost} /></> : "Dalam proses"}
             </span>
           </div>
         </div>
@@ -450,7 +430,7 @@ export default function BatchDetailPage() {
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
-              Total Bahan: {formatCurrencyIdr(batch.stockCost)}
+              Total Bahan: <CurrencyText value={batch.stockCost} />
             </Badge>
           </div>
         </CardHeader>
@@ -483,7 +463,7 @@ export default function BatchDetailPage() {
                     </TableCell>
 
                     <TableCell className="font-mono font-bold text-sm text-slate-800">
-                      {formatCurrencyIdr(ing.cost)}
+                      <CurrencyText value={ing.cost} />
                     </TableCell>
 
                     <TableCell>
@@ -519,7 +499,7 @@ export default function BatchDetailPage() {
                 </CardDescription>
               </div>
               <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
-                Total Overhead: {formatCurrencyIdr(batch.overheadCost || 0)}
+                Total Overhead: <CurrencyText value={batch.overheadCost || 0} />
               </Badge>
             </div>
           </CardHeader>
@@ -529,28 +509,28 @@ export default function BatchDetailPage() {
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
                 <span className="text-xs text-muted-foreground block">Tenaga Kerja Langsung</span>
                 <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  {formatCurrencyIdr(batch.overheadBreakdown.labor)}
+                  <CurrencyText value={batch.overheadBreakdown.labor} />
                 </span>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
                 <span className="text-xs text-muted-foreground block">Gas, Listrik & Oven</span>
                 <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  {formatCurrencyIdr(batch.overheadBreakdown.energy)}
+                  <CurrencyText value={batch.overheadBreakdown.energy} />
                 </span>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
                 <span className="text-xs text-muted-foreground block">Kemasan & Plastik</span>
                 <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  {formatCurrencyIdr(batch.overheadBreakdown.packaging)}
+                  <CurrencyText value={batch.overheadBreakdown.packaging} />
                 </span>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/70">
                 <span className="text-xs text-muted-foreground block">Biaya Lain-lain</span>
                 <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                  {formatCurrencyIdr(batch.overheadBreakdown.other || 0)}
+                  <CurrencyText value={batch.overheadBreakdown.other || 0} />
                 </span>
               </div>
             </div>
@@ -608,7 +588,7 @@ export default function BatchDetailPage() {
                   Biaya Overhead Operasional (Batch Ini)
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-700">
-                  Total: {formatCurrencyIdr(completeOverheadTotal)}
+                  Total: <CurrencyText value={completeOverheadTotal} />
                 </span>
               </div>
 
@@ -653,7 +633,7 @@ export default function BatchDetailPage() {
             <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 flex flex-wrap items-center justify-between gap-2 text-xs">
               <span>Proyeksi HPP per Unit:</span>
               <span className="font-mono font-black text-lg text-primary">
-                {formatCurrencyIdr(completeHppPerUnit)}
+                <CurrencyText value={completeHppPerUnit} />
               </span>
             </div>
 

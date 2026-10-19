@@ -1,6 +1,8 @@
 import apiClient from '../../../lib/api-client';
 import type {
   ProductionBatch,
+  ProductionCalendarFilters,
+  ProductionCalendarResponse,
   StartProductionInput,
   CompleteProductionInput,
   ConsumedIngredient,
@@ -93,6 +95,14 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
 }
 
 export const productionService = {
+  getCalendar: async (filters: ProductionCalendarFilters, storeId: string, signal?: AbortSignal): Promise<ProductionCalendarResponse> => {
+    const response = await apiClient.get<ProductionCalendarResponse>('/production/calendar', {
+      params: filters,
+      headers: { 'X-Store-ID': storeId },
+      signal,
+    });
+    return response.data;
+  },
   getBatches: async (): Promise<ProductionBatch[]> => {
     try {
       const response = await apiClient.get<any>('/production');

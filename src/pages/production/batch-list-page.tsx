@@ -1,5 +1,7 @@
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { ProductionCalendar } from "@/features/production/components/production-calendar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import {
   Plus,
   Search,
@@ -54,14 +56,7 @@ import type {
 } from "@/features/production/types"
 import { overheadService } from "@/features/overheads/services/overhead-service"
 import type { OverheadType } from "@/features/overheads/types"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(val)
-}
+import { CurrencyText } from "@/components/ui/currency-text"
 
 function formatElapsedTime(dateStr: string): string {
   const diffMs = Date.now() - new Date(dateStr).getTime()
@@ -75,13 +70,15 @@ function formatElapsedTime(dateStr: string): string {
 
 export default function BatchListPage() {
   const navigate = useNavigate()
+  const [viewParams, setViewParams] = useSearchParams()
+  const activeView = viewParams.get("tab") === "list" ? "list" : "calendar"
   const queryClient = useQueryClient()
 
   const {
     data: batches = [],
     isLoading: loading,
     refetch: refetchBatches,
-  } = useBatchesQuery()
+  } = useBatchesQuery({ enabled: activeView === "list" })
 
   // Filter & Search
   const [search, setSearch] = React.useState<string>("")
@@ -111,11 +108,12 @@ export default function BatchListPage() {
   const pageSize = 10
 
   React.useEffect(() => {
+    if (activeView !== "list") return
     overheadService
       .getOverheads({ activeOnly: true, category: 'PRODUCTION' })
       .then((ohList) => setActiveOverheads(ohList))
       .catch((err) => console.error("Failed to load overheads:", err))
-  }, [])
+  }, [activeView])
 
   // Aggregate statistics
   const stats = React.useMemo(() => {
@@ -147,7 +145,7 @@ export default function BatchListPage() {
         b.productName.toLowerCase().includes(search.toLowerCase()) ||
         (b.notes && b.notes.toLowerCase().includes(search.toLowerCase()))
 
-      const matchStatus = statusFilter === "ALL" || b.status === statusFilter
+      const matchStatus = statusFilter === "ALL" || b.status === statusFilter || (statusFilter === "CANCELLED" && b.status === "VOID")
       return matchSearch && matchStatus
     })
   }, [batches, search, statusFilter])
@@ -277,7 +275,7 @@ export default function BatchListPage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Dapur Produksi & Batch HPP
+                Production
               </h1>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -287,7 +285,7 @@ export default function BatchListPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          <Button
+          {activeView === "list" && <Button
             variant="outline"
             size="sm"
             onClick={() => refetchBatches()}
@@ -295,8 +293,8 @@ export default function BatchListPage() {
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted flex-1 sm:flex-initial"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Segarkan
-          </Button>
+            Refresh
+          </Button>}
           <Button
             onClick={() => navigate("/production/batches/new")}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs flex-1 sm:flex-initial"
@@ -307,6 +305,16 @@ export default function BatchListPage() {
         </div>
       </div>
 
+      <Tabs value={activeView} onValueChange={(value) => setViewParams((current) => {
+        const next = new URLSearchParams(current)
+        next.set("tab", value)
+        return next
+      })}>
+        <TabsList aria-label="Tampilan produksi" className="mb-4 grid w-full max-w-xs grid-flow-col auto-cols-fr">
+          {[{ value: "calendar", label: "Kalender" }, { value: "list", label: "Daftar" }].map((tab) => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
+        </TabsList>
+        <TabsContent value="calendar"><ProductionCalendar /></TabsContent>
+        <TabsContent value="list" className="space-y-6">
       {/* KPI / Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Card 1: Total Batch */}
@@ -515,7 +523,7 @@ export default function BatchListPage() {
                     <div className="text-right">
                       <span className="text-muted-foreground block text-[11px]">Bahan Terpotong</span>
                       <span className="font-mono font-bold text-sm text-primary">
-                        {formatCurrencyIdr(batch.stockCost)}
+                        <CurrencyText value={batch.stockCost} />
                       </span>
                     </div>
                   </div>
@@ -742,18 +750,18 @@ export default function BatchListPage() {
                         </td>
 
                         <td className="px-5 py-3.5 font-mono font-bold text-sm text-foreground">
-                          {formatCurrencyIdr(batch.stockCost)}
+                          <CurrencyText value={batch.stockCost} />
                         </td>
 
                         <td className="px-5 py-3.5 font-mono text-sm text-muted-foreground">
-                          {batch.overheadCost ? formatCurrencyIdr(batch.overheadCost) : "-"}
+                          {batch.overheadCost ? <CurrencyText value={batch.overheadCost} /> : "-"}
                         </td>
 
                         <td className="px-5 py-3.5">
                           {batch.hppPerUnit ? (
                             <div className="flex flex-col">
                               <span className="font-mono font-black text-sm text-primary">
-                                {formatCurrencyIdr(batch.hppPerUnit)}
+                                <CurrencyText value={batch.hppPerUnit} />
                               </span>
                               <span className="text-[11px] text-muted-foreground">
                                 per {batch.productUnit}
@@ -845,6 +853,9 @@ export default function BatchListPage() {
         </div>
       )}
 
+        </TabsContent>
+      </Tabs>
+
       {/* DIALOG 2: SELESAIKAN BATCH PRODUKSI & HITUNG HPP */}
       <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
         <DialogContent className="sm:max-w-[560px] rounded-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
@@ -909,7 +920,7 @@ export default function BatchListPage() {
                   2. Biaya Overhead Operasional (Batch Ini)
                 </span>
                 <span className="text-xs font-mono font-bold text-slate-700">
-                  Total: {formatCurrencyIdr(completeOverheadTotal)}
+                  Total: <CurrencyText value={completeOverheadTotal} />
                 </span>
               </div>
 
@@ -961,17 +972,17 @@ export default function BatchListPage() {
                 <div>
                   <span className="text-muted-foreground">Total Modal Batch:</span>
                   <div className="font-mono font-bold text-foreground">
-                    {formatCurrencyIdr(completeTotalCost)}
+                    <CurrencyText value={completeTotalCost} />
                   </div>
                   <span className="text-[10px] text-muted-foreground">
-                    (Bahan: {formatCurrencyIdr(completeStockCost)} + Overhead: {formatCurrencyIdr(completeOverheadTotal)})
+                    (Bahan: <CurrencyText value={completeStockCost} /> + Overhead: <CurrencyText value={completeOverheadTotal} />)
                   </span>
                 </div>
 
                 <div className="sm:text-right">
                   <span className="text-muted-foreground">HPP per Unit:</span>
                   <div className="font-mono font-black text-xl text-primary">
-                    {formatCurrencyIdr(completeHppPerUnit)}
+                    <CurrencyText value={completeHppPerUnit} />
                   </div>
                   <span className="text-[10px] text-emerald-600 font-bold">
                     Margin: +{completeMargin}%

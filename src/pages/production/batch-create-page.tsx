@@ -45,15 +45,7 @@ import { productionService } from "@/features/production/services/production-ser
 import { recipeService } from "@/features/recipes/services/recipe-service"
 import type { Product } from "@/features/recipes/types"
 import type { ProductionPreviewResponse } from "@/features/production/types"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(val)
-}
+import { CurrencyText } from "@/components/ui/currency-text"
 
 export default function BatchCreatePage() {
   const navigate = useNavigate()
@@ -605,7 +597,7 @@ export default function BatchCreatePage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right font-mono text-xs font-semibold text-foreground">
-                        {formatCurrencyIdr(ing.estimatedCost)}
+                        <CurrencyText value={ing.estimatedCost} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -618,7 +610,7 @@ export default function BatchCreatePage() {
                 Total Estimasi Konsumsi Biaya Bahan Baku:
               </span>
               <span className="font-mono font-bold text-base text-foreground">
-                {formatCurrencyIdr(totalEstimatedRawCost)}
+                <CurrencyText value={totalEstimatedRawCost} />
               </span>
             </div>
           </Card>
@@ -651,7 +643,7 @@ export default function BatchCreatePage() {
                   Proyeksi HPP Bahan / Unit
                 </span>
                 <span className="text-3xl font-black font-mono tracking-tight text-primary mt-1">
-                  {formatCurrencyIdr(estimatedHppPerUnit)}
+                  <CurrencyText value={estimatedHppPerUnit} />
                 </span>
                 <span className="text-[11px] text-slate-500 mt-0.5">
                   per 1 {selectedProduct?.unit || "pcs"} (HPP Bahan Baku FIFO)
@@ -670,21 +662,21 @@ export default function BatchCreatePage() {
                 <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
                   <span className="text-slate-600">Harga Jual / Unit:</span>
                   <span className="font-mono font-bold text-slate-900">
-                    {formatCurrencyIdr(sellingPrice)}
+                    <CurrencyText value={sellingPrice} />
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
                   <span className="text-slate-600">Est. Total Biaya Bahan:</span>
                   <span className="font-mono font-bold text-slate-900">
-                    {formatCurrencyIdr(totalEstimatedRawCost)}
+                    <CurrencyText value={totalEstimatedRawCost} />
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
                   <span className="text-slate-600">Est. Nilai Penjualan Kotor:</span>
                   <span className="font-mono font-bold text-slate-900">
-                    {formatCurrencyIdr(projectedRevenue)}
+                    <CurrencyText value={projectedRevenue} />
                   </span>
                 </div>
 

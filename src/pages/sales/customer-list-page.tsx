@@ -43,14 +43,7 @@ import {
   DialogFooter,
 } from '../../components/ui/dialog';
 import { TablePagination } from '../../components/ui/table-pagination';
-
-function formatRupiah(num: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(num);
-}
+import { CurrencyText } from '@/components/ui/currency-text';
 
 export default function CustomerListPage() {
   const queryClient = useQueryClient();
@@ -227,7 +220,7 @@ export default function CustomerListPage() {
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Segarkan
+            Refresh
           </Button>
           <Button
             onClick={() => setIsAddOpen(true)}
@@ -262,7 +255,7 @@ export default function CustomerListPage() {
               <p className="text-xs font-medium text-muted-foreground">Akumulasi Belanja (LTV)</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {formatRupiah(totalSpentAll)}
+                  <CurrencyText value={totalSpentAll} />
                 </span>
               </div>
             </div>
@@ -278,7 +271,7 @@ export default function CustomerListPage() {
               <p className="text-xs font-medium text-muted-foreground">Rata-rata Belanja per Member</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-foreground">
-                  {formatRupiah(avgSpentPerCustomer)}
+                  <CurrencyText value={avgSpentPerCustomer} />
                 </span>
               </div>
             </div>
@@ -389,7 +382,7 @@ export default function CustomerListPage() {
                       </td>
 
                       <td className="px-5 py-3.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatRupiah(c.total_spent || 0)}
+                        <CurrencyText value={c.total_spent || 0} />
                       </td>
 
                       <td className="px-5 py-3.5 text-muted-foreground">
@@ -665,7 +658,7 @@ export default function CustomerListPage() {
                   <div>
                     <span className="block text-[10px]">Total Belanja (LTV):</span>
                     <span className="text-emerald-600 font-bold">
-                      {formatRupiah(selectedCustomer.total_spent)}
+                      <CurrencyText value={selectedCustomer.total_spent} />
                     </span>
                   </div>
                   {selectedCustomer.email && (
@@ -707,10 +700,10 @@ export default function CustomerListPage() {
                         </div>
                         <div className="text-right">
                           <span className="font-bold text-foreground block">
-                            {formatRupiah(sale.totalAmount)}
+                            <CurrencyText value={sale.totalAmount} />
                           </span>
                           <span className="text-[10px] text-emerald-600 font-medium">
-                            Laba: {formatRupiah(sale.grossProfit)}
+                            Laba: <CurrencyText value={sale.grossProfit} />
                           </span>
                         </div>
                       </div>

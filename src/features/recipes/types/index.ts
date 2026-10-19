@@ -82,6 +82,7 @@ export interface Product {
   targetMargin?: number;
   currentStock: number;
   latestHpp: number;
+  estimatedHpp?: number;
   minStock: number;
   description?: string;
   createdAt: string;

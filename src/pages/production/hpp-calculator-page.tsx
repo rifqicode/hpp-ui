@@ -41,15 +41,7 @@ import {
 
 import { recipeService } from "@/features/recipes/services/recipe-service"
 import type { Product } from "@/features/recipes/types"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(val)
-}
+import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
 
 interface CustomIngredient {
   id: string
@@ -353,24 +345,24 @@ Produk: ${productName}
 Hasil Jadi (Yield): ${yieldUnits} ${unitName}
 
 BIAYA PRODUKSI PER BATCH:
-- Bahan Baku: ${formatCurrencyIdr(totalRawMaterialCost)}
-- Kemasan: ${formatCurrencyIdr(totalPackagingCost)}
-- Tenaga Kerja: ${formatCurrencyIdr(laborCostBatch)}
-- Listrik & Gas: ${formatCurrencyIdr(utilityCostBatch)}
-- Overhead Lainnya: ${formatCurrencyIdr(otherOverheadBatch)}
-Total Biaya Batch: ${formatCurrencyIdr(totalProductionCost)}
+- Bahan Baku: ${formatCurrency(totalRawMaterialCost)}
+- Kemasan: ${formatCurrency(totalPackagingCost)}
+- Tenaga Kerja: ${formatCurrency(laborCostBatch)}
+- Listrik & Gas: ${formatCurrency(utilityCostBatch)}
+- Overhead Lainnya: ${formatCurrency(otherOverheadBatch)}
+Total Biaya Batch: ${formatCurrency(totalProductionCost)}
 
-HPP PER UNIT: ${formatCurrencyIdr(hppTotalPerUnit)} / ${unitName}
-- HPP Bahan: ${formatCurrencyIdr(hppRawMaterialPerUnit)}
-- HPP Kemasan: ${formatCurrencyIdr(hppPackagingPerUnit)}
-- HPP Operasional: ${formatCurrencyIdr(hppLaborPerUnit + hppUtilityPerUnit + hppOtherPerUnit)}
+HPP PER UNIT: ${formatCurrency(hppTotalPerUnit)} / ${unitName}
+- HPP Bahan: ${formatCurrency(hppRawMaterialPerUnit)}
+- HPP Kemasan: ${formatCurrency(hppPackagingPerUnit)}
+- HPP Operasional: ${formatCurrency(hppLaborPerUnit + hppUtilityPerUnit + hppOtherPerUnit)}
 
 REKOMENDASI HARGA JUAL:
-- Offline / Dine-in: ${formatCurrencyIdr(offlinePrice)} (Margin: ${actualMarginPercent}%)
-- Online Delivery (Ojol 20%): ${formatCurrencyIdr(deliveryRecommendedPrice)}
-- E-Commerce (6.5%): ${formatCurrencyIdr(marketplaceRecommendedPrice)}
+- Offline / Dine-in: ${formatCurrency(offlinePrice)} (Margin: ${actualMarginPercent}%)
+- Online Delivery (Ojol 20%): ${formatCurrency(deliveryRecommendedPrice)}
+- E-Commerce (6.5%): ${formatCurrency(marketplaceRecommendedPrice)}
 
-BEP (Titik Impas): ${bepUnitsPerMonth} ${unitName} / bulan (Omzet minimal ${formatCurrencyIdr(bepRevenuePerMonth)})
+BEP (Titik Impas): ${bepUnitsPerMonth} ${unitName} / bulan (Omzet minimal ${formatCurrency(bepRevenuePerMonth)})
 Dihitung otomatis dengan HPP Manager.
 `.trim()
 
@@ -601,7 +593,7 @@ Dihitung otomatis dengan HPP Manager.
                           </TableCell>
 
                           <TableCell className="p-2.5 text-right font-mono font-bold text-xs text-foreground">
-                            {formatCurrencyIdr(ing.totalCost)}
+                            <CurrencyText value={ing.totalCost} />
                           </TableCell>
 
                           <TableCell className="p-2.5 text-center">
@@ -625,7 +617,7 @@ Dihitung otomatis dengan HPP Manager.
                 <div className="p-3.5 bg-muted/20 border-t border-border flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="text-muted-foreground font-medium">Subtotal Biaya Bahan Baku:</span>
                   <span className="font-mono font-bold text-sm text-foreground">
-                    {formatCurrencyIdr(totalRawMaterialCost)}
+                    <CurrencyText value={totalRawMaterialCost} />
                   </span>
                 </div>
               </Card>
@@ -660,7 +652,7 @@ Dihitung otomatis dengan HPP Manager.
                         />
                       </div>
                       <span className="text-[10px] text-muted-foreground block">
-                        Total batch: {formatCurrencyIdr(totalPackagingCost)}
+                        Total batch: <CurrencyText value={totalPackagingCost} />
                       </span>
                     </div>
 
@@ -681,7 +673,7 @@ Dihitung otomatis dengan HPP Manager.
                         />
                       </div>
                       <span className="text-[10px] text-muted-foreground block">
-                        = {formatCurrencyIdr(hppLaborPerUnit)} / unit
+                        = <CurrencyText value={hppLaborPerUnit} suffix=" / unit" />
                       </span>
                     </div>
 
@@ -702,7 +694,7 @@ Dihitung otomatis dengan HPP Manager.
                         />
                       </div>
                       <span className="text-[10px] text-muted-foreground block">
-                        = {formatCurrencyIdr(hppUtilityPerUnit)} / unit
+                        = <CurrencyText value={hppUtilityPerUnit} suffix=" / unit" />
                       </span>
                     </div>
 
@@ -723,7 +715,7 @@ Dihitung otomatis dengan HPP Manager.
                         />
                       </div>
                       <span className="text-[10px] text-muted-foreground block">
-                        = {formatCurrencyIdr(hppOtherPerUnit)} / unit
+                        = <CurrencyText value={hppOtherPerUnit} suffix=" / unit" />
                       </span>
                     </div>
                   </div>
@@ -758,11 +750,11 @@ Dihitung otomatis dengan HPP Manager.
                       <div className="space-y-1">
                         <span className="text-[10px] uppercase font-semibold text-muted-foreground">Harga Jual:</span>
                         <p className="font-mono font-bold text-lg text-foreground">
-                          {formatCurrencyIdr(offlinePrice)}
+                          <CurrencyText value={offlinePrice} />
                         </p>
                         <div className="pt-2 border-t border-border/80 flex items-center justify-between text-xs">
                           <span className="text-muted-foreground text-[11px]">Laba Bersih:</span>
-                          <span className="font-mono font-bold text-emerald-600">+{formatCurrencyIdr(offlineProfit)}</span>
+                          <span className="font-mono font-bold text-emerald-600"><CurrencyText value={offlineProfit} showPositiveSign /></span>
                         </div>
                       </div>
                     </div>
@@ -787,16 +779,16 @@ Dihitung otomatis dengan HPP Manager.
                       <div className="space-y-1">
                         <span className="text-[10px] uppercase font-semibold text-muted-foreground">Harga Menu Aplikasi:</span>
                         <p className="font-mono font-bold text-lg text-primary">
-                          {formatCurrencyIdr(deliveryRecommendedPrice)}
+                          <CurrencyText value={deliveryRecommendedPrice} />
                         </p>
                         <div className="pt-2 border-t border-primary/20 flex flex-col gap-1 text-[11px]">
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span>Potongan Komisi (20%):</span>
-                            <span className="font-mono text-destructive">-{formatCurrencyIdr(deliveryFee)}</span>
+                            <span className="font-mono text-destructive">-<CurrencyText value={deliveryFee} /></span>
                           </div>
                           <div className="flex items-center justify-between font-semibold">
                             <span className="text-foreground">Laba Bersih:</span>
-                            <span className="font-mono text-emerald-600">+{formatCurrencyIdr(deliveryProfit)}</span>
+                            <span className="font-mono text-emerald-600"><CurrencyText value={deliveryProfit} showPositiveSign /></span>
                           </div>
                         </div>
                       </div>
@@ -817,16 +809,16 @@ Dihitung otomatis dengan HPP Manager.
                       <div className="space-y-1">
                         <span className="text-[10px] uppercase font-semibold text-muted-foreground">Harga Rekomendasi:</span>
                         <p className="font-mono font-bold text-lg text-foreground">
-                          {formatCurrencyIdr(marketplaceRecommendedPrice)}
+                          <CurrencyText value={marketplaceRecommendedPrice} />
                         </p>
                         <div className="pt-2 border-t border-border/80 flex flex-col gap-1 text-[11px]">
                           <div className="flex items-center justify-between text-muted-foreground">
                             <span>Biaya Layanan (6.5%):</span>
-                            <span className="font-mono text-destructive">-{formatCurrencyIdr(marketplaceFee)}</span>
+                            <span className="font-mono text-destructive">-<CurrencyText value={marketplaceFee} /></span>
                           </div>
                           <div className="flex items-center justify-between font-semibold">
                             <span className="text-foreground">Laba Bersih:</span>
-                            <span className="font-mono text-emerald-600">+{formatCurrencyIdr(marketplaceProfit)}</span>
+                            <span className="font-mono text-emerald-600"><CurrencyText value={marketplaceProfit} showPositiveSign /></span>
                           </div>
                         </div>
                       </div>
@@ -863,7 +855,7 @@ Dihitung otomatis dengan HPP Manager.
                       HPP Total per Unit
                     </span>
                     <span className="text-3xl font-black font-mono tracking-tight text-primary mt-1">
-                      {formatCurrencyIdr(hppTotalPerUnit)}
+                      <CurrencyText value={hppTotalPerUnit} />
                     </span>
                     <span className="text-[11px] text-slate-500 mt-0.5">
                       per 1 {unitName} (Bahan + Overhead Lengkap)
@@ -872,12 +864,12 @@ Dihitung otomatis dengan HPP Manager.
                     <div className="mt-3 pt-2.5 border-t border-slate-100 w-full flex items-center justify-around text-[10px] font-mono text-slate-600">
                       <div>
                         <span className="block text-slate-400">Bahan Baku:</span>
-                        <strong className="text-slate-800">{formatCurrencyIdr(hppRawMaterialPerUnit)}</strong>
+                        <strong className="text-slate-800"><CurrencyText value={hppRawMaterialPerUnit} /></strong>
                       </div>
                       <div className="h-5 w-px bg-slate-200" />
                       <div>
                         <span className="block text-slate-400">Overhead:</span>
-                        <strong className="text-slate-800">{formatCurrencyIdr(hppTotalPerUnit - hppRawMaterialPerUnit)}</strong>
+                        <strong className="text-slate-800"><CurrencyText value={hppTotalPerUnit - hppRawMaterialPerUnit} /></strong>
                       </div>
                     </div>
                   </div>
@@ -972,21 +964,21 @@ Dihitung otomatis dengan HPP Manager.
                     <div className="flex items-center justify-between py-1 border-b border-slate-200">
                       <span className="text-slate-600">Rekomendasi Harga Jual:</span>
                       <span className="font-mono font-bold text-slate-900 text-sm">
-                        {formatCurrencyIdr(calculatedSellingPrice)}
+                        <CurrencyText value={calculatedSellingPrice} />
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between py-1 border-b border-slate-200">
                       <span className="text-slate-600">Laba Kotor per Unit:</span>
                       <span className="font-mono font-bold text-emerald-700">
-                        +{formatCurrencyIdr(grossProfitPerUnit)}
+                        <CurrencyText value={grossProfitPerUnit} showPositiveSign />
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between py-1 border-b border-slate-200">
                       <span className="text-slate-600">Total Nilai Batch (Omzet):</span>
                       <span className="font-mono font-bold text-slate-900">
-                        {formatCurrencyIdr(calculatedSellingPrice * safeYield)}
+                        <CurrencyText value={calculatedSellingPrice * safeYield} />
                       </span>
                     </div>
 
@@ -1025,7 +1017,7 @@ Dihitung otomatis dengan HPP Manager.
                     </div>
 
                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                      Butuh menjual minimal <strong className="text-slate-800">{bepUnitsPerMonth} {unitName}</strong> (omzet <strong>{formatCurrencyIdr(bepRevenuePerMonth)}</strong>) per bulan untuk impas.
+                      Butuh menjual minimal <strong className="text-slate-800">{bepUnitsPerMonth} {unitName}</strong> (omzet <strong><CurrencyText value={bepRevenuePerMonth} /></strong>) per bulan untuk impas.
                     </p>
                   </div>
 
@@ -1103,13 +1095,13 @@ Dihitung otomatis dengan HPP Manager.
                         </Badge>
                         <h4 className="font-bold text-xs text-foreground truncate">{p.name}</h4>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          HPP Saat Ini: <strong className="text-foreground">{formatCurrencyIdr(p.latestHpp)}</strong>
+                          HPP Saat Ini: <strong className="text-foreground"><CurrencyText value={p.latestHpp} /></strong>
                         </p>
                       </div>
 
                       <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs">
                         <span className="text-muted-foreground text-[10px]">Harga Jual:</span>
-                        <span className="font-mono font-bold text-primary">{formatCurrencyIdr(p.sellingPrice)}</span>
+                        <span className="font-mono font-bold text-primary"><CurrencyText value={p.sellingPrice} /></span>
                       </div>
                     </div>
                   )
@@ -1198,7 +1190,7 @@ Dihitung otomatis dengan HPP Manager.
                       <div className="space-y-1">
                         <p className="font-semibold text-foreground">Dampak Langsung ke Bisnis Anda:</p>
                         <p className="text-[11px] leading-relaxed">
-                          Jika harga bahan baku berubah sebesar <strong>{sensitivityMaterialPct}%</strong> dan efisiensi yield dapur berubah <strong>{sensitivityYieldPct}%</strong>, maka HPP per unit produk Anda akan berubah menjadi <strong>{formatCurrencyIdr(savedRecipeSimulation.finalSimulatedHpp)}</strong> (selisih {formatCurrencyIdr(savedRecipeSimulation.hppDelta)} per {selectedSavedProduct.unit}).
+                          Jika harga bahan baku berubah sebesar <strong>{sensitivityMaterialPct}%</strong> dan efisiensi yield dapur berubah <strong>{sensitivityYieldPct}%</strong>, maka HPP per unit produk Anda akan berubah menjadi <strong><CurrencyText value={savedRecipeSimulation.finalSimulatedHpp} /></strong> (selisih <CurrencyText value={savedRecipeSimulation.hppDelta} /> per {selectedSavedProduct.unit}).
                         </p>
                       </div>
                     </div>
@@ -1222,7 +1214,7 @@ Dihitung otomatis dengan HPP Manager.
                           <div className="p-2.5 sm:p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs min-w-0">
                             <span className="text-[10px] text-slate-400 uppercase font-semibold block">HPP Normal</span>
                             <span className="text-base font-bold font-mono text-slate-700 mt-0.5 block truncate">
-                              {formatCurrencyIdr(savedRecipeSimulation.baseHpp)}
+                              <CurrencyText value={savedRecipeSimulation.baseHpp} />
                             </span>
                             <span className="text-[10px] text-slate-500">Margin: {savedRecipeSimulation.baseMargin}%</span>
                           </div>
@@ -1230,7 +1222,7 @@ Dihitung otomatis dengan HPP Manager.
                           <div className="p-2.5 sm:p-3.5 rounded-xl bg-white border border-slate-200 text-center shadow-xs min-w-0">
                             <span className="text-[10px] text-slate-400 uppercase font-semibold block">HPP Setelah Simulasi</span>
                             <span className="text-base font-bold font-mono text-primary mt-0.5 block truncate">
-                              {formatCurrencyIdr(savedRecipeSimulation.finalSimulatedHpp)}
+                              <CurrencyText value={savedRecipeSimulation.finalSimulatedHpp} />
                             </span>
                             <span className="text-[10px] text-slate-500">Margin: {savedRecipeSimulation.simulatedMargin}%</span>
                           </div>
@@ -1241,14 +1233,14 @@ Dihitung otomatis dengan HPP Manager.
                           <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
                             <span className="text-slate-600">Perubahan HPP per Unit:</span>
                             <span className={`font-mono font-bold ${savedRecipeSimulation.hppDelta > 0 ? 'text-destructive' : 'text-emerald-700'}`}>
-                              {savedRecipeSimulation.hppDelta > 0 ? `+${formatCurrencyIdr(savedRecipeSimulation.hppDelta)}` : formatCurrencyIdr(savedRecipeSimulation.hppDelta)}
+                              <CurrencyText value={savedRecipeSimulation.hppDelta} showPositiveSign />
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between py-1.5 border-b border-slate-200">
-                            <span className="text-slate-600">Laba Bersih per Unit (Harga {formatCurrencyIdr(savedRecipeSimulation.baseSellingPrice)}):</span>
+                            <span className="text-slate-600">Laba Bersih per Unit (Harga <CurrencyText value={savedRecipeSimulation.baseSellingPrice} />):</span>
                             <span className="font-mono font-bold text-slate-900">
-                              {formatCurrencyIdr(savedRecipeSimulation.simulatedProfit)}
+                              <CurrencyText value={savedRecipeSimulation.simulatedProfit} />
                             </span>
                           </div>
 

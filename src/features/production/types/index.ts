@@ -113,3 +113,40 @@ export interface ProductionPreviewResponse {
   estimated_total: number;
   estimated_hpp: number;
 }
+
+export interface ProductionCalendarFilters {
+  month?: string;
+  product_id?: string;
+  statuses?: string;
+  search?: string;
+}
+
+export interface ProductionCalendarItem {
+  id: string;
+  batch_number: string;
+  product_id: string;
+  product_name: string;
+  product_unit: string;
+  status: ProductionStatus;
+  started_at: string;
+  ended_at: string;
+  start_date: string;
+  end_date: string;
+  qty_planned: string;
+  qty_actual: string;
+  total_cost: string;
+  hpp_per_unit: string;
+}
+
+export interface ProductionCalendarResponse {
+  month: string;
+  timezone: string;
+  today: string;
+  summary: {
+    total: number;
+    by_status: Record<ProductionStatus, number>;
+    completed_cost: string;
+  };
+  items: ProductionCalendarItem[];
+  days: { date: string; item_ids: string[] }[];
+}

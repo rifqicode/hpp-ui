@@ -17,6 +17,11 @@ import { AIChatFloatingDrawer } from "@/features/ai-chat"
 
 export function DashboardLayout() {
   const location = useLocation()
+  const contentRef = React.useRef<HTMLElement>(null)
+
+  React.useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, left: 0 })
+  }, [location.pathname])
   const token = useAuthStore((state) => state.token)
   const isFetching = useLoadingStore((state) => state.pending > 0)
   const [isUpgradeOpen, setIsUpgradeOpen] = React.useState<boolean>(false)
@@ -55,20 +60,20 @@ export function DashboardLayout() {
 
   return (
     <TooltipProvider>
-      <SidebarProvider>
+      <SidebarProvider className="h-dvh min-h-0 overflow-hidden">
         <SidebarMain />
-        <SidebarInset className="min-w-0 overflow-x-hidden">
+        <SidebarInset className="h-full min-h-0 min-w-0">
           <GracePeriodBanner
             onUpgradeClick={() => {
               setUpgradeReason("Paket langganan Anda sedang dalam masa tenggang. Perpanjang paket untuk mempertahankan akses penuh dan kuota Anda.")
               setIsUpgradeOpen(true)
             }}
           />
-          <div className="sticky top-0 z-10 flex h-13 items-center justify-between gap-2 border-b bg-background/95 px-3 sm:px-4 backdrop-blur">
+          <header className="z-10 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-background/95 px-3 sm:px-4 backdrop-blur">
             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-              <SidebarTrigger className="h-8 w-8 rounded-lg border border-border/60 bg-card/60 text-foreground hover:bg-accent hover:text-accent-foreground shadow-2xs transition-all shrink-0 cursor-pointer" />
+              <SidebarTrigger className="h-9 w-9 rounded-lg border border-border/60 bg-card/60 text-foreground hover:bg-accent hover:text-accent-foreground shadow-sm transition-colors shrink-0 cursor-pointer" />
               <div className="h-4 w-px bg-border shrink-0" />
-              <h1 className="text-sm font-semibold tracking-tight text-foreground sm:text-base truncate">
+              <h1 title={menuTitle} className="text-sm font-semibold tracking-tight text-foreground sm:text-base truncate">
                 {menuTitle}
               </h1>
             </div>
@@ -77,9 +82,9 @@ export function DashboardLayout() {
               <StoreDropdown />
               <NotificationDropdown />
             </div>
-          </div>
+          </header>
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            <main className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 sm:p-4 lg:p-6 w-full min-w-0">
+            <main ref={contentRef} className="flex-1 overflow-auto overscroll-contain p-3.5 sm:p-4 lg:p-6 w-full min-w-0">
               <div className="w-full min-w-0">
                 <Outlet />
               </div>

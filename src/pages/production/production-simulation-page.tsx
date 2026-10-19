@@ -37,15 +37,7 @@ import { recipeService } from "@/features/recipes/services/recipe-service"
 import type { Product } from "@/features/recipes/types"
 import { productionService } from "@/features/production/services/production-service"
 import type { ProductionPreviewResponse } from "@/features/production/types"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(val || 0)
-}
+import { CurrencyText } from "@/components/ui/currency-text"
 
 function formatNumber(val: number): string {
   return new Intl.NumberFormat("id-ID", {
@@ -247,7 +239,7 @@ export default function ProductionSimulationPage() {
                     <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
                       <span className="text-muted-foreground">HPP Saat Ini:</span>
                       <span className="font-mono font-bold text-primary">
-                        {formatCurrencyIdr(p.latestHpp || 0)}
+                        <CurrencyText value={p.latestHpp || 0} />
                       </span>
                     </div>
                   </div>
@@ -365,7 +357,7 @@ export default function ProductionSimulationPage() {
                 </div>
                 <div>
                   <div className="font-mono font-bold text-lg text-foreground">
-                    {formatCurrencyIdr(previewData.estimated_bom)}
+                    <CurrencyText value={previewData.estimated_bom} />
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1 block">
                     Untuk {plannedQuantity} {selectedProduct?.unit || "unit"} rencana
@@ -385,10 +377,10 @@ export default function ProductionSimulationPage() {
                 </div>
                 <div>
                   <div className="font-mono font-bold text-lg text-foreground">
-                    {formatCurrencyIdr(previewData.estimated_total)}
+                    <CurrencyText value={previewData.estimated_total} />
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1 block">
-                    Overhead: {formatCurrencyIdr(previewData.estimated_overhead)}
+                    Overhead: <CurrencyText value={previewData.estimated_overhead} />
                   </span>
                 </div>
               </CardContent>
@@ -405,7 +397,7 @@ export default function ProductionSimulationPage() {
                 </div>
                 <div>
                   <div className="font-mono font-black text-xl text-primary">
-                    {formatCurrencyIdr(previewData.estimated_hpp)}
+                    <CurrencyText value={previewData.estimated_hpp} />
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1 block">
                     per 1 {selectedProduct?.unit || "unit"}
@@ -490,10 +482,10 @@ export default function ProductionSimulationPage() {
                               {item.unit}
                             </TableCell>
                             <TableCell className="font-mono text-xs text-right text-muted-foreground">
-                              {formatCurrencyIdr(item.unitPrice)}
+                              <CurrencyText value={item.unitPrice} />
                             </TableCell>
                             <TableCell className="font-mono text-xs text-right font-bold text-foreground">
-                              {formatCurrencyIdr(item.estimatedRestockCost)}
+                              <CurrencyText value={item.estimatedRestockCost} />
                             </TableCell>
                           </TableRow>
                         ))}
@@ -513,7 +505,7 @@ export default function ProductionSimulationPage() {
                     <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-4 text-sm">
                       <span className="font-semibold text-foreground">Total Anggaran Belanja Restock:</span>
                       <span className="font-mono font-black text-lg text-primary">
-                        {formatCurrencyIdr(totalRestockBudget)}
+                        <CurrencyText value={totalRestockBudget} />
                       </span>
                     </div>
                   </div>
@@ -575,7 +567,7 @@ export default function ProductionSimulationPage() {
                             )}
                           </TableCell>
                           <TableCell className="font-mono text-xs text-right font-semibold text-foreground">
-                            {formatCurrencyIdr(item.estimated_cost)}
+                            <CurrencyText value={item.estimated_cost} />
                           </TableCell>
                         </TableRow>
                       )

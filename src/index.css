@@ -9,6 +9,18 @@
     --font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', sans-serif;
   }
   :root {
+    /* Subscription badge palette: edit these tokens to restyle every tier badge. */
+    --tier-free-bg: #f1f5f9;
+    --tier-free-fg: #475569;
+    --tier-free-border: #cbd5e1;
+    --tier-growth-bg: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    --tier-growth-fg: #065f46;
+    --tier-growth-border: #6ee7b7;
+    --tier-max-growth-bg: linear-gradient(135deg, #171923, #35303d);
+    --tier-max-growth-fg: #f5d58a;
+    --tier-max-growth-border: #b99146;
+    --tier-max-growth-shadow: 0 2px 8px #b9914626, inset 0 1px 0 #f5d58a24;
+
     /* Modern Indigo theme (clean SaaS) */
     --background: hsl(0, 0%, 100%);
     --foreground: hsl(222, 47%, 11%);
@@ -139,4 +151,38 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+}
+
+/* Attribute selectors keep tier colors consistent even on shared Badge components. */
+.subscription-tier[data-tier] {
+  background: var(--tier-free-bg);
+  color: var(--tier-free-fg);
+  border-color: var(--tier-free-border);
+}
+
+.subscription-tier[data-tier="GROWTH"] {
+  background: var(--tier-growth-bg);
+  color: var(--tier-growth-fg);
+  border-color: var(--tier-growth-border);
+}
+
+.subscription-tier[data-tier="MAX_GROWTH"] {
+  background: var(--tier-max-growth-bg);
+  color: var(--tier-max-growth-fg);
+  border-color: var(--tier-max-growth-border);
+  box-shadow: var(--tier-max-growth-shadow);
+}
+
+:root.dark {
+    --tier-free-bg: #1e293b;
+    --tier-free-fg: #cbd5e1;
+    --tier-free-border: #475569;
+    --tier-growth-bg: linear-gradient(135deg, #062f26, #064e3b);
+    --tier-growth-fg: #a7f3d0;
+    --tier-growth-border: #047857;
+    --tier-max-growth-bg: linear-gradient(135deg, #18151f, #3b3032);
+    --tier-max-growth-fg: #ffe0a3;
+    --tier-max-growth-border: #c29b50;
+    --tier-max-growth-shadow: 0 2px 10px #c29b5026, inset 0 1px 0 #ffe0a329;
+
 }

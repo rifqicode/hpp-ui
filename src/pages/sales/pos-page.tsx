@@ -41,14 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
-
-function formatRupiah(num: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(num);
-}
+import { CurrencyText } from '@/components/ui/currency-text';
 
 export default function PosPage() {
   const queryClient = useQueryClient();
@@ -488,7 +481,7 @@ export default function PosPage() {
                         <div className="pt-2 border-t border-border/50 flex flex-col gap-1 mt-auto">
                           <div className="flex flex-wrap items-center justify-between gap-1 mt-auto pt-2">
                             <span className="text-xs font-bold text-primary">
-                              {formatRupiah(product.sellingPrice)}
+                              <CurrencyText value={product.sellingPrice} />
                             </span>
                             {marginPct > 0 && (
                               <span className="text-[10px] text-muted-foreground font-medium">
@@ -526,7 +519,7 @@ export default function PosPage() {
                 {totalItemsCount} item dipilih
               </span>
               <span className="text-sm font-black text-foreground truncate block">
-                {formatRupiah(totalBill)}
+                <CurrencyText value={totalBill} />
               </span>
             </div>
             <Button
@@ -644,10 +637,10 @@ export default function PosPage() {
                           {item.product.name}
                         </h4>
                         <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                          <span>{formatRupiah(item.price)}</span>
+                          <span><CurrencyText value={item.price} /></span>
                           <span>•</span>
                           <span className="text-emerald-600 font-medium">
-                            Laba: +{formatRupiah(itemProfit)}
+                            Laba: <CurrencyText value={itemProfit} showPositiveSign />
                           </span>
                         </div>
                       </div>
@@ -685,7 +678,7 @@ export default function PosPage() {
                       </div>
 
                       <span className="font-bold text-xs text-foreground">
-                        {formatRupiah(itemSubtotal)}
+                        <CurrencyText value={itemSubtotal} />
                       </span>
                     </div>
                   </div>
@@ -700,7 +693,7 @@ export default function PosPage() {
             <div className="space-y-1.5 text-xs">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal ({totalItemsCount} item)</span>
-                <span className="font-semibold text-foreground">{formatRupiah(subtotal)}</span>
+                <span className="font-semibold text-foreground"><CurrencyText value={subtotal} /></span>
               </div>
 
               {/* Discount Input */}
@@ -737,7 +730,7 @@ export default function PosPage() {
                   </button>
                   {discountAmount > 0 && (
                     <span className="text-red-500 font-semibold">
-                      -{formatRupiah(discountAmount)}
+                      -<CurrencyText value={discountAmount} />
                     </span>
                   )}
                 </div>
@@ -751,7 +744,7 @@ export default function PosPage() {
                     Estimasi Laba Kotor:
                   </span>
                   <span className="font-bold">
-                    {formatRupiah(estimatedGrossProfit)} ({estimatedMarginPct.toFixed(1)}%)
+                    <CurrencyText value={estimatedGrossProfit} /> ({estimatedMarginPct.toFixed(1)}%)
                   </span>
                 </div>
               )}
@@ -764,7 +757,7 @@ export default function PosPage() {
               <div>
                 <span className="text-xs font-semibold text-muted-foreground block">Total Tagihan</span>
                 <span className="text-lg font-black text-foreground">
-                  {formatRupiah(totalBill)}
+                  <CurrencyText value={totalBill} />
                 </span>
               </div>
 
@@ -775,7 +768,7 @@ export default function PosPage() {
                 className="h-11 px-5 text-sm font-bold shadow-md gap-2"
               >
                 <span>Bayar</span>
-                <span>{formatRupiah(totalBill)}</span>
+                <span><CurrencyText value={totalBill} /></span>
               </Button>
             </div>
           </div>
@@ -797,7 +790,7 @@ export default function PosPage() {
             <div className="p-3.5 bg-primary/10 border border-primary/20 rounded-xl text-center">
               <span className="text-xs text-muted-foreground block font-medium">Total yang Harus Dibayar</span>
               <span className="text-2xl font-black text-primary block mt-0.5">
-                {formatRupiah(totalBill)}
+                <CurrencyText value={totalBill} />
               </span>
             </div>
 
@@ -877,7 +870,7 @@ export default function PosPage() {
                       onClick={() => setCashReceived(String(amt))}
                       className="h-7 text-[11px]"
                     >
-                      {formatRupiah(amt).replace(',00', '')}
+                      <CurrencyText value={amt} />
                     </Button>
                   ))}
                 </div>
@@ -894,9 +887,11 @@ export default function PosPage() {
                     {cashReceivedNum >= totalBill ? 'Kembalian:' : 'Uang Kurang:'}
                   </span>
                   <span className="font-bold text-sm">
-                    {cashReceivedNum >= totalBill
-                      ? formatRupiah(cashChange)
-                      : formatRupiah(totalBill - cashReceivedNum)}
+                    {cashReceivedNum >= totalBill ? (
+                      <CurrencyText value={cashChange} />
+                    ) : (
+                      <CurrencyText value={totalBill - cashReceivedNum} />
+                    )}
                   </span>
                 </div>
               </div>
@@ -1028,10 +1023,10 @@ export default function PosPage() {
                       <div className="truncate flex-1 pr-2">
                         <p className="font-medium truncate">{it.productName}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {it.quantity} x {formatRupiah(it.priceAtSale)}
+                          {it.quantity} x <CurrencyText value={it.priceAtSale} />
                         </p>
                       </div>
-                      <span className="font-semibold shrink-0">{formatRupiah(it.subtotal)}</span>
+                      <span className="font-semibold shrink-0"><CurrencyText value={it.subtotal} /></span>
                     </div>
                   ))}
                 </div>
@@ -1042,13 +1037,13 @@ export default function PosPage() {
                     <div className="flex justify-between text-muted-foreground">
                       <span>Diskon:</span>
                       <span className="text-red-500">
-                        -{formatRupiah(completedSale.discountAmount)}
+                        -<CurrencyText value={completedSale.discountAmount} />
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm font-bold pt-1">
                     <span>TOTAL:</span>
-                    <span>{formatRupiah(completedSale.totalAmount)}</span>
+                    <span><CurrencyText value={completedSale.totalAmount} /></span>
                   </div>
                   <div className="flex justify-between text-muted-foreground pt-1">
                     <span>Metode Bayar:</span>
@@ -1058,12 +1053,12 @@ export default function PosPage() {
                     <>
                       <div className="flex justify-between text-muted-foreground">
                         <span>Tunai:</span>
-                        <span>{formatRupiah(completedSale.cashReceived)}</span>
+                        <span><CurrencyText value={completedSale.cashReceived} /></span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">
                         <span>Kembalian:</span>
                         <span className="font-semibold text-emerald-600">
-                          {formatRupiah(completedSale.cashChange || 0)}
+                          <CurrencyText value={completedSale.cashChange || 0} />
                         </span>
                       </div>
                     </>

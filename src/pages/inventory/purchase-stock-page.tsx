@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { FormattedNumberInput } from "@/components/ui/formatted-number-input"
+import { CurrencyText } from "@/components/ui/currency-text"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { usePurchaseStock } from "@/features/inventory/hooks/use-purchase-stock"
@@ -45,10 +46,6 @@ const BASE_UNITS = [
   { value: "bottle", label: "Bottle" },
   { value: "can", label: "Can" },
 ] as const
-
-function formatCurrencyIdr(value: number) {
-  return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(value)
-}
 
 export default function PurchaseStockPage() {
   const navigate = useNavigate()
@@ -387,13 +384,13 @@ export default function PurchaseStockPage() {
                 <div>
                   <span className="text-muted-foreground">Calculated Unit Cost:</span>
                   <div className="font-semibold text-foreground font-mono text-base">
-                    Rp {formatCurrencyIdr(pricePerUnit)} / {selectedMaterial?.base_unit || "unit"}
+                    <CurrencyText value={pricePerUnit} suffix={` / ${selectedMaterial?.base_unit || "unit"}`} />
                   </div>
                 </div>
                 <div className="sm:text-right">
                   <span className="text-muted-foreground">Total Batch Value:</span>
                   <div className="font-semibold text-primary font-mono text-base">
-                    Rp {formatCurrencyIdr(totalNum)}
+                    <CurrencyText value={totalNum} />
                   </div>
                 </div>
               </div>

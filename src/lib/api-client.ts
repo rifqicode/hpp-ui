@@ -17,7 +17,7 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     const activeStoreId = useAuthStore.getState().activeStoreId;
-    if (activeStoreId) {
+    if (activeStoreId && !config.headers['X-Store-ID']) {
       config.headers['X-Store-ID'] = activeStoreId;
     }
     return config;

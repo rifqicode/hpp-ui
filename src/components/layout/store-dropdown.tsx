@@ -42,23 +42,24 @@ export function StoreDropdown() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="border border-border/80 bg-muted/60 hover:bg-muted/80 px-2.5 py-1 text-xs rounded-full flex items-center gap-1.5 shadow-2xs cursor-pointer select-none transition-colors outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+          className="border border-border/80 bg-muted/60 hover:bg-muted/80 min-h-11 min-w-11 justify-center px-2.5 py-2 text-xs rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer select-none transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
           title={`Toko Aktif: ${displayName}`}
+          aria-label={`Toko aktif: ${displayName}. Pilih toko`}
         >
           <Store className="size-3.5 text-primary shrink-0" />
-          <span className="font-medium truncate max-w-[120px] sm:max-w-[180px] text-foreground">
+          <span className="hidden sm:inline font-medium truncate sm:max-w-[140px] xl:max-w-[180px] text-foreground">
             {displayName}
           </span>
-          <span className="relative flex size-2 shrink-0">
+          <span className="relative hidden sm:flex size-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
           </span>
-          <ChevronsUpDown className="size-3 text-muted-foreground shrink-0" />
+          <ChevronsUpDown className="hidden sm:block size-3 text-muted-foreground shrink-0" />
         </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="w-64 p-1.5 shadow-xl border-border"
+        className="w-64 max-w-[calc(100vw-1rem)] p-1.5 shadow-xl border-border"
         align="end"
         sideOffset={6}
       >

@@ -14,8 +14,6 @@ import {
   History,
   Store,
   ChevronsUpDown,
-  Plus,
-  Check,
   ClipboardList,
   User,
   LogOut,
@@ -23,6 +21,7 @@ import {
   ChevronRight,
   Lock,
   CreditCard,
+  Crown,
 } from "lucide-react"
 
 import {
@@ -52,7 +51,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuShortcut,
 } from "@/components/ui/dropdown-menu"
 
 interface NavSubItem {
@@ -99,7 +97,7 @@ const NAVIGATION: NavGroup[] = [
     items: [
       { title: "Biaya Overhead", url: "/production/overheads", icon: Layers, permission: "menu:recipes" },
       { title: "Produk", url: "/production/products", icon: Factory, permission: "menu:recipes" },
-      { title: "Batches", url: "/production/batches", icon: History, permission: "menu:recipes" },
+      { title: "Production", url: "/production/batches", icon: History, permission: "menu:recipes" },
       {
         title: "HPP Calculator",
         icon: Calculator,
@@ -177,15 +175,11 @@ const USER_DATA = {
 }
 
 
-import { settingsService } from "@/features/settings/services/settings-service"
-import { useStoresQuery, useStorePermissionsQuery, storeKeys } from "@/features/settings/hooks/use-stores-query"
-import { useQueryClient } from "@tanstack/react-query"
-import type { StoreInfo } from "@/features/settings/types"
+import { useStoresQuery, useStorePermissionsQuery } from "@/features/settings/hooks/use-stores-query"
 
 export function SidebarMain() {
   const location = useLocation()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { isMobile, state: sidebarState, setOpenMobile } = useSidebar()
   const activeStoreId = useAuthStore((state) => state.activeStoreId)
   const { data: stores = [], isSuccess: isStoresSuccess } = useStoresQuery()
@@ -233,7 +227,7 @@ export function SidebarMain() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const { can, permissions } = usePermission()
-  const { canAccessFeature } = useSubscriptionGuards()
+  const { canAccessFeature, usage, isLoading: isSubscriptionLoading } = useSubscriptionGuards()
 
   const handleGatedClick = (e: React.MouseEvent, title: string) => {
     e.preventDefault()
@@ -257,29 +251,6 @@ export function SidebarMain() {
       navigate("/setup-store")
     }
   }, [isStoresSuccess, stores.length, navigate])
-
-  const currentStore = (activeStoreId && stores.find((s) => s.id === activeStoreId)) ||
-    (stores.length > 0 ? stores[0] : {
-      id: "default",
-      name: "Toko Utama",
-      location: "Jakarta",
-      status: "online" as const,
-      category: "Bakery",
-    })
-
-  async function handleStoreChange(store: StoreInfo) {
-    if (store.id === currentStore.id) return
-    try {
-      await settingsService.switchStore(store.id)
-      useAuthStore.getState().setActiveStoreId(store.id)
-      useAuthStore.getState().setActiveStoreName(store.name)
-      await settingsService.getStorePermissions(store.id)
-      await queryClient.invalidateQueries({ queryKey: storeKeys.all })
-      window.location.reload()
-    } catch (err) {
-      console.error("Failed to switch store:", err)
-    }
-  }
 
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-primary/20 bg-sidebar shadow-md">
@@ -366,99 +337,20 @@ export function SidebarMain() {
           {/* Hairline Divider */}
           <div className="h-px bg-sidebar-border/60 mx-1 group-data-[collapsible=icon]:hidden" />
 
-          {/* 2. Store / Workspace Switcher */}
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    size="lg"
-                    tooltip={currentStore.name}
-                    className="h-11 rounded-lg px-2 hover:bg-sidebar-accent/70 data-[state=open]:bg-sidebar-accent transition-colors group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:p-0"
-                  >
-                    <div className="flex aspect-square size-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-xs shrink-0 group-data-[collapsible=icon]:size-8">
-                      <Store className="size-3.5 group-data-[collapsible=icon]:size-4" />
-                    </div>
-                    <div className="grid flex-1 text-left text-xs leading-tight group-data-[collapsible=icon]:hidden overflow-hidden">
-                      <span className="truncate font-semibold flex items-center gap-1.5 text-foreground">
-                        {currentStore.name}
-                        <span
-                          className={`size-1.5 rounded-full shrink-0 ${
-                            currentStore.status === "online"
-                              ? "bg-emerald-500 animate-pulse"
-                              : "bg-muted-foreground/50"
-                          }`}
-                        />
-                      </span>
-                      <span className="truncate text-[10px] text-muted-foreground uppercase tracking-wide">
-                        {currentStore.location}
-                      </span>
-                    </div>
-                    <ChevronsUpDown className="ml-auto size-3.5 text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-[--radix-dropdown-menu-trigger-width] min-w-64 rounded-xl p-1.5 shadow-xl border-border"
-                  align="start"
-                  side={isMobile ? "bottom" : "right"}
-                  sideOffset={6}
-                >
-                  <DropdownMenuLabel className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1.5">
-                    Daftar Toko
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {stores.map((s) => (
-                    <DropdownMenuItem
-                      key={s.id}
-                      onClick={() => handleStoreChange(s)}
-                      className="flex items-center gap-3 p-2 cursor-pointer focus:bg-primary/5 rounded-lg"
-                    >
-                      <div
-                        className={`flex size-7 items-center justify-center rounded-md border shadow-xs transition-colors
-                        ${
-                          currentStore.id === s.id
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-muted/50 text-muted-foreground border-border"
-                        }
-                      `}
-                      >
-                        <Store className="size-3.5" />
-                      </div>
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span
-                          className={`text-xs font-semibold truncate ${
-                            currentStore.id === s.id ? "text-primary" : ""
-                          }`}
-                        >
-                          {s.name}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground truncate uppercase">
-                          {s.location}
-                        </span>
-                      </div>
-                      {currentStore.id === s.id && (
-                        <Check className="ml-auto size-3.5 text-primary shrink-0" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                  {user?.account_type !== "STAFF" && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild className="flex items-center gap-2.5 p-2 cursor-pointer text-primary font-medium hover:bg-primary/5 rounded-lg">
-                        <Link to="/settings/store?tab=stores">
-                          <div className="flex size-7 items-center justify-center rounded-md border border-dashed border-primary/40 bg-primary/5">
-                            <Plus className="size-3.5" />
-                          </div>
-                          <span className="text-xs font-semibold">Tambah Toko</span>
-                          <DropdownMenuShortcut>⌘</DropdownMenuShortcut>
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
+          <Link
+            to="/subscription"
+            className="flex min-h-9 items-center justify-between gap-2 rounded-lg px-2 text-xs hover:bg-sidebar-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:hidden"
+            aria-label="Lihat paket langganan"
+          >
+            <span className="text-muted-foreground">Paket aktif</span>
+            <span
+              data-tier={usage?.effective_tier}
+              className="subscription-tier inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground"
+            >
+              {usage?.effective_tier === "MAX_GROWTH" && <Crown className="size-3 shrink-0" aria-hidden="true" />}
+              {usage ? ({ FREE: "Free", GROWTH: "Growth", MAX_GROWTH: "Max Growth" }[usage.effective_tier]) : isSubscriptionLoading ? "Memuat..." : "Tidak tersedia"}
+            </span>
+          </Link>
         </div>
       </SidebarHeader>
 
@@ -545,6 +437,7 @@ export function SidebarMain() {
                       return (
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton
+                            aria-expanded={isOpen}
                             onClick={() => toggleMenu(item.title)}
                             isActive={isChildActive}
                             className={`
@@ -576,7 +469,7 @@ export function SidebarMain() {
                                       asChild
                                       isActive={isSubActive}
                                       className={`
-                                        transition-colors text-xs py-1.5 h-8
+                                        transition-colors text-xs py-1.5 h-11 lg:h-8
                                         ${isSubActive
                                           ? "bg-primary/15 text-primary font-semibold hover:bg-primary/20 hover:text-primary"
                                           : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60"}

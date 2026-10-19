@@ -1,10 +1,11 @@
+import { useAuthStore } from '@/store/use-auth-store';
 import { useQuery } from '@tanstack/react-query';
 import { recipeService } from '../services/recipe-service';
 
 export const recipeKeys = {
-  all: ['recipes'] as const,
+  all: ['products'] as const,
   products: ['products'] as const,
-  productList: (query?: { search?: string; category?: string }) => [...recipeKeys.products, 'list', query] as const,
+  productList: (query?: { search?: string; category?: string }, storeId?: string | null) => [...recipeKeys.products, 'list', storeId, query] as const,
   productSummary: () => [...recipeKeys.products, 'summary'] as const,
   productDetail: (id: string) => [...recipeKeys.products, 'detail', id] as const,
   productEstimate: (id: string) => [...recipeKeys.products, 'estimate', id] as const,
@@ -12,10 +13,11 @@ export const recipeKeys = {
 };
 
 export function useProductsQuery(query?: { search?: string; category?: string }, options?: { enabled?: boolean }) {
+  const storeId = useAuthStore((state) => state.activeStoreId);
   return useQuery({
-    queryKey: recipeKeys.productList(query),
-    queryFn: () => recipeService.getProducts(query),
-    enabled: options?.enabled ?? true,
+    queryKey: recipeKeys.productList(query, storeId),
+    queryFn: ({ signal }) => recipeService.getProducts(query, { storeId: storeId!, signal }),
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 

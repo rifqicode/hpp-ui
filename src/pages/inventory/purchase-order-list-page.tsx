@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
 import { TablePagination } from "@/components/ui/table-pagination"
 import {
   DropdownMenu,
@@ -107,7 +108,6 @@ export default function PurchaseOrderListPage() {
     orderCount,
     completedCount,
     totalCompletedAmount,
-    formatRupiah,
     formatDate,
   } = usePurchaseOrders()
 
@@ -208,7 +208,7 @@ export default function PurchaseOrderListPage() {
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted flex-1 sm:flex-initial"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Segarkan
+            Refresh
           </Button>
 
           {canRequest && (
@@ -291,7 +291,7 @@ export default function PurchaseOrderListPage() {
                   {completedCount}
                 </span>
                 <span className="text-xs text-muted-foreground font-mono truncate max-w-full">
-                  ({formatRupiah(totalCompletedAmount)})
+                  (<CurrencyText value={totalCompletedAmount} />)
                 </span>
               </div>
             </div>
@@ -502,7 +502,7 @@ export default function PurchaseOrderListPage() {
                           {po.status === "PURCHASE_REQUEST" || po.totalAmount === 0 ? (
                             <span className="text-xs text-muted-foreground italic font-normal">Menunggu harga</span>
                           ) : (
-                            formatRupiah(po.totalAmount)
+                            <CurrencyText value={po.totalAmount} />
                           )}
                         </td>
 
@@ -829,7 +829,7 @@ export default function PurchaseOrderListPage() {
                             />
                           </td>
                           <td className="align-middle py-2.5 px-3 text-right font-mono text-xs text-muted-foreground whitespace-nowrap font-medium">
-                            {unitPrice > 0 ? `${formatRupiah(Math.round(unitPrice))} / ${it.baseUnit}` : "-"}
+                            {unitPrice > 0 ? `${formatCurrency(Math.round(unitPrice))} / ${it.baseUnit}` : "-"}
                           </td>
                         </tr>
                       )
@@ -842,7 +842,7 @@ export default function PurchaseOrderListPage() {
               <div className="p-3 rounded-xl bg-muted/40 border border-border flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-semibold text-foreground">Total Nilai Pembelian:</span>
                 <span className="text-base font-bold font-mono text-primary">
-                  {formatRupiah(calculatedDialogTotal)}
+                  <CurrencyText value={calculatedDialogTotal} />
                 </span>
               </div>
 

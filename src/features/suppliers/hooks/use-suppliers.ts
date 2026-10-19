@@ -149,14 +149,6 @@ export function useSuppliers() {
   const totalPurchasesSum = Number(summaryQuery.data?.total_purchases_amount ?? 0)
   const activeVendorsCount = summaryQuery.data?.active_suppliers ?? suppliers.filter((s) => (s.totalOrdersCount || 0) > 0).length
 
-  function formatRupiah(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
   return {
     suppliers,
     loading,
@@ -193,6 +185,5 @@ export function useSuppliers() {
     handleOpenDelete,
     handleSubmitForm,
     handleConfirmDelete,
-    formatRupiah,
   }
 }

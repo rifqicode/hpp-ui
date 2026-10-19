@@ -57,7 +57,7 @@ test.describe('Feature: Products, Overhead, Batches & HPP', () => {
   test.describe('Products & Recipe Formulation', () => {
     test('Displays products catalog list page', async ({ authedPage: page }) => {
       await page.goto('/production/products');
-      await expect(page.locator('h1.text-2xl')).toContainText('Katalog Produk & Formula Resep');
+      await expect(page.getByRole('heading', { name: 'Produk & Resep', exact: true }).last()).toBeVisible();
       await expect(page.locator('button:has-text("Tambah Produk")')).toBeVisible();
     });
 
@@ -117,7 +117,7 @@ test.describe('Feature: Products, Overhead, Batches & HPP', () => {
   test.describe('Production Batches', () => {
     test('Displays production batch list page', async ({ authedPage: page }) => {
       await page.goto('/production/batches');
-      await expect(page.locator('h1.text-2xl')).toContainText('Dapur Produksi & Batch HPP');
+      await expect(page.locator('h1.text-2xl')).toContainText('Production');
       await expect(page.locator('button:has-text("Mulai Batch Baru")')).toBeVisible();
     });
 

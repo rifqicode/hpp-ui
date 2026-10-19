@@ -67,7 +67,7 @@ export function NotificationDropdown() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-9 w-9 text-muted-foreground hover:text-foreground cursor-pointer"
+          className="relative h-11 w-11 text-muted-foreground hover:text-foreground cursor-pointer"
         >
           <Bell className="size-4" />
           {unreadCount > 0 && (
@@ -79,7 +79,7 @@ export function NotificationDropdown() {
           <span className="sr-only">Notifikasi</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80 sm:w-88 p-0 shadow-xl border border-border bg-popover" align="end">
+      <DropdownMenuContent className="w-80 sm:w-[22rem] max-w-[calc(100vw-1rem)] p-0 shadow-xl border border-border bg-popover" align="end">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/70 bg-muted/40">
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-semibold text-foreground">Notifikasi</h4>

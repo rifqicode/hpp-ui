@@ -58,16 +58,7 @@ import type {
   SubscriptionInvoice,
   SubscriptionTier,
 } from "@/features/subscription/types/subscription"
-
-function formatCurrencyIdr(val: number | string | undefined | null): string {
-  const num = typeof val === "string" ? parseFloat(val) || 0 : (val ?? 0)
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(num)
-}
+import { CurrencyText } from "@/components/ui/currency-text"
 
 function formatDateId(dateStr?: string | null): string {
   if (!dateStr) return "-"
@@ -190,18 +181,6 @@ export default function SubscriptionPage() {
 
   const isRefreshing = isUsageRefetching || isInvoicesRefetching
 
-  const getTierBadgeStyle = (tier?: SubscriptionTier) => {
-    switch (tier) {
-      case "MAX_GROWTH":
-        return "border-purple-300 bg-purple-100 text-purple-800 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-300"
-      case "GROWTH":
-        return "border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
-      case "FREE":
-      default:
-        return "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-    }
-  }
-
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case "ACTIVE":
@@ -283,7 +262,7 @@ export default function SubscriptionPage() {
             className="gap-1.5"
           >
             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-            Segarkan
+            Refresh
           </Button>
           <Button
             size="sm"
@@ -336,7 +315,7 @@ export default function SubscriptionPage() {
                 Paket Saat Ini
               </span>
               <div className="flex items-center gap-2">
-                <Badge className={cn("text-sm px-2.5 py-0.5 font-bold", getTierBadgeStyle(usage.tier))}>
+                <Badge data-tier={usage.tier} className="subscription-tier text-sm px-2.5 py-0.5 font-bold">
                   {usage.tier}
                 </Badge>
                 {usage.effective_tier && usage.effective_tier !== usage.tier && (
@@ -578,7 +557,7 @@ export default function SubscriptionPage() {
               <RefreshCw
                 className={cn("h-3.5 w-3.5", isInvoicesRefetching && "animate-spin")}
               />
-              Segarkan Tabel
+              Refresh Tabel
             </Button>
           </div>
         </CardHeader>
@@ -626,13 +605,14 @@ export default function SubscriptionPage() {
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={cn("text-[11px] font-semibold", getTierBadgeStyle(inv.tier))}
+                          data-tier={inv.tier}
+                          className="subscription-tier text-[11px] font-semibold"
                         >
                           {inv.tier}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs font-mono font-medium">
-                        {formatCurrencyIdr(inv.amount)}
+                        <CurrencyText value={inv.amount} />
                       </TableCell>
                       <TableCell className="text-xs uppercase text-muted-foreground">
                         {inv.payment_method || "-"}

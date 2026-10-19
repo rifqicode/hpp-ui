@@ -32,17 +32,12 @@ import { RecordPurchaseDialog } from "@/features/inventory/components/record-pur
 import { RecordMovementDialog } from "@/features/inventory/components/record-movement-dialog"
 import { cn } from "@/lib/utils"
 import type { StockMovementType } from "@/features/inventory/types"
+import { CurrencyText } from "@/components/ui/currency-text"
 
 function formatQty(value: string | number, unit: string) {
   const num = typeof value === "number" ? value : parseFloat(value) || 0
   const fixed = Number.isInteger(num) ? num.toString() : num.toFixed(2)
   return `${fixed} ${unit}`
-}
-
-function formatCurrencyIdr(value: string | number) {
-  const num = typeof value === "number" ? value : parseFloat(value) || 0
-  const formatted = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(num)
-  return `Rp ${formatted}`
 }
 
 function formatDateTime(dateStr?: string) {
@@ -293,13 +288,15 @@ export default function StockDetailPage() {
                       return (
                         <TableRow key={b.id} className={cn(isExpired && "bg-destructive/5 opacity-75")}>
                           <TableCell className="py-2 font-mono text-xs whitespace-nowrap">{b.id}</TableCell>
-                          <TableCell className="py-2 font-mono text-sm whitespace-nowrap">{formatQty(b.initial_quantity, stock.base_unit)}</TableCell>
+                          <TableCell className="py-2 font-mono text-sm whitespace-nowrap">
+                            <CurrencyText value={b.initial_quantity} prefix="" suffix={stock.base_unit} />
+                          </TableCell>
                           <TableCell className="py-2 font-mono text-sm whitespace-nowrap">
                             <span className={cn(isExpired && "line-through text-destructive")}>
                               {formatQty(b.remaining_quantity, stock.base_unit)}
                             </span>
                           </TableCell>
-                          <TableCell className="py-2 text-right font-mono text-sm whitespace-nowrap">{formatCurrencyIdr(b.price_per_unit)}</TableCell>
+                          <TableCell className="py-2 text-right font-mono text-sm whitespace-nowrap"><CurrencyText value={b.price_per_unit} /></TableCell>
                           <TableCell className="py-2 text-right whitespace-nowrap">
                             {b.expired_at ? (
                               <div className="flex items-center justify-end gap-1.5">

@@ -45,6 +45,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { CurrencyText } from "@/components/ui/currency-text"
 
 import { useSupplierDetail } from "@/features/suppliers/hooks"
 
@@ -63,7 +64,6 @@ export default function SupplierDetailPage() {
     submitting,
     loadData,
     handleUpdateSubmit,
-    formatRupiah,
     formatDate,
     totalSpent,
     averageOrder,
@@ -187,7 +187,7 @@ export default function SupplierDetailPage() {
           <CardContent className="space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total Belanja:</span>
-              <span className="font-bold text-foreground font-mono">{formatRupiah(totalSpent)}</span>
+              <span className="font-bold text-foreground font-mono"><CurrencyText value={totalSpent} /></span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Frekuensi Transaksi:</span>
@@ -195,7 +195,7 @@ export default function SupplierDetailPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Rata-rata Order:</span>
-              <span className="font-medium text-foreground font-mono">{formatRupiah(averageOrder)}</span>
+              <span className="font-medium text-foreground font-mono"><CurrencyText value={averageOrder} /></span>
             </div>
           </CardContent>
         </Card>
@@ -204,11 +204,17 @@ export default function SupplierDetailPage() {
       {/* Tabs for Details */}
       <Tabs defaultValue="history" className="w-full">
         <TabsList className="grid grid-cols-1 min-[420px]:grid-cols-2 w-full sm:w-auto h-auto gap-1 p-1 rounded-xl bg-muted/60 border border-border">
-          <TabsTrigger value="history" className="rounded-lg data-[state=active]:bg-card">
+          <TabsTrigger
+            value="history"
+            className="rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25 data-[state=active]:font-bold"
+          >
             <FileText className="mr-2 h-4 w-4" />
             Riwayat Pembelian ({purchases.length})
           </TabsTrigger>
-          <TabsTrigger value="materials" className="rounded-lg data-[state=active]:bg-card">
+          <TabsTrigger
+            value="materials"
+            className="rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25 data-[state=active]:font-bold"
+          >
             <Package className="mr-2 h-4 w-4" />
             Bahan Baku Pasokan ({supplier.suppliedMaterials?.length || 0})
           </TabsTrigger>
@@ -259,10 +265,10 @@ export default function SupplierDetailPage() {
                             {rec.quantity} {rec.baseUnit}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm text-muted-foreground">
-                            {formatRupiah(rec.pricePerUnit)}/{rec.baseUnit}
+                            <CurrencyText value={rec.pricePerUnit} suffix={`/${rec.baseUnit}`} />
                           </TableCell>
                           <TableCell className="text-right font-mono font-semibold text-foreground">
-                            {formatRupiah(rec.totalPrice)}
+                            <CurrencyText value={rec.totalPrice} />
                           </TableCell>
                         </TableRow>
                       ))

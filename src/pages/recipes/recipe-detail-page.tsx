@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useParams, Link, useNavigate } from "react-router-dom"
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { recipeKeys } from "@/features/recipes/hooks"
 import {
@@ -68,14 +68,7 @@ import type {
 import { ImageUploadDropzone } from "@/features/recipes/components/image-upload-dropzone"
 import { overheadService } from "@/features/overheads/services/overhead-service"
 import type { OverheadType } from "@/features/overheads/types"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(val)
-}
+import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
 
 function calculateGrossMargin(sellingPrice: number, cost: number): number {
   if (!sellingPrice || sellingPrice <= 0) return 0
@@ -84,6 +77,9 @@ function calculateGrossMargin(sellingPrice: number, cost: number): number {
 }
 
 export default function RecipeDetailPage() {
+  const location = useLocation()
+  const returnToValue: unknown = location.state?.returnTo
+  const returnTo = typeof returnToValue === "string" && /^\/production\/products(?:\?|$)/.test(returnToValue) ? returnToValue : "/production/products"
   const { productId } = useParams<{ productId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -293,7 +289,7 @@ export default function RecipeDetailPage() {
         queryClient.invalidateQueries({ queryKey: recipeKeys.all }),
         queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }),
       ])
-      navigate("/production/products")
+      navigate(returnTo)
     } catch (err) {
       console.error("Failed to delete product:", err)
     } finally {
@@ -316,7 +312,7 @@ export default function RecipeDetailPage() {
         <AlertTriangle className="h-10 w-10 text-amber-500" />
         <h2 className="text-xl font-bold">Resep Produk Tidak Ditemukan</h2>
         <Button asChild variant="outline" className="rounded-xl">
-          <Link to="/production/products">Kembali ke Daftar Produk</Link>
+          <Link to={returnTo}>Kembali ke Daftar Produk</Link>
         </Button>
       </div>
     )
@@ -350,7 +346,7 @@ export default function RecipeDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Button asChild variant="outline" size="sm" className="rounded-xl text-xs shrink-0">
-            <Link to="/production/products">
+            <Link to={returnTo}>
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
               Daftar Produk
             </Link>
@@ -451,7 +447,7 @@ export default function RecipeDetailPage() {
               Harga Jual
             </span>
             <div className="text-base sm:text-lg font-black font-mono text-foreground mt-0.5 truncate">
-              {formatCurrencyIdr(product.sellingPrice)}
+              <CurrencyText value={product.sellingPrice} />
             </div>
             <span className="text-[10px] text-muted-foreground">per {product.unit}</span>
           </div>
@@ -463,7 +459,7 @@ export default function RecipeDetailPage() {
               </span>
             </div>
             <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-200 mt-0.5 truncate">
-              {formatCurrencyIdr(totalBOMCost)}
+              <CurrencyText value={totalBOMCost} />
             </div>
             <span className="text-[10px] text-muted-foreground">Komposisi {product.ingredients.length} bahan</span>
           </div>
@@ -475,7 +471,7 @@ export default function RecipeDetailPage() {
               </span>
             </div>
             <div className="text-base sm:text-lg font-black font-mono text-primary mt-0.5 truncate">
-              {formatCurrencyIdr(activeHpp)}
+              <CurrencyText value={activeHpp} />
             </div>
             <span className="text-[10px] text-muted-foreground">Bahan + Overhead riil</span>
           </div>
@@ -499,7 +495,7 @@ export default function RecipeDetailPage() {
               </Badge>
             </div>
             <span className="text-[10px] text-muted-foreground mt-0.5 block truncate">
-              Profit {formatCurrencyIdr(product.sellingPrice - activeHpp)}/unit
+              Profit <CurrencyText value={product.sellingPrice - activeHpp} suffix="/unit" />
             </span>
           </div>
 
@@ -653,11 +649,11 @@ export default function RecipeDetailPage() {
                             </TableCell>
 
                             <TableCell className="font-mono text-sm text-slate-700">
-                              {formatCurrencyIdr(ing.unitCost)} / {ing.baseUnit}
+                              <CurrencyText value={ing.unitCost} suffix={` / ${ing.baseUnit}`} />
                             </TableCell>
 
                             <TableCell className="font-mono font-bold text-sm text-foreground">
-                              {formatCurrencyIdr(ing.subtotalCost)}
+                              <CurrencyText value={ing.subtotalCost} />
                             </TableCell>
 
                             <TableCell>
@@ -734,7 +730,7 @@ export default function RecipeDetailPage() {
                       Total Biaya Bahan Baku (BOM):
                     </span>
                     <span className="font-mono text-xl font-black text-primary">
-                      {formatCurrencyIdr(totalBOMCost)}
+                      <CurrencyText value={totalBOMCost} />
                       <span className="text-xs font-normal text-muted-foreground ml-1">/{product.unit}</span>
                     </span>
                   </div>
@@ -826,7 +822,7 @@ export default function RecipeDetailPage() {
                     ) : (
                       <div className="space-y-3">
                         {simulatedOverheadItems.map((oh) => {
-                          const dynamicSubtitle = `${formatCurrencyIdr(oh.batchCost)} per batch (${formatCurrencyIdr(oh.costPerUnit)}/unit)`
+                          const dynamicSubtitle = `${formatCurrency(oh.batchCost)} per batch (${formatCurrency(oh.costPerUnit)}/unit)`
 
                           return (
                             <div key={oh.id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
@@ -895,7 +891,7 @@ export default function RecipeDetailPage() {
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Proyeksi HPP/Unit</span>
                       <div className="text-base sm:text-lg font-black font-mono text-primary mt-1 truncate">
-                        {formatCurrencyIdr(projectedHppPerUnit)}
+                        <CurrencyText value={projectedHppPerUnit} />
                       </div>
                       <span className="text-[10px] text-muted-foreground">Termasuk overhead</span>
                     </div>
@@ -903,7 +899,7 @@ export default function RecipeDetailPage() {
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Total Biaya Batch</span>
                       <div className="text-base sm:text-lg font-black font-mono text-foreground mt-1 truncate">
-                        {formatCurrencyIdr(totalProductionCostForBatch)}
+                        <CurrencyText value={totalProductionCostForBatch} />
                       </div>
                       <span className="text-[10px] text-muted-foreground">Modal produksi</span>
                     </div>
@@ -911,7 +907,7 @@ export default function RecipeDetailPage() {
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Proyeksi Omset</span>
                       <div className="text-base sm:text-lg font-black font-mono text-foreground mt-1 truncate">
-                        {formatCurrencyIdr(projectedRevenue)}
+                        <CurrencyText value={projectedRevenue} />
                       </div>
                       <span className="text-[10px] text-muted-foreground">Jika terjual semua</span>
                     </div>
@@ -919,7 +915,7 @@ export default function RecipeDetailPage() {
                     <div>
                       <span className="text-[11px] text-muted-foreground uppercase font-bold">Proyeksi Laba Kotor</span>
                       <div className="text-base sm:text-lg font-black font-mono text-emerald-600 mt-1 truncate">
-                        {formatCurrencyIdr(projectedGrossProfit)}
+                        <CurrencyText value={projectedGrossProfit} />
                       </div>
                       <span className="text-[10px] text-muted-foreground">Laba kotor batch</span>
                     </div>
@@ -933,7 +929,7 @@ export default function RecipeDetailPage() {
                           Rincian Biaya Overhead Batch
                         </h4>
                         <span className="text-xs font-mono font-bold text-slate-700">
-                          Total: {formatCurrencyIdr(totalOverheadForBatch)}
+                          Total: <CurrencyText value={totalOverheadForBatch} />
                         </span>
                       </div>
 
@@ -960,13 +956,13 @@ export default function RecipeDetailPage() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="font-mono text-muted-foreground">
-                                  {formatCurrencyIdr(oh.rate)}
+                                  <CurrencyText value={oh.rate} />
                                 </TableCell>
                                 <TableCell className="font-mono font-bold text-right text-slate-900">
-                                  {formatCurrencyIdr(oh.batchCost)}
+                                  <CurrencyText value={oh.batchCost} />
                                 </TableCell>
                                 <TableCell className="font-mono text-right text-muted-foreground">
-                                  {formatCurrencyIdr(oh.costPerUnit)}
+                                  <CurrencyText value={oh.costPerUnit} />
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -1086,7 +1082,7 @@ export default function RecipeDetailPage() {
                           {batch.remainingQuantity} {product.unit}
                         </TableCell>
                         <TableCell className="font-mono font-bold text-sm text-primary">
-                          {formatCurrencyIdr(batch.hppAtProduction)}
+                          <CurrencyText value={batch.hppAtProduction} />
                         </TableCell>
                         <TableCell className="text-right">
                           <Badge
@@ -1296,10 +1292,10 @@ export default function RecipeDetailPage() {
                           Harga Jual Terhitung Otomatis
                         </span>
                         <div className="text-xl font-black font-mono text-primary">
-                          {formatCurrencyIdr(editProductData.sellingPrice || 0)}
+                          <CurrencyText value={editProductData.sellingPrice || 0} />
                         </div>
                         <span className="text-[10px] text-muted-foreground block">
-                          Dihitung otomatis: HPP {formatCurrencyIdr(activeHpp)} + Margin {editMargin}% (Pembulatan Rp 500)
+                          Dihitung otomatis: HPP {formatCurrency(activeHpp)} + Margin {editMargin}% (Pembulatan Rp 500)
                         </span>
                       </div>
 
@@ -1322,14 +1318,14 @@ export default function RecipeDetailPage() {
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground font-medium">HPP Acuan Saat Ini:</span>
                           <span className="font-mono font-bold text-foreground">
-                            {formatCurrencyIdr(activeHpp)}
+                            <CurrencyText value={activeHpp} />
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground font-medium">Laba Kotor per Unit:</span>
                           <span className="font-mono font-bold text-emerald-600">
-                            +{formatCurrencyIdr((editProductData.sellingPrice || 0) - activeHpp)}
+                            <CurrencyText value={(editProductData.sellingPrice || 0) - activeHpp} showPositiveSign />
                           </span>
                         </div>
 
@@ -1420,7 +1416,7 @@ export default function RecipeDetailPage() {
                     >
                       <span className="font-medium">{mat.name}</span>
                       <span className="font-mono text-muted-foreground">
-                        {formatCurrencyIdr(mat.avgCostPerUnit)}/{mat.baseUnit}
+                        <CurrencyText value={mat.avgCostPerUnit} suffix={`/${mat.baseUnit}`} />
                       </span>
                     </DropdownMenuItem>
                   ))}
@@ -1439,7 +1435,7 @@ export default function RecipeDetailPage() {
                 <div className="text-right">
                   <span className="text-muted-foreground">Biaya Bahan Satuan:</span>
                   <div className="font-mono font-bold text-primary">
-                    {formatCurrencyIdr(selectedMaterial.avgCostPerUnit)} / {selectedMaterial.baseUnit}
+                    <CurrencyText value={selectedMaterial.avgCostPerUnit} suffix={` / ${selectedMaterial.baseUnit}`} />
                   </div>
                 </div>
               </div>
@@ -1466,7 +1462,7 @@ export default function RecipeDetailPage() {
               <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 text-xs flex items-center justify-between">
                 <span className="text-muted-foreground">Menambah biaya HPP per unit:</span>
                 <span className="font-mono font-bold text-primary text-sm">
-                  +{formatCurrencyIdr(addedUnitCostPreview)}
+                  <CurrencyText value={addedUnitCostPreview} showPositiveSign />
                 </span>
               </div>
             )}
@@ -1523,7 +1519,7 @@ export default function RecipeDetailPage() {
               <div className="p-3 bg-slate-50 rounded-xl border text-xs flex items-center justify-between">
                 <span className="text-muted-foreground">Subtotal Biaya Bahan Baru:</span>
                 <span className="font-mono font-bold text-primary">
-                  {formatCurrencyIdr(Number(ingredientQty) * editingIngredient.unitCost)}
+                  <CurrencyText value={Number(ingredientQty) * editingIngredient.unitCost} />
                 </span>
               </div>
             )}

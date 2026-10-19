@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { CurrencyText } from "@/components/ui/currency-text"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,7 +79,6 @@ export default function SupplierListPage() {
     handleOpenDelete,
     handleSubmitForm,
     handleConfirmDelete,
-    formatRupiah,
   } = useSuppliers()
 
   return (
@@ -110,7 +110,7 @@ export default function SupplierListPage() {
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Segarkan
+            Refresh
           </Button>
           <Button
             onClick={handleOpenCreate}
@@ -167,7 +167,7 @@ export default function SupplierListPage() {
               <p className="text-xs font-medium text-muted-foreground">Total Nilai Pembelian</p>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400 font-mono">
-                  {formatRupiah(totalPurchasesSum)}
+                  <CurrencyText value={totalPurchasesSum} />
                 </span>
               </div>
             </div>
@@ -368,7 +368,7 @@ export default function SupplierListPage() {
                         </td>
 
                         <td className="px-5 py-3.5 text-right font-mono text-xs font-semibold text-foreground">
-                          {formatRupiah(supplier.totalPurchases || 0)}
+                          <CurrencyText value={supplier.totalPurchases || 0} />
                         </td>
 
                         <td className="px-5 py-3.5 text-right">

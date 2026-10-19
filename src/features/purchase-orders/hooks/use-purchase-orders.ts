@@ -222,14 +222,6 @@ export function usePurchaseOrders() {
   const completedCount = summary?.completed_count ?? 0
   const totalCompletedAmount = Number(summary?.total_completed_amount ?? 0)
 
-  function formatRupiah(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-
   function formatDate(dateStr: string) {
     if (!dateStr) return "-"
     return new Intl.DateTimeFormat("id-ID", {
@@ -298,7 +290,6 @@ export function usePurchaseOrders() {
     inProgressCount: orderCount,
     completedCount,
     totalCompletedAmount,
-    formatRupiah,
     formatDate,
   }
 }

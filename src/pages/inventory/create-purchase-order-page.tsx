@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { CurrencyText } from "@/components/ui/currency-text"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -199,14 +200,6 @@ export default function CreatePurchaseOrderPage() {
     const p = parseFloat(it.estimatedUnitPrice) || 0
     return acc + q * p
   }, 0)
-
-  function formatRupiah(amount: number) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -500,9 +493,11 @@ export default function CreatePurchaseOrderPage() {
                 <div className="w-full lg:w-36 text-right lg:self-center pt-2 lg:pt-4">
                   <span className="text-xs text-muted-foreground block">Subtotal</span>
                   <span className="font-mono text-sm font-semibold text-foreground">
-                    {formatRupiah(
-                      (parseFloat(item.quantity) || 0) * (parseFloat(item.estimatedUnitPrice) || 0)
-                    )}
+                    <CurrencyText
+                      value={
+                        (parseFloat(item.quantity) || 0) * (parseFloat(item.estimatedUnitPrice) || 0)
+                      }
+                    />
                   </span>
                 </div>
 
@@ -531,7 +526,7 @@ export default function CreatePurchaseOrderPage() {
                 </span>
               </div>
               <span className="text-xl font-bold font-mono text-primary">
-                {formatRupiah(totalEstimate)}
+                <CurrencyText value={totalEstimate} />
               </span>
             </div>
           </CardContent>

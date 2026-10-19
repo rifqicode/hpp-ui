@@ -41,16 +41,7 @@ import type {
   OperationalDashboardData,
   HPPDashboardData,
 } from "@/features/dashboard/types"
-
-function formatCurrencyIdr(val: number | string): string {
-  const num = typeof val === "string" ? parseFloat(val) || 0 : val
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(num)
-}
+import { CurrencyText } from "@/components/ui/currency-text"
 
 function parseNum(val: number | string | undefined | null): number {
   if (val === undefined || val === null) return 0
@@ -170,7 +161,7 @@ export default function DashboardPage() {
             className="rounded-xl h-9 text-xs font-semibold flex items-center gap-1.5 flex-1 sm:flex-initial"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            <span>{refreshing ? "Memperbarui..." : "Segarkan Data"}</span>
+            <span>{refreshing ? "Memperbarui..." : "Refresh Data"}</span>
           </Button>
 
           <Button
@@ -298,7 +289,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground truncate">
-                  {formatCurrencyIdr(inventoryValuation)}
+                  <CurrencyText value={inventoryValuation} />
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -528,7 +519,7 @@ export default function DashboardPage() {
                         <div className="min-w-0">
                           <h5 className="font-bold text-foreground truncate">{eb.stock_name}</h5>
                           <p className="text-[11px] text-muted-foreground mt-0.5">
-                            Sisa: <strong className="font-mono text-foreground">{eb.remaining_quantity} {eb.base_unit}</strong> @ {formatCurrencyIdr(eb.price_per_unit)}
+                            Sisa: <strong className="font-mono text-foreground">{eb.remaining_quantity} {eb.base_unit}</strong> @ <CurrencyText value={eb.price_per_unit} />
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -657,7 +648,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground truncate">
-                  {formatCurrencyIdr(salesSummary?.total_revenue || 0)}
+                  <CurrencyText value={salesSummary?.total_revenue || 0} />
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -679,7 +670,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-emerald-600 truncate">
-                  {formatCurrencyIdr(salesSummary?.gross_profit || 0)}
+                  <CurrencyText value={salesSummary?.gross_profit || 0} />
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -701,7 +692,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <CardTitle className="text-xl sm:text-2xl font-black font-mono mt-1 text-foreground truncate">
-                  {formatCurrencyIdr(costBreakdown?.total_cost || 0)}
+                  <CurrencyText value={costBreakdown?.total_cost || 0} />
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-1">
@@ -722,7 +713,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <Badge variant="outline" className="font-mono text-xs self-start sm:self-auto">
-                Total: {formatCurrencyIdr(costBreakdown?.total_cost || 0)}
+                Total: <CurrencyText value={costBreakdown?.total_cost || 0} />
               </Badge>
             </div>
 
@@ -755,7 +746,7 @@ export default function DashboardPage() {
                   <span className="font-mono text-xs font-bold">{parseNum(costBreakdown?.bom_share_pct)}%</span>
                 </div>
                 <p className="font-mono text-sm font-bold text-foreground">
-                  {formatCurrencyIdr(costBreakdown?.bom_cost || 0)}
+                  <CurrencyText value={costBreakdown?.bom_cost || 0} />
                 </p>
               </div>
 
@@ -768,7 +759,7 @@ export default function DashboardPage() {
                   <span className="font-mono text-xs font-bold">{parseNum(costBreakdown?.labor_share_pct)}%</span>
                 </div>
                 <p className="font-mono text-sm font-bold text-foreground">
-                  {formatCurrencyIdr(costBreakdown?.labor_cost || 0)}
+                  <CurrencyText value={costBreakdown?.labor_cost || 0} />
                 </p>
               </div>
 
@@ -781,7 +772,7 @@ export default function DashboardPage() {
                   <span className="font-mono text-xs font-bold">{parseNum(costBreakdown?.overhead_share_pct)}%</span>
                 </div>
                 <p className="font-mono text-sm font-bold text-foreground">
-                  {formatCurrencyIdr(costBreakdown?.overhead_cost || 0)}
+                  <CurrencyText value={costBreakdown?.overhead_cost || 0} />
                 </p>
               </div>
             </div>
@@ -822,9 +813,9 @@ export default function DashboardPage() {
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px] text-muted-foreground font-mono">
-                          <span>Jual: {formatCurrencyIdr(p.selling_price)}</span>
-                          <span>HPP: {formatCurrencyIdr(p.hpp)}</span>
-                          <span className="text-emerald-700">Laba: {formatCurrencyIdr(p.profit_unit)}/unit</span>
+                          <span>Jual: <CurrencyText value={p.selling_price} /></span>
+                          <span>HPP: <CurrencyText value={p.hpp} /></span>
+                          <span className="text-emerald-700">Laba: <CurrencyText value={p.profit_unit} suffix="/unit" /></span>
                         </div>
                         <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
                           <div
@@ -867,7 +858,7 @@ export default function DashboardPage() {
                         <div className="min-w-0">
                           <h5 className="font-bold text-foreground truncate">{p.product_name}</h5>
                           <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">
-                            HPP: {formatCurrencyIdr(p.hpp)} | Jual: {formatCurrencyIdr(p.selling_price)}
+                            HPP: <CurrencyText value={p.hpp} /> | Jual: <CurrencyText value={p.selling_price} />
                           </p>
                         </div>
                         <div className="text-right shrink-0">
@@ -933,11 +924,11 @@ export default function DashboardPage() {
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="p-2 rounded-lg bg-muted/40 font-mono">
                               <span className="text-[10px] text-muted-foreground block">Standar Resep</span>
-                              <span className="font-bold">{formatCurrencyIdr(item.recipe_hpp)}</span>
+                              <span className="font-bold"><CurrencyText value={item.recipe_hpp} /></span>
                             </div>
                             <div className="p-2 rounded-lg bg-muted/40 font-mono">
                               <span className="text-[10px] text-muted-foreground block">Aktual Terwujud</span>
-                              <span className="font-bold">{formatCurrencyIdr(item.realized_hpp)}</span>
+                              <span className="font-bold"><CurrencyText value={item.realized_hpp} /></span>
                             </div>
                           </div>
                         </div>

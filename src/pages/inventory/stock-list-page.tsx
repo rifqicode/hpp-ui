@@ -275,7 +275,7 @@ export default function StockListPage() {
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Segarkan
+            Refresh
           </Button>
 
           {canAdjust && (

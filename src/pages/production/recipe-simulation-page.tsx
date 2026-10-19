@@ -32,15 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-
-function formatCurrencyIdr(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(val)
-}
+import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
 
 interface CustomIngredient {
   id: string
@@ -210,17 +202,17 @@ Produk: ${productName || "Produk Tanpa Nama"}
 Hasil Jadi (Yield): ${yieldUnits || 1} ${unitName || "unit"}
 
 BIAYA PRODUKSI PER BATCH:
-- Bahan Baku: ${formatCurrencyIdr(totalRawMaterialCost)}
-- Overhead: ${formatCurrencyIdr(totalBatchOverhead)}
-Total Biaya Batch: ${formatCurrencyIdr(totalProductionCost)}
+- Bahan Baku: ${formatCurrency(totalRawMaterialCost)}
+- Overhead: ${formatCurrency(totalBatchOverhead)}
+Total Biaya Batch: ${formatCurrency(totalProductionCost)}
 
-HPP PER UNIT: ${formatCurrencyIdr(hppTotalPerUnit)} / ${unitName || "unit"}
-- HPP Bahan Baku: ${formatCurrencyIdr(hppRawMaterialPerUnit)}
-- HPP Overhead: ${formatCurrencyIdr(hppOverheadPerUnit)}
+HPP PER UNIT: ${formatCurrency(hppTotalPerUnit)} / ${unitName || "unit"}
+- HPP Bahan Baku: ${formatCurrency(hppRawMaterialPerUnit)}
+- HPP Overhead: ${formatCurrency(hppOverheadPerUnit)}
 
 REKOMENDASI HARGA JUAL:
-- Rekomendasi Harga: ${formatCurrencyIdr(calculatedSellingPrice)} (Margin: ${actualMarginPercent}%)
-- Laba Kotor per Unit: ${formatCurrencyIdr(grossProfitPerUnit)}
+- Rekomendasi Harga: ${formatCurrency(calculatedSellingPrice)} (Margin: ${actualMarginPercent}%)
+- Laba Kotor per Unit: ${formatCurrency(grossProfitPerUnit)}
 
 Dihitung otomatis dengan HPP Manager.
 `.trim()
@@ -415,7 +407,7 @@ Dihitung otomatis dengan HPP Manager.
                           </TableCell>
 
                           <TableCell className="p-2.5 text-right font-mono font-bold text-xs text-foreground">
-                            {formatCurrencyIdr(ing.totalCost)}
+                            <CurrencyText value={ing.totalCost} />
                           </TableCell>
 
                           <TableCell className="p-2.5 text-center">
@@ -439,7 +431,7 @@ Dihitung otomatis dengan HPP Manager.
                 <div className="p-3.5 bg-muted/20 border-t border-border flex items-center justify-between text-xs">
                   <span className="text-muted-foreground font-medium">Subtotal Biaya Bahan Baku:</span>
                   <span className="font-mono font-bold text-sm text-foreground">
-                    {formatCurrencyIdr(totalRawMaterialCost)}
+                    <CurrencyText value={totalRawMaterialCost} />
                   </span>
                 </div>
               </Card>
@@ -510,7 +502,7 @@ Dihitung otomatis dengan HPP Manager.
                             <div className="w-full sm:w-36 px-2 py-1 flex items-center justify-between sm:justify-end gap-1 text-xs text-muted-foreground font-mono">
                               <span className="sm:hidden text-[11px]">Per unit:</span>
                               <span className="font-semibold text-foreground">
-                                {formatCurrencyIdr(costPerUnit)}
+                                <CurrencyText value={costPerUnit} />
                               </span>
                               <span className="text-[10px]">/ unit</span>
                             </div>
@@ -532,7 +524,7 @@ Dihitung otomatis dengan HPP Manager.
                   <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
                     <span className="text-muted-foreground font-medium">Subtotal Biaya Overhead (per Batch):</span>
                     <span className="font-mono font-bold text-sm text-foreground">
-                      {formatCurrencyIdr(totalBatchOverhead)}
+                      <CurrencyText value={totalBatchOverhead} />
                     </span>
                   </div>
                 </CardContent>
@@ -566,7 +558,7 @@ Dihitung otomatis dengan HPP Manager.
                       HPP Total per Unit
                     </span>
                     <span className="text-3xl font-black font-mono tracking-tight text-primary mt-1">
-                      {formatCurrencyIdr(hppTotalPerUnit)}
+                      <CurrencyText value={hppTotalPerUnit} />
                     </span>
                     <span className="text-[11px] text-slate-500 mt-0.5">
                       per 1 {unitName} (Bahan + Overhead Lengkap)
@@ -575,12 +567,12 @@ Dihitung otomatis dengan HPP Manager.
                     <div className="mt-3 pt-2.5 border-t border-slate-100 w-full flex items-center justify-around text-[10px] font-mono text-slate-600">
                       <div>
                         <span className="block text-slate-400">Bahan Baku:</span>
-                        <strong className="text-slate-800">{formatCurrencyIdr(hppRawMaterialPerUnit)}</strong>
+                        <strong className="text-slate-800"><CurrencyText value={hppRawMaterialPerUnit} /></strong>
                       </div>
                       <div className="h-5 w-px bg-slate-200" />
                       <div>
                         <span className="block text-slate-400">Overhead:</span>
-                        <strong className="text-slate-800">{formatCurrencyIdr(hppTotalPerUnit - hppRawMaterialPerUnit)}</strong>
+                        <strong className="text-slate-800"><CurrencyText value={hppTotalPerUnit - hppRawMaterialPerUnit} /></strong>
                       </div>
                     </div>
                   </div>
@@ -675,21 +667,21 @@ Dihitung otomatis dengan HPP Manager.
                     <div className="flex items-center justify-between py-1 border-b border-slate-200">
                       <span className="text-slate-600">Rekomendasi Harga Jual:</span>
                       <span className="font-mono font-bold text-slate-900 text-sm">
-                        {formatCurrencyIdr(calculatedSellingPrice)}
+                        <CurrencyText value={calculatedSellingPrice} />
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between py-1 border-b border-slate-200">
                       <span className="text-slate-600">Laba Kotor per Unit:</span>
                       <span className="font-mono font-bold text-emerald-700">
-                        +{formatCurrencyIdr(grossProfitPerUnit)}
+                        <CurrencyText value={grossProfitPerUnit} showPositiveSign />
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between py-1 border-b border-slate-200">
                       <span className="text-slate-600">Total Nilai Batch (Omzet):</span>
                       <span className="font-mono font-bold text-slate-900">
-                        {formatCurrencyIdr(calculatedSellingPrice * safeYield)}
+                        <CurrencyText value={calculatedSellingPrice * safeYield} />
                       </span>
                     </div>
 
