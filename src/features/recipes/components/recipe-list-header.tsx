@@ -13,7 +13,7 @@ export function RecipeListHeader({ list }: RecipeListHeaderProps) {
     <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
       <div className="min-w-0">
         <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-          Produk &amp; Resep
+          Produk
         </h1>
         <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
           Kelola harga, HPP, dan stok produk.

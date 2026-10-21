@@ -1,3 +1,12 @@
+import type { POAttachment } from '../lib/attachment';
+
+export type PurchaseOrderCategory = "PURCHASE_ORDER" | "DIRECT_ORDER";
+
+export const PURCHASE_ORDER_CATEGORY_LABELS: Record<PurchaseOrderCategory, string> = {
+  PURCHASE_ORDER: "Purchase Order",
+  DIRECT_ORDER: "Direct Order",
+};
+
 export type PurchaseOrderStatus =
   | "IN_PROGRESS"
   | "PURCHASE_REQUEST"
@@ -28,6 +37,11 @@ export interface PurchaseOrderLog {
 export interface PurchaseOrder {
   id: string;
   poNumber: string;
+  category: PurchaseOrderCategory;
+  attachmentUrl?: string;
+  attachmentName?: string;
+  attachments: POAttachment[];
+  completionAttachments: POAttachment[];
   supplierId?: string;
   supplierName: string;
   createdByUserId?: string;
@@ -46,9 +60,15 @@ export interface CreatePOItemInput {
   stock_id: string;
   quantity: number;
   estimated_unit_price?: number;
+  unit_price?: number;
+  total_price?: number;
 }
 
 export interface CreatePurchaseOrderInput {
+  attachments?: POAttachment[];
+  category?: PurchaseOrderCategory;
+  attachment_url?: string;
+  attachment_name?: string;
   supplier_id?: string;
   notes?: string;
   order_date?: string;
@@ -56,6 +76,10 @@ export interface CreatePurchaseOrderInput {
 }
 
 export interface UpdatePurchaseOrderInput {
+  attachments?: POAttachment[];
+  category?: PurchaseOrderCategory;
+  attachment_url?: string;
+  attachment_name?: string;
   supplier_id?: string;
   notes?: string;
   items: CreatePOItemInput[];
@@ -77,11 +101,13 @@ export interface CompletePOPriceItem {
 }
 
 export interface CompletePurchaseOrderInput {
+  completion_attachments?: POAttachment[];
   supplier_id?: string;
   prices: CompletePOPriceItem[];
 }
 
 export interface PurchaseOrderQueryParams {
+  category?: PurchaseOrderCategory;
   page?: number;
   limit?: number;
   search?: string;

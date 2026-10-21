@@ -1,7 +1,7 @@
 import type { Product } from '../../recipes/types';
 
 export type PaymentMethod = 'CASH' | 'QRIS' | 'TRANSFER' | 'DEBIT';
-export type SaleStatus = 'COMPLETED' | 'IN_PROGRESS' | 'CANCELLED';
+export type SaleStatus = 'COMPLETED' | 'IN_PROGRESS' | 'CANCELLED' | 'RETURNED';
 
 export interface Customer {
   id: string;
@@ -54,6 +54,7 @@ export interface CustomerDetail {
 }
 
 export interface SaleItem {
+  returnedQuantity?: number;
   id: string;
   saleId: string;
   sale_id?: string;
@@ -84,6 +85,11 @@ export interface SaleItem {
 }
 
 export interface Sale {
+ originalTotalAmount?: number;
+ refundedAmount?: number;
+ restoredCost?: number;
+ corrections?: SaleCorrection[];
+
   id: string;
   storeId?: string;
   store_id?: string;
@@ -166,6 +172,7 @@ export interface CreateSaleInput {
 }
 
 export interface SaleQuery {
+  status?: string;
   start_date?: string;
   end_date?: string;
   payment_method?: string;
@@ -195,4 +202,15 @@ export interface CustomerSummary {
   total_customers: number;
   active_customers: number;
   total_spent_amount: string | number;
+}
+
+export interface SaleCorrection {
+ id: string; actor_id: string; actor_name?: string; kind: string; reason: string; refund_method: string;
+ refund_reference: string; refund_amount: string | number; created_at: string;
+ items: { id: string; sale_item_id: string; quantity: string | number; restock: boolean }[];
+}
+export interface CorrectSaleInput {
+ request_id: string; kind: 'CANCEL' | 'RETURN'; reason: string; refund_method: string;
+ refund_reference?: string;
+ items: { sale_item_id: string; quantity: number; restock: boolean }[];
 }

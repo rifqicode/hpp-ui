@@ -1,3 +1,4 @@
+import { getCompatibleUnits, getQuantityInBaseUnit } from '@/lib/units'
 import * as React from "react"
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
@@ -97,6 +98,7 @@ export default function RecipeDetailPage() {
 
   // Ingredient Form State
   const [selectedStockId, setSelectedStockId] = React.useState<string>("")
+  const [ingredientUnit, setIngredientUnit] = React.useState("")
   const [ingredientQty, setIngredientQty] = React.useState<string>("")
   const [editingIngredient, setEditingIngredient] = React.useState<RecipeIngredient | null>(null)
   const [ingredientError, setIngredientError] = React.useState<string>("")
@@ -178,7 +180,7 @@ export default function RecipeDetailPage() {
   // Selected material info for modal
   const selectedMaterial = availableMaterials.find((m) => m.id === selectedStockId)
   const addedUnitCostPreview = selectedMaterial && Number(ingredientQty) > 0
-    ? Number(ingredientQty) * selectedMaterial.avgCostPerUnit
+    ? getQuantityInBaseUnit(Number(ingredientQty), ingredientUnit, selectedMaterial.baseUnit) * selectedMaterial.avgCostPerUnit
     : 0
 
   // Handle Add Ingredient Submit
@@ -188,7 +190,7 @@ export default function RecipeDetailPage() {
       setIngredientError("Silakan pilih bahan baku")
       return
     }
-    const qty = Number(ingredientQty)
+    const qty = getQuantityInBaseUnit(Number(ingredientQty), ingredientUnit, selectedMaterial?.baseUnit || "")
     if (isNaN(qty) || qty <= 0) {
       setIngredientError("Jumlah takaran harus lebih dari 0")
       return
@@ -204,7 +206,7 @@ export default function RecipeDetailPage() {
       setProduct(updated)
       setIsAddIngredientOpen(false)
       setSelectedStockId("")
-      setIngredientQty("")
+      setIngredientQty(""); setIngredientUnit("")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menambahkan bahan baku"
       setIngredientError(msg)
@@ -217,7 +219,7 @@ export default function RecipeDetailPage() {
   async function handleEditIngredient(e: React.FormEvent) {
     e.preventDefault()
     if (!productId || !editingIngredient) return
-    const qty = Number(ingredientQty)
+    const qty = getQuantityInBaseUnit(Number(ingredientQty), ingredientUnit, editingIngredient.baseUnit)
     if (isNaN(qty) || qty <= 0) {
       setIngredientError("Jumlah takaran harus lebih dari 0")
       return
@@ -230,7 +232,7 @@ export default function RecipeDetailPage() {
       setProduct(updated)
       setIsEditIngredientOpen(false)
       setEditingIngredient(null)
-      setIngredientQty("")
+      setIngredientQty(""); setIngredientUnit("")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal mengupdate takaran bahan"
       setIngredientError(msg)
@@ -586,7 +588,7 @@ export default function RecipeDetailPage() {
               <Button
                 onClick={() => {
                   setSelectedStockId(availableMaterials[0]?.id || "")
-                  setIngredientQty("")
+                  setIngredientQty(""); setIngredientUnit("")
                   setIngredientError("")
                   setIsAddIngredientOpen(true)
                 }}
@@ -690,7 +692,7 @@ export default function RecipeDetailPage() {
                                   className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
                                   onClick={() => {
                                     setEditingIngredient(ing)
-                                    setIngredientQty(ing.quantity.toString())
+                                    setIngredientQty(ing.quantity.toString()); setIngredientUnit(ing.baseUnit)
                                     setIngredientError("")
                                     setIsEditIngredientOpen(true)
                                   }}
@@ -1411,7 +1413,7 @@ export default function RecipeDetailPage() {
                   {availableMaterials.map((mat) => (
                     <DropdownMenuItem
                       key={mat.id}
-                      onClick={() => setSelectedStockId(mat.id)}
+                      onClick={() => { setSelectedStockId(mat.id); setIngredientUnit("") }}
                       className="cursor-pointer flex items-center justify-between text-xs"
                     >
                       <span className="font-medium">{mat.name}</span>
@@ -1443,9 +1445,12 @@ export default function RecipeDetailPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="qty" className="text-xs font-semibold">
-                Takaran yang Dibutuhkan ({selectedMaterial?.baseUnit || "unit"}) <span className="text-red-500">*</span>
+                Takaran yang Dibutuhkan ({ingredientUnit || selectedMaterial?.baseUnit || "unit"}) <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <label className="grid gap-1 text-xs">Satuan takaran<select className="h-10 rounded-md border bg-background px-3" value={ingredientUnit || selectedMaterial?.baseUnit || ''} onChange={e => setIngredientUnit(e.target.value)}>
+ {[...new Set([selectedMaterial?.baseUnit || '', ...getCompatibleUnits(selectedMaterial?.baseUnit)])].filter(Boolean).map(u => <option key={u} value={u}>{u}</option>)}
+ </select></label>
+ <Input
                 id="qty"
                 type="number"
                 step="any"
@@ -1502,9 +1507,12 @@ export default function RecipeDetailPage() {
           <form onSubmit={handleEditIngredient} className="space-y-4 py-2">
             <div className="grid gap-2">
               <Label className="text-xs font-semibold">
-                Takaran Baru ({editingIngredient?.baseUnit})
+                Takaran Baru ({ingredientUnit || editingIngredient?.baseUnit})
               </Label>
-              <Input
+              <label className="grid gap-1 text-xs">Satuan takaran<select className="h-10 rounded-md border bg-background px-3" value={ingredientUnit || editingIngredient?.baseUnit || ''} onChange={e => setIngredientUnit(e.target.value)}>
+ {[...new Set([editingIngredient?.baseUnit || '', ...getCompatibleUnits(editingIngredient?.baseUnit)])].filter(Boolean).map(u => <option key={u} value={u}>{u}</option>)}
+ </select></label>
+ <Input
                 type="number"
                 step="any"
                 min="0.001"
@@ -1519,7 +1527,7 @@ export default function RecipeDetailPage() {
               <div className="p-3 bg-slate-50 rounded-xl border text-xs flex items-center justify-between">
                 <span className="text-muted-foreground">Subtotal Biaya Bahan Baru:</span>
                 <span className="font-mono font-bold text-primary">
-                  <CurrencyText value={Number(ingredientQty) * editingIngredient.unitCost} />
+                  <CurrencyText value={getQuantityInBaseUnit(Number(ingredientQty), ingredientUnit, editingIngredient.baseUnit) * editingIngredient.unitCost} />
                 </span>
               </div>
             )}

@@ -29,7 +29,7 @@ export function getActiveMenuTitle(pathname: string): string {
     return 'Detail Supplier';
   }
   if (path === '/inventory/purchase-orders') {
-    return 'Purchase Orders';
+    return 'Purchase';
   }
   if (path === '/inventory/purchase-orders/new') {
     return 'Buat PO Baru';
@@ -40,7 +40,7 @@ export function getActiveMenuTitle(pathname: string): string {
 
   // Production
   if (path === '/production/products') {
-    return 'Produk & Resep';
+    return 'Produk';
   }
   if (path === '/production/products/new') {
     return 'Tambah Produk';

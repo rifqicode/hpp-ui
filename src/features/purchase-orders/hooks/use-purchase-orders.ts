@@ -11,6 +11,7 @@ import { usePermission } from "@/hooks/use-permission"
 import type {
   PurchaseOrder,
   PurchaseOrderQueryParams,
+  PurchaseOrderCategory,
 } from "../types"
 
 export function usePurchaseOrders() {
@@ -20,6 +21,7 @@ export function usePurchaseOrders() {
 
   const [search, setSearch] = React.useState<string>("")
   const [debouncedSearch, setDebouncedSearch] = React.useState<string>("")
+  const [categoryFilter, setCategoryFilter] = React.useState<PurchaseOrderCategory | "ALL">("ALL")
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
   const [page, setPage] = React.useState<number>(1)
   const [limit, setLimit] = React.useState<number>(10)
@@ -52,6 +54,7 @@ export function usePurchaseOrders() {
     limit,
     search: debouncedSearch.trim() || undefined,
     status: statusFilter === "ALL" ? undefined : statusFilter,
+    category: categoryFilter === "ALL" ? undefined : categoryFilter,
   }
 
   const ordersQuery = usePurchaseOrdersQuery(queryParams)
@@ -226,9 +229,12 @@ export function usePurchaseOrders() {
     if (!dateStr) return "-"
     return new Intl.DateTimeFormat("id-ID", {
       day: "numeric",
-      month: "short",
+      month: "long",
       year: "numeric",
-    }).format(new Date(dateStr))
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(dateStr)).replace(" pukul ", ", ")
   }
 
   return {
@@ -238,9 +244,15 @@ export function usePurchaseOrders() {
     canEditPO,
     orders,
     loading,
+    isFetching: ordersQuery.isFetching || summaryQuery.isFetching,
     error,
     search,
     setSearch,
+    categoryFilter,
+    setCategoryFilter: (category: PurchaseOrderCategory | "ALL") => {
+      setCategoryFilter(category)
+      setPage(1)
+    },
     statusFilter,
     setStatusFilter: (status: string) => {
       setStatusFilter(status)

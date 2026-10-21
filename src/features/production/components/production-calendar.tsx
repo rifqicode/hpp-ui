@@ -8,7 +8,6 @@ import { useProductionCalendar } from '../hooks/use-production-calendar';
 import { ProductionStatusBadge } from './production-status';
 import { PRODUCTION_STATUSES } from '../types/production-status';
 import { buildCalendarWeeks } from '../lib/calendar-layout';
-import type { ProductionStatus } from '../types';
 
 const WEEKDAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
@@ -56,9 +55,11 @@ export function ProductionCalendar() {
 
     </div>
 
-    <div aria-label="Legend status produksi" className="flex flex-wrap gap-x-4 gap-y-2 rounded-lg border bg-card p-3">
-      <span className="text-xs font-semibold">Legend:</span>
-      {(Object.keys(PRODUCTION_STATUSES) as ProductionStatus[]).map((status) => <ProductionStatusBadge key={status} status={status} />)}
+    <div aria-label="Legend status produksi" className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[11px] leading-4 text-muted-foreground">
+      <span className="font-medium">Legend:</span>
+      {Object.entries(PRODUCTION_STATUSES).map(([status, config]) => <span key={status} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+        <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', config.dot)} />{config.label}
+      </span>)}
     </div>
 
     {error ? <div role="alert" className="rounded-xl border border-destructive/30 bg-card p-6 text-center">

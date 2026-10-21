@@ -1,9 +1,7 @@
 import * as React from "react"
-import { Link } from "react-router-dom"
-import { ChevronDown, Loader2, Plus } from "lucide-react"
-
+import { ChevronDown, Loader2, Plus, ShoppingBag } from "lucide-react"
+import { getQuantityInBaseUnit } from "@/lib/units"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -21,10 +19,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
 import { CurrencyText } from "@/components/ui/currency-text"
 import { usePurchaseStock } from "../hooks/use-purchase-stock"
+import { StockChangePreview, StockMaterialField } from "./stock-form-fields"
+import { stockSelectClass } from "./stock-form-utils"
+import { PurchaseUnitFields } from "./purchase-unit-fields"
 
 const BASE_UNITS = [
   { value: "kg", label: "Kilogram (kg)" },
@@ -32,11 +33,11 @@ const BASE_UNITS = [
   { value: "mg", label: "Miligram (mg)" },
   { value: "L", label: "Liter (L)" },
   { value: "ml", label: "Mililiter (ml)" },
-  { value: "pcs", label: "Pieces (pcs)" },
-  { value: "pack", label: "Pack" },
-  { value: "box", label: "Box" },
-  { value: "bottle", label: "Bottle" },
-  { value: "can", label: "Can" },
+  { value: "pcs", label: "Buah (pcs)" },
+  { value: "pack", label: "Pak (pack)" },
+  { value: "box", label: "Kotak (box)" },
+  { value: "bottle", label: "Botol (bottle)" },
+  { value: "can", label: "Kaleng (can)" },
 ] as const
 
 interface RecordPurchaseDialogProps {
@@ -64,12 +65,14 @@ export function RecordPurchaseDialog({
     handleRecordPurchase,
   } = usePurchaseStock({ enabled: open })
 
-  const [selectedMaterialId, setSelectedMaterialId] = React.useState<string>("")
-  const [selectedSupplierId, setSelectedSupplierId] = React.useState<string>("")
-  const [quantity, setQuantity] = React.useState<string>("")
-  const [totalPrice, setTotalPrice] = React.useState<string>("")
-  const [expiredAt, setExpiredAt] = React.useState<string>("")
-  const [submitError, setSubmitError] = React.useState<string>("")
+  const [selectedMaterialId, setSelectedMaterialId] = React.useState("")
+  const [selectedSupplierId, setSelectedSupplierId] = React.useState<string | null>(null)
+  const [quantity, setQuantity] = React.useState("")
+  const [totalPrice, setTotalPrice] = React.useState("")
+  const [expiredAt, setExpiredAt] = React.useState("")
+  const [submitError, setSubmitError] = React.useState("")
+  const [purchaseUnit, setPurchaseUnit] = React.useState("")
+  const [packageSize, setPackageSize] = React.useState("")
 
   // Quick Create Material Modal state
   const [isCreateMatOpen, setIsCreateMatOpen] = React.useState(false)
@@ -79,313 +82,372 @@ export function RecordPurchaseDialog({
   const [isCreatingMat, setIsCreatingMat] = React.useState(false)
   const [createMatError, setCreateMatError] = React.useState("")
 
-  const handleDialogChange = (isOpen: boolean) => {
-    if (!isOpen) {
-      setSubmitError("")
-      setQuantity("")
-      setTotalPrice("")
-      setExpiredAt("")
-      setSelectedMaterialId("")
-      setSelectedSupplierId("")
-    }
-    onOpenChange(isOpen)
+  const submissionLock = React.useRef(false)
+
+  const materialId = initialStockId || selectedMaterialId
+  const supplierId = selectedSupplierId ?? initialSupplierId ?? ""
+  const material = stocks.find((stock) => stock.id === materialId)
+  const unit = purchaseUnit || material?.base_unit || ""
+  const isFefo = material?.inventory_method === "FEFO"
+
+  const qty = Number(quantity)
+  const total = Number(totalPrice)
+  const pkgSizeNum = Number(packageSize) || 0
+  const baseQuantity = getQuantityInBaseUnit(qty, unit, material?.base_unit || "", pkgSizeNum)
+  const precisionInvalid =
+    baseQuantity > 0 && Math.abs(baseQuantity - Math.round(baseQuantity * 10000) / 10000) > 1e-9
+
+  const valid =
+    Boolean(material) &&
+    Number.isFinite(qty) &&
+    qty > 0 &&
+    Number.isFinite(total) &&
+    total > 0 &&
+    Number.isFinite(baseQuantity) &&
+    baseQuantity > 0 &&
+    !precisionInvalid &&
+    (!isFefo || Boolean(expiredAt))
+
+  const pricePerUnit = baseQuantity > 0 ? total / baseQuantity : 0
+
+  function resetAndClose() {
+    setSelectedMaterialId("")
+    setSelectedSupplierId(null)
+    setQuantity("")
+    setTotalPrice("")
+    setExpiredAt("")
+    setSubmitError("")
+    setPurchaseUnit("")
+    setPackageSize("")
+    setIsCreateMatOpen(false)
+    setCreateMatError("")
+    onOpenChange(false)
   }
 
-  const materialId = selectedMaterialId || initialStockId || stocks[0]?.id || ""
-  const supplierId = selectedSupplierId || initialSupplierId || suppliers[0]?.id || ""
+  function handleDialogChange(next: boolean) {
+    if (submissionLock.current || isCreatingMat) return
+    if (!next) {
+      resetAndClose()
+    } else {
+      onOpenChange(true)
+    }
+  }
 
-  const selectedMaterial = stocks.find((m) => m.id === materialId)
-  const selectedSupplier = suppliers.find((s) => s.id === supplierId)
+  function selectMaterial(id: string) {
+    setSelectedMaterialId(id)
+    setPurchaseUnit("")
+    setPackageSize("")
+    setQuantity("")
+    setTotalPrice("")
+    setExpiredAt("")
+    setSubmitError("")
+  }
 
-  const isFefo = selectedMaterial?.inventory_method === "FEFO"
+  async function handleQuickCreateMaterial(event: React.FormEvent) {
+    event.preventDefault()
+    if (isCreatingMat) return
 
-  const qtyNum = parseFloat(quantity) || 0
-  const totalNum = parseFloat(totalPrice) || 0
-  const pricePerUnit = qtyNum > 0 ? totalNum / qtyNum : 0
-
-  const handleQuickCreateMaterial = async (e: React.FormEvent) => {
-    e.preventDefault()
     if (!newMatName.trim()) {
-      setCreateMatError("Nama bahan baku wajib diisi")
+      setCreateMatError("Nama bahan baku wajib diisi.")
       return
     }
+
     setIsCreatingMat(true)
     setCreateMatError("")
+
     try {
       const created = await handleCreateStock({
         name: newMatName.trim(),
-        base_unit: newMatUnit.trim(),
+        base_unit: newMatUnit,
         inventory_method: newMatMethod,
       })
-      setSelectedMaterialId(created.id)
+      selectMaterial(created.id)
       setIsCreateMatOpen(false)
       setNewMatName("")
       setNewMatMethod("FIFO")
-    } catch (err: unknown) {
-      setCreateMatError(err instanceof Error ? err.message : "Failed to create material")
+    } catch (error: unknown) {
+      setCreateMatError(
+        error instanceof Error ? error.message : "Bahan baku belum berhasil ditambahkan."
+      )
     } finally {
       setIsCreatingMat(false)
     }
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function onSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (submissionLock.current) return
+
+    if (!valid) {
+      if (isFefo && !expiredAt) {
+        setSubmitError("Tanggal kedaluwarsa wajib diisi untuk bahan baku FEFO.")
+      } else {
+        setSubmitError("Periksa bahan, jumlah, total harga, dan tanggal kedaluwarsa sebelum menyimpan.")
+      }
+      return
+    }
+
+    submissionLock.current = true
     setSubmitError("")
-
-    if (!materialId) {
-      setSubmitError("Pilih bahan baku terlebih dahulu.")
-      return
-    }
-
-    if (qtyNum <= 0) {
-      setSubmitError("Quantity must be greater than 0.")
-      return
-    }
-
-    if (totalNum <= 0) {
-      setSubmitError("Total price must be greater than 0.")
-      return
-    }
-
-    if (isFefo && !expiredAt) {
-      setSubmitError("Tanggal kadaluwarsa wajib diisi untuk bahan baku metode FEFO.")
-      return
-    }
 
     try {
       await handleRecordPurchase({
         stock_id: materialId,
         supplier_id: supplierId || undefined,
-        quantity: qtyNum,
-        total_price: totalNum,
+        quantity: qty,
+        unit,
+        package_size: unit === "kemasan" ? pkgSizeNum : undefined,
+        total_price: total,
         expired_at: expiredAt ? new Date(expiredAt).toISOString() : undefined,
       })
-      handleDialogChange(false)
+      resetAndClose()
       onSuccess?.()
-    } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to record purchase")
+    } catch (error: unknown) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Pembelian belum berhasil disimpan. Silakan coba lagi."
+      )
+    } finally {
+      submissionLock.current = false
     }
   }
 
   return (
     <>
       <Dialog open={open} onOpenChange={handleDialogChange}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Record Stock Purchase</DialogTitle>
-            <DialogDescription>
-              Increase material inventory by recording a purchase lot from a supplier.
-            </DialogDescription>
+        <DialogContent className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl sm:p-0">
+          <DialogHeader className="shrink-0 border-b px-5 py-5 pr-12 text-left sm:px-6">
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ShoppingBag className="size-5" />
+              </span>
+              <div>
+                <DialogTitle>Catat Pembelian Bahan</DialogTitle>
+                <DialogDescription className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  Catat bahan yang sudah diterima. Stok dan valuasi biaya bahan akan otomatis diperbarui.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
-          {(hookError || submitError) && (
-            <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-xl border border-destructive/20">
-              {submitError || hookError}
-            </div>
-          )}
-
           {loading ? (
-            <div className="flex flex-col items-center justify-center p-8 text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin mb-2 text-primary" />
-              <p className="text-xs">Memuat data bahan baku dan supplier...</p>
+            <div
+              role="status"
+              className="flex items-center justify-center gap-2 p-12 text-sm text-muted-foreground"
+            >
+              <Loader2 className="size-4 animate-spin text-primary" />
+              Memuat data pembelian…
             </div>
           ) : (
-            <form onSubmit={onSubmit} className="grid gap-4 py-1">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {/* Material Dropdown */}
-                <div className="grid gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label>Bahan Baku</Label>
-                    {!initialStockId && (
-                      <button
-                        type="button"
-                        onClick={() => setIsCreateMatOpen(true)}
-                        className="text-xs text-primary font-medium hover:underline inline-flex items-center gap-0.5"
-                      >
-                        <Plus className="h-3 w-3" /> Tambah Baru
-                      </button>
-                    )}
-                  </div>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild disabled={Boolean(initialStockId)}>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full justify-between rounded-xl"
-                      >
-                        <span className={cn("truncate", !selectedMaterial && "text-muted-foreground")}>
-                          {selectedMaterial ? selectedMaterial.name : "Pilih bahan baku"}
-                        </span>
-                        {!initialStockId && <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
-                      <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
-                        Bahan Baku
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {stocks.map((m) => (
-                        <DropdownMenuItem
-                          key={m.id}
-                          onClick={() => setSelectedMaterialId(m.id)}
-                          className="cursor-pointer"
-                        >
-                          {m.name} ({m.base_unit})
-                        </DropdownMenuItem>
-                      ))}
-                      {stocks.length === 0 && (
-                        <div className="p-3 text-xs text-muted-foreground text-center">
-                          Tidak ada bahan baku yang ditemukan.
-                        </div>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  {selectedMaterial && (
-                    <p className="text-xs text-muted-foreground">
-                      Unit: {selectedMaterial.base_unit} • Current: {selectedMaterial.current_stock}
+            <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
+                <fieldset disabled={isSubmitting} className="min-w-0 space-y-5">
+                  {(submitError || hookError) && (
+                    <p
+                      role="alert"
+                      className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive"
+                    >
+                      {submitError || hookError}
                     </p>
                   )}
-                </div>
 
-                {/* Supplier Dropdown */}
-                <div className="grid gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Label>Supplier</Label>
-                      <span className="text-[11px] text-muted-foreground">(Optional)</span>
-                    </div>
-                    <Link
-                      to="/inventory/suppliers"
-                      onClick={() => onOpenChange(false)}
-                      className="text-xs text-primary font-medium hover:underline inline-flex items-center gap-0.5"
-                    >
-                      <Plus className="h-3 w-3" /> Add
-                    </Link>
-                  </div>
+                  {/* Bahan Baku & Supplier */}
+                  <section className="space-y-3" aria-label="Bahan baku dan supplier">
+                    <StockMaterialField
+                      id="purchase-material"
+                      stocks={stocks}
+                      value={materialId}
+                      locked={Boolean(initialStockId)}
+                      onChange={selectMaterial}
+                    />
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="outline" className="w-full justify-between rounded-xl">
-                        <span className={cn("truncate", !selectedSupplier && "text-muted-foreground")}>
-                          {selectedSupplier ? selectedSupplier.name : "None / Direct Purchase"}
-                        </span>
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
-                      <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
-                        Suppliers
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => setSelectedSupplierId("")}
-                        className="cursor-pointer text-muted-foreground italic"
+                    {!initialStockId && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setCreateMatError("")
+                          setIsCreateMatOpen(true)
+                        }}
+                        className="-ml-2 h-9 gap-1 text-primary hover:text-primary"
                       >
-                        None / Direct Purchase (Tanpa Supplier)
-                      </DropdownMenuItem>
-                      {suppliers.map((s) => (
-                        <DropdownMenuItem
-                          key={s.id}
-                          onClick={() => setSelectedSupplierId(s.id)}
-                          className="cursor-pointer"
-                        >
-                          {s.name}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
+                        <Plus className="size-3.5" />
+                        Tambah Bahan Baku Baru
+                      </Button>
+                    )}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="purchase-qty">
-                    Quantity {selectedMaterial ? `(${selectedMaterial.base_unit})` : ""}
-                  </Label>
-                  <Input
-                    id="purchase-qty"
-                    type="number"
-                    step="any"
-                    min="0.0001"
-                    placeholder="e.g. 10"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="rounded-xl font-mono"
-                    required
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <label htmlFor="purchase-supplier" className="text-sm font-medium text-foreground">
+                        Supplier <span className="font-normal text-muted-foreground">(opsional)</span>
+                      </label>
+                      <select
+                        id="purchase-supplier"
+                        className={stockSelectClass}
+                        value={supplierId}
+                        onChange={(event) => setSelectedSupplierId(event.target.value)}
+                      >
+                        <option value="">Tanpa supplier / belanja langsung</option>
+                        {suppliers.map((supplier) => (
+                          <option key={supplier.id} value={supplier.id}>
+                            {supplier.name}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        Pilih supplier jika pembelian berasal dari rekanan terdaftar.
+                      </p>
+                    </div>
+                  </section>
 
-                <div className="grid gap-1.5">
-                  <Label htmlFor="purchase-price">Total Price (IDR)</Label>
-                  <Input
-                    id="purchase-price"
-                    type="number"
-                    step="any"
-                    min="1"
-                    placeholder="e.g. 250000"
-                    value={totalPrice}
-                    onChange={(e) => setTotalPrice(e.target.value)}
-                    className="rounded-xl font-mono"
-                    required
-                  />
-                </div>
-              </div>
+                  {/* Jumlah & Biaya Pembelian */}
+                  <section className="space-y-4 border-t border-border/60 pt-5" aria-labelledby="purchase-detail-heading">
+                    <h3 id="purchase-detail-heading" className="text-sm font-semibold text-foreground">
+                      Jumlah & Biaya Pembelian
+                    </h3>
 
-              {/* Expired Date Input */}
-              <div className="grid gap-1.5">
-                <div className="flex flex-wrap items-center justify-between gap-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Label htmlFor="purchase-expired">Tanggal Kadaluwarsa</Label>
-                    <span className={cn("text-[11px]", isFefo ? "text-destructive font-semibold" : "text-muted-foreground")}>
-                      {isFefo ? "* (Wajib untuk FEFO)" : "(Opsional untuk FIFO)"}
-                    </span>
-                  </div>
-                  {selectedMaterial && (
-                    <Badge variant={isFefo ? "warning" : "secondary"} className="text-[10px] font-mono shrink-0">
-                      Metode: {selectedMaterial.inventory_method || "FIFO"}
-                    </Badge>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="min-w-0 space-y-2">
+                        <label htmlFor="purchase-qty" className="text-sm font-medium text-foreground">
+                          Jumlah Beli <span className="text-destructive">*</span>
+                        </label>
+                        <FormattedNumberInput
+                          id="purchase-qty"
+                          value={quantity}
+                          onChange={(value) => setQuantity(String(value))}
+                          allowDecimal
+                          maxDecimals={4}
+                          placeholder="Contoh: 10"
+                          required
+                          disabled={!material}
+                          className="h-11 rounded-xl"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <PurchaseUnitFields
+                          baseUnit={material?.base_unit || ""}
+                          unit={purchaseUnit || material?.base_unit || ""}
+                          packageSize={pkgSizeNum}
+                          quantity={qty}
+                          onUnitChange={(newUnit) => {
+                            setPurchaseUnit(newUnit)
+                            setPackageSize("")
+                          }}
+                          onPackageSizeChange={(newSize) => setPackageSize(String(newSize))}
+                          disabled={!material}
+                          idPrefix="dialog-purchase"
+                        />
+                      </div>
+                    </div>
+
+                    {precisionInvalid && (
+                      <p role="alert" className="text-xs text-destructive">
+                        Hasil konversi terlalu rinci. Gunakan jumlah dengan maksimal 4 angka desimal dalam {material?.base_unit}.
+                      </p>
+                    )}
+
+                    <div className="space-y-2">
+                      <label htmlFor="purchase-price" className="text-sm font-medium text-foreground">
+                        Total Harga Pembelian (Faktur) <span className="text-destructive">*</span>
+                      </label>
+                      <FormattedNumberInput
+                        id="purchase-price"
+                        value={totalPrice}
+                        onChange={(value) => setTotalPrice(String(value))}
+                        prefix="Rp"
+                        placeholder="Contoh: 250.000"
+                        required
+                        disabled={!material}
+                        className="h-11 rounded-xl"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Isi seluruh biaya nota/faktur yang dibayarkan untuk bahan ini, bukan harga satuan.
+                      </p>
+                    </div>
+
+                    {/* Tanggal Kedaluwarsa */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="purchase-expired" className="text-sm font-medium text-foreground">
+                          Tanggal Kedaluwarsa{" "}
+                          {isFefo ? (
+                            <span className="text-destructive">*</span>
+                          ) : (
+                            <span className="font-normal text-muted-foreground">(opsional)</span>
+                          )}
+                        </label>
+                        {isFefo && (
+                          <span className="inline-flex items-center rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            FEFO (Wajib diisi)
+                          </span>
+                        )}
+                      </div>
+                      <Input
+                        id="purchase-expired"
+                        type="date"
+                        value={expiredAt}
+                        onChange={(event) => setExpiredAt(event.target.value)}
+                        required={isFefo}
+                        disabled={!material}
+                        className="h-11 min-w-0 rounded-xl"
+                      />
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {isFefo
+                          ? "⚠️ Bahan ini menggunakan metode FEFO. Tanggal kedaluwarsa wajib dicatat agar batch yang kedaluwarsa lebih dulu dipotong pertama saat produksi/penjualan."
+                          : "Kosongkan jika bahan tidak memiliki batas tanggal kedaluwarsa."}
+                      </p>
+                    </div>
+                  </section>
+
+                  {/* Live Calculation Card */}
+                  {material && baseQuantity > 0 && Number.isFinite(baseQuantity) && !precisionInvalid && (
+                    <div className="space-y-3" aria-live="polite">
+                      <StockChangePreview
+                        current={Number(material.current_stock || 0)}
+                        change={baseQuantity}
+                        unit={material.base_unit}
+                      />
+
+                      {total > 0 && (
+                        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className="text-muted-foreground">Total Pembelian:</span>
+                            <span className="text-base font-bold text-foreground">
+                              <CurrencyText value={total} />
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2 text-xs">
+                            <span className="text-muted-foreground">
+                              Estimasi Harga per Satuan Dasar ({material.base_unit}):
+                            </span>
+                            <span className="text-sm font-semibold text-primary">
+                              <CurrencyText value={pricePerUnit} suffix={` / ${material.base_unit}`} />
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
-                </div>
-                <Input
-                  id="purchase-expired"
-                  type="date"
-                  value={expiredAt}
-                  onChange={(e) => setExpiredAt(e.target.value)}
-                  className="rounded-xl font-mono"
-                  required={isFefo}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {isFefo
-                    ? "Bahan baku FEFO akan dikonsumsi berdasarkan urutan tanggal kedaluwarsa terdekat."
-                    : "Kosongkan jika bahan baku tidak memiliki tanggal kedaluwarsa."}
-                </p>
+                </fieldset>
               </div>
 
-              {qtyNum > 0 && totalNum > 0 && (
-                <div className="bg-muted/40 p-3 rounded-xl border border-border flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Unit Cost:</span>
-                    <div className="font-semibold text-foreground font-mono">
-                      <CurrencyText value={pricePerUnit} suffix={` / ${selectedMaterial?.base_unit || "unit"}`} />
-                    </div>
-                  </div>
-                  <div className="sm:text-right">
-                    <span className="text-muted-foreground">Batch Total:</span>
-                    <div className="font-semibold text-primary font-mono">
-                      <CurrencyText value={totalNum} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <DialogFooter className="pt-2 gap-2 sm:gap-0">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
+              <DialogFooter className="shrink-0 border-t bg-muted/20 px-5 py-4 sm:px-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={() => handleDialogChange(false)}
+                  className="h-11 rounded-xl"
+                >
+                  Batal
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Save Purchase
+                <Button
+                  type="submit"
+                  disabled={!valid || isSubmitting}
+                  className="h-11 rounded-xl"
+                >
+                  {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
+                  {isSubmitting ? "Menyimpan…" : "Simpan Pembelian"}
                 </Button>
               </DialogFooter>
             </form>
@@ -393,36 +455,46 @@ export function RecordPurchaseDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Nested Quick Add Material Modal */}
-      <Dialog open={isCreateMatOpen} onOpenChange={setIsCreateMatOpen}>
+      {/* Quick Add Material Modal */}
+      <Dialog
+        open={isCreateMatOpen}
+        onOpenChange={(next) => {
+          if (!isCreatingMat) setIsCreateMatOpen(next)
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Tambah Bahan Baku Baru</DialogTitle>
-            <DialogDescription>Masukkan nama bahan baku dan satuan dasar.</DialogDescription>
+            <DialogDescription>
+              Masukkan nama bahan baku, satuan dasar, dan metode inventaris.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleQuickCreateMaterial} className="space-y-4 py-2">
             {createMatError && (
-              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+              <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl border border-destructive/20">
                 {createMatError}
               </div>
             )}
             <div className="space-y-2">
-              <Label>Nama Bahan Baku</Label>
+              <Label htmlFor="quick-mat-name">Nama Bahan Baku</Label>
               <Input
+                id="quick-mat-name"
                 placeholder="Contoh: Biji Kopi Arabika"
                 value={newMatName}
                 onChange={(e) => setNewMatName(e.target.value)}
+                className="h-11 rounded-xl"
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label>Base Unit</Label>
+              <Label>Satuan Dasar</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full justify-between rounded-xl"
+                    className="w-full justify-between rounded-xl h-11"
                   >
                     <span>
                       {BASE_UNITS.find((u) => u.value === newMatUnit)?.label ?? newMatUnit}
@@ -432,7 +504,7 @@ export function RecordPurchaseDialog({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]" align="start">
                   <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
-                    Base Units
+                    Daftar Satuan Dasar
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {BASE_UNITS.map((u) => (
@@ -447,6 +519,7 @@ export function RecordPurchaseDialog({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
             <div className="space-y-2">
               <Label>Metode Pengelolaan Stok</Label>
               <DropdownMenu>
@@ -454,12 +527,12 @@ export function RecordPurchaseDialog({
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full justify-between rounded-xl"
+                    className="w-full justify-between rounded-xl h-11"
                   >
                     <span>
                       {newMatMethod === "FEFO"
-                        ? "FEFO (First Expired, First Out)"
-                        : "FIFO (First In, First Out)"}
+                        ? "Kedaluwarsa Terdekat Lebih Dulu (FEFO)"
+                        : "Stok Masuk Lebih Dulu (FIFO)"}
                     </span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </Button>
@@ -471,28 +544,43 @@ export function RecordPurchaseDialog({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => setNewMatMethod("FIFO")}
-                    className="cursor-pointer flex flex-col items-start gap-0.5"
+                    className="cursor-pointer flex flex-col items-start gap-0.5 py-2"
                   >
-                    <span className="font-semibold">FIFO (First In, First Out)</span>
-                    <span className="text-[11px] text-muted-foreground">Untuk bahan umum/kering (tgl kadaluwarsa opsional)</span>
+                    <span className="font-semibold text-foreground">Stok Masuk Lebih Dulu (FIFO)</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Cocok untuk bahan umum/kering (tanggal kedaluwarsa opsional).
+                    </span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setNewMatMethod("FEFO")}
-                    className="cursor-pointer flex flex-col items-start gap-0.5"
+                    className="cursor-pointer flex flex-col items-start gap-0.5 py-2"
                   >
-                    <span className="font-semibold">FEFO (First Expired, First Out)</span>
-                    <span className="text-[11px] text-muted-foreground">Untuk bahan mudah basi/segar (wajib isi tgl kadaluwarsa)</span>
+                    <span className="font-semibold text-foreground">Kedaluwarsa Terdekat Lebih Dulu (FEFO)</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Cocok untuk bahan mudah basi/segar (wajib isi tanggal kedaluwarsa).
+                    </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsCreateMatOpen(false)}>
-                Cancel
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isCreatingMat}
+                onClick={() => setIsCreateMatOpen(false)}
+                className="rounded-xl h-10"
+              >
+                Batal
               </Button>
-              <Button type="submit" disabled={isCreatingMat}>
+              <Button
+                type="submit"
+                disabled={isCreatingMat}
+                className="rounded-xl h-10"
+              >
                 {isCreatingMat && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create
+                Tambah Bahan
               </Button>
             </DialogFooter>
           </form>

@@ -16,10 +16,10 @@
     --tier-growth-bg: linear-gradient(135deg, #ecfdf5, #d1fae5);
     --tier-growth-fg: #065f46;
     --tier-growth-border: #6ee7b7;
-    --tier-max-growth-bg: linear-gradient(135deg, #171923, #35303d);
-    --tier-max-growth-fg: #f5d58a;
-    --tier-max-growth-border: #b99146;
-    --tier-max-growth-shadow: 0 2px 8px #b9914626, inset 0 1px 0 #f5d58a24;
+    --tier-max-growth-bg: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    --tier-max-growth-fg: #6d28d9;
+    --tier-max-growth-border: #c4b5fd;
+    --tier-max-growth-shadow: 0 2px 6px #7c3aed14, inset 0 1px 0 #ffffff80;
 
     /* Modern Indigo theme (clean SaaS) */
     --background: hsl(0, 0%, 100%);
@@ -153,6 +153,27 @@
   }
 }
 
+.sidebar-branch-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition: grid-template-rows 160ms ease-out, opacity 120ms ease-out, visibility 0s linear 160ms;
+}
+
+.sidebar-branch-content[data-state="open"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-branch-content {
+    transition: none;
+  }
+}
+
 /* Attribute selectors keep tier colors consistent even on shared Badge components. */
 .subscription-tier[data-tier] {
   background: var(--tier-free-bg);
@@ -180,9 +201,9 @@
     --tier-growth-bg: linear-gradient(135deg, #062f26, #064e3b);
     --tier-growth-fg: #a7f3d0;
     --tier-growth-border: #047857;
-    --tier-max-growth-bg: linear-gradient(135deg, #18151f, #3b3032);
-    --tier-max-growth-fg: #ffe0a3;
-    --tier-max-growth-border: #c29b50;
-    --tier-max-growth-shadow: 0 2px 10px #c29b5026, inset 0 1px 0 #ffe0a329;
+    --tier-max-growth-bg: linear-gradient(135deg, #2e1065, #4c1d95);
+    --tier-max-growth-fg: #ede9fe;
+    --tier-max-growth-border: #7c3aed;
+    --tier-max-growth-shadow: 0 2px 8px #7c3aed26, inset 0 1px 0 #c4b5fd24;
 
 }

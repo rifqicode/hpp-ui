@@ -23,6 +23,7 @@ import {
   CupSoda,
   ChefHat,
   Pizza,
+  HelpCircle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import {
+  PasswordStrengthIndicator,
+  validatePassword,
+} from "@/components/ui/password-strength-indicator"
 import { cn } from "@/lib/utils"
 
 import { authService } from "@/features/auth/services/auth-service"
@@ -88,9 +93,15 @@ const STORE_CATEGORIES: StoreCategoryOption[] = [
   },
   {
     id: "retail",
-    name: "Toko Bahan & Lainnya",
+    name: "Retail & Toko Kelontong",
     icon: Store,
-    desc: "Retail F&B, UMKM umum",
+    desc: "Toko kelontong, retail F&B",
+  },
+  {
+    id: "other",
+    name: "Other",
+    icon: HelpCircle,
+    desc: "Kategori bisnis lainnya",
   },
 ]
 
@@ -137,6 +148,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   // Step 2: Store State
   const [storeName, setStoreName] = React.useState<string>("")
   const [category, setCategory] = React.useState<string>("Cafe & Coffee Shop")
+  const [customCategory, setCustomCategory] = React.useState<string>("")
   const [storeLocation, setStoreLocation] = React.useState<string>("")
   const [phone, setPhone] = React.useState<string>("")
   const [description, setDescription] = React.useState<string>("")
@@ -164,17 +176,6 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     }
   }, [token, isSetupStoreRoute, navigate])
 
-  // Password strength calculation (0 to 4)
-  const passwordStrength = React.useMemo(() => {
-    if (!password) return 0
-    let score = 0
-    if (password.length >= 6) score += 1
-    if (password.length >= 8) score += 1
-    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1
-    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score += 1
-    return score
-  }, [password])
-
   // Step 1: Validate Account and go to Step 2 (client-side only)
   async function handleContinueToStore(e: React.FormEvent) {
     e.preventDefault()
@@ -183,8 +184,9 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       return
     }
 
-    if (password.length < 6) {
-      setError("Kata sandi minimal 6 karakter.")
+    const passErr = validatePassword(password)
+    if (passErr) {
+      setError(passErr)
       return
     }
 
@@ -215,9 +217,29 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       return
     }
 
+    const finalCategory =
+      category === "Other" && customCategory.trim()
+        ? customCategory.trim()
+        : category
+
+    if (!finalCategory) {
+      setError("Kategori bisnis wajib dipilih.")
+      return
+    }
+
     if (!storeLocation.trim()) {
       setError("Kota atau lokasi gerai utama wajib diisi.")
       return
+    }
+
+    if (phone.trim()) {
+      const clean = phone.trim().replace(/[\s-]/g, "")
+      if (!/^(\+62|62|0)8[0-9]{8,12}$/.test(clean)) {
+        setError(
+          "Format nomor WhatsApp tidak valid. Masukkan nomor yang valid (contoh: 08123456789 atau +628123456789)."
+        )
+        return
+      }
     }
 
     setLoading(true)
@@ -228,7 +250,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       try {
         const newStore = await settingsService.createStore({
           name: storeName.trim(),
-          category,
+          category: finalCategory,
           location: storeLocation.trim(),
           phone: phone.trim(),
           description: description.trim(),
@@ -259,7 +281,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
         password,
         store: {
           name: storeName.trim(),
-          category,
+          category: finalCategory,
           location: storeLocation.trim(),
           address: storeLocation.trim(),
           phone: phone.trim(),
@@ -530,64 +552,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     </button>
                   </div>
 
-                  {/* Password Strength Meter */}
-                  {password.length > 0 && (
-                    <div className="pt-1.5 space-y-1">
-                      <div className="grid grid-cols-4 gap-1.5">
-                        <div
-                          className={cn(
-                            "h-1 rounded-full transition-all",
-                            passwordStrength >= 1
-                              ? passwordStrength === 1
-                                ? "bg-rose-500"
-                                : passwordStrength === 2
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                              : "bg-slate-200"
-                          )}
-                        />
-                        <div
-                          className={cn(
-                            "h-1 rounded-full transition-all",
-                            passwordStrength >= 2
-                              ? passwordStrength === 2
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                              : "bg-slate-200"
-                          )}
-                        />
-                        <div
-                          className={cn(
-                            "h-1 rounded-full transition-all",
-                            passwordStrength >= 3 ? "bg-emerald-500" : "bg-slate-200"
-                          )}
-                        />
-                        <div
-                          className={cn(
-                            "h-1 rounded-full transition-all",
-                            passwordStrength >= 4 ? "bg-emerald-500" : "bg-slate-200"
-                          )}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Kekuatan kata sandi:</span>
-                        <span
-                          className={cn(
-                            "font-bold",
-                            passwordStrength <= 1
-                              ? "text-rose-600"
-                              : passwordStrength === 2
-                              ? "text-amber-600"
-                              : "text-emerald-600"
-                          )}
-                        >
-                          {passwordStrength <= 1 && "Lemah"}
-                          {passwordStrength === 2 && "Sedang"}
-                          {passwordStrength >= 3 && "Kuat & Aman"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  <PasswordStrengthIndicator password={password} />
                 </div>
 
                 {/* Confirm Password Field */}
@@ -727,6 +692,22 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       )
                     })}
                   </div>
+
+                  {category === "Other" && (
+                    <div className="pt-1.5 space-y-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
+                      <Label htmlFor="custom-category" className="text-xs font-bold text-slate-700">
+                        Spesifikasi Kategori (Opsional)
+                      </Label>
+                      <Input
+                        id="custom-category"
+                        type="text"
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="Contoh: Distributor, Florist, Pet Shop, dll."
+                        className="rounded-xl h-10 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Store Name */}
@@ -777,8 +758,13 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     <Input
                       id="store-phone"
                       type="tel"
+                      inputMode="tel"
+                      maxLength={16}
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const sanitized = e.target.value.replace(/[^0-9+\s-]/g, "")
+                        setPhone(sanitized)
+                      }}
                       placeholder="Contoh: 0812-3456-7890"
                       className="pl-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                     />

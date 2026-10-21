@@ -33,6 +33,7 @@ export function useStocks(initialQuery?: StockQuery) {
   const {
     data,
     isLoading: loading,
+    isFetching,
     error: queryError,
     refetch,
   } = useStocksQuery(activeQuery);
@@ -120,6 +121,7 @@ export function useStocks(initialQuery?: StockQuery) {
     inventoryMethod,
     setInventoryMethod,
     loading,
+    isFetching,
     error,
     isSubmitting,
     loadStocks,

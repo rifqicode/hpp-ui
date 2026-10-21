@@ -65,19 +65,19 @@ function getBreadcrumbs(pathname: string): Crumb[] {
     ]
   }
   if (p === "/inventory/purchase-orders") {
-    return [{ label: "Inventaris" }, { label: "Purchase Orders" }]
+    return [{ label: "Inventaris" }, { label: "Purchase" }]
   }
   if (p === "/inventory/purchase-orders/new") {
     return [
       { label: "Inventaris" },
-      { label: "Purchase Orders", href: "/inventory/purchase-orders" },
+      { label: "Purchase", href: "/inventory/purchase-orders" },
       { label: "Buat PO Baru" },
     ]
   }
   if (p.startsWith("/inventory/purchase-orders/")) {
     return [
       { label: "Inventaris" },
-      { label: "Purchase Orders", href: "/inventory/purchase-orders" },
+      { label: "Purchase", href: "/inventory/purchase-orders" },
       { label: "Detail Purchase Order" },
     ]
   }

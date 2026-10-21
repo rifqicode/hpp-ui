@@ -188,7 +188,7 @@ export default function ProductionSimulationPage() {
           {/* Product Picker */}
           {isLoadingProducts ? (
             <div className="py-8 text-center text-xs text-muted-foreground">
-              Memuat daftar produk & resep...
+              Memuat daftar produk...
             </div>
           ) : products.length === 0 ? (
             <div className="p-6 text-center rounded-xl border border-dashed border-border bg-muted/20">

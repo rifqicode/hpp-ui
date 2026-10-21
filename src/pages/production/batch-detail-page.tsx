@@ -92,7 +92,7 @@ export default function BatchDetailPage() {
     batchData: ProductionBatch,
     masterOhs: OverheadType[]
   ): Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }> {
-    if (batchData.recipeSnapshot?.overheads && batchData.recipeSnapshot.overheads.length > 0) {
+    if (Array.isArray(batchData.recipeSnapshot?.overheads)) {
       return batchData.recipeSnapshot.overheads.map((so) => ({
         overheadTypeId: so.overhead_type_id,
         name: so.name,
@@ -229,6 +229,16 @@ export default function BatchDetailPage() {
     : null
 
   const margin = batch.hppPerUnit ? calculateGrossMargin(batch.sellingPrice, batch.hppPerUnit) : null
+
+  const hasRecordedOverheads = Boolean(batch.overheads?.length)
+  const displayedOverheads: ProductionOverheadDetail[] = hasRecordedOverheads
+    ? batch.overheads!
+    : (batch.recipeSnapshot?.overheads ?? []).map((overhead) => ({
+        overheadTypeId: overhead.overhead_type_id,
+        name: overhead.name,
+        amount: Number(overhead.amount) || 0,
+      }))
+  const displayedOverheadTotal = displayedOverheads.reduce((total, overhead) => total + (Number(overhead.amount) || 0), 0)
 
   // Complete calculations
   const completeStockCost = Number(batch?.stockCost) || 0
@@ -383,7 +393,7 @@ export default function BatchDetailPage() {
             <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
               <CurrencyText value={batch.stockCost} />
             </div>
-            <span className="text-[10px] text-muted-foreground block truncate">{batch.ingredients.length} bahan terpotong</span>
+            <span className="text-[10px] text-muted-foreground block truncate">{batch.ingredients.length} {batch.hasActualConsumptions ? "bahan terpotong" : "bahan direncanakan"}</span>
           </div>
 
           <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
@@ -391,14 +401,14 @@ export default function BatchDetailPage() {
               Biaya Overhead
             </span>
             <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
-              {batch.status === "COMPLETED" ? (
-                <CurrencyText value={batch.overheadCost || 0} />
+              {displayedOverheads.length > 0 ? (
+                <CurrencyText value={displayedOverheadTotal} />
               ) : (
                 "-"
               )}
             </div>
             <span className="text-[10px] text-muted-foreground block truncate">
-              {batch.status === "COMPLETED" ? "Total biaya overhead" : "Dihitung saat selesai"}
+              {hasRecordedOverheads ? "Total biaya overhead" : displayedOverheads.length > 0 ? "Estimasi biaya overhead" : "Dihitung saat selesai"}
             </span>
           </div>
 
@@ -446,13 +456,13 @@ export default function BatchDetailPage() {
         <CardHeader className="p-5 pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <CardTitle className="text-lg font-bold">Audit Konsumsi Bahan Baku (BOM FIFO)</CardTitle>
+              <CardTitle className="text-lg font-bold">{batch.hasActualConsumptions ? "Audit Konsumsi Bahan Baku (BOM FIFO)" : "Estimasi Kebutuhan Bahan Baku"}</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                Rincian kuantitas bahan yang diambil dari gudang untuk mengeksekusi batch produksi ini.
+                {batch.hasActualConsumptions ? "Rincian bahan yang diambil dari gudang untuk batch produksi ini." : "Kebutuhan berdasarkan resep saat produksi dimulai, termasuk yield dan waste."}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
-              Total Bahan: <CurrencyText value={batch.stockCost} />
+              {batch.hasActualConsumptions ? "Total Bahan" : "Estimasi Bahan"}: <CurrencyText value={batch.hasActualConsumptions ? batch.stockCost : batch.ingredients.reduce((sum, item) => sum + item.cost, 0)} />
             </Badge>
           </div>
         </CardHeader>
@@ -462,17 +472,18 @@ export default function BatchDetailPage() {
             <TableHeader className="bg-slate-50/70">
               <TableRow>
                 <TableHead className="text-xs font-bold uppercase text-muted-foreground">Nama Bahan Baku</TableHead>
-                <TableHead className="text-xs font-bold uppercase text-muted-foreground">Kuantitas Terpakai</TableHead>
-                <TableHead className="text-xs font-bold uppercase text-muted-foreground">Modal Bahan (FIFO)</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-muted-foreground">{batch.hasActualConsumptions ? "Kuantitas Terpakai" : "Kuantitas Rencana"}</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-muted-foreground">{batch.hasActualConsumptions ? "Modal Bahan (FIFO)" : "Estimasi Biaya Bahan"}</TableHead>
                 <TableHead className="text-xs font-bold uppercase text-muted-foreground">Porsi dari Total Biaya Bahan</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {batch.ingredients.map((ing) => {
-                const share = batch.stockCost > 0 ? Math.round((ing.cost / batch.stockCost) * 1000) / 10 : 0
+              {batch.ingredients.map((ing, index) => {
+                const totalCost = batch.hasActualConsumptions ? batch.stockCost : batch.ingredients.reduce((sum, item) => sum + item.cost, 0)
+                const share = totalCost > 0 ? Math.round((ing.cost / totalCost) * 1000) / 10 : 0
 
                 return (
-                  <TableRow key={ing.stockId}>
+                  <TableRow key={`${ing.stockId}-${index}`}>
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-bold text-sm text-foreground">{ing.stockName}</span>
@@ -510,25 +521,27 @@ export default function BatchDetailPage() {
       </Card>
 
       {/* SECTION 2: RINCIAN BIAYA OVERHEAD */}
-      {batch.status === "COMPLETED" && Array.isArray(batch.overheads) && batch.overheads.length > 0 && (
+      {displayedOverheads.length > 0 && (
         <Card className="rounded-2xl border-slate-200/80 shadow-sm w-full bg-card">
           <CardHeader className="p-5 pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <CardTitle className="text-lg font-bold">Rincian Biaya Overhead Operasional</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground">
-                  Alokasi biaya langsung non-bahan yang diserap ke dalam HPP unit barang bagus.
+                  {hasRecordedOverheads
+                    ? "Alokasi biaya langsung non-bahan yang diserap ke dalam HPP unit barang bagus."
+                    : "Estimasi overhead saat produksi dimulai. Nominal aktual ditentukan saat produksi selesai."}
                 </CardDescription>
               </div>
               <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
-                Total Overhead: <CurrencyText value={batch.overheadCost || 0} />
+                {hasRecordedOverheads ? "Total Overhead" : "Estimasi Overhead"}: <CurrencyText value={displayedOverheadTotal} />
               </Badge>
             </div>
           </CardHeader>
 
           <CardContent className="p-5 pt-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {batch.overheads.map((oh, idx) => (
+              {displayedOverheads.map((oh, idx) => (
                 <div key={oh.id || idx} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/70 dark:border-slate-800">
                   <span className="text-xs text-muted-foreground block truncate" title={oh.name}>
                     {oh.name}

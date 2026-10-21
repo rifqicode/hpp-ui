@@ -1,14 +1,13 @@
 import * as React from "react"
 import { ProductionCalendar } from "@/features/production/components/production-calendar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import {
   Plus,
   Search,
   CheckCircle2,
   Clock,
   AlertTriangle,
-  XCircle,
   MoreVertical,
   Check,
   RotateCcw,
@@ -19,14 +18,11 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { ProductionStatusBadge } from "@/features/production/components/production-status"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,14 +54,12 @@ import { overheadService } from "@/features/overheads/services/overhead-service"
 import type { OverheadType } from "@/features/overheads/types"
 import { CurrencyText } from "@/components/ui/currency-text"
 
-function formatElapsedTime(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const diffMinutes = Math.floor(diffMs / (1000 * 60))
-  if (diffMinutes < 1) return "Baru saja"
-  if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`
-  const hours = Math.floor(diffMinutes / 60)
-  const remainingMinutes = diffMinutes % 60
-  return `${hours} jam ${remainingMinutes > 0 ? remainingMinutes + " mnt" : ""} yang lalu`
+function formatBatchDate(value: string): string {
+  return new Date(value).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+}
+
+function isFinished(batch: ProductionBatch) {
+  return batch.status === "COMPLETED" || batch.status === "VOID"
 }
 
 export default function BatchListPage() {
@@ -77,8 +71,14 @@ export default function BatchListPage() {
   const {
     data: batches = [],
     isLoading: loading,
+    isFetching,
+    error: queryError,
     refetch: refetchBatches,
   } = useBatchesQuery({ enabled: activeView === "list" })
+
+  const returnTo = `/production/batches?${viewParams.toString()}`
+  const [pickingUp, setPickingUp] = React.useState<string | null>(null)
+  const [actionError, setActionError] = React.useState("")
 
   // Filter & Search
   const [search, setSearch] = React.useState<string>("")
@@ -147,9 +147,9 @@ export default function BatchListPage() {
   const filteredBatches = React.useMemo(() => {
     return batches.filter((b) => {
       const matchSearch =
-        b.batchNumber.toLowerCase().includes(search.toLowerCase()) ||
-        b.productName.toLowerCase().includes(search.toLowerCase()) ||
-        (b.notes && b.notes.toLowerCase().includes(search.toLowerCase()))
+        b.batchNumber.toLowerCase().includes(search.trim().toLowerCase()) ||
+        b.productName.toLowerCase().includes(search.trim().toLowerCase()) ||
+        (b.notes && b.notes.toLowerCase().includes(search.trim().toLowerCase()))
 
       const matchStatus = statusFilter === "ALL" || b.status === statusFilter || (statusFilter === "CANCELLED" && b.status === "VOID")
       return matchSearch && matchStatus
@@ -158,28 +158,24 @@ export default function BatchListPage() {
 
   // Paginated batches
   const totalPages = Math.ceil(filteredBatches.length / pageSize) || 1
+  const currentPage = Math.min(page, totalPages)
   const paginatedBatches = React.useMemo(() => {
-    const start = (page - 1) * pageSize
+    const start = (currentPage - 1) * pageSize
     return filteredBatches.slice(start, start + pageSize)
-  }, [filteredBatches, page, pageSize])
-
-  // In-progress list
-  const activeBatches = React.useMemo(() => {
-    return batches.filter((b) => b.status === "IN_PROGRESS")
-  }, [batches])
-
-  // Queued list (MTO / Pesanan Baru)
-  const queuedBatches = React.useMemo(() => {
-    return batches.filter((b) => b.status === "QUEUED")
-  }, [batches])
+  }, [filteredBatches, currentPage, pageSize])
 
   // Pickup Batch Handler
   async function handlePickupBatch(batchId: string) {
+    if (pickingUp) return
+    setPickingUp(batchId)
+    setActionError("")
     try {
       await productionService.pickupProduction(batchId)
       queryClient.invalidateQueries({ queryKey: productionKeys.all })
     } catch (err) {
-      console.error("Failed to pickup production batch:", err)
+      setActionError(err instanceof Error ? err.message : "Gagal memulai produksi. Coba lagi.")
+    } finally {
+      setPickingUp(null)
     }
   }
 
@@ -189,7 +185,7 @@ export default function BatchListPage() {
 
     // Build initial overhead items
     let initialOhs: Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }> = []
-    if (batch.recipeSnapshot?.overheads && batch.recipeSnapshot.overheads.length > 0) {
+    if (Array.isArray(batch.recipeSnapshot?.overheads)) {
       initialOhs = batch.recipeSnapshot.overheads.map((so) => ({
         overheadTypeId: so.overhead_type_id,
         name: so.name,
@@ -262,10 +258,20 @@ export default function BatchListPage() {
       setBatchToCancel(null)
       setCancelReason("")
     } catch (err) {
-      console.error("Failed to cancel production:", err)
+      setActionError(err instanceof Error ? err.message : "Gagal membatalkan batch. Coba lagi.")
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function renderBatchActions(batch: ProductionBatch) {
+    return <div className="flex items-center justify-end gap-2">
+      {batch.status === "QUEUED" || batch.status === "DRAFT" ? <Button size="sm" disabled={pickingUp !== null} onClick={() => void handlePickupBatch(batch.id)} className="mr-auto lg:mr-0">
+        {pickingUp === batch.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Mulai proses
+      </Button> : batch.status === "IN_PROGRESS" ? <Button size="sm" onClick={() => openCompleteDialog(batch)} className="mr-auto lg:mr-0"><Check className="mr-1 h-4 w-4" />Selesaikan</Button> : null}
+      <Button variant="outline" size="sm" asChild><Link to={`/production/batches/${batch.id}`} state={{ returnTo }}>Detail</Link></Button>
+      {batch.status === "IN_PROGRESS" && <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={`Aksi lainnya untuk ${batch.batchNumber}`} className="h-9 w-9"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => navigate(`/production/batches/${batch.id}`, { state: { returnTo } })}>Lihat rincian</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => { setBatchToCancel(batch); setCancelReason(""); setActionError(""); setIsCancelOpen(true) }}><RotateCcw className="mr-2 h-4 w-4" />Batalkan batch</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
+    </div>
   }
 
   // Calculations for Complete modal
@@ -288,11 +294,11 @@ export default function BatchListPage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Production
+                Produksi
               </h1>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Pantau batch yang sedang berjalan, input hasil panen (yield), dan hitung HPP aktual otomatis berbasis FIFO
+              Kelola antrean, pantau progres, dan catat hasil produksi.
             </p>
           </div>
         </div>
@@ -302,11 +308,11 @@ export default function BatchListPage() {
             variant="outline"
             size="sm"
             onClick={() => refetchBatches()}
-            disabled={loading}
+            disabled={isFetching}
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted flex-1 sm:flex-initial"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            Perbarui
           </Button>}
           <Button
             onClick={() => navigate("/production/batches/new")}
@@ -327,545 +333,82 @@ export default function BatchListPage() {
           {[{ value: "calendar", label: "Kalender" }, { value: "list", label: "Daftar" }].map((tab) => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
         </TabsList>
         <TabsContent value="calendar"><ProductionCalendar /></TabsContent>
-        <TabsContent value="list" className="space-y-6">
-      {/* KPI / Metric Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Card 1: Total Batch */}
-        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Total Batch Produksi</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
-                  {batches.length}
-                </span>
-                <span className="text-xs text-muted-foreground">batch tercatat</span>
+        <TabsContent value="list" className="space-y-5">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Ringkasan produksi">
+            {[
+              { status: "ALL", label: "Semua batch", count: batches.length, icon: History, color: "text-primary", description: "Seluruh riwayat produksi" },
+              { status: "QUEUED", label: "Antrean", count: stats.queuedCount, icon: Clock, color: "text-violet-600 dark:text-violet-400", description: "Siap untuk mulai diproses" },
+              { status: "IN_PROGRESS", label: "Sedang berjalan", count: stats.activeCount, icon: RefreshCw, color: "text-amber-600 dark:text-amber-400", description: "Menunggu hasil produksi" },
+              { status: "COMPLETED", label: "Selesai", count: stats.completedCount, icon: CheckCircle2, color: "text-emerald-600 dark:text-emerald-400", description: "Hasil dan HPP sudah tercatat" },
+            ].map((item) => <button key={item.status} type="button" aria-pressed={statusFilter === item.status}
+              onClick={() => { setStatusFilter(item.status); setPage(1) }}
+              className={`rounded-xl border bg-card p-4 text-left transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusFilter === item.status ? "border-primary/50 ring-1 ring-primary/15" : "border-border"}`}>
+              <div className="flex items-center justify-between gap-2"><span className="text-xs font-medium text-muted-foreground">{item.label}</span><item.icon className={`h-4 w-4 shrink-0 ${item.color}`} /></div>
+              <p className={`mt-3 text-3xl font-semibold tabular-nums tracking-tight ${item.color}`}>{loading ? "—" : item.count}</p>
+              <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{item.description}</p>
+            </button>)}
+          </div>
+
+          <section className="overflow-hidden rounded-xl border bg-card" aria-label="Daftar batch produksi">
+            <div className="space-y-4 border-b p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div><h2 className="font-semibold">Daftar batch</h2><p className="mt-1 text-xs text-muted-foreground">Pantau progres dan catat hasil produksi dari satu tempat.</p></div>
+                <div className="relative w-full sm:max-w-xs">
+                  <Search aria-hidden className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input aria-label="Cari batch produksi" placeholder="Cari batch, produk, atau catatan…" value={search}
+                    onChange={(event) => { setSearch(event.target.value); setPage(1) }} className="h-10 pl-9 pr-9" />
+                  {search && <button type="button" aria-label="Hapus pencarian" onClick={() => { setSearch(""); setPage(1) }} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"><X className="h-4 w-4" /></button>}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2" aria-label="Filter status batch">
+                {[
+                  { key: "ALL", label: "Semua" }, { key: "QUEUED", label: "Antrean" },
+                  { key: "IN_PROGRESS", label: "Berjalan" }, { key: "COMPLETED", label: "Selesai" },
+                  { key: "DRAFT", label: "Draft" }, { key: "CANCELLED", label: "Batal / Void" },
+                ].map((item) => <button key={item.key} type="button" aria-pressed={statusFilter === item.key}
+                  onClick={() => { setStatusFilter(item.key); setPage(1) }}
+                  className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusFilter === item.key ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{item.label}</button>)}
               </div>
             </div>
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-              <History className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 2: Sedang Berjalan */}
-        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Sedang Berjalan</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
-                  {stats.activeCount}
-                </span>
-                <span className="text-xs text-muted-foreground">di dapur aktif</span>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
-              <Clock className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 3: Selesai */}
-        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Batch Selesai</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {stats.completedCount}
-                </span>
-                <span className="text-xs text-muted-foreground">yield {stats.avgYield}%</span>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Card 4: Dibatalkan */}
-        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Dibatalkan / Void</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
-                  {batches.filter((b) => b.status === "CANCELLED" || b.status === "VOID").length}
-                </span>
-                <span className="text-xs text-muted-foreground">batch batal</span>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
-              <XCircle className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* SECTION: QUEUED BATCHES (MTO & ANTREAN PESANAN BARU) */}
-      {(statusFilter === "ALL" || statusFilter === "QUEUED") && queuedBatches.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-purple-500 animate-pulse" />
-              <h2 className="text-base font-bold text-foreground">Antrean Pesanan Masuk (Make-to-Order)</h2>
-              <Badge variant="outline" className="bg-purple-500/10 text-purple-700 border-purple-300 font-mono text-xs font-bold">
-                {queuedBatches.length} Antrean
-              </Badge>
-            </div>
-            <span className="text-xs text-muted-foreground">Klik 'Mulai Proses' untuk mulai memasak</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {queuedBatches.map((batch) => (
-              <Card
-                key={batch.id}
-                onClick={() => navigate(`/production/batches/${batch.id}`)}
-                className="rounded-2xl border-purple-200/90 shadow-sm hover:shadow-md hover:border-purple-400 transition-all duration-200 overflow-hidden bg-purple-50/20 cursor-pointer group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="p-5 pb-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">
-                        {batch.batchNumber}
-                      </span>
-                      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 text-[11px] font-bold">
-                        Antrean Dapur
-                      </Badge>
-                    </div>
-
-                    <h3 className="text-base font-bold text-foreground group-hover:text-purple-700 transition-colors mt-2.5 line-clamp-1">
-                      {batch.productName}
-                    </h3>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground/80" />
-                      {formatElapsedTime(batch.startedAt)}
-                    </p>
-                  </div>
-
-                  <div className="px-5 py-3 bg-white/80 border-y border-purple-100 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-muted-foreground block text-[11px]">Jumlah Pesanan</span>
-                      <span className="font-mono font-bold text-sm text-foreground">
-                        {batch.targetQuantity} {batch.productUnit}
-                      </span>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-muted-foreground block text-[11px]">Tipe Produksi</span>
-                      <span className="font-bold text-xs text-purple-700">
-                        {batch.saleId ? 'Pesanan Kasir (MTO)' : 'Rencana Produksi'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {batch.notes && (
-                    <div className="p-5 py-2 text-xs text-muted-foreground line-clamp-1 italic">
-                      "{batch.notes}"
-                    </div>
-                  )}
+            {actionError && <div role="alert" className="m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{actionError}</div>}
+            {loading ? <div role="status" className="flex items-center justify-center gap-3 p-16 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Memuat batch produksi…</div>
+              : queryError ? <div role="alert" className="space-y-3 p-10 text-center"><p>Data produksi belum berhasil dimuat.</p><Button variant="outline" onClick={() => void refetchBatches()}>Coba lagi</Button></div>
+              : filteredBatches.length === 0 ? <div className="flex flex-col items-center px-5 py-14 text-center">
+                <div className="mb-4 rounded-2xl bg-muted p-4"><History className="h-7 w-7 text-muted-foreground" /></div>
+                <h3 className="font-semibold">{search || statusFilter !== "ALL" ? "Batch tidak ditemukan" : "Belum ada batch produksi"}</h3>
+                <p className="mt-2 max-w-sm text-sm text-muted-foreground">{search || statusFilter !== "ALL" ? "Coba kata kunci lain atau hapus filter untuk melihat semua batch." : "Buat batch pertama untuk mulai mencatat hasil produksi dan biaya per unit."}</p>
+                <Button className="mt-5" variant={search || statusFilter !== "ALL" ? "outline" : "default"} onClick={() => {
+                  if (search || statusFilter !== "ALL") { setSearch(""); setStatusFilter("ALL"); setPage(1) }
+                  else navigate("/production/batches/new")
+                }}>{search || statusFilter !== "ALL" ? "Reset filter" : "Mulai batch pertama"}</Button>
+              </div> : <>
+                <div className="divide-y lg:hidden">
+                  {paginatedBatches.map((batch) => <article key={batch.id} className="space-y-4 p-4">
+                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><Link to={`/production/batches/${batch.id}`} state={{ returnTo }} className="block truncate font-semibold hover:text-primary hover:underline">{batch.productName}</Link><p className="mt-1 text-xs font-mono text-muted-foreground">{batch.batchNumber}</p></div><ProductionStatusBadge status={batch.status} /></div>
+                    <p className="text-xs text-muted-foreground">{formatBatchDate(batch.startedAt)}</p>
+                    <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/40 p-3 text-sm"><div><p className="mb-1 text-xs text-muted-foreground">{isFinished(batch) ? "Hasil / target" : "Target produksi"}</p><p className="font-medium tabular-nums">{isFinished(batch) ? `${batch.goodQuantity ?? 0} / ` : ""}{batch.targetQuantity} {batch.productUnit}</p></div><div className="text-right"><p className="mb-1 text-xs text-muted-foreground">HPP per unit</p>{isFinished(batch) ? <CurrencyText value={batch.hppPerUnit ?? 0} /> : <span className="text-xs text-muted-foreground">Belum final</span>}</div></div>
+                    {batch.notes && <p className="line-clamp-2 text-xs text-muted-foreground">{batch.notes}</p>}
+                    {renderBatchActions(batch)}
+                  </article>)}
                 </div>
-
-                <div className="p-4 pt-2 border-t border-purple-100 bg-white flex items-center gap-2">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handlePickupBatch(batch.id)
-                    }}
-                    className="flex-1 rounded-xl h-9 text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
-                  >
-                    <Clock className="h-3.5 w-3.5 mr-1.5" /> Mulai Proses (Pickup)
-                  </Button>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="w-full text-left text-sm">
+                    <thead className="border-b bg-muted/40 text-xs text-muted-foreground"><tr>
+                      <th scope="col" className="px-5 py-3 font-medium">Batch & produk</th><th scope="col" className="px-4 py-3 font-medium">Status</th><th scope="col" className="px-4 py-3 font-medium">Hasil / target</th><th scope="col" className="px-4 py-3 text-right font-medium">Total biaya</th><th scope="col" className="px-4 py-3 text-right font-medium">HPP / unit</th><th scope="col" className="px-5 py-3 text-right font-medium">Aksi</th>
+                    </tr></thead>
+                    <tbody className="divide-y">{paginatedBatches.map((batch) => <tr key={batch.id} className="hover:bg-muted/20">
+                      <td className="px-5 py-4"><Link to={`/production/batches/${batch.id}`} state={{ returnTo }} className="font-semibold hover:text-primary hover:underline">{batch.productName}</Link><p className="mt-1 font-mono text-xs text-muted-foreground">{batch.batchNumber}</p><p className="mt-1 text-xs text-muted-foreground">{formatBatchDate(batch.startedAt)}</p></td>
+                      <td className="px-4 py-4"><ProductionStatusBadge status={batch.status} /></td>
+                      <td className="px-4 py-4 tabular-nums"><p>{isFinished(batch) ? `${batch.goodQuantity ?? 0} / ` : ""}{batch.targetQuantity} {batch.productUnit}</p><p className="mt-1 text-xs text-muted-foreground">{isFinished(batch) ? `${batch.wasteQuantity ?? 0} afkir` : "Target produksi"}</p></td>
+                      <td className="px-4 py-4 text-right tabular-nums">{isFinished(batch) ? <CurrencyText value={batch.totalCost ?? 0} /> : <span className="text-muted-foreground">—</span>}</td>
+                      <td className="px-4 py-4 text-right font-medium tabular-nums">{isFinished(batch) ? <CurrencyText value={batch.hppPerUnit ?? 0} /> : <span className="text-xs font-normal text-muted-foreground">Belum final</span>}</td>
+                      <td className="px-5 py-4">{renderBatchActions(batch)}</td>
+                    </tr>)}</tbody>
+                  </table>
                 </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* SECTION: ACTIVE BATCHES IN PROGRESS (DAPUR LANGSUNG) */}
-      {(statusFilter === "ALL" || statusFilter === "IN_PROGRESS") && activeBatches.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
-              <h2 className="text-base font-bold text-foreground">Sedang Berlangsung di Dapur</h2>
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-300 font-mono text-xs font-bold">
-                {activeBatches.length} Batch
-              </Badge>
-            </div>
-            <span className="text-xs text-muted-foreground">Klik kartu untuk melihat detail audit</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeBatches.map((batch) => (
-              <Card
-                key={batch.id}
-                onClick={() => navigate(`/production/batches/${batch.id}`)}
-                className="rounded-2xl border-slate-200/90 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200 overflow-hidden bg-card cursor-pointer group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="p-5 pb-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
-                        {batch.batchNumber}
-                      </span>
-                      <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-300 text-[11px] font-bold flex items-center gap-1">
-                        <Clock className="h-3 w-3 animate-spin" /> Sedang Diproduksi
-                      </Badge>
-                    </div>
-
-                    <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors mt-2.5 line-clamp-1">
-                      {batch.productName}
-                    </h3>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground/80" />
-                      {formatElapsedTime(batch.startedAt)}
-                    </p>
-                  </div>
-
-                  <div className="px-5 py-3 bg-slate-50/80 border-y border-slate-100 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-muted-foreground block text-[11px]">Target Produksi</span>
-                      <span className="font-mono font-bold text-sm text-foreground">
-                        {batch.targetQuantity} {batch.productUnit}
-                      </span>
-                    </div>
-
-                    <div className="text-right">
-                      <span className="text-muted-foreground block text-[11px]">Bahan Terpotong</span>
-                      <span className="font-mono font-bold text-sm text-primary">
-                        <CurrencyText value={batch.stockCost} />
-                      </span>
-                    </div>
-                  </div>
-
-                  {batch.notes && (
-                    <div className="p-5 py-2 text-xs text-muted-foreground line-clamp-1 italic">
-                      "{batch.notes}"
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4 pt-2 border-t border-slate-100 bg-white flex items-center gap-2">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      openCompleteDialog(batch)
-                    }}
-                    className="flex-1 rounded-xl h-9 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-                  >
-                    <Check className="h-3.5 w-3.5 mr-1.5" /> Selesaikan & Hitung HPP
-                  </Button>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                      <DropdownMenuItem onClick={() => navigate(`/production/batches/${batch.id}`)}>
-                        Detail Bahan & Audit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-red-600 focus:text-red-600"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setBatchToCancel(batch)
-                          setIsCancelOpen(true)
-                        }}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Batalkan Batch
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Standalone Search & Filter Bar */}
-      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs min-w-0">
-        <div className="relative flex-1 max-w-md min-w-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cari nomor batch, produk, catatan..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
-            className="pl-9 bg-background/50 h-9 text-xs"
-          />
-          {search && (
-            <button
-              onClick={() => {
-                setSearch("")
-                setPage(1)
-              }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
-          {[
-            { key: "ALL", label: "Semua", count: batches.length },
-            { key: "QUEUED", label: "Antrean MTO", count: stats.queuedCount },
-            { key: "IN_PROGRESS", label: "Dapur Aktif", count: stats.activeCount },
-            { key: "COMPLETED", label: "Selesai", count: stats.completedCount },
-            { key: "CANCELLED", label: "Batal", count: batches.filter((b) => b.status === "CANCELLED" || b.status === "VOID").length },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                setStatusFilter(tab.key)
-                setPage(1)
-              }}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
-                statusFilter === tab.key
-                  ? "bg-background text-foreground shadow-2xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span
-                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
-                  statusFilter === tab.key
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* FULL BATCH TABLE */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center p-16 gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground font-medium">Memuat data batch produksi...</p>
-        </div>
-      ) : filteredBatches.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 sm:p-16 text-center rounded-2xl border-2 border-dashed border-border bg-card/60 shadow-xs">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">
-            <History className="h-8 w-8" />
-          </div>
-          <h2 className="text-lg font-semibold text-foreground">Tidak Ada Data Batch Produksi</h2>
-          <p className="text-sm text-muted-foreground max-w-md mt-1 mb-6">
-            {search || statusFilter !== "ALL"
-              ? "Tidak ada batch yang cocok dengan kata kunci atau filter status saat ini."
-              : "Mulai jalankan batch produksi pertama Anda untuk menghitung HPP secara presisi!"}
-          </p>
-          <Button
-            onClick={() => navigate("/production/batches/new")}
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs"
-          >
-            <Plus className="h-4 w-4" />
-            Mulai Batch Pertama
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[850px] text-sm text-left">
-                <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
-                  <tr>
-                    <th className="px-5 py-3.5">Nomor Batch & Waktu</th>
-                    <th className="px-5 py-3.5">Produk Jadi</th>
-                    <th className="px-5 py-3.5">Hasil Produksi (Yield)</th>
-                    <th className="px-5 py-3.5">Biaya Bahan (BOM)</th>
-                    <th className="px-5 py-3.5">Biaya Overhead</th>
-                    <th className="px-5 py-3.5">HPP per Unit</th>
-                    <th className="px-5 py-3.5">Status</th>
-                    <th className="px-5 py-3.5 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/70">
-                  {paginatedBatches.map((batch) => {
-                    const yieldRate = batch.goodQuantity && batch.targetQuantity > 0
-                      ? Math.round((batch.goodQuantity / batch.targetQuantity) * 1000) / 10
-                      : null
-
-                    return (
-                      <tr
-                        key={batch.id}
-                        onClick={() => navigate(`/production/batches/${batch.id}`)}
-                        className="hover:bg-muted/30 transition-colors group cursor-pointer"
-                      >
-                        <td className="px-5 py-3.5">
-                          <div className="flex flex-col">
-                            <span className="font-mono font-bold text-sm text-foreground group-hover:text-primary transition-colors">
-                              {batch.batchNumber}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground">
-                              {new Date(batch.startedAt).toLocaleDateString("id-ID", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-sm text-foreground">
-                              {batch.productName}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {batch.productCategory || "Tanpa Kategori"} • Satuan: {batch.productUnit}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          {batch.status === "COMPLETED" ? (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="font-mono font-bold text-sm text-foreground">
-                                {batch.goodQuantity} {batch.productUnit}
-                                {batch.wasteQuantity ? (
-                                  <span className="text-xs font-normal text-amber-600 dark:text-amber-400 ml-1">
-                                    (Afkir: {batch.wasteQuantity})
-                                  </span>
-                                ) : null}
-                              </span>
-                              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                                Yield: {yieldRate}%
-                              </span>
-                            </div>
-                          ) : batch.status === "IN_PROGRESS" ? (
-                            <span className="font-mono text-sm text-muted-foreground">
-                              Target: {batch.targetQuantity} {batch.productUnit}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-rose-600 dark:text-rose-400">Dibatalkan</span>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-3.5 font-mono font-bold text-sm text-foreground">
-                          <CurrencyText value={batch.stockCost} />
-                        </td>
-
-                        <td className="px-5 py-3.5 font-mono text-sm text-muted-foreground">
-                          {batch.overheadCost ? <CurrencyText value={batch.overheadCost} /> : "-"}
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          {batch.hppPerUnit ? (
-                            <div className="flex flex-col">
-                              <span className="font-mono font-black text-sm text-primary">
-                                <CurrencyText value={batch.hppPerUnit} />
-                              </span>
-                              <span className="text-[11px] text-muted-foreground">
-                                per {batch.productUnit}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Menunggu panen</span>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          {batch.status === "QUEUED" && (
-                            <Badge variant="outline" className="text-xs font-semibold bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 flex items-center gap-1 w-fit">
-                              <Clock className="h-3 w-3" /> Antrean Dapur
-                            </Badge>
-                          )}
-                          {batch.status === "IN_PROGRESS" && (
-                            <Badge variant="outline" className="text-xs font-semibold bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 flex items-center gap-1 w-fit">
-                              <Clock className="h-3 w-3" /> Berjalan
-                            </Badge>
-                          )}
-                          {batch.status === "COMPLETED" && (
-                            <Badge variant="outline" className="text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 flex items-center gap-1 w-fit">
-                              <CheckCircle2 className="h-3 w-3" /> Selesai
-                            </Badge>
-                          )}
-                          {(batch.status === "CANCELLED" || batch.status === "VOID") && (
-                            <Badge variant="outline" className="text-xs font-semibold bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 flex items-center gap-1 w-fit">
-                              <XCircle className="h-3 w-3" /> {batch.status === "VOID" ? "Void" : "Batal"}
-                            </Badge>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                          {batch.status === "QUEUED" ? (
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handlePickupBatch(batch.id)
-                              }}
-                              className="rounded-lg text-xs h-8 bg-purple-600 text-white hover:bg-purple-700 font-medium shadow-2xs"
-                            >
-                              Mulai (Pickup)
-                            </Button>
-                          ) : batch.status === "IN_PROGRESS" ? (
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openCompleteDialog(batch)
-                              }}
-                              className="rounded-lg text-xs h-8 bg-primary text-primary-foreground font-medium shadow-2xs hover:bg-primary/90"
-                            >
-                              Hitung HPP
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                navigate(`/production/batches/${batch.id}`)
-                              }}
-                              className="rounded-lg text-xs h-8 shadow-2xs hover:bg-muted"
-                            >
-                              Audit HPP
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <TablePagination
-            total={filteredBatches.length}
-            displayedCount={paginatedBatches.length}
-            page={page}
-            totalPages={totalPages}
-            onPrev={() => setPage((p) => Math.max(1, p - 1))}
-            onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={loading}
-            label="batch"
-          />
-        </div>
-      )}
-
+                <div className="space-y-3 border-t p-4"><p className="text-xs text-muted-foreground">Halaman {currentPage} dari {totalPages}</p><TablePagination total={filteredBatches.length} displayedCount={paginatedBatches.length} page={currentPage} totalPages={totalPages} onPrev={() => setPage(Math.max(1, currentPage - 1))} onNext={() => setPage(Math.min(totalPages, currentPage + 1))} disabled={loading} label="batch" prevLabel="Sebelumnya" nextLabel="Berikutnya" /></div>
+              </>}
+          </section>
         </TabsContent>
       </Tabs>
 
@@ -1080,11 +623,12 @@ export default function BatchListPage() {
             </div>
             <DialogTitle className="text-lg font-bold">Batalkan Batch Produksi?</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground leading-relaxed">
-              Batch <strong className="text-foreground">{batchToCancel?.batchNumber}</strong> akan dibatalkan. Bahan baku yang telah terpotong akan <strong>dikembalikan ke stok gudang</strong> secara otomatis.
+              Batch <strong className="text-foreground">{batchToCancel?.batchNumber}</strong> akan dihentikan. Stok bahan belum dipotong pada tahap ini.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCancelSubmit} className="space-y-4 py-2">
+            {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
             <div className="grid gap-2">
               <Label className="text-xs font-semibold">Alasan Pembatalan</Label>
               <Input

@@ -1,3 +1,4 @@
+import { getAttachmentContentType, type POAttachment } from '../lib/attachment';
 import apiClient from '../../../lib/api-client';
 import type {
   PurchaseOrder,
@@ -11,6 +12,7 @@ import type {
   PurchaseOrderQueryParams,
   PaginatedPurchaseOrders,
   PurchaseOrderStatus,
+  PurchaseOrderCategory,
 } from '../types';
 
 interface RawPurchaseOrderItem {
@@ -35,6 +37,11 @@ interface RawPurchaseOrderLog {
 interface RawPurchaseOrder {
   id: string;
   po_number: string;
+  category?: PurchaseOrderCategory;
+  attachment_url?: string;
+  attachment_name?: string;
+  attachments?: POAttachment[];
+  completion_attachments?: POAttachment[];
   supplier_id?: string;
   supplier_name: string;
   created_by_user_id?: string;
@@ -61,6 +68,11 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
   return {
     id: raw.id,
     poNumber: raw.po_number,
+    category: raw.category || "PURCHASE_ORDER",
+    attachmentUrl: raw.attachment_url,
+    attachmentName: raw.attachment_name,
+    attachments: raw.attachments?.length ? raw.attachments : raw.attachment_url ? [{ url: raw.attachment_url, name: raw.attachment_name || 'Dokumen PO' }] : [],
+    completionAttachments: raw.completion_attachments || [],
     supplierId: raw.supplier_id,
     supplierName: raw.supplier_name || "-",
     createdByUserId: raw.created_by_user_id,
@@ -92,6 +104,36 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
 }
 
 export const purchaseOrderService = {
+  uploadAttachment: async (file: File, onProgress?: (progress: number) => void, purpose: 'request' | 'completion' = 'request'): Promise<POAttachment> => {
+    const contentType = getAttachmentContentType(file);
+    const endpoint = purpose === 'completion' ? '/purchase-orders/completion-upload-presigned-url' : '/purchase-orders/upload-presigned-url';
+    const { data } = await apiClient.post<{ upload_url: string; public_url: string }>(endpoint, {
+      filename: file.name,
+      content_type: contentType,
+      file_size: file.size,
+    });
+    if (!data.upload_url || !data.public_url) throw new Error('Gagal mendapatkan URL upload dokumen. Silakan coba lagi.');
+    await new Promise<void>((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open('PUT', data.upload_url);
+      request.timeout = 120000;
+      request.setRequestHeader('Content-Type', contentType);
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress?.(Math.round(event.loaded / event.total * 100));
+      };
+      request.onload = () => {
+        if (request.status >= 200 && request.status < 300) resolve();
+        else reject(new Error(`Upload dokumen gagal (HTTP ${request.status}). Silakan coba lagi.`));
+      };
+      request.onerror = () => reject(new Error('Upload dokumen gagal. Periksa koneksi lalu coba lagi.'));
+      request.ontimeout = () => reject(new Error('Upload dokumen terlalu lama. Silakan coba lagi.'));
+      request.onabort = () => reject(new Error('Upload dokumen dibatalkan.'));
+      request.send(file);
+    });
+    onProgress?.(100);
+    return { url: data.public_url, name: file.name };
+  },
+
   getPurchaseOrders: async (params?: PurchaseOrderQueryParams): Promise<PaginatedPurchaseOrders> => {
     const response = await apiClient.get<RawPaginatedResponse | RawPurchaseOrder[]>('/purchase-orders', {
       params,

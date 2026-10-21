@@ -3,6 +3,7 @@ import { recipeService } from '../../recipes/services/recipe-service';
 import type { Product } from '../../recipes/types';
 import type {
   Sale,
+  CorrectSaleInput,
   CreateSaleInput,
   SalesSummary,
   SaleQuery,
@@ -13,6 +14,7 @@ export function normalizeSale(raw: any): Sale {
   const items = Array.isArray(raw.items)
     ? raw.items.map((it: any) => ({
         id: it.id,
+        returnedQuantity: Number(it.returned_quantity || 0),
         saleId: it.sale_id ?? it.saleId ?? raw.id,
         sale_id: it.sale_id ?? it.saleId ?? raw.id,
         productId: it.product_id ?? it.productId ?? it.product?.id,
@@ -41,16 +43,15 @@ export function normalizeSale(raw: any): Sale {
       }))
     : [];
 
-  const totalAmount = Number(raw.total_amount ?? raw.totalAmount ?? 0);
-  const totalCost = Number(raw.total_cost ?? raw.totalCost ?? 0);
+  const originalTotalAmount = Number(raw.total_amount ?? raw.totalAmount ?? 0);
+  const refundedAmount = Number(raw.refunded_amount || 0);
+  const restoredCost = Number(raw.restored_cost || 0);
+  const totalAmount = originalTotalAmount - refundedAmount;
+  const totalCost = Number(raw.total_cost ?? raw.totalCost ?? 0) - restoredCost;
   const grossProfit = Number(
-    raw.gross_profit ?? raw.grossProfit ?? totalAmount - totalCost
+    (raw.gross_profit ?? raw.grossProfit ?? originalTotalAmount - Number(raw.total_cost ?? raw.totalCost ?? 0)) - refundedAmount + restoredCost
   );
-  const profitMarginPct = Number(
-    raw.profit_margin_pct ??
-      raw.profitMarginPct ??
-      (totalAmount > 0 ? (grossProfit / totalAmount) * 100 : 0)
-  );
+  const profitMarginPct = totalAmount > 0 ? grossProfit / totalAmount * 100 : 0;
   const discountAmount = Number(raw.discount_amount ?? raw.discountAmount ?? 0);
   const taxAmount = Number(raw.tax_amount ?? raw.taxAmount ?? 0);
   const cashReceived =
@@ -63,6 +64,7 @@ export function normalizeSale(raw: any): Sale {
       : undefined;
 
   return {
+    originalTotalAmount, refundedAmount, restoredCost, corrections: raw.corrections || [],
     id: raw.id,
     storeId: raw.store_id ?? raw.storeId ?? '',
     store_id: raw.store_id ?? raw.storeId ?? '',
@@ -112,6 +114,10 @@ export function normalizeSale(raw: any): Sale {
 }
 
 export const salesService = {
+  correctSale: async (id: string, input: CorrectSaleInput): Promise<Sale> => {
+    const res = await apiClient.post(`/sales/${id}/corrections`, input);
+    return normalizeSale(res.data);
+  },
   getProducts: async (): Promise<Product[]> => {
     return recipeService.getProducts();
   },

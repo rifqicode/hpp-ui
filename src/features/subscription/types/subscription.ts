@@ -1,4 +1,11 @@
 export type SubscriptionTier = 'FREE' | 'GROWTH' | 'MAX_GROWTH';
+
+export const SUBSCRIPTION_TIER_LABELS: Record<SubscriptionTier, string> = {
+  FREE: 'Free',
+  GROWTH: 'Growth',
+  MAX_GROWTH: 'Max Growth',
+};
+
 export type SubscriptionStatus = 'ACTIVE' | 'IN_GRACE_PERIOD' | 'EXPIRED' | 'CANCELLED';
 
 export interface QuotaItem {

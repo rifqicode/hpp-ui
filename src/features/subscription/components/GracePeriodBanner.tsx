@@ -1,3 +1,4 @@
+import { SUBSCRIPTION_TIER_LABELS } from "../types/subscription";
 import React from 'react';
 import { useSubscriptionGuards } from '../hooks/useSubscriptionGuards';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ export const GracePeriodBanner: React.FC<GracePeriodBannerProps> = ({ onUpgradeC
           </span>
         </div>
         <span className="sm:truncate leading-snug">
-          Paket <strong>{tier}</strong> kedaluwarsa. Sisa <strong>{diffDays} hari</strong> ({expiryDate.toLocaleDateString('id-ID')}) sebelum akses staf dan fitur lanjutan ditangguhkan.
+          Paket <strong>{SUBSCRIPTION_TIER_LABELS[tier]}</strong> kedaluwarsa. Sisa <strong>{diffDays} hari</strong> ({expiryDate.toLocaleDateString('id-ID')}) sebelum akses staf dan fitur lanjutan ditangguhkan.
         </span>
       </div>
       <Button

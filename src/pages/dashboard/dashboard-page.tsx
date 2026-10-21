@@ -304,7 +304,7 @@ export default function DashboardPage() {
               <CardHeader className="p-4 pb-1">
                 <div className="flex items-center justify-between">
                   <CardDescription className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Pending Purchase Orders
+                    Pending Purchase
                   </CardDescription>
                   <div className="h-7 w-7 rounded-lg bg-sky-500/10 text-sky-600 flex items-center justify-center">
                     <Layers className="h-4 w-4" />

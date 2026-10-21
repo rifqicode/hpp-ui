@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/use-auth-store"
 import { authService } from "@/features/auth/services/auth-service"
 import { settingsService } from "@/features/settings/services/settings-service"
+import { validatePassword } from "@/components/ui/password-strength-indicator"
 import type { DeviceSession } from "@/features/settings/types"
 import type { User as UserType } from "@/features/auth/types"
 
@@ -193,13 +194,14 @@ export function useAccountSettings() {
     setPasswordError("")
     setPasswordMsg("")
 
-    if (newPassword !== confirmPassword) {
-      setPasswordError("Konfirmasi kata sandi baru tidak cocok.")
+    const passErr = validatePassword(newPassword)
+    if (passErr) {
+      setPasswordError(passErr)
       return
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError("Kata sandi baru minimal 6 karakter.")
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Konfirmasi kata sandi baru tidak cocok.")
       return
     }
 

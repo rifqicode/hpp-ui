@@ -151,10 +151,6 @@ export default function RecipeListPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <p className="text-[11px] text-muted-foreground">
-              Estimasi bahan belum termasuk overhead produksi. HPP aktual memakai
-              produksi terakhir.
-            </p>
             <TablePagination
               total={list.total}
               displayedCount={list.items.length}
@@ -169,9 +165,6 @@ export default function RecipeListPage() {
               disabled={list.isFetching}
               label="produk"
             />
-            <p className="text-right text-[11px] text-muted-foreground">
-              Halaman {list.page} dari {list.totalPages}
-            </p>
           </div>
         </section>
       )}

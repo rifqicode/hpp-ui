@@ -10,9 +10,9 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay"
 import { getActiveMenuTitle } from "@/lib/page-info"
 
 import { NotificationDropdown } from "./notification-dropdown"
-import { StoreDropdown } from "./store-dropdown"
+import { UserDropdown } from "./user-dropdown"
 import { GracePeriodBanner, UpgradeModal } from "@/features/subscription"
-import type { SubscriptionTier } from "@/features/subscription/types/subscription"
+import { SUBSCRIPTION_TIER_LABELS, type SubscriptionTier } from "@/features/subscription/types/subscription"
 import { AIChatFloatingDrawer } from "@/features/ai-chat"
 
 export function DashboardLayout() {
@@ -35,7 +35,7 @@ export function DashboardLayout() {
       sessionStorage.removeItem("pending_upgrade_tier")
       localStorage.removeItem("pending_upgrade_tier")
       setInitialSelectedTier(pendingTier as SubscriptionTier)
-      setUpgradeReason(`Selesaikan pembayaran untuk mengaktifkan paket ${pendingTier} akun Anda.`)
+      setUpgradeReason(`Selesaikan pembayaran untuk mengaktifkan paket ${SUBSCRIPTION_TIER_LABELS[pendingTier]} akun Anda.`)
       setIsUpgradeOpen(true)
     }
 
@@ -79,8 +79,8 @@ export function DashboardLayout() {
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-              <StoreDropdown />
               <NotificationDropdown />
+              <UserDropdown />
             </div>
           </header>
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">

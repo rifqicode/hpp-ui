@@ -28,7 +28,9 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem('token', token);
         set({ user, token });
       },
-      setActiveStoreId: (activeStoreId) => set({ activeStoreId }),
+      setActiveStoreId: (activeStoreId) => set((state) => (
+        state.activeStoreId === activeStoreId ? {} : { activeStoreId, permissions: [] }
+      )),
       setActiveStoreName: (activeStoreName) => set({ activeStoreName }),
       setPermissions: (permissions) => set({ permissions }),
       logout: () => {

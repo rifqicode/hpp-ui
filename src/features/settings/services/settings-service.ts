@@ -247,16 +247,22 @@ export const settingsService = {
   getStorePermissions: async (storeId?: string, force = false): Promise<{ permissions: string[]; role: string }> => {
     const targetId = storeId || useAuthStore.getState().activeStoreId;
     const userId = useAuthStore.getState().user?.id;
+    const isCurrentStore = () => {
+      const state = useAuthStore.getState();
+      return state.activeStoreId === targetId && state.user?.id === userId;
+    };
     if (userId && targetId && !force) {
       const cached = await readPermissionCache(userId, targetId);
       if (cached) {
-        useAuthStore.getState().setPermissions(cached.permissions);
+        if (isCurrentStore()) useAuthStore.getState().setPermissions(cached.permissions);
         return cached;
       }
     }
-    const res = await apiClient.get<{ permissions: string[]; role: string }>('/permissions/me');
+    const res = await apiClient.get<{ permissions: string[]; role: string }>('/permissions/me', {
+      headers: targetId ? { 'X-Store-ID': targetId } : undefined,
+    });
     if (res.data?.permissions) {
-      useAuthStore.getState().setPermissions(res.data.permissions);
+      if (isCurrentStore()) useAuthStore.getState().setPermissions(res.data.permissions);
       if (userId && targetId) await writePermissionCache(userId, targetId, res.data);
     }
     return res.data;

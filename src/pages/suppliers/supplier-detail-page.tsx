@@ -203,20 +203,20 @@ export default function SupplierDetailPage() {
 
       {/* Tabs for Details */}
       <Tabs defaultValue="history" className="w-full">
-        <TabsList className="grid grid-cols-1 min-[420px]:grid-cols-2 w-full sm:w-auto h-auto gap-1 p-1 rounded-xl bg-muted/60 border border-border">
+        <TabsList className="grid grid-cols-2 sm:grid-flow-col sm:auto-cols-fr gap-1 bg-muted/60 p-1 rounded-xl border border-border h-auto w-full md:w-auto md:inline-grid">
           <TabsTrigger
             value="history"
-            className="rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25 data-[state=active]:font-bold"
+            className="rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold"
           >
-            <FileText className="mr-2 h-4 w-4" />
-            Riwayat Pembelian ({purchases.length})
+            <FileText className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Riwayat Pembelian ({purchases.length})</span>
           </TabsTrigger>
           <TabsTrigger
             value="materials"
-            className="rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/25 data-[state=active]:font-bold"
+            className="rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold"
           >
-            <Package className="mr-2 h-4 w-4" />
-            Bahan Baku Pasokan ({supplier.suppliedMaterials?.length || 0})
+            <Package className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Bahan Baku Pasokan ({supplier.suppliedMaterials?.length || 0})</span>
           </TabsTrigger>
         </TabsList>
 
@@ -231,10 +231,9 @@ export default function SupplierDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="rounded-xl border border-border overflow-hidden">
-                <Table className="min-w-[640px]">
+                <Table className="min-w-[560px]">
                   <TableHeader>
                     <TableRow className="bg-muted/40">
-                      <TableHead>No. Bukti</TableHead>
                       <TableHead>Tanggal</TableHead>
                       <TableHead>Nama Bahan</TableHead>
                       <TableHead className="text-right">Kuantitas</TableHead>
@@ -245,16 +244,13 @@ export default function SupplierDetailPage() {
                   <TableBody>
                     {purchases.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                           Belum ada riwayat transaksi pembelian dari vendor ini.
                         </TableCell>
                       </TableRow>
                     ) : (
                       purchases.map((rec) => (
                         <TableRow key={rec.id} className="hover:bg-muted/30">
-                          <TableCell className="font-mono text-xs font-semibold text-primary">
-                            {rec.id}
-                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {formatDate(rec.purchaseDate)}
                           </TableCell>

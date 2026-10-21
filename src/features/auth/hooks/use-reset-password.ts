@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useSearchParams } from "react-router-dom"
 import { authService } from "../services/auth-service"
+import { validatePassword } from "@/components/ui/password-strength-indicator"
 
 export function useResetPassword() {
   const [searchParams] = useSearchParams()
@@ -52,13 +53,9 @@ export function useResetPassword() {
     e.preventDefault()
     setFormError(null)
 
-    if (!password) {
-      setFormError("Kata sandi baru wajib diisi.")
-      return
-    }
-
-    if (password.length < 6) {
-      setFormError("Kata sandi minimal 6 karakter.")
+    const passErr = validatePassword(password)
+    if (passErr) {
+      setFormError(passErr)
       return
     }
 

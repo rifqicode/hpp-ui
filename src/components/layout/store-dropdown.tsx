@@ -13,8 +13,10 @@ import { settingsService } from "@/features/settings/services/settings-service"
 import { useStoresQuery, storeKeys } from "@/features/settings/hooks/use-stores-query"
 import type { StoreInfo } from "@/features/settings/types"
 import { useAuthStore } from "@/store/use-auth-store"
+import { useSidebar } from "@/components/ui/sidebar"
 
 export function StoreDropdown() {
+  const { isMobile } = useSidebar()
   const queryClient = useQueryClient()
   const { data: stores = [] } = useStoresQuery()
   const activeStoreId = useAuthStore((state) => state.activeStoreId)
@@ -42,25 +44,22 @@ export function StoreDropdown() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="border border-border/80 bg-muted/60 hover:bg-muted/80 min-h-11 min-w-11 justify-center px-2.5 py-2 text-xs rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer select-none transition-colors outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="w-full min-w-0 min-h-11 flex items-center gap-2 rounded-lg border border-sidebar-primary bg-sidebar-primary px-2 py-2 text-xs text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary/90 data-[state=open]:bg-sidebar-primary/90 cursor-pointer select-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
           title={`Toko Aktif: ${displayName}`}
           aria-label={`Toko aktif: ${displayName}. Pilih toko`}
         >
-          <Store className="size-3.5 text-primary shrink-0" />
-          <span className="hidden sm:inline font-medium truncate sm:max-w-[140px] xl:max-w-[180px] text-foreground">
+          <Store className="size-3.5 shrink-0" />
+          <span className="min-w-0 flex-1 truncate text-left text-sm font-semibold group-data-[collapsible=icon]:hidden">
             {displayName}
           </span>
-          <span className="relative hidden sm:flex size-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-          </span>
-          <ChevronsUpDown className="hidden sm:block size-3 text-muted-foreground shrink-0" />
+          <ChevronsUpDown className="size-3 opacity-70 shrink-0 group-data-[collapsible=icon]:hidden" />
         </button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="w-64 max-w-[calc(100vw-1rem)] p-1.5 shadow-xl border-border"
-        align="end"
+        className="w-64 max-w-[calc(100vw-1rem)] bg-sidebar text-sidebar-foreground p-1.5 shadow-xl border-sidebar-border"
+        side={isMobile ? "bottom" : "right"}
+        align="start"
         sideOffset={6}
       >
         <DropdownMenuLabel className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-1.5">

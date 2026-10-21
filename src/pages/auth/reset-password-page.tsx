@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
 import { useResetPassword } from "@/features/auth/hooks"
 
 export default function ResetPasswordPage() {
@@ -180,7 +181,7 @@ export default function ResetPasswordPage() {
                 <CardDescription className="text-xs text-muted-foreground mt-1.5">
                   {userEmail
                     ? `Perbarui kata sandi untuk akun ${userEmail}.`
-                    : "Masukkan kata sandi baru minimal 6 karakter."}
+                    : "Masukkan kata sandi baru minimal 8 karakter."}
                 </CardDescription>
               </CardHeader>
 
@@ -203,7 +204,7 @@ export default function ResetPasswordPage() {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Minimal 6 karakter"
+                      placeholder="Minimal 8 karakter"
                       autoFocus
                       required
                       className="pl-9 pr-9 rounded-xl h-10 text-sm"
@@ -216,6 +217,7 @@ export default function ResetPasswordPage() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  <PasswordStrengthIndicator password={password} />
                 </div>
 
                 <div className="space-y-1.5">

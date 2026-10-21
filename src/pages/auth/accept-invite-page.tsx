@@ -26,6 +26,10 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import {
+  PasswordStrengthIndicator,
+  validatePassword,
+} from "@/components/ui/password-strength-indicator"
 
 import { authService } from "@/features/auth/services/auth-service"
 import type { InviteDetailsResponse } from "@/features/auth/types"
@@ -81,8 +85,9 @@ export default function AcceptInvitePage() {
       return
     }
 
-    if (password.length < 6) {
-      setFormError("Kata sandi minimal 6 karakter.")
+    const passErr = validatePassword(password)
+    if (passErr) {
+      setFormError(passErr)
       return
     }
 
@@ -277,7 +282,7 @@ export default function AcceptInvitePage() {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Minimal 6 karakter"
+                      placeholder="Minimal 8 karakter"
                       className="rounded-xl pl-9 pr-9 text-xs"
                       required
                     />
@@ -293,6 +298,7 @@ export default function AcceptInvitePage() {
                       )}
                     </button>
                   </div>
+                  <PasswordStrengthIndicator password={password} />
                 </div>
 
                 <div className="space-y-1">

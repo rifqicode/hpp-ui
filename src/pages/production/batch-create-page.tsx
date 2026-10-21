@@ -338,7 +338,7 @@ export default function BatchCreatePage() {
                 <div>
                   <CardTitle className="text-base font-bold flex items-center gap-2">
                     <Boxes className="h-4 w-4 text-primary" />
-                    1. Pilih Produk & Resep Acuan
+                    1. Pilih Produk Acuan
                   </CardTitle>
                   <CardDescription className="text-xs mt-0.5">
                     Hanya produk yang memiliki formulasi resep aktif yang dapat diproduksi di dapur.

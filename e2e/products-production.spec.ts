@@ -57,7 +57,7 @@ test.describe('Feature: Products, Overhead, Batches & HPP', () => {
   test.describe('Products & Recipe Formulation', () => {
     test('Displays products catalog list page', async ({ authedPage: page }) => {
       await page.goto('/production/products');
-      await expect(page.getByRole('heading', { name: 'Produk & Resep', exact: true }).last()).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Produk', exact: true }).last()).toBeVisible();
       await expect(page.locator('button:has-text("Tambah Produk")')).toBeVisible();
     });
 
@@ -76,7 +76,7 @@ test.describe('Feature: Products, Overhead, Batches & HPP', () => {
 
       // Navigate to create product page
       await page.goto('/production/products/new');
-      await expect(page.locator('h1.text-2xl')).toContainText('Buat Produk & Resep Baru');
+      await expect(page.locator('h1.text-2xl')).toContainText('Buat Produk Baru');
 
       // Wait for materials to finish loading
       await expect(page.locator('text=Memuat daftar bahan baku dari gudang...')).not.toBeVisible({
@@ -95,7 +95,7 @@ test.describe('Feature: Products, Overhead, Batches & HPP', () => {
       await qtyInput.fill('15');
 
       // Submit product & recipe
-      await page.click('button[type="submit"]:has-text("Simpan Produk & Resep")');
+      await page.click('button[type="submit"]:has-text("Simpan Produk")');
 
       // Verify redirection to product detail page
       await expect(page).toHaveURL(/\/production\/products\/[a-zA-Z0-9-]+/, { timeout: 15000 });

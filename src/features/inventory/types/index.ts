@@ -59,6 +59,8 @@ export interface UpdateStockInput {
 }
 
 export interface RecordPurchaseInput {
+  unit?: string;
+  package_size?: number;
   stock_id: string;
   supplier_id?: string;
   quantity: string | number;

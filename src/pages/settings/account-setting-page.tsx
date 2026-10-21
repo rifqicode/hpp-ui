@@ -33,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
@@ -417,7 +418,7 @@ export default function GeneralSettingsPage() {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           className="rounded-xl pr-10"
-                          placeholder="Minimal 6 karakter"
+                          placeholder="Minimal 8 karakter"
                           required
                         />
                         <button
@@ -432,6 +433,7 @@ export default function GeneralSettingsPage() {
                           )}
                         </button>
                       </div>
+                      <PasswordStrengthIndicator password={newPassword} />
                     </div>
 
                     <div className="space-y-1.5">

@@ -71,42 +71,18 @@ function ProductCost({ product }: { product: Product }) {
 
   if (hasActualHpp && actualHpp !== null) {
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className="cursor-help text-right">
+      <span>
+          <div className="text-right">
             <span className="font-semibold tabular-nums text-foreground">
               <CurrencyText value={actualHpp} />
             </span>
-            <span className="mt-0.5 block text-[10px] text-muted-foreground">
-              HPP aktual
-            </span>
             {estimatedHpp !== null && (
               <span className="mt-0.5 block text-[10px] text-muted-foreground/80 tabular-nums">
-                Est. kini: <CurrencyText value={estimatedHpp} />
+                HPP bahan gudang: <CurrencyText value={estimatedHpp} />
               </span>
             )}
           </div>
-        </TooltipTrigger>
-        <TooltipContent
-          side="top"
-          className="block max-w-xs border border-border bg-popover text-left text-popover-foreground shadow-md [&_svg]:fill-popover"
-        >
-          <p className="font-semibold text-foreground">
-            HPP Aktual: <CurrencyText value={actualHpp} />
-          </p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Snapshot modal riil dari batch produksi terakhir.
-          </p>
-          {estimatedHpp !== null && (
-            <div className="mt-1.5 border-t border-border/50 pt-1 text-[11px] text-muted-foreground">
-              Estimasi bahan gudang hari ini:{" "}
-              <span className="font-medium text-foreground">
-                <CurrencyText value={estimatedHpp} />
-              </span>
-            </div>
-          )}
-        </TooltipContent>
-      </Tooltip>
+      </span>
     );
   }
 

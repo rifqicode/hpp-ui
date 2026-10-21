@@ -46,12 +46,12 @@ interface AdditionalFeature extends FeatureItem {
 const ADDITIONAL_FEATURES: AdditionalFeature[] = [
   {
     "id": "purchases",
-    "title": "Pembelian & Supplier",
+    "title": "Belanja bahan & pemasok",
     "shortTitle": "Belanja",
     "tagline": "Riwayat belanja lebih mudah ditelusuri.",
-    "description": "Kelola pemasok dan pesanan pembelian dari pengajuan hingga barang diterima. Stok bahan tercatat saat penerimaan selesai.",
+    "description": "Simpan kontak pemasok dan catat pesanan belanja. Setelah bahan diterima dan dicatat, stok ikut bertambah.",
     "icon": ClipboardCheck,
-    "badgeText": "PO & Supplier",
+    "badgeText": "Catatan belanja",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
         "title": "Pembelian bahan minggu ini",
@@ -77,17 +77,17 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
         ],
         "resultLabel": "Setelah barang diterima",
         "result": "Stok bahan bertambah",
-        "note": "Harga dan batch pembelian tersimpan untuk penelusuran biaya."
+        "note": "Harga dan tanggal belanja tersimpan agar biaya bahan bisa dicek kembali."
     }
 },
   {
     "id": "simulation",
-    "title": "Simulasi Resep & Produksi",
-    "shortTitle": "Simulasi",
+    "title": "Coba resep & rencana masak",
+    "shortTitle": "Coba resep",
     "tagline": "Rencanakan biaya sebelum mulai masak.",
-    "description": "Coba takaran, biaya, dan target harga jual. Periksa kebutuhan bahan serta perkiraan biaya sebelum menjalankan produksi.",
+    "description": "Coba ubah takaran atau jumlah porsi. Lihat kebutuhan bahan dan perkiraan biayanya sebelum mulai memasak.",
     "icon": Calculator,
-    "badgeText": "Simulasi biaya",
+    "badgeText": "Perkiraan biaya",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
         "title": "Rencana produksi brownies",
@@ -95,7 +95,7 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
         "subtitle": "Periksa kebutuhan sebelum menjalankan produksi.",
         "columns": [
             "Perencanaan",
-            "Estimasi"
+            "Perkiraan"
         ],
         "rows": [
             [
@@ -111,24 +111,24 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
                 "Rp 10.000"
             ]
         ],
-        "resultLabel": "Estimasi HPP per potong",
+        "resultLabel": "Perkiraan biaya per potong",
         "result": "Rp 5.000",
-        "note": "Angka simulasi membantu perencanaan; HPP aktual mengikuti hasil produksi."
+        "note": "Ini perkiraan sebelum memasak. Biaya akhirnya mengikuti bahan dan hasil produksi yang dicatat."
     }
 },
   {
     "id": "overheads",
-    "title": "Tenaga Kerja & Overhead",
+    "title": "Upah, listrik & gas",
     "shortTitle": "Biaya",
     "tagline": "Harga jual punya dasar biaya lebih lengkap.",
-    "description": "Masukkan upah, listrik, gas, dan biaya produksi lainnya ke perhitungan HPP. Biaya per porsi mencakup lebih dari bahan baku.",
+    "description": "Jangan lupa biaya selain bahan. Masukkan upah, listrik, dan gas agar biaya membuat tiap porsi ikut terhitung.",
     "icon": ReceiptText,
     "badgeText": "Biaya produksi",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
-        "title": "Biaya produksi satu batch",
+        "title": "Biaya sekali membuat brownies",
         "path": "production/overheads",
-        "subtitle": "Bahan, tenaga kerja, dan overhead masuk perhitungan.",
+        "subtitle": "Hitung juga upah, listrik, dan gas yang terpakai.",
         "columns": [
             "Komponen biaya",
             "Jumlah"
@@ -147,17 +147,17 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
                 "Rp 5.000"
             ]
         ],
-        "resultLabel": "Total biaya batch",
+        "resultLabel": "Total biaya sekali produksi",
         "result": "Rp 100.000",
-        "note": "Dengan hasil 20 potong, HPP aktual menjadi Rp 5.000 per potong."
+        "note": "Jika menghasilkan 20 potong, biaya membuat tiap potong adalah Rp 5.000."
     }
 },
   {
     "id": "dashboard",
-    "title": "Dashboard Operasional & HPP",
-    "shortTitle": "Dashboard",
+    "title": "Ringkasan usaha",
+    "shortTitle": "Ringkasan",
     "tagline": "Lebih cepat tahu yang perlu diperhatikan.",
-    "description": "Lihat produksi aktif, stok menipis, bahan mendekati kedaluwarsa, hingga ringkasan penjualan dan margin produk.",
+    "description": "Cek masakan yang sedang dibuat, stok menipis, dan bahan yang hampir kedaluwarsa. Lihat juga ringkasan penjualan dan laba kotor.",
     "icon": ChartNoAxesCombined,
     "badgeText": "Ringkasan usaha",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
@@ -185,22 +185,22 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
         ],
         "resultLabel": "Margin laba kotor",
         "result": "50%",
-        "note": "Dashboard operasional juga menampilkan stok menipis dan batch mendekati kedaluwarsa."
+        "note": "Ringkasan ini juga menunjukkan bahan yang menipis atau hampir kedaluwarsa."
     }
 },
   {
     "id": "stores",
-    "title": "Kelola Beberapa Toko",
+    "title": "Kelola beberapa toko",
     "shortTitle": "Toko",
     "tagline": "Tetap teratur saat usaha bertambah cabang.",
     "description": "Pindah antar toko dari satu akun. Stok, resep, produksi, dan transaksi tersimpan sesuai toko yang sedang dikelola.",
     "icon": Building2,
-    "badgeText": "Multi-toko",
+    "badgeText": "Beberapa toko",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
         "title": "Satu akun, beberapa toko",
         "path": "settings/store",
-        "subtitle": "Setiap toko memiliki catatan operasionalnya sendiri.",
+        "subtitle": "Catatan stok dan penjualan tiap toko tetap terpisah.",
         "columns": [
             "Toko",
             "Catatan data"
@@ -226,10 +226,10 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
 },
   {
     "id": "staff",
-    "title": "Tim & Hak Akses Staf",
+    "title": "Atur akses karyawan",
     "shortTitle": "Tim",
-    "tagline": "Delegasikan pekerjaan dengan akses yang jelas.",
-    "description": "Undang staf dan tentukan perannya. Atur akses agar setiap anggota tim menggunakan fitur sesuai tanggung jawabnya.",
+    "tagline": "Bagi tugas sesuai pekerjaan karyawan.",
+    "description": "Ajak karyawan memakai aplikasi. Pilih fitur yang boleh mereka buka sesuai tugas, misalnya kasir atau pencatatan stok.",
     "icon": ShieldCheck,
     "badgeText": "Peran & izin",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
@@ -257,12 +257,12 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
         ],
         "resultLabel": "Akses fitur",
         "result": "Sesuai izin peran",
-        "note": "Contoh pembagian peran; kustomisasi peran tersedia sesuai paket."
+        "note": "Ini contoh pembagian tugas. Pilihan pengaturan akses mengikuti paket Anda."
     }
 },
   {
     "id": "customers",
-    "title": "Data & Riwayat Pelanggan",
+    "title": "Catatan pelanggan",
     "shortTitle": "Pelanggan",
     "tagline": "Kenali pelanggan yang kembali berbelanja.",
     "description": "Simpan kontak pelanggan dan hubungkan dengan transaksi. Lihat riwayat pesanan, jumlah pembelian, dan total belanjanya.",
@@ -293,20 +293,20 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
         ],
         "resultLabel": "Riwayat pesanan",
         "result": "Mudah ditelusuri",
-        "note": "Hubungkan pelanggan ke transaksi POS untuk mencatat pembeliannya."
+        "note": "Pilih nama pelanggan saat mencatat penjualan di kasir agar pembeliannya tersimpan."
     }
 },
   {
     "id": "ai",
-    "title": "Asisten AI untuk Data Toko",
-    "shortTitle": "AI Chat",
+    "title": "Tanya data usaha",
+    "shortTitle": "Tanya data",
     "tagline": "Mulai dari pertanyaan, pahami data usaha.",
-    "description": "Tanyakan stok, produk, produksi, atau penjualan lewat chat. Asisten AI membantu membaca data toko yang sedang aktif.",
+    "description": "Tanya lewat percakapan, misalnya bahan apa yang hampir habis. Asisten AI membantu membaca catatan toko yang sedang Anda buka.",
     "icon": MessageSquareText,
     "badgeText": "Asisten AI",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
-        "title": "Tanyakan data usaha lewat chat",
+        "title": "Tanya stok tanpa membuka banyak catatan",
         "path": "store/ai/conversations",
         "subtitle": "Contoh pertanyaan: bahan apa yang stoknya menipis?",
         "columns": [
@@ -329,7 +329,7 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
         ],
         "resultLabel": "Dari pertanyaan ke ringkasan",
         "result": "Lebih mudah memahami data",
-        "note": "Ilustrasi hasil percakapan; jawaban mengikuti data toko dan batas penggunaan AI."
+        "note": "Ini contoh percakapan. Jawaban mengikuti data toko dan batas pemakaian asisten AI."
     }
 },
 ]
@@ -337,55 +337,55 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
 const FEATURES: FeatureItem[] = [
   {
     id: "hpp",
-    title: "Kalkulasi Resep & HPP",
-    shortTitle: "HPP",
+    title: "Biaya resep & harga jual",
+    shortTitle: "Biaya resep",
     tagline: "Hitung biaya sesuai takaran resep",
     description:
-      "Lihat biaya bahan sesuai takaran resep, lalu pertimbangkan kemasan dan biaya produksi saat menentukan harga jual.",
+      "Masukkan takaran bahan, kemasan, dan biaya membuat menu. Lihat biaya per porsi sebagai dasar menentukan harga jual.",
     icon: Calculator,
     badgeText: "Biaya per porsi",
     badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
   },
   {
     id: "inventory",
-    title: "Kontrol Stok FIFO & FEFO",
+    title: "Stok & urutan pemakaian",
     shortTitle: "Stok",
     tagline: "Prioritaskan bahan yang perlu dipakai lebih dulu",
     description:
-      "Pengurangan bahan otomatis berdasarkan tanggal masuk pembelian (FIFO) atau tanggal kedaluwarsa terdekat (FEFO). Histori harga beli per faktur tersimpan rapi tanpa rumus manual.",
+      "Lihat sisa bahan dan urutan yang perlu dipakai lebih dulu: yang datang duluan atau yang lebih dekat kedaluwarsa. Harga tiap pembelian juga tersimpan.",
     icon: Boxes,
     badgeText: "Stok otomatis",
     badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
   },
   {
     id: "production",
-    title: "Batch Produksi & Waste",
+    title: "Catat hasil produksi",
     shortTitle: "Produksi",
-    tagline: "Kelola Jadwal Masak & Rendemen",
+    tagline: "Catat hasil masakan dan bahan yang terbuang",
     description:
-      "Jadwalkan batch masakan dapur, pantau rendemen (yield) porsi, dan catat sisa bahan terbuang (waste). Stok mentah di gudang otomatis terpotong saat batch selesai diproduksi.",
+      "Catat jadwal memasak, jumlah porsi yang jadi, dan bahan yang terbuang. Stok bahan berkurang saat produksi ditandai selesai.",
     icon: ChefHat,
-    badgeText: "Yield & Rendemen",
+    badgeText: "Hasil masakan",
     badgeColor: "bg-violet-50 text-violet-700 border-violet-200",
   },
   {
     id: "pos",
-    title: "POS Kasir & Analisis Laba",
+    title: "Kasir & laba penjualan",
     shortTitle: "Kasir",
-    tagline: "Ketahui Profit Riil Tiap Struk",
+    tagline: "Lihat laba kotor dari setiap penjualan",
     description:
-      "Aplikasi kasir cepat yang terhubung langsung ke inventaris bahan. Setiap transaksi otomatis merekam laba kotor riil dan mengurangi stok toko secara instan.",
+      "Catat pesanan dan pembayaran lewat kasir di aplikasi. Stok produk berkurang dan laba kotor dihitung dari penjualan yang tercatat.",
     icon: ShoppingCart,
-    badgeText: "Sinkronisasi POS & Laba",
+    badgeText: "Penjualan tercatat",
     badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
   ...ADDITIONAL_FEATURES,
 ]
 
 const MOBILE_PREVIEWS = [
-  { title: "Kopi Susu Gula Aren", rows: [["Biaya per porsi", "Rp 6.100"], ["Harga jual", "Rp 18.000"], ["Estimasi laba kotor", "Rp 11.900"]] },
-  { title: "Prioritas pemakaian susu", rows: [["Batch pertama", "Kedaluwarsa 3 hari lagi"], ["Batch berikutnya", "Kedaluwarsa 9 hari lagi"], ["Metode pencatatan", "FEFO"]] },
-  { title: "Produksi brownies", rows: [["Target produksi", "30 potong"], ["Biaya bahan", "Tercatat per batch"], ["Pengurangan stok", "Saat produksi selesai"]] },
+  { title: "Kopi Susu Gula Aren", rows: [["Biaya per porsi", "Rp 6.100"], ["Harga jual", "Rp 18.000"], ["Perkiraan laba kotor", "Rp 11.900"]] },
+  { title: "Susu mana yang dipakai dulu?", rows: [["Pembelian pertama", "Kedaluwarsa 3 hari lagi"], ["Pembelian berikutnya", "Kedaluwarsa 9 hari lagi"], ["Urutan pemakaian", "Yang lebih cepat kedaluwarsa"]] },
+  { title: "Produksi brownies", rows: [["Rencana hasil", "30 potong"], ["Biaya bahan", "Dicatat tiap kali produksi"], ["Stok berkurang", "Saat produksi selesai"]] },
   { title: "Contoh transaksi kasir", rows: [["Total penjualan", "Rp 64.000"], ["Total HPP", "Rp 23.120"], ["Laba kotor", "Rp 40.880"]] },
   ...ADDITIONAL_FEATURES.map((feature) => ({ title: feature.preview.title, rows: feature.preview.rows })),
 ]
@@ -393,7 +393,7 @@ const MOBILE_PREVIEWS = [
 const FEATURE_GROUPS = [
   { id: "cost-production", label: "Biaya & Produksi", featureIds: ["hpp", "simulation", "overheads", "production"] },
   { id: "stock-sales", label: "Stok & Penjualan", featureIds: ["inventory", "purchases", "pos", "customers"] },
-  { id: "management", label: "Manajemen Usaha", featureIds: ["dashboard", "stores", "staff", "ai"] },
+  { id: "management", label: "Kelola Usaha", featureIds: ["dashboard", "stores", "staff", "ai"] },
 ]
 
 export function FeatureScrollShowcase() {
@@ -412,10 +412,10 @@ export function FeatureScrollShowcase() {
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-8 lg:mb-10">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Fitur Utama Dari HPP Tracker
+              Bantu urus dapur sampai penjualan.
             </h2>
             <p className="text-slate-600 text-sm sm:text-base mt-2.5">
-              Dirancang khusus untuk pemilik kedai kopi, restoran, bakery, katering, dan cloud kitchen yang ingin mengamankan margin bisnis.
+              Mulai dari biaya resep, lalu hubungkan stok dan penjualan saat usaha Anda membutuhkannya.
             </p>
           </div>
 
@@ -547,7 +547,7 @@ export function FeatureScrollShowcase() {
               {/* Dynamic Stacked Screen Based on Active Index */}
               <div id="feature-preview" role="region" aria-label={FEATURES[activeIndex].title} className="relative">
                 <div className="sm:hidden rounded-2xl border border-slate-200 bg-white p-5">
-                  <p className="text-xs font-medium text-slate-500">Ilustrasi penggunaan</p>
+                  <p className="text-xs font-medium text-slate-500">Contoh penggunaan</p>
                   <h3 className="mt-2 text-lg font-bold text-slate-900">{MOBILE_PREVIEWS[activeIndex].title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-600">{FEATURES[activeIndex].description}</p>
                   <dl className="mt-5 divide-y divide-slate-100">
@@ -602,7 +602,7 @@ function AdditionalFeatureMockup({ feature }: { feature: AdditionalFeature }) {
             ))}
           </dl>
         </div>
-        <p className="mt-4 flex items-center gap-2 text-xs text-slate-400"><CheckCircle2 aria-hidden="true" className="size-3.5 text-primary" />Ilustrasi fitur · Data contoh</p>
+        <p className="mt-4 flex items-center gap-2 text-xs text-slate-400"><CheckCircle2 aria-hidden="true" className="size-3.5 text-primary" />Contoh tampilan dan angka</p>
       </div>
       <div className="relative mt-4 rounded-2xl border border-indigo-100 bg-white p-5 shadow-lg lg:-mt-2 lg:ml-auto lg:mr-[-12px] lg:w-[85%]">
         <p className="text-xs font-semibold text-primary">{feature.preview.resultLabel}</p>
@@ -651,12 +651,12 @@ function HppRecipeMockup() {
               </Badge>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Simulasi formulasi bahan baku & penetapan margin laba saji
+              Contoh takaran, biaya bahan, dan harga jual
             </p>
           </div>
           <div className="hidden sm:block text-right shrink-0">
             <span className="text-[10px] text-slate-400 uppercase font-bold block">
-              Yield Standar
+              Hasil resep
             </span>
             <span className="text-xs font-bold text-slate-700">1 Porsi (250 ml)</span>
           </div>
@@ -665,38 +665,38 @@ function HppRecipeMockup() {
         {/* Realistic Ingredients Table */}
         <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
           <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
-            <span className="col-span-5">Komposisi Bahan</span>
+            <span className="col-span-5">Bahan yang dipakai</span>
             <span className="col-span-3 text-right">Takaran</span>
-            <span className="col-span-4 text-right">Subtotal HPP</span>
+            <span className="col-span-4 text-right">Biaya bahan</span>
           </div>
           <div className="divide-y divide-slate-200/70 text-slate-800">
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">Espresso House Blend</span>
+                <span className="font-semibold text-slate-900">Kopi espresso</span>
                 <span className="text-[10px] text-slate-400">Biji Kopi Arabika 100%</span>
               </div>
               <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
                 18 g
               </span>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
-                Rp 2.520
+                Rp 2.400
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">Fresh Milk UHT Full Cream</span>
-                <span className="text-[10px] text-slate-400">Susu Pasteurisasi</span>
+                <span className="font-semibold text-slate-900">Susu cair</span>
+                <span className="text-[10px] text-slate-400">Susu untuk kopi</span>
               </div>
               <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
                 120 ml
               </span>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
-                Rp 1.440
+                Rp 1.350
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">Sirup Aren Organik Cair</span>
+                <span className="font-semibold text-slate-900">Sirup gula aren</span>
                 <span className="text-[10px] text-slate-400">Gula Aren Asli</span>
               </div>
               <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
@@ -708,26 +708,26 @@ function HppRecipeMockup() {
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center bg-slate-50/80">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-700">Cup 12oz & Sedotan PLA</span>
-                <span className="text-[10px] text-slate-400">Packaging Kemasan</span>
+                <span className="font-semibold text-slate-700">Gelas, penutup & sedotan</span>
+                <span className="text-[10px] text-slate-400">Kemasan minuman</span>
               </div>
               <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
                 1 set
               </span>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
-                Rp 1.150
+                Rp 1.200
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center bg-slate-50/80">
               <div className="col-span-5 flex flex-col">
                 <span className="font-semibold text-slate-700">Listrik, Gas & Upah Dapur</span>
-                <span className="text-[10px] text-slate-400">Beban Overhead</span>
+                <span className="text-[10px] text-slate-400">Biaya membuat minuman</span>
               </div>
               <span className="col-span-3 text-right text-slate-600 font-mono text-[11px]">
                 Per porsi
               </span>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
-                Rp 600
+                Rp 650
               </span>
             </div>
           </div>
@@ -737,47 +737,44 @@ function HppRecipeMockup() {
         <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
           <span className="flex items-center gap-1.5 text-[11px]">
             <CheckCircle2 className="size-3.5 text-emerald-600" />
-            <span>5 item komponen resep tersinkronisasi</span>
+            <span>5 rincian biaya sudah tercatat</span>
           </span>
-          <span className="text-[11px] font-mono text-slate-400">Update real-time</span>
+          <span className="text-[11px] font-mono text-slate-400">Data contoh</span>
         </div>
       </div>
 
-      {/* STACKED FLOATING CARD 1: Financial Outcome & Margin (Elevated Layer) */}
-      <div className="mt-4 lg:mt-0 lg:absolute lg:-bottom-6 lg:-right-6 lg:w-80 rounded-2xl bg-white border border-indigo-200/80 shadow-2xl p-4 text-slate-900 ring-1 ring-slate-900/5 transition-transform hover:-translate-y-1">
+      <div className="mt-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 p-4 text-slate-900">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
           <span className="text-[11px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
             <Calculator className="size-3 text-primary" />
-            <span>Kalkulasi Margin Resep</span>
+            <span>Biaya & laba kotor</span>
           </span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Margin 65.5% (Sehat)
+            Margin kotor 66,1%
           </span>
         </div>
 
         <div className="space-y-1.5 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Total Modal HPP / Porsi</span>
-            <span className="font-mono font-bold text-slate-900">Rp 6.210</span>
+            <span className="text-slate-500">Biaya per porsi (HPP)</span>
+            <span className="font-mono font-bold text-slate-900">Rp 6.100</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Rekomendasi Harga Jual</span>
+            <span className="text-slate-600">Contoh harga jual</span>
             <span className="font-mono font-bold text-indigo-600 text-sm">Rp 18.000</span>
           </div>
           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-            <span className="font-semibold text-slate-700">Laba Bersih per Cup</span>
-            <span className="font-mono font-extrabold text-emerald-600 text-sm">
-              +Rp 11.790
+            <span className="font-semibold text-slate-700">Perkiraan laba kotor per gelas</span>
+            <span className="font-mono font-extrabold text-emerald-700 text-sm">
+              Rp 11.900
             </span>
           </div>
         </div>
       </div>
 
-      {/* STACKED FLOATING CARD 2: Toast Alert (System Intelligence) */}
-      <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
-        <div className="size-2 rounded-full bg-indigo-400 motion-safe:animate-pulse" />
-        <span className="font-medium">
-          Presisi Desimal Finansial: HPP otomatis terhitung ke gram & ml
+      <div className="mt-3 text-xs leading-relaxed text-slate-600">
+        <span>
+          Data contoh. Laba kotor belum dikurangi biaya usaha lain di luar HPP.
         </span>
       </div>
     </div>
@@ -815,7 +812,8 @@ function FifoInventoryMockup() {
             <input
               type="text"
               readOnly
-              value="Susu Segar Pasteurisasi"
+              aria-label="Contoh pencarian bahan"
+              value="Susu segar"
               className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 font-medium"
             />
           </div>
@@ -824,7 +822,7 @@ function FifoInventoryMockup() {
               Semua (24)
             </span>
             <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600">
-              Healthy (19)
+              Cukup (19)
             </span>
             <span className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">
               Menipis (5)
@@ -835,22 +833,22 @@ function FifoInventoryMockup() {
         {/* Real Inventory Stock Table */}
         <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
           <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
-            <span className="col-span-5">Bahan Mentah</span>
-            <span className="col-span-3 text-center">Metode Alur</span>
+            <span className="col-span-5">Bahan baku</span>
+            <span className="col-span-3 text-center">Pakai lebih dulu</span>
             <span className="col-span-4 text-right">Sisa Stok</span>
           </div>
           <div className="divide-y divide-slate-200/70 text-slate-800">
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center bg-blue-50/40">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">Susu Sapi Pasteurisasi</span>
+                <span className="font-semibold text-slate-900">Susu segar</span>
                 <span className="text-[10px] text-amber-600 font-medium flex items-center gap-1">
                   <Clock className="size-3" />
-                  <span>Batch #08 exp 3 hari lagi</span>
+                  <span>Belanja #08 · Kedaluwarsa 3 hari lagi</span>
                 </span>
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] font-bold">
-                  FEFO
+                  Cepat kedaluwarsa
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
@@ -859,12 +857,12 @@ function FifoInventoryMockup() {
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">Biji Kopi House Blend</span>
-                <span className="text-[10px] text-slate-400">Batch #PO-14 • Masuk 10 Okt</span>
+                <span className="font-semibold text-slate-900">Biji kopi</span>
+                <span className="text-[10px] text-slate-400">Belanja #14 · Masuk 10 Okt</span>
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] font-bold">
-                  FIFO
+                  Datang duluan
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
@@ -873,12 +871,12 @@ function FifoInventoryMockup() {
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">Sirup Aren Organik</span>
-                <span className="text-[10px] text-slate-400">Batch #PO-21 • Exp 28 Nov</span>
+                <span className="font-semibold text-slate-900">Sirup gula aren</span>
+                <span className="text-[10px] text-slate-400">Belanja #21 · Kedaluwarsa 28 Nov</span>
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] font-bold">
-                  FEFO
+                  Cepat kedaluwarsa
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-amber-700 text-[11px]">
@@ -887,12 +885,12 @@ function FifoInventoryMockup() {
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">Paper Cup Hot 12oz</span>
-                <span className="text-[10px] text-slate-400">Batch #PO-09</span>
+                <span className="font-semibold text-slate-900">Gelas kertas</span>
+                <span className="text-[10px] text-slate-400">Belanja #09</span>
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] font-bold">
-                  FIFO
+                  Datang duluan
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
@@ -906,9 +904,9 @@ function FifoInventoryMockup() {
         <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
           <span className="flex items-center gap-1.5 text-[11px]">
             <CheckCircle2 className="size-3.5 text-blue-600" />
-            <span>Deteksi FIFO & FEFO otomatis per faktur masuk</span>
+            <span>Urutan pemakaian mengikuti catatan belanja</span>
           </span>
-          <span className="text-[11px] font-mono text-slate-400">24 SKU aktif</span>
+          <span className="text-[11px] font-mono text-slate-400">24 jenis bahan</span>
         </div>
       </div>
 
@@ -917,10 +915,10 @@ function FifoInventoryMockup() {
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2">
           <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 flex items-center gap-1">
             <Boxes className="size-3 text-blue-600" />
-            <span>Alur Potong FEFO Otomatis</span>
+            <span>Urutan pemakaian susu</span>
           </span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-            Batch Engine
+            Contoh stok
           </span>
         </div>
 
@@ -930,7 +928,7 @@ function FifoInventoryMockup() {
               <span className="font-mono font-bold text-slate-900 block text-[11px]">
                 #INV-2026-08 (4.5 L)
               </span>
-              <span className="text-[10px] text-amber-700 font-medium">Exp: 3 hari lagi</span>
+              <span className="text-[10px] text-amber-700 font-medium">Kedaluwarsa 3 hari lagi</span>
             </div>
             <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-600 text-white">
               Prioritas #1
@@ -942,7 +940,7 @@ function FifoInventoryMockup() {
               <span className="font-mono font-bold text-slate-800 block text-[11px]">
                 #INV-2026-14 (12.0 L)
               </span>
-              <span className="text-[10px] text-slate-400">Exp: 9 hari lagi</span>
+              <span className="text-[10px] text-slate-400">Kedaluwarsa 9 hari lagi</span>
             </div>
             <span className="text-[10px] font-medium text-slate-500">Antrean #2</span>
           </div>
@@ -953,7 +951,7 @@ function FifoInventoryMockup() {
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
         <div className="size-2 rounded-full bg-blue-400 motion-safe:animate-pulse" />
         <span className="font-medium">
-          Metode FEFO Aktif: Bahan paling mendekati basi dipotong duluan
+          Pakai bahan yang lebih dekat kedaluwarsa lebih dulu
         </span>
       </div>
     </div>
@@ -980,7 +978,7 @@ function ProductionBatchMockup() {
             </div>
           </div>
           <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-100 shrink-0">
-            Kitchen Sentral
+            Dapur utama
           </span>
         </div>
 
@@ -989,19 +987,19 @@ function ProductionBatchMockup() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
-                Brownies Fudge Dark Choco
+                Brownies cokelat
               </h4>
               <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-[10px] shrink-0">
                 Dalam Produksi
               </Badge>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Batch #PRD-2026-042 • Jadwal masak dapur cabang
+              Produksi #042 · Contoh jadwal memasak
             </p>
           </div>
           <div className="hidden sm:block text-right shrink-0">
             <span className="text-[10px] text-slate-400 uppercase font-bold block">
-              Target Batch
+              Rencana hasil
             </span>
             <span className="text-xs font-bold text-violet-700">30 Potong</span>
           </div>
@@ -1010,27 +1008,27 @@ function ProductionBatchMockup() {
         {/* Auto Deduct Ingredients Grid */}
         <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
           <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
-            <span className="col-span-6">Bahan Mentah Gudang</span>
+            <span className="col-span-6">Bahan yang dipakai</span>
             <span className="col-span-3 text-right">Jml Terpakai</span>
-            <span className="col-span-3 text-right">Status Gudang</span>
+            <span className="col-span-3 text-right">Catatan stok</span>
           </div>
           <div className="divide-y divide-slate-200/70 text-slate-800">
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <span className="col-span-6 font-semibold text-slate-900">
-                Cokelat Couverture 70%
+                Cokelat batang
               </span>
               <span className="col-span-3 text-right font-mono text-slate-600">750 gr</span>
               <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
-                Auto-Deduct OK
+                Tercatat
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <span className="col-span-6 font-semibold text-slate-900">
-                Unsalted Butter Anchor
+                Mentega tawar
               </span>
               <span className="col-span-3 text-right font-mono text-slate-600">450 gr</span>
               <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
-                Auto-Deduct OK
+                Tercatat
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
@@ -1039,14 +1037,14 @@ function ProductionBatchMockup() {
               </span>
               <span className="col-span-3 text-right font-mono text-slate-600">300 gr</span>
               <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
-                Auto-Deduct OK
+                Tercatat
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
-              <span className="col-span-6 font-semibold text-slate-900">Telur Ayam Fresh</span>
+              <span className="col-span-6 font-semibold text-slate-900">Telur ayam</span>
               <span className="col-span-3 text-right font-mono text-slate-600">6 butir</span>
               <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
-                Auto-Deduct OK
+                Tercatat
               </span>
             </div>
           </div>
@@ -1056,9 +1054,9 @@ function ProductionBatchMockup() {
         <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
           <span className="flex items-center gap-1.5 text-[11px]">
             <CheckCircle2 className="size-3.5 text-violet-600" />
-            <span>Stok bahan mentah otomatis terpangkas dari gudang</span>
+            <span>Pemakaian bahan terhubung ke catatan stok</span>
           </span>
-          <span className="text-[11px] font-mono text-slate-400">Yield aktual: 96.5%</span>
+          <span className="text-[11px] font-mono text-slate-400">Hasil jadi: 96,5%</span>
         </div>
       </div>
 
@@ -1067,18 +1065,18 @@ function ProductionBatchMockup() {
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
           <span className="text-[11px] font-bold uppercase tracking-wider text-violet-700 flex items-center gap-1">
             <ChefHat className="size-3 text-violet-600" />
-            <span>Rendemen & Waste Terbuang</span>
+            <span>Hasil jadi & bahan terbuang</span>
           </span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
-            Yield 96.5%
+            Hasil 96,5%
           </span>
         </div>
 
         <div className="space-y-2 text-xs">
           <div>
             <div className="flex justify-between text-[11px] mb-1">
-              <span className="text-slate-600 font-medium">Rendemen (Yield Jadi)</span>
-              <span className="font-bold text-emerald-600">96.5% (Efisien)</span>
+              <span className="text-slate-600 font-medium">Bagian yang jadi produk</span>
+              <span className="font-bold text-emerald-600">96,5%</span>
             </div>
             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-emerald-500 rounded-full w-[96.5%]" />
@@ -1087,8 +1085,8 @@ function ProductionBatchMockup() {
 
           <div>
             <div className="flex justify-between text-[11px] mb-1">
-              <span className="text-slate-600 font-medium">Sisa Waste Terbuang</span>
-              <span className="font-bold text-amber-600">3.5% (Terkontrol)</span>
+              <span className="text-slate-600 font-medium">Bagian yang terbuang</span>
+              <span className="font-bold text-amber-600">3,5%</span>
             </div>
             <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-amber-500 rounded-full w-[3.5%]" />
@@ -1096,7 +1094,7 @@ function ProductionBatchMockup() {
           </div>
 
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between font-medium">
-            <span className="text-slate-500">Modal Bersih / Potong</span>
+            <span className="text-slate-500">Biaya per potong</span>
             <span className="font-mono font-bold text-slate-900">Rp 6.450</span>
           </div>
         </div>
@@ -1106,7 +1104,7 @@ function ProductionBatchMockup() {
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
         <div className="size-2 rounded-full bg-violet-400 motion-safe:animate-pulse" />
         <span className="font-medium">
-          Auto-Deduct: Stok gudang terpangkas presisi saat batch disimpan
+          Stok bahan berkurang saat produksi ditandai selesai
         </span>
       </div>
     </div>
@@ -1133,7 +1131,7 @@ function PosCashierMockup() {
             </div>
           </div>
           <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
-            Kasir 01 (Online)
+            Kasir 01
           </span>
         </div>
 
@@ -1142,14 +1140,14 @@ function PosCashierMockup() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h4 className="text-base sm:text-lg font-extrabold text-slate-900">
-                Struk Kasir: #TRX-2026-881
+                Contoh struk: #TRX-2026-881
               </h4>
               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px] shrink-0">
                 Lunas (QRIS)
               </Badge>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Meja 04 (Dine-in) • Kasir: Rian Saputra • 14:28 WIB
+              Meja 04 · Makan di tempat · Kasir: Rian · 14:28 WIB
             </p>
           </div>
           <div className="hidden sm:block text-right shrink-0">
@@ -1164,14 +1162,14 @@ function PosCashierMockup() {
         <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
           <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
             <span className="col-span-5">Menu Dipesan</span>
-            <span className="col-span-3 text-right">Modal HPP</span>
-            <span className="col-span-4 text-right">Harga Jual POS</span>
+            <span className="col-span-3 text-right">Biaya produk</span>
+            <span className="col-span-4 text-right">Harga jual</span>
           </div>
           <div className="divide-y divide-slate-200/70 text-slate-800">
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
                 <span className="font-semibold text-slate-900">2x Kopi Susu Gula Aren</span>
-                <span className="text-[10px] text-slate-400">Less ice, normal sugar</span>
+                <span className="text-[10px] text-slate-400">Sedikit es, gula biasa</span>
               </div>
               <span className="col-span-3 text-right text-slate-500 font-mono text-[11px]">
                 Rp 12.420
@@ -1182,8 +1180,8 @@ function PosCashierMockup() {
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
               <div className="col-span-5 flex flex-col">
-                <span className="font-semibold text-slate-900">1x Butter Croissant Almond</span>
-                <span className="text-[10px] text-slate-400">Warm served</span>
+                <span className="font-semibold text-slate-900">1x Croissant almond</span>
+                <span className="text-[10px] text-slate-400">Disajikan hangat</span>
               </div>
               <span className="col-span-3 text-right text-slate-500 font-mono text-[11px]">
                 Rp 10.700
@@ -1199,11 +1197,11 @@ function PosCashierMockup() {
         <div className="mt-3 p-3 rounded-xl bg-slate-100/80 border border-slate-200 flex items-center justify-between text-xs">
           <div className="flex items-center gap-4">
             <div>
-              <span className="text-[10px] text-slate-500 block">Total Item</span>
+              <span className="text-[10px] text-slate-500 block">Jumlah pesanan</span>
               <span className="font-bold text-slate-800">3 Porsi</span>
             </div>
             <div>
-              <span className="text-[10px] text-slate-500 block">Total Omset</span>
+              <span className="text-[10px] text-slate-500 block">Total penjualan</span>
               <span className="font-mono font-extrabold text-slate-900">Rp 64.000</span>
             </div>
           </div>
@@ -1221,24 +1219,24 @@ function PosCashierMockup() {
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
           <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
             <TrendingUp className="size-3 text-emerald-600" />
-            <span>Laba Kotor Struk Riil</span>
+            <span>Laba kotor penjualan</span>
           </span>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Margin: 63.8%
+            Margin: 63,9%
           </span>
         </div>
 
         <div className="space-y-1.5 text-xs">
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Total Omset Transaksi</span>
+            <span className="text-slate-500">Total penjualan</span>
             <span className="font-mono font-bold text-slate-900">Rp 64.000</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Total Modal HPP</span>
+            <span className="text-slate-500">Biaya produk terjual</span>
             <span className="font-mono font-bold text-slate-500">Rp 23.120</span>
           </div>
           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-            <span className="font-semibold text-slate-800">Laba Kotor Struk</span>
+            <span className="font-semibold text-slate-800">Laba kotor</span>
             <span className="font-mono font-extrabold text-emerald-600 text-base">
               +Rp 40.880
             </span>
@@ -1250,7 +1248,7 @@ function PosCashierMockup() {
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
         <div className="size-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
         <span className="font-medium">
-          Sinkronisasi Instan: Struk kasir otomatis rekam laba & potong inventaris
+          Penjualan tercatat, stok dan laba kotor ikut dihitung
         </span>
       </div>
     </div>

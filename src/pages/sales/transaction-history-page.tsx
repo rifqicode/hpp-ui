@@ -1,3 +1,4 @@
+import { SaleCorrectionPanel } from '@/features/sales/components/sale-correction-panel';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react';
 
 import {
-  useSalesListQuery,
+  useSalesTransactionsQuery,
   useSalesSummaryQuery,
 } from '../../features/sales/hooks/use-sales-query';
 import type { Sale, SaleQuery } from '../../features/sales/types';
@@ -53,6 +54,9 @@ export default function TransactionHistoryPage() {
   const [filterMethod, setFilterMethod] = React.useState<string>('ALL');
   const [filterStatus, setFilterStatus] = React.useState<string>('ALL');
 
+  const [page, setPage] = React.useState(1);
+  const perPage = 10;
+
   // Date Range Controls
   const [datePreset, setDatePreset] = React.useState<'TODAY' | '7D' | 'THIS_MONTH' | 'ALL_TIME' | 'CUSTOM'>('THIS_MONTH');
   const [startDate, setStartDate] = React.useState<string>(getStartOfMonthString());
@@ -64,6 +68,7 @@ export default function TransactionHistoryPage() {
 
   const query: SaleQuery = React.useMemo(() => {
     const q: SaleQuery = {
+      page, per_page: perPage, status: filterStatus !== 'ALL' ? filterStatus : undefined,
       search: searchQuery.trim() || undefined,
       payment_method: filterMethod !== 'ALL' ? filterMethod : undefined,
     };
@@ -72,13 +77,14 @@ export default function TransactionHistoryPage() {
       if (endDate) q.end_date = endDate;
     }
     return q;
-  }, [searchQuery, filterMethod, datePreset, startDate, endDate]);
+  }, [searchQuery, filterMethod, filterStatus, page, datePreset, startDate, endDate]);
 
   const {
-    data: sales = [],
+    data: salesPage,
     isLoading: isSalesLoading,
     refetch: refetchSales,
-  } = useSalesListQuery(query);
+  } = useSalesTransactionsQuery(query);
+  const sales = salesPage?.data || [];
 
   const {
     data: summary = null,
@@ -110,19 +116,9 @@ export default function TransactionHistoryPage() {
     }
   };
 
-  // Pagination state
-  const [page, setPage] = React.useState(1);
-  const perPage = 10;
-
-  const filteredSales = React.useMemo(() => {
-    return sales.filter((s) => filterStatus === 'ALL' || s.status === filterStatus);
-  }, [sales, filterStatus]);
-
-  const totalPages = Math.ceil(filteredSales.length / perPage) || 1;
-  const paginatedSales = React.useMemo(() => {
-    const start = (page - 1) * perPage;
-    return filteredSales.slice(start, start + perPage);
-  }, [filteredSales, page, perPage]);
+  const filteredSales = sales;
+  const totalPages = salesPage?.total_pages || 1;
+  const paginatedSales = sales;
 
   // Reset page when filters change
   React.useEffect(() => {
@@ -148,10 +144,10 @@ export default function TransactionHistoryPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Dashboard Transaksi Penjualan
+              Transaction List
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Ringkasan KPI performa omzet, analisis HPP riil, dan audit laba kotor per penjualan
+              Detail transaksi penjualan
             </p>
           </div>
         </div>
@@ -358,7 +354,7 @@ export default function TransactionHistoryPage() {
           <div className="flex flex-wrap items-center gap-2 max-w-full">
             {/* Status Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 sm:pb-0 no-scrollbar bg-muted/60 p-1 rounded-lg border border-border/50 text-xs">
-              {['ALL', 'COMPLETED', 'IN_PROGRESS'].map((status) => (
+              {['ALL', 'COMPLETED', 'IN_PROGRESS', 'CANCELLED', 'RETURNED'].map((status) => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
@@ -372,7 +368,7 @@ export default function TransactionHistoryPage() {
                     ? 'Semua Status'
                     : status === 'COMPLETED'
                     ? 'Selesai'
-                    : 'Dalam Proses'}
+                    : status === 'CANCELLED' ? 'Dibatalkan' : status === 'RETURNED' ? 'Diretur' : 'Dalam Proses'}
                 </button>
               ))}
             </div>
@@ -488,7 +484,7 @@ export default function TransactionHistoryPage() {
                               variant="outline"
                               className="text-[10px] font-bold bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400"
                             >
-                              Selesai
+                              {sale.status === 'CANCELLED' ? 'Dibatalkan' : sale.status === 'RETURNED' ? 'Diretur seluruhnya' : sale.refundedAmount ? 'Retur sebagian' : 'Selesai'}
                             </Badge>
                           )}
                         </td>
@@ -562,7 +558,7 @@ export default function TransactionHistoryPage() {
 
         {/* Pagination */}
         <TablePagination
-          total={filteredSales.length}
+          total={salesPage?.total || 0}
           displayedCount={paginatedSales.length}
           page={page}
           totalPages={totalPages}
@@ -596,6 +592,7 @@ export default function TransactionHistoryPage() {
                 </div>
               </DialogHeader>
 
+              <SaleCorrectionPanel key={selectedSale.id} sale={selectedSale} onCorrected={setSelectedSale} />
               {/* Printable Thermal Receipt Style */}
               <div
                 id="receipt-print-area"
@@ -646,7 +643,7 @@ export default function TransactionHistoryPage() {
                       </span>
                     ) : (
                       <span className="font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                        Selesai (Completed)
+                        {selectedSale.status === 'CANCELLED' ? 'Dibatalkan' : selectedSale.status === 'RETURNED' ? 'Diretur seluruhnya' : selectedSale.refundedAmount ? 'Retur sebagian' : 'Selesai'}
                       </span>
                     )}
                   </div>
@@ -666,6 +663,7 @@ export default function TransactionHistoryPage() {
                         <p className="font-medium truncate">{it.productName}</p>
                         <p className="text-[10px] text-muted-foreground">
                           {it.quantity} x <CurrencyText value={it.priceAtSale} />
+                          {!!it.returnedQuantity && <span className="block">Diretur: {it.returnedQuantity} {it.unit}</span>}
                         </p>
                       </div>
                       <span className="font-semibold shrink-0">
@@ -689,8 +687,12 @@ export default function TransactionHistoryPage() {
                       <span>+<CurrencyText value={selectedSale.taxAmount} /></span>
                     </div>
                   )}
+                  {!!selectedSale.refundedAmount && <>
+                    <div className="flex justify-between"><span>Total Transaksi Awal:</span><CurrencyText value={selectedSale.originalTotalAmount || 0} /></div>
+                    <div className="flex justify-between"><span>Refund Tercatat:</span><span>-<CurrencyText value={selectedSale.refundedAmount} /></span></div>
+                  </>}
                   <div className="flex justify-between font-bold text-xs pt-1">
-                    <span>Total Bayar:</span>
+                    <span>{selectedSale.refundedAmount ? 'Total Setelah Koreksi:' : 'Total Bayar:'}</span>
                     <span className="text-foreground">
                       <CurrencyText value={selectedSale.totalAmount} />
                     </span>

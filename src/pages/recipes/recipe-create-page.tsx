@@ -1,3 +1,4 @@
+import { getCompatibleUnits, getQuantityInBaseUnit, getCostPerRecipeUnit } from '@/lib/units'
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
@@ -49,40 +50,6 @@ interface IngredientRow {
   stockId: string
   quantity: number | ""
   recipeUnit?: string
-}
-
-function getCompatibleUnits(baseUnit?: string): string[] {
-  if (!baseUnit) return ["satuan"]
-  const bu = baseUnit.toLowerCase()
-  if (bu === "kg" || bu === "g") return ["g", "kg"]
-  if (bu === "l" || bu === "ml") return ["ml", "L"]
-  return [baseUnit]
-}
-
-function getQuantityInBaseUnit(qty: number, recipeUnit?: string, baseUnit?: string): number {
-  if (!baseUnit || !recipeUnit || recipeUnit.toLowerCase() === baseUnit.toLowerCase()) {
-    return qty
-  }
-  const ru = recipeUnit.toLowerCase()
-  const bu = baseUnit.toLowerCase()
-  if (bu === "kg" && ru === "g") return qty / 1000
-  if (bu === "g" && ru === "kg") return qty * 1000
-  if (bu === "l" && ru === "ml") return qty / 1000
-  if (bu === "ml" && ru === "l") return qty * 1000
-  return qty
-}
-
-function getCostPerRecipeUnit(baseCost: number, recipeUnit?: string, baseUnit?: string): number {
-  if (!baseUnit || !recipeUnit || recipeUnit.toLowerCase() === baseUnit.toLowerCase()) {
-    return baseCost
-  }
-  const ru = recipeUnit.toLowerCase()
-  const bu = baseUnit.toLowerCase()
-  if (bu === "kg" && ru === "g") return baseCost / 1000
-  if (bu === "g" && ru === "kg") return baseCost * 1000
-  if (bu === "l" && ru === "ml") return baseCost / 1000
-  if (bu === "ml" && ru === "l") return baseCost * 1000
-  return baseCost
 }
 
 const COMMON_UNITS = ["pcs", "box", "loaf", "roll", "cup", "porsi", "pack"]
@@ -319,7 +286,7 @@ export default function RecipeCreatePage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                Buat Produk & Resep Baru
+                Buat Produk Baru
               </h1>
               <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold shrink-0">
                 Margin-Driven Pricing
@@ -355,7 +322,7 @@ export default function RecipeCreatePage() {
             ) : (
               <>
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Simpan Produk & Resep</span>
+                <span>Simpan Produk</span>
               </>
             )}
           </Button>
@@ -1098,7 +1065,7 @@ export default function RecipeCreatePage() {
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4" />
-                      <span>Simpan Produk & Resep</span>
+                      <span>Simpan Produk</span>
                     </>
                   )}
                 </Button>

@@ -1,3 +1,6 @@
+import { POCategoryBadge } from '@/features/purchase-orders/components/po-category-badge'
+import { POAttachmentUpload } from '@/features/purchase-orders/components/po-attachment-upload'
+import type { POAttachment } from '@/features/purchase-orders/lib/attachment'
 import * as React from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import {
@@ -17,6 +20,7 @@ import {
   User,
   History,
   ChevronDown,
+  ExternalLink,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -87,6 +91,9 @@ export default function PurchaseOrderDetailPage() {
   // Complete modal
   const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
   const [completeSupplierId, setCompleteSupplierId] = React.useState<string>("")
+  const [completeError, setCompleteError] = React.useState("")
+  const [completionAttachments, setCompletionAttachments] = React.useState<POAttachment[]>([])
+  const [uploadingCompletionAttachments, setUploadingCompletionAttachments] = React.useState(false)
   const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({})
 
   const canProcess = can("purchases:process")
@@ -172,12 +179,21 @@ export default function PurchaseOrderDetailPage() {
 
   async function handleConfirmComplete(e: React.FormEvent) {
     e.preventDefault()
-    if (!order) return
+    if (!order || submitting || uploadingCompletionAttachments) return
     if (!completeSupplierId) {
-      alert("Pilih vendor / supplier final terlebih dahulu")
+      setCompleteError("Pilih vendor / supplier final terlebih dahulu")
       return
     }
 
+    const invalidItem = order.items.find((item) => {
+      const total = Number(itemTotalPrices[item.id])
+      return !Number.isFinite(total) || total <= 0 || item.quantity <= 0 || Number((total / item.quantity).toFixed(4)) <= 0
+    })
+    if (invalidItem) {
+      setCompleteError(`Harga faktur untuk "${invalidItem.stockName}" wajib lebih dari 0 dan menghasilkan harga satuan positif.`)
+      return
+    }
+    setCompleteError("")
     setSubmitting(true)
     try {
       const prices = order.items.map((it) => {
@@ -192,12 +208,13 @@ export default function PurchaseOrderDetailPage() {
       const updated = await purchaseOrderService.completePurchaseOrder(order.id, {
         supplier_id: completeSupplierId,
         prices,
+        completion_attachments: completionAttachments,
       })
       setOrder(updated)
       setIsCompleteOpen(false)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menyelesaikan PO"
-      alert(msg)
+      setCompleteError(msg)
     } finally {
       setSubmitting(false)
     }
@@ -348,66 +365,86 @@ export default function PurchaseOrderDetailPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-primary/10 text-primary">
-            <Package className="h-6 w-6" />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="shrink-0 rounded-xl bg-primary/10 p-3 text-primary">
+            <Package className="size-6" />
           </div>
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight font-mono text-foreground">
-                {order.poNumber}
-              </h1>
-              {getStatusBadge(order.status)}
+          <div className="min-w-0">
+            <h1 className="break-words text-xl font-bold tracking-tight font-mono text-foreground sm:text-2xl">
+              {order.poNumber}
+            </h1>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground">
+              <POCategoryBadge category={order.category} />
+              <span>{order.category === "DIRECT_ORDER" ? "Dibeli pada" : "Diajukan pada"} {formatDate(order.orderDate)}</span>
+              {order.createdByName && <span>Oleh: <strong>{order.createdByName}</strong></span>}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
-              <span>Diajukan pada {formatDate(order.orderDate)}</span>
-              {order.createdByName && (
-                <span>&bull; Oleh: <strong>{order.createdByName}</strong></span>
-              )}
-            </p>
           </div>
         </div>
+        <div className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 px-3 py-2.5 lg:flex-col lg:items-end lg:gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">
+            {order.status === "PURCHASE_REQUEST" || order.status === "REJECTED" ? "Status pengajuan" : "Status pembelian"}
+          </span>
+          {getStatusBadge(order.status)}
+        </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {order.status === "PURCHASE_REQUEST" && (
-            <>
-              {canEdit && (
-                <Button asChild variant="outline" className="rounded-xl border-blue-500/30 text-blue-600">
-                  <Link to={`/inventory/purchase-orders/${order.id}/edit`}>
-                    <Edit3 className="mr-2 h-4 w-4" />
-                    Edit Request
-                  </Link>
+      {order.status === "PURCHASE_REQUEST" && (canEdit || canProcess) && (
+        <section
+          aria-labelledby="purchase-request-actions"
+          className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between"
+        >
+          <div className="min-w-0">
+            <h2 id="purchase-request-actions" className="text-sm font-semibold text-foreground">
+              {canProcess ? "Tinjau pengajuan" : "Perbarui pengajuan"}
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {canProcess
+                ? "Periksa rincian pengajuan sebelum menyetujui dan menerbitkan PO."
+                : "Request masih dapat diedit sebelum diproses."}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:shrink-0">
+            {canEdit && (
+              <Button asChild variant="outline" className={`h-11 rounded-lg px-4 ${!canProcess ? "col-span-2" : ""}`}>
+                <Link to={`/inventory/purchase-orders/${order.id}/edit`}>
+                  <Edit3 className="size-4" />
+                  Edit Request
+                </Link>
+              </Button>
+            )}
+            {canProcess && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={`h-11 rounded-lg border-destructive/30 px-4 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30 ${!canEdit ? "col-span-2" : ""}`}
+                  disabled={submitting}
+                  onClick={() => setIsRejectOpen(true)}
+                >
+                  <XCircle className="size-4" />
+                  Tolak Request
                 </Button>
-              )}
-              {canProcess && (
-                <>
-                  <Button
-                    variant="outline"
-                    className="rounded-xl text-destructive hover:text-destructive"
-                    onClick={() => setIsRejectOpen(true)}
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Tolak Request
-                  </Button>
-                  <Button
-                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-                    onClick={() => {
-                      setApproveSupplierId(order.supplierId || "")
-                      setIsApproveOpen(true)
-                    }}
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    Setujui (Jadikan PO)
-                  </Button>
-                </>
-              )}
-            </>
-          )}
+                <Button
+                  type="button"
+                  className="col-span-2 h-11 rounded-lg bg-primary px-4 font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                  disabled={submitting}
+                  onClick={() => {
+                    setApproveSupplierId(order.supplierId || "")
+                    setIsApproveOpen(true)
+                  }}
+                >
+                  <Check className="size-4" />
+                  Setujui & Terbitkan PO
+                </Button>
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
-          {order.status === "PURCHASE_ORDER" && canProcess && (
-            <>
+      {order.status === "PURCHASE_ORDER" && canProcess && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
               <Button
                 variant="outline"
                 className="rounded-xl text-destructive hover:text-destructive"
@@ -420,6 +457,8 @@ export default function PurchaseOrderDetailPage() {
                 className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 onClick={() => {
                   setCompleteSupplierId(order.supplierId || "")
+                  setCompletionAttachments([])
+                  setCompleteError("")
                   const initialTotalPrices: Record<string, number> = {}
                   order.items.forEach((it) => {
                     initialTotalPrices[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0)
@@ -431,10 +470,8 @@ export default function PurchaseOrderDetailPage() {
                 <Check className="mr-2 h-4 w-4" />
                 Set Harga & Selesaikan PO
               </Button>
-            </>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Info Cards */}
       <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
@@ -510,6 +547,28 @@ export default function PurchaseOrderDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {[
+        { title: "Dokumen Lampiran", documents: order.attachments },
+        { title: "Lampiran Penyelesaian", documents: order.completionAttachments },
+      ].filter((group) => group.documents.length > 0).map((group) => (
+        <Card key={group.title} className="rounded-xl border-primary/20 bg-primary/5 shadow-sm">
+          <CardHeader className="px-4 pb-2 pt-4 sm:px-5"><CardTitle className="text-sm">{group.title}</CardTitle></CardHeader>
+          <CardContent className="space-y-3 p-4 pt-0 sm:px-5 sm:pb-5">
+            {group.documents.map((document) => (
+              <div key={document.url} className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-2">
+                  <FileText className="size-4 shrink-0 text-primary" />
+                  <p className="truncate text-sm text-muted-foreground" title={document.name}>{document.name}</p>
+                </div>
+                <Button asChild variant="outline" size="sm" className="shrink-0">
+                  <a href={document.url} target="_blank" rel="noopener noreferrer" aria-label={`Buka / Unduh ${document.name}`}><ExternalLink className="size-4" />Buka / Unduh dokumen</a>
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ))}
 
       {/* Item Table Card */}
       <Card className="rounded-xl shadow-sm border-border">
@@ -621,7 +680,7 @@ export default function PurchaseOrderDetailPage() {
         <DialogContent className="sm:max-w-[500px] rounded-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-emerald-600" />
+              <Check className="h-5 w-5 text-primary" />
               Setujui Purchase Request
             </DialogTitle>
             <DialogDescription>
@@ -695,7 +754,7 @@ export default function PurchaseOrderDetailPage() {
               </Button>
               <Button
                 type="submit"
-                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="h-11 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={submitting}
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -759,7 +818,7 @@ export default function PurchaseOrderDetailPage() {
       </Dialog>
 
       {/* Modal 3: Set Harga & Selesaikan */}
-      <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
+      <Dialog open={isCompleteOpen} onOpenChange={(open) => { if (!submitting && !uploadingCompletionAttachments) { setIsCompleteOpen(open); setCompleteError("") } }}>
         <DialogContent className="sm:max-w-[660px] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -773,6 +832,7 @@ export default function PurchaseOrderDetailPage() {
           </DialogHeader>
 
           <form onSubmit={handleConfirmComplete} className="space-y-4 py-2">
+            {completeError && <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{completeError}</p>}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">
                 Vendor / Supplier Final <span className="text-destructive">*</span>
@@ -833,8 +893,10 @@ export default function PurchaseOrderDetailPage() {
                         <TableCell className="align-middle py-2.5 px-3">
                           <Input
                             type="number"
-                            min="0"
-                            value={itemTotalPrices[it.id] ?? ""}
+                            min="0.0001"
+                            step="any"
+                            aria-label={`Total faktur ${it.stockName}`}
+                            value={itemTotalPrices[it.id] || ""}
                             onChange={(e) =>
                               setItemTotalPrices({
                                 ...itemTotalPrices,
@@ -863,20 +925,26 @@ export default function PurchaseOrderDetailPage() {
               </span>
             </div>
 
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Lampiran penyelesaian <span className="font-normal text-muted-foreground">(Opsional)</span></h3>
+              <p className="text-xs text-muted-foreground">Tambahkan faktur, nota, atau bukti penerimaan. Lampiran awal tetap tersimpan.</p>
+              <POAttachmentUpload value={completionAttachments} onChange={setCompletionAttachments} onUploadingChange={setUploadingCompletionAttachments} purpose="completion" disabled={submitting} />
+            </div>
+
             <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsCompleteOpen(false)}
                 className="rounded-xl"
-                disabled={submitting}
+                disabled={submitting || uploadingCompletionAttachments}
               >
                 Batal
               </Button>
               <Button
                 type="submit"
                 className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
-                disabled={submitting}
+                disabled={submitting || uploadingCompletionAttachments}
               >
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Konfirmasi & Masukkan ke Stok

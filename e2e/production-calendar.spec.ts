@@ -32,7 +32,7 @@ test('production calendar: full month, navigation, details, status legend and mo
   await page.getByRole('heading', { name: 'Oktober 2026', exact: true }).waitFor();
   if (await page.getByRole('tab', { name: 'Kalender' }).getAttribute('aria-selected') !== 'true') throw new Error('Calendar is not the default');
   if (await page.getByLabel('Dasar tanggal', { exact: true }).count()) throw new Error('Date basis filter should be removed');
-  await page.getByRole('heading', { name: 'Production', exact: true }).first().waitFor();
+  await page.getByRole('heading', { name: 'Produksi', exact: true }).first().waitFor();
   const span = page.locator('[data-calendar-batch][data-span="2"]').first();
   await span.waitFor();
   const rectangle = await span.boundingBox();

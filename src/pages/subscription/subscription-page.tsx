@@ -1,3 +1,4 @@
+import { SUBSCRIPTION_TIER_LABELS } from "@/features/subscription/types/subscription"
 import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import {
@@ -84,7 +85,7 @@ interface QuotaResourceMeta {
 
 const QUOTA_RESOURCES: QuotaResourceMeta[] = [
   { key: "stocks", label: "Bahan Baku", sublabel: "Total bahan & stok", icon: Package },
-  { key: "products", label: "Produk & Resep", sublabel: "Resep menu aktif", icon: Factory },
+  { key: "products", label: "Produk", sublabel: "Resep menu aktif", icon: Factory },
   { key: "batches", label: "Produksi Bulanan", sublabel: "Batch produksi berjalan", icon: History },
   { key: "staff", label: "Staf Toko", sublabel: "Kapasitas anggota tim", icon: Users },
   { key: "stores", label: "Jumlah Cabang", sublabel: "Outlet & toko aktif", icon: Store },
@@ -290,7 +291,7 @@ export default function SubscriptionPage() {
                 </Badge>
               </div>
               <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-300/90 mt-0.5">
-                Paket <strong>{usage.tier}</strong> Anda telah melewati masa aktif. Selesaikan
+                Paket <strong>{SUBSCRIPTION_TIER_LABELS[usage.tier]}</strong> Anda telah melewati masa aktif. Selesaikan
                 perpanjangan sebelum <strong>{formatDateId(usage.grace_period_until)}</strong> agar
                 akses staf dan fitur tidak ditangguhkan.
               </p>
@@ -316,11 +317,11 @@ export default function SubscriptionPage() {
               </span>
               <div className="flex items-center gap-2">
                 <Badge data-tier={usage.tier} className="subscription-tier text-sm px-2.5 py-0.5 font-bold">
-                  {usage.tier}
+                  {SUBSCRIPTION_TIER_LABELS[usage.tier]}
                 </Badge>
                 {usage.effective_tier && usage.effective_tier !== usage.tier && (
                   <Badge variant="outline" className="text-xs text-muted-foreground">
-                    Efektif: {usage.effective_tier}
+                    Efektif: {SUBSCRIPTION_TIER_LABELS[usage.effective_tier]}
                   </Badge>
                 )}
               </div>
@@ -608,7 +609,7 @@ export default function SubscriptionPage() {
                           data-tier={inv.tier}
                           className="subscription-tier text-[11px] font-semibold"
                         >
-                          {inv.tier}
+                          {SUBSCRIPTION_TIER_LABELS[inv.tier]}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs font-mono font-medium">

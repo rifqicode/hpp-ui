@@ -46,10 +46,14 @@ export interface ProductionBatch {
   voidReason?: string;
   notes?: string;
   ingredients: ConsumedIngredient[];
+  hasActualConsumptions?: boolean;
   overheads?: ProductionOverheadDetail[];
   recipeSnapshot?: {
     product_id: string;
     product_name: string;
+    product_category?: string;
+    product_unit?: string;
+    selling_price?: number | string;
     yield_qty: number;
     waste_pct: number;
     items?: Array<{

@@ -6,13 +6,11 @@ import {
   RefreshCw,
   Loader2,
   Package,
-  Search,
-  X,
   CheckCircle2,
   AlertTriangle,
   AlertCircle,
   Eye,
-  ArrowUpDown,
+  MoreVertical,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +38,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { TablePagination } from "@/components/ui/table-pagination"
+import { ListFilters } from "@/components/ui/list-filters"
 import { usePermission } from "@/hooks/use-permission"
 import { useStocks, useStockSummaryQuery } from "@/features/inventory/hooks"
 import { RecordPurchaseDialog } from "@/features/inventory/components/record-purchase-dialog"
@@ -139,6 +138,7 @@ export default function StockListPage() {
     inventoryMethod,
     setInventoryMethod,
     loading,
+    isFetching,
     error,
     isSubmitting,
     loadStocks,
@@ -506,6 +506,64 @@ export default function StockListPage() {
       </div>
 
       {/* Main Content Area */}
+      <ListFilters
+        label="Filter bahan baku"
+        search={{
+          label: "Cari bahan baku",
+          placeholder: "Cari nama bahan baku...",
+          value: search,
+          onChange: (value) => { setSearch(value); setPage(1) },
+        }}
+        filters={[
+          {
+            id: "status", label: "Status stok", value: statusFilter,
+            onChange: (value) => { setStatusFilter(value as StatusFilter); setPage(1) },
+            options: [
+              { value: "all", label: "Semua status" },
+              { value: "healthy", label: "Healthy" },
+              { value: "low", label: "Low" },
+              { value: "out", label: "Habis" },
+            ],
+          },
+          {
+            id: "inventory-method", label: "Metode alur", value: inventoryMethod || "all",
+            onChange: (value) => { setInventoryMethod(value === "FIFO" || value === "FEFO" ? value : undefined); setPage(1) },
+            options: [
+              { value: "all", label: "Semua metode" },
+              { value: "FIFO", label: "FIFO" },
+              { value: "FEFO", label: "FEFO" },
+            ],
+          },
+        ]}
+        summary={loading ? "Memuat bahan baku..." : error ? "Data belum tersedia" : statusFilter !== "all"
+          ? `${filteredRows.length} bahan baku di halaman ini`
+          : `${total} bahan baku${search.trim() || inventoryMethod ? ` dari ${summary?.total_materials ?? total}` : ""}`}
+        hasFilters={Boolean(search.trim()) || inventoryMethod !== undefined || statusFilter !== "all"}
+        onReset={() => { setSearch(""); setInventoryMethod(undefined); setStatusFilter("all"); setPage(1) }}
+        isFetching={isFetching && !loading}
+        fetchingLabel="Memperbarui bahan baku"
+        actions={
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            Urutkan
+            <select
+              aria-label="Urutkan bahan baku"
+              value={`${sortKey}-${sortDir}`}
+              onChange={(event) => {
+                const value = event.target.value
+                setSortKey(value.startsWith("current-") ? "current" : "name")
+                setSortDir(value.endsWith("-desc") ? "desc" : "asc")
+              }}
+              className="h-8 min-w-0 rounded-md border bg-background px-2 text-xs text-foreground"
+            >
+              <option value="name-asc">Nama A–Z</option>
+              <option value="name-desc">Nama Z–A</option>
+              <option value="current-desc">Stok terbanyak</option>
+              <option value="current-asc">Stok paling sedikit</option>
+            </select>
+          </label>
+        }
+      />
+
       {loading ? (
         <div className="flex flex-col items-center justify-center p-16 border rounded-2xl bg-card shadow-2xs">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mb-3" />
@@ -533,189 +591,6 @@ export default function StockListPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Standalone Filter & Search Bar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cari nama bahan baku..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setPage(1)
-                }}
-                className="pl-9 bg-background/50 h-9 text-xs"
-              />
-              {search && (
-                <button
-                  onClick={() => {
-                    setSearch("")
-                    setPage(1)
-                  }}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              {/* Status Filter Pills */}
-              <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter("all")
-                    setPage(1)
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    statusFilter === "all"
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Semua ({summary?.total_materials ?? total})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter("healthy")
-                    setPage(1)
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    statusFilter === "healthy"
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Healthy ({summary?.healthy_stock ?? 0})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter("low")
-                    setPage(1)
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    statusFilter === "low"
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Low ({summary?.low_stock ?? 0})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter("out")
-                    setPage(1)
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    statusFilter === "out"
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Habis ({summary?.out_of_stock ?? 0})
-                </button>
-              </div>
-
-              {/* Inventory Method Filter Pills */}
-              <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInventoryMethod(undefined)
-                    setPage(1)
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    inventoryMethod === undefined
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Metode: Semua
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInventoryMethod("FIFO")
-                    setPage(1)
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    inventoryMethod === "FIFO"
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  FIFO
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInventoryMethod("FEFO")
-                    setPage(1)
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                    inventoryMethod === "FEFO"
-                      ? "bg-background text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  FEFO
-                </button>
-              </div>
-
-              {/* Sort Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs rounded-lg shadow-2xs">
-                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                    Urutan
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 text-xs">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSortKey("name")
-                      setSortDir("asc")
-                    }}
-                    className="cursor-pointer"
-                  >
-                    Nama (A - Z)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSortKey("name")
-                      setSortDir("desc")
-                    }}
-                    className="cursor-pointer"
-                  >
-                    Nama (Z - A)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSortKey("current")
-                      setSortDir("desc")
-                    }}
-                    className="cursor-pointer"
-                  >
-                    Stok Terbanyak
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSortKey("current")
-                      setSortDir("asc")
-                    }}
-                    className="cursor-pointer"
-                  >
-                    Stok Paling Sedikit
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
           {/* Polished Table Container */}
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
@@ -782,17 +657,21 @@ export default function StockListPage() {
                         </td>
 
                         <td className="px-3.5 sm:px-5 py-3 text-right">
-                          <Button
-                            asChild
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 gap-1 text-xs text-muted-foreground hover:text-foreground"
-                          >
-                            <Link to={`/inventory/stocks/${row.id}`}>
-                              <Eye className="h-3.5 w-3.5" />
-                              Detail
-                            </Link>
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label={`Aksi untuk ${row.name}`} className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link to={`/inventory/stocks/${row.id}`}>
+                                  <Eye className="mr-2 h-3.5 w-3.5" />
+                                  Lihat detail
+                                </Link>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                       </tr>
                     ))

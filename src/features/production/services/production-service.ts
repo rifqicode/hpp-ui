@@ -12,22 +12,30 @@ import type {
 function mapBackendLogToProductionBatch(log: any): ProductionBatch {
   if (!log) return {} as ProductionBatch;
 
+  const snapshot = log.recipe_snapshot;
+  const hasActualConsumptions = Array.isArray(log.consumptions) && log.consumptions.length > 0;
+
   // Map ingredients from consumptions or snapshot
   const ingredients: ConsumedIngredient[] = [];
-  if (Array.isArray(log.consumptions) && log.consumptions.length > 0) {
+  if (hasActualConsumptions) {
     for (const c of log.consumptions) {
+      const snapshotItem = snapshot?.items?.find((item: { stock_id: string }) => item.stock_id === c.stock_id);
       ingredients.push({
         stockId: c.stock_id,
-        stockName: c.stock?.name || 'Bahan',
-        baseUnit: c.stock?.base_unit || 'unit',
+        stockName: snapshotItem?.stock_name || c.stock?.name || 'Bahan',
+        baseUnit: snapshotItem?.unit || c.stock?.base_unit || 'unit',
         quantity: Number(c.quantity || 0),
         cost: Number(c.subtotal_cost || 0),
       });
     }
   } else if (log.recipe_snapshot && Array.isArray(log.recipe_snapshot.items)) {
     const plannedQty = Number(log.qty_planned || log.target_quantity || 1);
-    for (const it of log.recipe_snapshot.items) {
-      const q = Number(it.quantity || 0) * plannedQty;
+    const rawYield = Number(snapshot.yield_qty);
+    const yieldQty = rawYield > 0 ? rawYield : 1;
+    const wastePct = Math.max(0, Number(snapshot.waste_pct) || 0);
+    const scale = (plannedQty / yieldQty) * (1 + wastePct);
+    for (const it of snapshot.items) {
+      const q = Number(it.quantity || 0) * scale;
       ingredients.push({
         stockId: it.stock_id,
         stockName: it.stock_name || 'Bahan',
@@ -63,10 +71,10 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
     saleId: log.sale_id || log.saleId || undefined,
     saleItemId: log.sale_item_id || log.saleItemId || undefined,
     productId: log.product_id,
-    productName: log.product?.name || log.recipe_snapshot?.product_name || 'Produk',
-    productCategory: log.product?.category_model?.name || log.product?.category || 'Umum',
-    productUnit: log.product?.unit || 'pcs',
-    sellingPrice: Number(log.product?.selling_price || 0),
+    productName: snapshot?.product_name || log.product?.name || 'Produk',
+    productCategory: snapshot?.product_category ?? (log.product?.category_model?.name || log.product?.category || 'Umum'),
+    productUnit: snapshot?.product_unit ?? (log.product?.unit || 'pcs'),
+    sellingPrice: Number(snapshot?.selling_price ?? log.product?.selling_price ?? 0),
     status: log.status,
     targetQuantity: Number(log.qty_planned || log.target_quantity || 0),
     goodQuantity: Number(log.qty_actual || log.good_quantity || 0),
@@ -82,6 +90,7 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
     voidReason: log.void_reason || undefined,
     notes: log.notes || '',
     ingredients,
+    hasActualConsumptions,
     overheads: Array.isArray(log.overheads)
       ? log.overheads.map((o: any) => ({
           id: o.id,
@@ -104,15 +113,10 @@ export const productionService = {
     return response.data;
   },
   getBatches: async (): Promise<ProductionBatch[]> => {
-    try {
-      const response = await apiClient.get<any>('/production');
-      const data = response.data;
-      const rawList = Array.isArray(data) ? data : data?.items || [];
-      return rawList.map(mapBackendLogToProductionBatch);
-    } catch (err) {
-      console.error('Failed to fetch production batches:', err);
-      return [];
-    }
+    const response = await apiClient.get<any>('/production');
+    const data = response.data;
+    const rawList = Array.isArray(data) ? data : data?.items || [];
+    return rawList.map(mapBackendLogToProductionBatch);
   },
 
   getBatchById: async (id: string): Promise<ProductionBatch> => {

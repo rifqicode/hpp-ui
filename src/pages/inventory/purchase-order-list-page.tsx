@@ -1,9 +1,10 @@
+import { PurchaseOrderListFilters } from '@/features/purchase-orders/components/purchase-order-list-filters'
+import { POCategoryBadge } from '@/features/purchase-orders/components/po-category-badge'
 import * as React from "react"
 import { Link } from "react-router-dom"
 import {
   ClipboardList,
   Plus,
-  Search,
   CheckCircle2,
   Clock,
   XCircle,
@@ -18,7 +19,6 @@ import {
   Edit3,
   ChevronDown,
   RefreshCw,
-  X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -59,13 +59,14 @@ import { supplierService } from "@/features/suppliers/services/supplier-service"
 import type { Supplier } from "@/features/suppliers/types"
 
 export default function PurchaseOrderListPage() {
+  const list = usePurchaseOrders()
   const {
     orders,
     loading,
     search,
     setSearch,
+    categoryFilter,
     statusFilter,
-    setStatusFilter,
     page,
     totalPages,
     total,
@@ -109,7 +110,7 @@ export default function PurchaseOrderListPage() {
     completedCount,
     totalCompletedAmount,
     formatDate,
-  } = usePurchaseOrders()
+  } = list
 
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
 
@@ -185,11 +186,11 @@ export default function PurchaseOrderListPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                  Purchase Orders & Pengadaan
+                  Purchase
                 </h1>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Kelola pengajuan pembelian ke vendor dan pantau alur barang hingga masuk ke stok inventaris
+                Kelola pembelian ke vendor dan pantau alur barang hingga masuk ke stok inventaris
               </p>
             </div>
           </div>
@@ -302,13 +303,15 @@ export default function PurchaseOrderListPage() {
         </Card>
       </div>
 
+      <PurchaseOrderListFilters list={list} />
+
       {/* Main Content Area */}
       {loading ? (
         <div className="flex flex-col items-center justify-center p-16 border rounded-2xl bg-card shadow-2xs">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">Memuat data Purchase Orders...</p>
+          <p className="text-sm font-medium text-muted-foreground">Memuat data Purchase...</p>
         </div>
-      ) : totalCount === 0 && !search && statusFilter === "ALL" ? (
+      ) : totalCount === 0 && !search && statusFilter === "ALL" && categoryFilter === "ALL" ? (
         /* Empty State */
         <div className="flex flex-col items-center justify-center p-12 sm:p-16 text-center rounded-2xl border-2 border-dashed border-border bg-card/60 shadow-xs">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">
@@ -332,104 +335,14 @@ export default function PurchaseOrderListPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Standalone Filter & Search Bar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs min-w-0">
-            <div className="relative flex-1 max-w-md min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cari nomor PO, vendor, atau item bahan..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-background/50 h-9 text-xs"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Status Segmented Filter Pills */}
-            <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
-              <button
-                type="button"
-                onClick={() => setStatusFilter("ALL")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  statusFilter === "ALL"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Semua ({totalCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("PURCHASE_REQUEST")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  statusFilter === "PURCHASE_REQUEST"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Request ({requestCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("PURCHASE_ORDER")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  statusFilter === "PURCHASE_ORDER"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                PO ({orderCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("COMPLETED")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  statusFilter === "COMPLETED"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Selesai ({completedCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("REJECTED")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  statusFilter === "REJECTED"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Ditolak
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter("CANCELLED")}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  statusFilter === "CANCELLED"
-                    ? "bg-background text-foreground shadow-2xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Batal
-              </button>
-            </div>
-          </div>
-
           {/* Polished Table Container */}
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] text-sm text-left">
+              <table className="w-full min-w-[920px] text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
                   <tr>
-                    <th className="px-5 py-3.5">No. Pengajuan / PO</th>
+                    <th className="px-5 py-3.5">No. Pengajuan</th>
+                    <th className="px-5 py-3.5">Kategori</th>
                     <th className="px-5 py-3.5">Vendor / Supplier</th>
                     <th className="px-5 py-3.5">Tanggal Pesan</th>
                     <th className="px-5 py-3.5">Item Bahan Baku</th>
@@ -441,12 +354,12 @@ export default function PurchaseOrderListPage() {
                 <tbody className="divide-y divide-border/70">
                   {orders.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-5 py-12 text-center text-muted-foreground">
                         <p className="font-medium text-foreground">Tidak ada pesanan yang cocok</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {search
                             ? "Coba sesuaikan kata kunci pencarian nomor PO atau vendor."
-                            : "Tidak ada pengajuan pada kategori status ini."}
+                            : "Tidak ada pembelian yang cocok dengan filter ini."}
                         </p>
                       </td>
                     </tr>
@@ -465,6 +378,10 @@ export default function PurchaseOrderListPage() {
                           </Link>
                         </td>
 
+                        <td className="whitespace-nowrap px-5 py-3.5">
+                          <POCategoryBadge category={po.category} />
+                        </td>
+
                         <td className="px-5 py-3.5 text-xs">
                           <div className="flex items-center gap-2">
                             <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -481,7 +398,7 @@ export default function PurchaseOrderListPage() {
                         <td className="px-5 py-3.5 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5 shrink-0" />
-                            <span>{formatDate(po.orderDate)}</span>
+                            <time dateTime={po.orderDate} className="whitespace-nowrap">{formatDate(po.orderDate)}</time>
                           </div>
                         </td>
 

@@ -72,7 +72,9 @@ const STORE_CATEGORIES = [
   "Minuman & Boba",
   "Catering & Jasa Boga",
   "Pizzaria & Fast Food",
+  "Retail & Toko Kelontong",
   "Retail & Kelontong",
+  "Other",
   "Lainnya",
 ]
 
@@ -277,6 +279,11 @@ export default function StoreSettingsPage() {
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full px-3 rounded-xl h-9 text-sm border border-input bg-background text-foreground shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
                     >
+                      {formData.category && !STORE_CATEGORIES.includes(formData.category) && (
+                        <option value={formData.category}>
+                          {formData.category}
+                        </option>
+                      )}
                       {STORE_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
                           {cat}
@@ -1213,6 +1220,11 @@ export default function StoreSettingsPage() {
                 onChange={(e) => setNewStoreData({ ...newStoreData, category: e.target.value })}
                 className="w-full px-3 rounded-xl h-9 text-sm border border-input bg-background text-foreground shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
               >
+                {newStoreData.category && !STORE_CATEGORIES.includes(newStoreData.category) && (
+                  <option value={newStoreData.category}>
+                    {newStoreData.category}
+                  </option>
+                )}
                 {STORE_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
