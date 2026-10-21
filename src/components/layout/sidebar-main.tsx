@@ -38,10 +38,10 @@ function NavigationBranch({
   const label = (
     <>
       {Icon && <Icon className="size-4 shrink-0" />}
-      <span className="min-w-0 flex-1 truncate">{item.title}</span>
+      <span className="min-w-0 flex-1 truncate text-left">{item.title}</span>
     </>
   )
-  const buttonClass = `w-full cursor-pointer ${active ? "bg-primary/15 text-primary font-semibold hover:bg-primary/20 hover:text-primary" : "text-muted-foreground hover:text-foreground"}`
+  const buttonClass = `w-full cursor-pointer text-left ${active ? "bg-primary/15 text-primary font-semibold hover:bg-primary/20 hover:text-primary" : "text-muted-foreground hover:text-foreground"}`
 
   return (
     <Item>
