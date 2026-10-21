@@ -35,7 +35,7 @@ export function UserDropdown() {
             className="size-8 shrink-0 rounded-lg border border-border"
             fallbackClassName="rounded-lg text-xs"
           />
-          <span className="hidden min-w-0 truncate text-xs font-semibold sm:block">{userName}</span>
+          <span className="hidden min-w-0 truncate text-sm font-medium sm:block">{userName}</span>
           <ChevronsUpDown className="hidden size-3.5 shrink-0 text-muted-foreground sm:block" />
         </Button>
       </DropdownMenuTrigger>
@@ -46,30 +46,30 @@ export function UserDropdown() {
         sideOffset={6}
       >
         <DropdownMenuLabel className="p-0 font-normal">
-          <div className="flex items-center gap-2.5 px-2 py-2 text-left text-xs">
+          <div className="flex items-center gap-2.5 px-2 py-2 text-left">
             <UserAvatar
               src={userAvatar}
               name={userName}
-              className="size-8 rounded-lg border border-border shadow-xs shrink-0"
+              className="size-9 rounded-lg border border-border shadow-xs shrink-0"
               fallbackClassName="rounded-lg text-xs"
             />
-            <div className="grid flex-1 text-left text-xs leading-tight min-w-0">
-              <span className="truncate font-semibold">{userName}</span>
-              <span className="truncate text-[10px] text-muted-foreground">{userEmail}</span>
+            <div className="grid flex-1 text-left leading-tight min-w-0">
+              <span className="truncate text-sm font-semibold">{userName}</span>
+              <span className="truncate text-xs text-muted-foreground">{userEmail}</span>
             </div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild className="cursor-pointer gap-2.5 text-xs">
+          <DropdownMenuItem asChild className="cursor-pointer gap-2.5 text-sm">
             <Link to="/settings?tab=profile">
-              <User className="size-3.5 text-muted-foreground" />
+              <User className="size-4 text-muted-foreground" />
               <span>Profil Pengguna</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild className="cursor-pointer gap-2.5 text-xs">
+          <DropdownMenuItem asChild className="cursor-pointer gap-2.5 text-sm">
             <Link to="/settings?tab=security">
-              <Settings className="size-3.5 text-muted-foreground" />
+              <Settings className="size-4 text-muted-foreground" />
               <span>Keamanan & Sesi</span>
             </Link>
           </DropdownMenuItem>
@@ -80,9 +80,9 @@ export function UserDropdown() {
             logout()
             navigate("/login")
           }}
-          className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2.5 text-xs"
+          className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2.5 text-sm"
         >
-          <LogOut className="size-3.5" />
+          <LogOut className="size-4" />
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
