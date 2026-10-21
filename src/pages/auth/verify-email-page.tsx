@@ -19,6 +19,25 @@ import { Label } from "@/components/ui/label"
 import { authService } from "@/features/auth/services/auth-service"
 import { useAuthStore } from "@/store/use-auth-store"
 
+function maskEmail(val: string): string {
+  if (!val) return ""
+  const parts = val.split("@")
+  if (parts.length !== 2) return val
+  const [local, domain] = parts
+  const visible = local.slice(0, 3)
+  return `${visible}***@${domain}`
+}
+
+const getRemainingCooldown = (targetEmail: string): number => {
+  if (!targetEmail) return 0
+  const storedUntil = localStorage.getItem(`verify_resend_until_${targetEmail.toLowerCase()}`)
+  if (!storedUntil) return 0
+  const until = parseInt(storedUntil, 10)
+  if (isNaN(until)) return 0
+  const diff = Math.ceil((until - Date.now()) / 1000)
+  return diff > 0 ? diff : 0
+}
+
 export default function VerifyEmailPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -32,17 +51,21 @@ export default function VerifyEmailPage() {
   const initialEmail =
     searchParams.get("email") ||
     (location.state as { email?: string; message?: string } | null)?.email ||
+    sessionStorage.getItem("verify_email") ||
     ""
+  if (initialEmail) {
+    sessionStorage.setItem("verify_email", initialEmail)
+  }
   const initialMessage =
     (location.state as { email?: string; message?: string } | null)?.message || ""
 
-  const [email, setEmail] = React.useState<string>(initialEmail)
+  const [email] = React.useState<string>(initialEmail)
   const [otp, setOtp] = React.useState<string[]>(["", "", "", "", "", ""])
   const [loading, setLoading] = React.useState<boolean>(false)
   const [resending, setResending] = React.useState<boolean>(false)
   const [error, setError] = React.useState<string>("")
   const [infoMessage, setInfoMessage] = React.useState<string>(initialMessage)
-  const [cooldown, setCooldown] = React.useState<number>(0)
+  const [cooldown, setCooldown] = React.useState<number>(() => getRemainingCooldown(initialEmail))
 
   const inputRefs = React.useRef<(HTMLInputElement | null)[]>([])
 
@@ -50,10 +73,14 @@ export default function VerifyEmailPage() {
   React.useEffect(() => {
     if (cooldown <= 0) return
     const timer = setInterval(() => {
-      setCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+      const remaining = getRemainingCooldown(email)
+      setCooldown(remaining)
+      if (remaining <= 0) {
+        localStorage.removeItem(`verify_resend_until_${email.trim().toLowerCase()}`)
+      }
     }, 1000)
     return () => clearInterval(timer)
-  }, [cooldown])
+  }, [cooldown > 0, email])
 
   // Focus the first empty digit box on mount
   React.useEffect(() => {
@@ -173,6 +200,8 @@ export default function VerifyEmailPage() {
     try {
       await authService.resendVerification(email.trim())
       setInfoMessage("Kode verifikasi baru telah dikirimkan ke email Anda.")
+      const until = Date.now() + 60 * 1000
+      localStorage.setItem(`verify_resend_until_${email.trim().toLowerCase()}`, until.toString())
       setCooldown(60)
     } catch (err: unknown) {
       const msg =
@@ -273,12 +302,11 @@ export default function VerifyEmailPage() {
                 <div className="relative">
                   <Input
                     id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    value={maskEmail(email)}
+                    readOnly
                     placeholder="nama@bisnis.com"
-                    required
-                    className="h-11 pl-10"
+                    className="h-11 pl-10 bg-muted/50 cursor-not-allowed selection:bg-transparent text-muted-foreground font-mono"
                   />
                   <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                 </div>

@@ -60,7 +60,7 @@ test('workflow replaces the simulator directly after the hero', async ({ page })
   await expect(page.getByRole('heading', { name: 'Cara kerja HPP Tracker' })).toBeInViewport();
 });
 
-test('hero fills the opening viewport and illustration motion can be paused', async ({ page }) => {
+test('hero fills the opening viewport and illustration loops without pause controls', async ({ page }) => {
   const opening = await page.evaluate(() => ({
     viewportHeight: window.innerHeight,
     heroBottom: document.querySelector('#hero')!.getBoundingClientRect().bottom,
@@ -70,12 +70,9 @@ test('hero fills the opening viewport and illustration motion can be paused', as
   expect(opening.workflowTop).toBeGreaterThanOrEqual(opening.viewportHeight - 1);
   const illustration = page.locator('#hero img');
   await expect(illustration).toHaveCSS('animation-name', 'none');
-  await expect(page.getByRole('button', { name: 'Jeda animasi ilustrasi', exact: true })).toBeHidden();
+  await expect(page.getByRole('button', { name: /animasi ilustrasi/i })).toHaveCount(0);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expect(illustration).toHaveCSS('animation-name', 'hero-food-float');
-  await page.getByRole('button', { name: 'Jeda animasi ilustrasi', exact: true }).click();
-  await expect(illustration).toHaveCSS('animation-play-state', 'paused');
-  await page.getByRole('button', { name: 'Putar animasi ilustrasi', exact: true }).click();
   await expect(illustration).toHaveCSS('animation-play-state', 'running');
   await expectContentFits(page);
 });
