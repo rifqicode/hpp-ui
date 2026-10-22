@@ -19,6 +19,10 @@ export interface AuthResponse {
   user: User;
   token: string;
   requires_verification?: boolean;
+  requires_device_verification?: boolean;
+  challenge_token?: string;
+  email_masked?: string;
+  device_info?: string;
   active_store_id?: string;
   permissions?: string[];
   store?: {

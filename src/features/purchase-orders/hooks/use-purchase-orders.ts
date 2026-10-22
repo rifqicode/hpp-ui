@@ -23,6 +23,7 @@ export function usePurchaseOrders() {
   const [debouncedSearch, setDebouncedSearch] = React.useState<string>("")
   const [categoryFilter, setCategoryFilter] = React.useState<PurchaseOrderCategory | "ALL">("ALL")
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
+  const [sortBy, setSortBy] = React.useState<string>("date-desc")
   const [page, setPage] = React.useState<number>(1)
   const [limit, setLimit] = React.useState<number>(10)
 
@@ -55,6 +56,7 @@ export function usePurchaseOrders() {
     search: debouncedSearch.trim() || undefined,
     status: statusFilter === "ALL" ? undefined : statusFilter,
     category: categoryFilter === "ALL" ? undefined : categoryFilter,
+    sort_by: sortBy,
   }
 
   const ordersQuery = usePurchaseOrdersQuery(queryParams)
@@ -256,6 +258,11 @@ export function usePurchaseOrders() {
     statusFilter,
     setStatusFilter: (status: string) => {
       setStatusFilter(status)
+      setPage(1)
+    },
+    sortBy,
+    setSortBy: (sort: string) => {
+      setSortBy(sort)
       setPage(1)
     },
     page,

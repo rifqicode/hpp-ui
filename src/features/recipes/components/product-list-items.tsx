@@ -25,6 +25,9 @@ function ProductIdentity({ product, returnTo }: Pick<ProductItemProps, 'product'
     <span className="min-w-0 space-y-1">
       <span className="block break-words text-sm font-semibold leading-snug text-foreground group-hover:text-primary">{product.name}</span>
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+        {product.sku && (
+          <span className="font-mono text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border shrink-0">{product.sku}</span>
+        )}
         <span>{product.category || 'Tanpa kategori'}</span>
         <span title={madeToOrder ? 'Dibuat sesuai pesanan' : 'Diproduksi untuk stok'} className={cn('rounded border px-1.5 py-px text-[10px] font-medium', madeToOrder ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300' : 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300')}>{madeToOrder ? 'MTO' : 'MTS'}</span>
       </span>

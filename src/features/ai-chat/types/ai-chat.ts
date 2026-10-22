@@ -7,6 +7,7 @@ export interface AIChatMessage {
   tool_calls?: any;
   tool_call_id?: string;
   is_error?: boolean;
+  error_message?: string;
   created_at: string;
 }
 
@@ -44,6 +45,7 @@ export interface AIChatResponse {
   role: string;
   content: string;
   is_error?: boolean;
+  error_message?: string;
   created_at: string;
 }
 

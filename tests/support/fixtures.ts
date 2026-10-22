@@ -47,10 +47,11 @@ export const calendar: ProductionCalendarResponse = {
 export function usage(overrides: Partial<SubscriptionUsageData> = {}): SubscriptionUsageData {
   const quota = { current: 0, limit: 100, remaining: 100 }
   return {
+    owner_id: user.id, can_manage_billing: true,
     tier: 'GROWTH', effective_tier: 'GROWTH', status: 'ACTIVE', is_in_grace_period: false,
     grace_period_until: null, current_period_end: null,
     quotas: { stocks: { ...quota }, products: { ...quota }, batches: { ...quota }, staff: { ...quota }, stores: { ...quota }, suppliers: { ...quota }, customers: { ...quota } },
-    features: { export_reports: true, multi_role_customization: true, production_analytics: true, advanced_pos: true }, ...overrides,
+    features: { export_reports: true, multi_role_customization: true, production_analytics: true, advanced_pos: true, ai_assistant: true }, ...overrides,
   }
 }
 export const permissions: Permission[] = [

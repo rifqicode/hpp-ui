@@ -4,9 +4,135 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HPP Tracker | Hitung Biaya Resep &amp; HPP Usaha Kuliner</title>
     <meta name="description" content="Hitung HPP per porsi dari bahan, kemasan, dan biaya produksi. Kelola stok dan pantau laba kotor usaha kuliner bersama HPP Tracker. Mulai gratis." />
     <meta name="theme-color" content="#4f46e5" />
-    <title>HPP Tracker | Hitung Biaya Resep &amp; HPP Usaha Kuliner</title>
+    <link rel="canonical" href="%VITE_SITE_URL%/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="HPP Tracker" />
+    <meta property="og:title" content="HPP Tracker | Hitung Biaya Resep &amp; HPP Usaha Kuliner" />
+    <meta property="og:description" content="Hitung HPP per porsi dari bahan, kemasan, dan biaya produksi. Kelola stok dan pantau laba kotor usaha kuliner bersama HPP Tracker. Mulai gratis." />
+    <meta property="og:url" content="%VITE_SITE_URL%" />
+    <meta property="og:image" content="%VITE_SITE_URL%/images/fnb-hero-cartoon.webp" />
+    <meta property="og:locale" content="id_ID" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="HPP Tracker | Hitung Biaya Resep &amp; HPP Usaha Kuliner" />
+    <meta name="twitter:description" content="Hitung HPP per porsi dari bahan, kemasan, dan biaya produksi. Kelola stok dan pantau laba kotor usaha kuliner bersama HPP Tracker. Mulai gratis." />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/images/fnb-hero-cartoon.webp" />
+
+    <!-- Schema.org SoftwareApplication / WebApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "HPP Tracker",
+      "url": "%VITE_SITE_URL%",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description": "Hitung HPP per porsi dari bahan, kemasan, dan biaya produksi. Kelola stok dan pantau laba kotor usaha kuliner bersama HPP Tracker. Mulai gratis.",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Free Starter",
+          "price": "0",
+          "priceCurrency": "IDR",
+          "description": "Untuk mulai mencatat biaya resep di satu toko"
+        },
+        {
+          "@type": "Offer",
+          "name": "Growth",
+          "price": "149000",
+          "priceCurrency": "IDR",
+          "description": "Untuk produksi rutin dan berbagi tugas dengan karyawan"
+        },
+        {
+          "@type": "Offer",
+          "name": "Max Growth",
+          "price": "499000",
+          "priceCurrency": "IDR",
+          "description": "Untuk mengurus banyak cabang dan lebih banyak karyawan"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Schema.org FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Usaha saya masih kecil, bisa pakai HPP Tracker?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Bisa. Paket Free Starter gratis untuk satu toko, dengan 20 bahan baku, 10 resep, dan 20 kali produksi per bulan. Mulai dengan mencatat harga bahan dan takaran satu resep. Anda bisa lanjut mencatat produksi dan penjualan saat membutuhkannya."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Apa bedanya HPP, laba kotor, dan laba bersih?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "HPP (Harga Pokok Produksi) adalah biaya membuat menu, termasuk bahan, kemasan, upah, dan biaya produksi yang Anda masukkan. Laba kotor adalah uang penjualan dikurangi HPP menu yang terjual. Untuk tahu laba bersih, kurangi lagi biaya usaha lain yang belum masuk HPP, seperti sewa tempat."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Margin itu apa, dan apa bedanya dengan laba?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Laba kotor menunjukkan selisih harga jual dan HPP dalam rupiah. Margin laba kotor menunjukkan selisih itu sebagai persentase harga jual. Misalnya, harga jual Rp 18.000 dan HPP Rp 6.100 menghasilkan laba kotor Rp 11.900, atau margin sekitar 66,1%. Ini belum dikurangi biaya usaha lain di luar HPP."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Kapan saya perlu pindah ke paket berbayar?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Pilih Growth jika Anda perlu mencatat lebih dari 10 resep, lebih dari 20 kali produksi per bulan, mengajak karyawan memakai aplikasi, atau menambah toko. Lihat perbandingan paket di bagian harga dan periksa rinciannya sebelum membayar."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Bagaimana menentukan bahan yang perlu dipakai lebih dulu?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Anda bisa memilih bahan yang datang lebih dulu (FIFO), atau yang paling dekat tanggal kedaluwarsanya (FEFO). Aplikasi mencatat pengurangan stok mengikuti pilihan itu. Saat mengambil bahan di dapur, tetap ikuti urutan pada catatan agar bahan yang dipakai sesuai."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Kalau punya lebih dari satu toko, bisa dikelola di sini?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Bisa. Paket Growth untuk hingga 3 toko, sedangkan Max Growth untuk hingga 10 toko. Setiap toko punya catatan stok sendiri. Anda juga bisa mengatur fitur yang boleh dipakai karyawan sesuai paket."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Siapa yang bisa melihat resep dan catatan penjualan saya?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Data toko hanya bisa dibuka melalui akun yang punya izin. Sebagai pemilik, Anda bisa mengatur akses karyawan sesuai tugasnya dan mengeluarkan akun dari perangkat yang pernah dipakai melalui pengaturan akun."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Bagaimana kalau ingin ganti paket?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Buka halaman langganan di aplikasi, lalu pilih paket yang dibutuhkan. Periksa harga dan masa aktifnya sebelum membayar. Pembayaran diproses melalui Midtrans."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

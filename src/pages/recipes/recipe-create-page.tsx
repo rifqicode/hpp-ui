@@ -64,7 +64,13 @@ export default function RecipeCreatePage() {
   const [error, setError] = React.useState<string>("")
 
   // Form State
+  const [sku, setSku] = React.useState<string>("")
   const [name, setName] = React.useState<string>("")
+
+  const generateAutoSku = () => {
+    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase()
+    setSku(`PRD-${randomSuffix}`)
+  }
   const [categories, setCategories] = React.useState<ProductCategory[]>([])
   const [categoryId, setCategoryId] = React.useState<string>("")
   const [customCategory, setCustomCategory] = React.useState<string>("")
@@ -204,6 +210,10 @@ export default function RecipeCreatePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!sku.trim()) {
+      setError("SKU produk wajib diisi")
+      return
+    }
     if (!name.trim()) {
       setError("Nama produk wajib diisi")
       return
@@ -233,6 +243,7 @@ export default function RecipeCreatePage() {
         : (selectedCat?.name || customCategory.trim() || "Umum")
 
       const payload: CreateProductInput = {
+        sku: sku.trim(),
         name: name.trim(),
         category: activeCategoryName,
         categoryId: categoryId !== "Custom" ? categoryId : undefined,
@@ -357,6 +368,33 @@ export default function RecipeCreatePage() {
               </div>
             </CardHeader>
             <CardContent className="p-5 space-y-4">
+              {/* Product SKU */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sku" className="text-xs font-semibold">
+                    SKU Produk <span className="text-red-500">*</span>
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={generateAutoSku}
+                    className="h-6 px-2 text-[11px] text-primary hover:text-primary/80 gap-1"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Auto Generate SKU
+                  </Button>
+                </div>
+                <Input
+                  id="sku"
+                  placeholder="Contoh: PRD-BRD01 atau BARCODE-1234"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value.toUpperCase())}
+                  className="rounded-xl h-10 text-sm font-mono tracking-wide"
+                  required
+                />
+              </div>
+
               {/* Product Name */}
               <div className="space-y-1.5">
                 <Label htmlFor="name" className="text-xs font-semibold">

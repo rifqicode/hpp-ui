@@ -17,7 +17,7 @@ describe('password validation', () => {
     expect(validatePassword(password)).toBeNull()
   })
 
-  it.each([
+  it.each<[string, number]>([
     ['', 0], ['abc', 0], ['abcdef', 1], ['abcdefgh', 2], ['abcdefg1', 3], ['Abcdef12!', 4],
   ])('scores %s as %i', (password, score) => {
     expect(calculatePasswordStrength(password)).toBe(score)

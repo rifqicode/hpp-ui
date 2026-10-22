@@ -1,18 +1,14 @@
 import * as React from 'react';
 import {
   Users,
-  Search,
   Plus,
   Phone,
   Mail,
   MapPin,
-  ShoppingBag,
-  DollarSign,
   Calendar,
   Edit2,
   Trash2,
   Receipt,
-  X,
   UserCheck,
   RefreshCw,
 } from 'lucide-react';
@@ -35,6 +31,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent } from '../../components/ui/card';
+import { ListFilters } from '@/components/ui/list-filters';
 import {
   Dialog,
   DialogContent,
@@ -45,6 +42,11 @@ import {
 import { TablePagination } from '../../components/ui/table-pagination';
 import { CurrencyText } from '@/components/ui/currency-text';
 
+function customerErrorMessage(error: unknown, fallback: string): string {
+  const message = (error as { response?: { data?: { message?: unknown } } } | null)?.response?.data?.message;
+  return typeof message === 'string' && message ? message : fallback;
+}
+
 export default function CustomerListPage() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -54,6 +56,8 @@ export default function CustomerListPage() {
   const {
     data: customersData,
     isLoading: loading,
+    isFetching,
+    isError: isCustomersError,
     refetch: refetchCustomers,
   } = useCustomersQuery({
     search: searchQuery.trim() || undefined,
@@ -63,11 +67,13 @@ export default function CustomerListPage() {
 
   const {
     data: summaryData,
+    isFetching: isSummaryFetching,
+    isError: isSummaryError,
     refetch: refetchSummary,
   } = useCustomerSummaryQuery();
 
   const customers = customersData?.data || [];
-  const total = summaryData?.total_customers ?? customersData?.total ?? 0;
+  const total = customersData?.total ?? 0;
 
   // Dialog States
   const [isAddOpen, setIsAddOpen] = React.useState(false);
@@ -131,9 +137,9 @@ export default function CustomerListPage() {
       setAddForm({ name: '', phone: '', email: '', address: '', notes: '' });
       queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
       queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to create customer', err);
-      alert(err.response?.data?.message || 'Gagal menambahkan pelanggan');
+      alert(customerErrorMessage(err, 'Gagal menambahkan pelanggan'));
     } finally {
       setIsSubmitting(false);
     }
@@ -148,9 +154,9 @@ export default function CustomerListPage() {
       await customerService.updateCustomer(selectedCustomer.id, editForm);
       setIsEditOpen(false);
       queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to update customer', err);
-      alert(err.response?.data?.message || 'Gagal mengubah pelanggan');
+      alert(customerErrorMessage(err, 'Gagal mengubah pelanggan'));
     } finally {
       setIsSubmitting(false);
     }
@@ -165,9 +171,9 @@ export default function CustomerListPage() {
       setIsDeleteOpen(false);
       queryClient.invalidateQueries({ queryKey: salesKeys.customers.all });
       queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete customer', err);
-      alert(err.response?.data?.message || 'Gagal menghapus pelanggan');
+      alert(customerErrorMessage(err, 'Gagal menghapus pelanggan'));
     } finally {
       setIsSubmitting(false);
     }
@@ -177,140 +183,67 @@ export default function CustomerListPage() {
     await Promise.all([refetchCustomers(), refetchSummary()]);
   };
 
-  // Metrics summary calculated from loaded list or defaults
-  const totalSpentAll = React.useMemo(() => {
-    if (summaryData) return Number(summaryData.total_spent_amount) || 0;
-    return customers.reduce((acc, curr) => acc + (curr.total_spent || 0), 0);
-  }, [customers, summaryData]);
-
-  const avgSpentPerCustomer = React.useMemo(() => {
-    if (summaryData) {
-      const spent = Number(summaryData.total_spent_amount) || 0;
-      return summaryData.total_customers > 0 ? spent / summaryData.total_customers : 0;
-    }
-    return customers.length > 0 ? totalSpentAll / customers.length : 0;
-  }, [customers, summaryData, totalSpentAll]);
-
-  const totalPages = Math.ceil(total / perPage) || 1;
+  const totalPages = customersData?.total_pages ?? (Math.ceil(total / perPage) || 1);
 
   return (
-    <div className="w-full space-y-6 pb-12 animate-in fade-in duration-500">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-primary/10 text-primary">
-            <Users className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Manajemen Pelanggan
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Daftar data kontak pelanggan, riwayat loyalitas pesanan, dan akumulasi nilai belanja
-            </p>
-          </div>
+    <div className="w-full min-w-0 space-y-5 pb-8">
+      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Manajemen Pelanggan</h1>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Cari kontak pelanggan, perbarui data, dan lihat riwayat pesanan.</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="outline" onClick={handleRefresh} disabled={isFetching || isSummaryFetching} className="h-10 gap-2 text-xs">
+            <RefreshCw className={`size-3.5 ${isFetching || isSummaryFetching ? 'animate-spin motion-reduce:animate-none' : ''}`} />Refresh
           </Button>
-          <Button
-            onClick={() => setIsAddOpen(true)}
-            className="flex-1 sm:flex-initial flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Pelanggan
-          </Button>
+          <Button onClick={() => setIsAddOpen(true)} className="h-10 gap-2 text-xs"><Plus className="size-4" />Tambah Pelanggan</Button>
         </div>
-      </div>
+      </header>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Total Pelanggan Terdaftar</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold tracking-tight text-foreground">{total}</span>
-                <span className="text-xs text-muted-foreground">member</span>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-              <UserCheck className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
+      {isSummaryError && <p role="alert" className="rounded-xl border p-3 text-xs text-muted-foreground">Ringkasan pelanggan belum bisa dimuat. Klik Refresh untuk mencoba lagi.</p>}
+      {summaryData && !isSummaryError && (
+        <section aria-label="Ringkasan pelanggan" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {[
+            {
+              label: 'Total Pelanggan', value: summaryData.total_customers,
+              hint: 'Seluruh pelanggan terdaftar', icon: Users,
+              color: 'text-primary', background: 'bg-primary/10',
+            },
+            {
+              label: 'Pernah Bertransaksi', value: summaryData.active_customers,
+              hint: 'Pelanggan dengan minimal satu pesanan', icon: UserCheck,
+              color: 'text-emerald-600 dark:text-emerald-400', background: 'bg-emerald-50 dark:bg-emerald-950/40',
+            },
+          ].map((metric) => (
+            <Card key={metric.label} className="min-w-0 border-border/80 bg-card px-4 py-3 shadow-2xs">
+              <CardContent className="flex items-center justify-between gap-2 p-0">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">{metric.label}</p>
+                  <p className={`text-xl font-bold tracking-tight tabular-nums ${metric.color}`}>{metric.value.toLocaleString('id-ID')}</p>
+                  <p className="text-[11px] text-muted-foreground">{metric.hint}</p>
+                </div>
+                <span className={`shrink-0 rounded-xl p-2.5 ${metric.background} ${metric.color}`}><metric.icon className="size-5" aria-hidden="true" /></span>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      )}
 
-        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Akumulasi Belanja (LTV)</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  <CurrencyText value={totalSpentAll} />
-                </span>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <DollarSign className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="py-3 px-4 shadow-2xs border-border/80 bg-card">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-medium text-muted-foreground">Rata-rata Belanja per Member</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold tracking-tight text-foreground">
-                  <CurrencyText value={avgSpentPerCustomer} />
-                </span>
-              </div>
-            </div>
-            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
-              <ShoppingBag className="h-5 w-5" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Standalone Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cari nama, nomor HP, atau email pelanggan..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            className="pl-9 bg-background/50 h-9 text-xs"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setPage(1);
-              }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      </div>
+      <ListFilters
+        label="Filter pelanggan"
+        search={{
+          label: 'Cari pelanggan', placeholder: 'Cari nama, nomor HP, atau email pelanggan...',
+          value: searchQuery, onChange: (value) => { setSearchQuery(value); setPage(1); },
+        }}
+        hasFilters={Boolean(searchQuery.trim())}
+        onReset={() => { setSearchQuery(''); setPage(1); }}
+        isFetching={isFetching && !loading}
+        fetchingLabel="Memperbarui pelanggan"
+      />
 
       {/* Customer List Table & Pagination */}
-      <div className="space-y-4">
+      <section aria-label="Daftar pelanggan" className="space-y-3">
+        <h2 className="text-sm font-semibold">Daftar pelanggan</h2>
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px] text-sm text-left">
@@ -332,10 +265,20 @@ export default function CustomerListPage() {
                       Memuat data pelanggan...
                     </td>
                   </tr>
+                ) : isCustomersError ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-10 text-center">
+                      <div role="alert" className="space-y-2">
+                        <p className="text-sm font-semibold">Gagal memuat pelanggan</p>
+                        <p className="text-xs text-muted-foreground">Periksa koneksi lalu coba lagi.</p>
+                        <Button variant="outline" onClick={() => void refetchCustomers()} className="mt-2 text-xs">Coba lagi</Button>
+                      </div>
+                    </td>
+                  </tr>
                 ) : customers.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">
-                      Belum ada data pelanggan yang terdaftar.
+                      {searchQuery.trim() ? 'Tidak ada pelanggan yang cocok. Coba nama, nomor HP, atau email lain.' : 'Belum ada data pelanggan yang terdaftar.'}
                     </td>
                   </tr>
                 ) : (
@@ -449,10 +392,10 @@ export default function CustomerListPage() {
           totalPages={totalPages}
           onPrev={() => setPage((p) => Math.max(1, p - 1))}
           onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={loading}
+          disabled={loading || isCustomersError}
           label="pelanggan"
         />
-      </div>
+      </section>
 
       {/* Add Customer Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -656,7 +599,7 @@ export default function CustomerListPage() {
                     </span>
                   </div>
                   <div>
-                    <span className="block text-[10px]">Total Belanja (LTV):</span>
+                    <span className="block text-[10px]">Total Belanja:</span>
                     <span className="text-emerald-600 font-bold">
                       <CurrencyText value={selectedCustomer.total_spent} />
                     </span>
@@ -701,9 +644,6 @@ export default function CustomerListPage() {
                         <div className="text-right">
                           <span className="font-bold text-foreground block">
                             <CurrencyText value={sale.totalAmount} />
-                          </span>
-                          <span className="text-[10px] text-emerald-600 font-medium">
-                            Laba: <CurrencyText value={sale.grossProfit} />
                           </span>
                         </div>
                       </div>

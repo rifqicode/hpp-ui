@@ -1,0 +1,114 @@
+import type { FormEvent } from 'react'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useStoreSettings } from '@/features/settings/hooks/use-store-settings'
+import { settingsService } from '@/features/settings/services/settings-service'
+import { mockPageServices, resetSession } from '../support/page-services'
+import { store } from '../support/fixtures'
+import { createWrapper } from '../support/render'
+const event = () => ({ preventDefault: vi.fn() }) as unknown as FormEvent
+beforeEach(() => {
+  resetSession(); mockPageServices()
+  vi.spyOn(window, 'alert').mockImplementation(() => {})
+  vi.spyOn(settingsService, 'updateStoreProfile').mockResolvedValue(store)
+  vi.spyOn(settingsService, 'createStore').mockResolvedValue(store)
+  vi.spyOn(settingsService, 'inviteStaff').mockResolvedValue({ id: 'staff1', name: 'Rina', email: 'rina@example.com', role: 'Kasir', status: 'invited' })
+  vi.spyOn(settingsService, 'revokeStaff').mockResolvedValue(undefined)
+})
+async function setup(tab = 'profile') {
+  const hook = renderHook(({ tab }) => useStoreSettings(tab), { ...createWrapper(), initialProps: { tab } })
+  await waitFor(() => expect(hook.result.current.loading).toBe(false))
+  await waitFor(() => expect(hook.result.current.tabLoading).toBe(false))
+  return hook
+}
+
+describe('store settings', () => {
+  it('loads only the requested tab resources and reuses resources when returning', async () => {
+    const { result, rerender } = await setup()
+    expect(settingsService.getStaffList).not.toHaveBeenCalled()
+    rerender({ tab: 'staff' })
+    await waitFor(() => expect(result.current.tabLoading).toBe(false))
+    expect(settingsService.getStaffList).toHaveBeenCalledOnce()
+    rerender({ tab: 'roles' })
+    await waitFor(() => expect(result.current.tabLoading).toBe(false))
+    expect(settingsService.getRolesList).toHaveBeenCalledOnce()
+    expect(settingsService.getPermissionsCatalog).toHaveBeenCalledOnce()
+    rerender({ tab: 'stores' })
+    await waitFor(() => expect(result.current.tabLoading).toBe(false))
+    expect(result.current.storesList).toEqual([store])
+    rerender({ tab: 'staff' })
+    expect(settingsService.getStaffList).toHaveBeenCalledOnce()
+  })
+  it('validates and saves a store profile and clears success feedback', async () => {
+    const { result } = await setup()
+    act(() => result.current.setFormData({ ...result.current.formData, name: '' }))
+    await act(() => result.current.handleSaveProfile(event()))
+    expect(result.current.profileErrorMsg).toBe('Nama toko wajib diisi.')
+    act(() => result.current.setFormData({ ...result.current.formData, name: 'Toko Baru' }))
+    vi.useFakeTimers()
+    await act(() => result.current.handleSaveProfile(event()))
+    expect(result.current.profileSuccessMsg).toContain('berhasil')
+    act(() => vi.advanceTimersByTime(4000))
+    expect(result.current.profileSuccessMsg).toBe('')
+  })
+  it('requires a staff identity and role before inviting', async () => {
+    const { result } = await setup('staff')
+    await act(() => result.current.handleInviteSubmit(event()))
+    expect(result.current.inviteError).toContain('wajib diisi')
+    act(() => result.current.setInviteData({ name: 'Rina', email: 'rina@example.com', role_id: '' }))
+    await act(() => result.current.handleInviteSubmit(event()))
+    expect(result.current.inviteError).toContain('Pilih peran')
+    act(() => { result.current.setIsInviteOpen(true); result.current.setInviteData({ name: 'Rina', email: 'rina@example.com', role_id: 'r1' }) })
+    await act(() => result.current.handleInviteSubmit(event()))
+    expect(result.current.isInviteOpen).toBe(false)
+    expect(result.current.inviteData).toEqual({ name: '', email: '', role_id: '' })
+  })
+  it('confirms a staff revocation and prefers the actual user id', async () => {
+    const { result } = await setup('staff')
+    await act(() => result.current.handleConfirmRevoke())
+    expect(settingsService.revokeStaff).not.toHaveBeenCalled()
+    act(() => result.current.setRevokingStaff({ id: 'staff1', userId: 'u1', name: 'Rina', email: 'rina@example.com', role: 'Kasir', status: 'active' }))
+    await act(() => result.current.handleConfirmRevoke())
+    expect(settingsService.revokeStaff).toHaveBeenCalledWith('u1')
+    expect(result.current.revokingStaff).toBeNull()
+  })
+  it('validates a branch name, creates it and resets the form', async () => {
+    const { result } = await setup('stores')
+    await act(() => result.current.handleCreateStore(event()))
+    expect(result.current.createStoreError).toContain('wajib diisi')
+    act(() => { result.current.setIsNewStoreOpen(true); result.current.setNewStoreData({ ...result.current.newStoreData, name: 'Toko Kedua' }) })
+    await act(() => result.current.handleCreateStore(event()))
+    expect(settingsService.createStore).toHaveBeenCalledWith(expect.objectContaining({ name: 'Toko Kedua' }))
+    expect(result.current.isNewStoreOpen).toBe(false)
+    expect(result.current.newStoreData.name).toBe('')
+  })
+  it.each([new Error('Offline'), null])('preserves save, invite, create, and revoke errors: %s', async error => {
+    const { result } = await setup()
+    vi.mocked(settingsService.updateStoreProfile).mockRejectedValueOnce(error)
+    await act(() => result.current.handleSaveProfile(event()))
+    expect(result.current.profileErrorMsg).toBeTruthy()
+    act(() => result.current.setInviteData({ name: 'Rina', email: 'rina@example.com', role_id: 'r1' }))
+    vi.mocked(settingsService.inviteStaff).mockRejectedValueOnce(error)
+    await act(() => result.current.handleInviteSubmit(event()))
+    expect(result.current.inviteError).toBeTruthy()
+    act(() => result.current.setNewStoreData({ ...result.current.newStoreData, name: 'Toko' }))
+    vi.mocked(settingsService.createStore).mockRejectedValueOnce(error)
+    await act(() => result.current.handleCreateStore(event()))
+    expect(result.current.createStoreError).toBeTruthy()
+    act(() => result.current.setRevokingStaff({ id: 'staff1', name: 'Rina', email: 'rina@example.com', role: 'Kasir', status: 'active' }))
+    vi.mocked(settingsService.revokeStaff).mockRejectedValueOnce(error)
+    await act(() => result.current.handleConfirmRevoke())
+    expect(window.alert).toHaveBeenCalled()
+  })
+  it('refreshes roles and tolerates failures while loading optional tab data', async () => {
+    vi.mocked(settingsService.getRolesList).mockRejectedValueOnce(new Error('Offline'))
+    const { result } = await setup('roles')
+    await act(() => result.current.refreshRoles())
+    expect(result.current.rolesList).toEqual([])
+    vi.mocked(settingsService.getRolesList).mockRejectedValueOnce(new Error('Offline'))
+    await act(() => result.current.refreshRoles())
+    vi.spyOn(settingsService, 'switchStore').mockRejectedValueOnce(new Error('Offline'))
+    await act(() => result.current.handleSwitchStore('s2'))
+    expect(result.current.store?.id).toBe(store.id)
+  })
+})

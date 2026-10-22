@@ -158,6 +158,7 @@ export function useAIChat() {
           role: 'assistant',
           content: resp.content,
           is_error: resp.is_error,
+          error_message: resp.error_message,
           created_at: resp.created_at,
         };
 
@@ -201,6 +202,7 @@ export function useAIChat() {
             role: 'assistant',
             content: 'Terjadi gangguan saat memproses jawaban. Silakan coba lagi.',
             is_error: true,
+            error_message: msg,
             created_at: new Date().toISOString(),
           };
 
@@ -262,6 +264,7 @@ export function useAIChat() {
         role: 'assistant',
         content: resp.content,
         is_error: resp.is_error,
+        error_message: resp.error_message,
         created_at: resp.created_at,
       };
 

@@ -38,21 +38,31 @@ export function StoreDropdown() {
 
   const currentStore = stores.find((s) => s.id === activeStoreId)
   const displayName = currentStore?.name || activeStoreName || "Toko Utama"
+  const roleUpper = currentStore?.role?.toUpperCase()
+  const roleLabel =
+    roleUpper === "OWNER"
+      ? "Pemilik"
+      : roleUpper === "STAFF"
+      ? "Staf"
+      : "Toko aktif"
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="w-full min-w-0 min-h-11 flex items-center gap-2 rounded-lg border border-sidebar-primary bg-sidebar-primary px-2 py-2 text-xs text-sidebar-primary-foreground shadow-sm hover:bg-sidebar-primary/90 data-[state=open]:bg-sidebar-primary/90 cursor-pointer select-none transition-colors outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-          title={`Toko Aktif: ${displayName}`}
-          aria-label={`Toko aktif: ${displayName}. Pilih toko`}
+          className="flex min-h-[72px] w-full min-w-0 cursor-pointer select-none items-center gap-2.5 rounded-t-2xl px-3 py-3 text-sidebar-foreground transition-colors hover:bg-sidebar-accent/60 data-[state=open]:bg-sidebar-accent/60 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:min-h-11 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-t-lg group-data-[collapsible=icon]:px-0"
+          title={`Toko Aktif: ${displayName} (${roleLabel})`}
+          aria-label={`Toko aktif: ${displayName}, peran: ${roleLabel}. Pilih toko`}
         >
-          <Store className="size-3.5 shrink-0" />
-          <span className="min-w-0 flex-1 truncate text-left text-sm font-semibold group-data-[collapsible=icon]:hidden">
-            {displayName}
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground group-data-[collapsible=icon]:size-7 group-data-[collapsible=icon]:rounded-md">
+            <Store className="size-[18px]" aria-hidden="true" />
           </span>
-          <ChevronsUpDown className="size-3 opacity-70 shrink-0 group-data-[collapsible=icon]:hidden" />
+          <span className="min-w-0 flex-1 text-left group-data-[collapsible=icon]:hidden">
+            <span className="mb-0.5 block text-[10px] font-medium text-muted-foreground">{roleLabel}</span>
+            <span className="block truncate text-sm font-semibold">{displayName}</span>
+          </span>
+          <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground group-data-[collapsible=icon]:hidden" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
 
@@ -75,6 +85,13 @@ export function StoreDropdown() {
           ) : (
             stores.map((store) => {
               const isSelected = store.id === activeStoreId
+              const itemRoleUpper = store.role?.toUpperCase()
+              const itemRoleLabel =
+                itemRoleUpper === "OWNER"
+                  ? "Pemilik"
+                  : itemRoleUpper === "STAFF"
+                  ? "Staf"
+                  : store.role
               return (
                 <DropdownMenuItem
                   key={store.id}
@@ -95,13 +112,26 @@ export function StoreDropdown() {
                     <Store className="size-3.5" />
                   </div>
                   <div className="flex flex-col min-w-0 flex-1">
-                    <span
-                      className={`text-xs font-semibold truncate ${
-                        isSelected ? "text-primary" : "text-foreground"
-                      }`}
-                    >
-                      {store.name}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span
+                        className={`text-xs font-semibold truncate ${
+                          isSelected ? "text-primary" : "text-foreground"
+                        }`}
+                      >
+                        {store.name}
+                      </span>
+                      {itemRoleLabel && (
+                        <span
+                          className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-medium leading-none shrink-0 ${
+                            itemRoleUpper === "OWNER"
+                              ? "bg-primary/15 text-primary border border-primary/25"
+                              : "bg-muted text-muted-foreground border border-border"
+                          }`}
+                        >
+                          {itemRoleLabel}
+                        </span>
+                      )}
+                    </div>
                     {(store.category || store.location) && (
                       <span className="text-[10px] text-muted-foreground truncate">
                         {[store.category, store.location]

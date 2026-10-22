@@ -1,10 +1,7 @@
 import { SUBSCRIPTION_TIER_LABELS } from "@/features/subscription/types/subscription"
 import * as React from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import {
   CreditCard,
-  Sparkles,
-  Zap,
   XCircle,
   AlertTriangle,
   Package,
@@ -16,7 +13,6 @@ import {
   UserCheck,
   RefreshCw,
   Calendar,
-  ShieldCheck,
   Receipt,
   Check,
   AlertCircle,
@@ -47,19 +43,28 @@ import { useAuthStore } from "@/store/use-auth-store"
 import {
   useSubscriptionUsage,
   useInvoices,
-  subscriptionKeys,
-  SUBSCRIPTION_USAGE_QUERY_KEY,
 } from "@/features/subscription/hooks"
 import { UpgradeModal } from "@/features/subscription/components/UpgradeModal"
+import { NativePaymentDisplay } from "@/features/subscription/components/NativePaymentDisplay"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { subscriptionService } from "@/features/subscription/services/subscriptionService"
-import { loadMidtransSnap, payWithSnap } from "@/lib/midtrans"
+import { useSubscriptionPayment } from '@/features/subscription/hooks/useSubscriptionPayment'
+import { idlePayment, usePaymentState } from '@/features/subscription/lib/payment-state'
 import type {
   SubscriptionQuotas,
   SubscriptionFeatures,
   SubscriptionInvoice,
   SubscriptionTier,
+  PaymentInstructions,
 } from "@/features/subscription/types/subscription"
 import { CurrencyText } from "@/components/ui/currency-text"
+import '@/features/subscription/styles/subscription.css'
 
 function formatDateId(dateStr?: string | null): string {
   if (!dateStr) return "-"
@@ -123,8 +128,9 @@ const FEATURE_METAS: FeatureMeta[] = [
 ]
 
 export default function SubscriptionPage() {
-  const queryClient = useQueryClient()
   const activeStoreId = useAuthStore((state) => state.activeStoreId)
+  const userId = useAuthStore((state) => state.user?.id)
+  const payment = useSubscriptionPayment()
 
   const {
     data: usage,
@@ -138,16 +144,70 @@ export default function SubscriptionPage() {
     data: invoices = [],
     isLoading: isInvoicesLoading,
     isRefetching: isInvoicesRefetching,
+    isError: isInvoicesError,
     refetch: refetchInvoices,
   } = useInvoices()
 
   const [isUpgradeOpen, setIsUpgradeOpen] = React.useState<boolean>(false)
   const [initialSelectedTier, setInitialSelectedTier] = React.useState<SubscriptionTier | undefined>()
-  const [payingInvoiceId, setPayingInvoiceId] = React.useState<string | null>(null)
+  const [cancelConfirmation, setCancelConfirmation] = React.useState<string | null>(null)
+  const [cancellingInvoiceId, setCancellingInvoiceId] = React.useState<string | null>(null)
+  const [billingError, setBillingError] = React.useState('')
+  const canManageBilling = usage?.can_manage_billing === true
+  const checkedReturn = React.useRef('')
+  React.useEffect(() => {
+    const order = new URLSearchParams(window.location.search).get('order_id')
+    if (!order || !canManageBilling) return
+    const scope = `${userId}:${activeStoreId}:${order}`
+    if (checkedReturn.current === scope) return
+
+    const invoice = invoices.find((item) => item.invoice_number === order)
+    if (invoice) {
+      checkedReturn.current = scope
+      payment.checkStatus(invoice.id)
+      return
+    }
+
+    if (order.startsWith('A12') || !invoices.some((item) => item.invoice_number === order)) {
+      const pending = invoices.find((item) => item.status === 'PENDING' || item.status === 'CHALLENGE')
+      if (pending) {
+        checkedReturn.current = scope
+        payment.checkStatus(pending.id, order)
+      }
+    }
+  }, [invoices, canManageBilling, userId, activeStoreId, payment])
+
+  const [activePaymentModal, setActivePaymentModal] = React.useState<{
+    invoice: SubscriptionInvoice
+    instructions?: PaymentInstructions
+  } | null>(null)
+
+  React.useEffect(() => {
+    if (payment.phase === 'confirmed' && activePaymentModal) {
+      setActivePaymentModal(null)
+    }
+  }, [payment.phase, activePaymentModal])
 
   const handleRefresh = async () => {
-    await Promise.all([refetchUsage(), refetchInvoices()])
+    await Promise.all([refetchUsage(), ...(canManageBilling ? [refetchInvoices()] : [])])
   }
+
+  const checkStatusRef = React.useRef(payment.checkStatus)
+  checkStatusRef.current = payment.checkStatus
+  const handleRefreshRef = React.useRef(handleRefresh)
+  handleRefreshRef.current = handleRefresh
+
+  React.useEffect(() => {
+    const invoiceId = activePaymentModal?.invoice?.id
+    if (!invoiceId) return
+
+    const interval = window.setInterval(async () => {
+      await checkStatusRef.current(invoiceId, undefined, true)
+      await handleRefreshRef.current()
+    }, 5000)
+
+    return () => window.clearInterval(interval)
+  }, [activePaymentModal])
 
   const handleOpenUpgrade = (tier?: SubscriptionTier) => {
     setInitialSelectedTier(tier)
@@ -155,28 +215,40 @@ export default function SubscriptionPage() {
   }
 
   const handlePayInvoice = async (invoice: SubscriptionInvoice) => {
-    setPayingInvoiceId(invoice.id)
+    let instructions: PaymentInstructions | undefined
+    if (invoice.metadata) {
+      try {
+        const meta = typeof invoice.metadata === 'string' ? JSON.parse(invoice.metadata) : invoice.metadata
+        instructions = meta?.instructions
+      } catch {}
+    }
+    if (!instructions) {
+      try {
+        const res = await subscriptionService.checkout(invoice.tier, invoice.payment_method)
+        if (res.instructions) {
+          instructions = res.instructions
+        }
+      } catch {}
+    }
+    if (instructions) {
+      setActivePaymentModal({ invoice, instructions })
+    } else {
+      await payment.openInvoice(invoice)
+    }
+  }
+
+  const handleCancelInvoice = async (invoice: SubscriptionInvoice) => {
+    setCancellingInvoiceId(invoice.id)
+    setBillingError('')
     try {
-      if (invoice.snap_token) {
-        const config = await subscriptionService.getMidtransConfig()
-        await loadMidtransSnap(config.client_key)
-        payWithSnap(invoice.snap_token, {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: subscriptionKeys.invoices() })
-            queryClient.invalidateQueries({
-              queryKey: [SUBSCRIPTION_USAGE_QUERY_KEY, activeStoreId],
-            })
-          },
-        })
-      } else if (invoice.snap_redirect_url) {
-        window.open(invoice.snap_redirect_url, "_blank")
-      }
-    } catch {
-      if (invoice.snap_redirect_url) {
-        window.open(invoice.snap_redirect_url, "_blank")
-      }
+      await subscriptionService.cancelInvoice(invoice.id)
+      usePaymentState.getState().update({ ...idlePayment, scope: `${userId}:${activeStoreId}` })
+      setCancelConfirmation(null)
+      await payment.refresh()
+    } catch (error) {
+      setBillingError(error instanceof Error ? error.message : 'Tagihan belum dapat dibatalkan. Silakan coba lagi.')
     } finally {
-      setPayingInvoiceId(null)
+      setCancellingInvoiceId(null)
     }
   }
 
@@ -204,9 +276,15 @@ export default function SubscriptionPage() {
       case "PENDING":
         return <Badge variant="warning">Menunggu Pembayaran</Badge>
       case "FAILED":
+      case "DENY":
         return <Badge variant="destructive">Gagal</Badge>
       case "CANCELLED":
+      case "CANCEL":
         return <Badge variant="secondary">Dibatalkan</Badge>
+      case "EXPIRED":
+        return <Badge variant="secondary">Kedaluwarsa</Badge>
+      case "CHALLENGE":
+        return <Badge variant="warning">Dalam Peninjauan</Badge>
       default:
         return <Badge variant="outline">{status || "-"}</Badge>
     }
@@ -245,34 +323,34 @@ export default function SubscriptionPage() {
     : 0
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="subscription-page space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="subscription-page-heading">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Paket & Langganan</h1>
+          <h1>Paket & Langganan</h1>
           <p className="text-sm text-muted-foreground">
-            Pantau status paket toko, kapasitas kuota operasional, dan riwayat tagihan Anda.
+            Kelola paket, pantau kapasitas, dan lihat riwayat pembayaran Anda.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+        <div className="subscription-page-actions">
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="gap-1.5"
+            className="subscription-button gap-1.5"
           >
             <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
             Refresh
           </Button>
-          <Button
+          {canManageBilling && usage.tier === 'GROWTH' && <Button
             size="sm"
             onClick={() => handleOpenUpgrade()}
-            className="flex-1 sm:flex-initial gap-1.5 bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 text-primary-foreground shadow-xs font-medium"
+            variant="outline"
+            className="subscription-button"
           >
-            <Sparkles className="h-4 w-4" />
-            Upgrade / Ganti Paket
-          </Button>
+            Bandingkan paket
+          </Button>}
         </div>
       </div>
 
@@ -297,246 +375,192 @@ export default function SubscriptionPage() {
               </p>
             </div>
           </div>
-          <Button
+          {canManageBilling && <Button
             size="sm"
             onClick={() => handleOpenUpgrade(usage.tier)}
             className="shrink-0 bg-amber-900 hover:bg-amber-950 text-amber-50 font-semibold"
           >
             Perpanjang Sekarang
-          </Button>
+          </Button>}
         </div>
       )}
 
-      {/* Plan Status Hero Card */}
-      <Card className="border shadow-xs bg-gradient-to-br from-card via-card to-muted/20">
-        <CardContent className="p-5 sm:p-6">
-          <div className="grid gap-6 md:grid-cols-4">
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Paket Saat Ini
-              </span>
-              <div className="flex items-center gap-2">
-                <Badge data-tier={usage.tier} className="subscription-tier text-sm px-2.5 py-0.5 font-bold">
-                  {SUBSCRIPTION_TIER_LABELS[usage.tier]}
-                </Badge>
-                {usage.effective_tier && usage.effective_tier !== usage.tier && (
-                  <Badge variant="outline" className="text-xs text-muted-foreground">
-                    Efektif: {SUBSCRIPTION_TIER_LABELS[usage.effective_tier]}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Status Langganan
-              </span>
-              <div>{getStatusBadge(usage.status)}</div>
-            </div>
-
-            <div className="space-y-1.5">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Masa Berlaku
-              </span>
-              <div className="flex items-center gap-1.5 text-sm font-semibold">
-                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>
-                  {usage.tier === "FREE"
-                    ? "Selamanya Bebas Biaya"
-                    : formatDateId(usage.current_period_end)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center md:justify-end">
-              <Button
-                onClick={() => handleOpenUpgrade()}
-                variant="outline"
-                className="w-full md:w-auto gap-2 border-primary/30 text-primary hover:bg-primary/5"
-              >
-                <Zap className="h-4 w-4 fill-primary/20" />
-                Pilih Paket Baru
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quota Usage Section */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Penggunaan Kuota Toko</h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Monitor batas kapasitas data operasional sesuai alokasi paket langganan Anda.
-            </p>
+      <section className="subscription-current-plan" aria-label="Ringkasan paket aktif">
+        <div className="subscription-plan-identity" data-tier={usage.effective_tier || usage.tier}>
+          <p>Paket saat ini</p>
+          <div className="subscription-plan-name">{SUBSCRIPTION_TIER_LABELS[usage.tier]}</div>
+          <p>{usage.tier === 'FREE' ? 'Mulai kelola operasional toko, lalu tingkatkan kapasitas saat bisnis berkembang.' : 'Kapasitas dan fitur untuk mendukung aktivitas toko dan seluruh cabang Anda.'}</p>
+        </div>
+        <div className="subscription-plan-meta">
+          <dl className="subscription-plan-facts">
+            <div><dt>Status langganan</dt><dd>{getStatusBadge(usage.status)}</dd></div>
+            <div><dt>Masa berlaku</dt><dd className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />{usage.tier === 'FREE' ? 'Tanpa batas waktu' : formatDateId(usage.current_period_end)}</dd></div>
+          </dl>
+          {usage.effective_tier && usage.effective_tier !== usage.tier && <p className="text-sm text-muted-foreground">Akses saat ini mengikuti paket {SUBSCRIPTION_TIER_LABELS[usage.effective_tier]}.</p>}
+          <div className="subscription-plan-meta-footer">
+            <p>{usage.tier === 'FREE' ? 'Pilih paket sesuai kebutuhan kapasitas toko.' : 'Pembayaran satu kali. Perpanjang kapan saja tanpa kehilangan sisa hari.'}</p>
+            {canManageBilling ? <Button className="subscription-button" onClick={() => handleOpenUpgrade(usage.tier)}>
+              {usage.tier === 'FREE' ? 'Mulai berlangganan' : 'Perpanjang paket'}
+            </Button> : <span className="text-sm text-muted-foreground">Dikelola pemilik toko</span>}
           </div>
         </div>
+      </section>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {QUOTA_RESOURCES.map((res) => {
-            const item = usage.quotas[res.key] || { current: 0, limit: 0, remaining: 0 }
-            const Icon = res.icon
-            const isUnlimited = item.limit === -1
-            const percentage =
-              isUnlimited || item.limit <= 0
-                ? 0
-                : Math.min(100, Math.round((item.current / item.limit) * 100))
+      <p className="subscription-account-note"><Store className="h-3.5 w-3.5" aria-hidden="true" /><span>{canManageBilling
+        ? 'Satu langganan untuk seluruh cabang milik akun Anda. Kuota di bawah mengikuti toko yang sedang dipilih, kecuali jumlah cabang.'
+        : 'Paket ini mengikuti langganan pemilik toko. Hubungi pemilik untuk mengelola pembayaran atau perubahan paket.'}</span></p>
 
-            // Determine status color styling
-            let barColor = "bg-emerald-500"
-            let badgeBg = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300"
-            let statusText: string
-
-            if (isUnlimited) {
-              barColor = "bg-emerald-500"
-              badgeBg = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300"
-              statusText = "Unlimited"
-            } else if (item.current >= item.limit) {
-              barColor = "bg-rose-500"
-              badgeBg = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300"
-              statusText = "Batas Tercapai"
-            } else if (percentage >= 80) {
-              barColor = "bg-amber-500"
-              badgeBg = "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300"
-              statusText = `${percentage}% Terpakai`
-            } else {
-              statusText = `${percentage}% Terpakai`
-            }
-
-            return (
-              <Card key={res.key} className="shadow-xs hover:border-border/80 transition-colors">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-muted text-muted-foreground shrink-0">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-sm font-semibold">{res.label}</CardTitle>
-                        <CardDescription className="text-[11px] leading-tight">
-                          {res.sublabel}
-                        </CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className={cn("text-[10px] font-semibold px-1.5 py-0", badgeBg)}>
-                      {statusText}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2.5 pt-0">
-                  <div className="flex items-baseline justify-between text-xs">
-                    <span className="text-muted-foreground">Kapasitas:</span>
-                    <span className="font-mono text-sm font-bold text-foreground">
-                      {item.current}{" "}
-                      <span className="text-xs font-normal text-muted-foreground">
-                        / {isUnlimited ? "∞" : item.limit}
-                      </span>
-                    </span>
-                  </div>
-
-                  {isUnlimited ? (
-                    <div className="w-full bg-emerald-100 dark:bg-emerald-950/30 rounded-full h-2 overflow-hidden">
-                      <div className="h-2 rounded-full bg-emerald-500 w-full opacity-60" />
-                    </div>
-                  ) : (
-                    <Progress
-                      value={percentage}
-                      indicatorClassName={barColor}
-                      className="h-2"
-                    />
-                  )}
-
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                    <span>
-                      {isUnlimited
-                        ? "Tanpa batas alokasi"
-                        : `Tersisa: ${Math.max(0, item.limit - item.current)}`}
-                    </span>
-                    {!isUnlimited && item.current >= item.limit && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenUpgrade()}
-                        className="text-primary hover:underline font-semibold cursor-pointer"
-                      >
-                        Tambah Kuota
-                      </button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
+      {canManageBilling && payment.phase === 'confirmed' && payment.message && (
+        <div role="status" className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-foreground flex items-center gap-2">
+          <Check className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+          <span>{payment.message}</span>
         </div>
-      </div>
+      )}
+      {billingError && <p role="alert" className="text-sm text-destructive">{billingError}</p>}
+      {canManageBilling && isInvoicesError && <div role="alert" className="rounded-lg border p-4 space-y-2">
+        <p>Tagihan belum dapat dimuat. Coba lagi sebelum memulai pembayaran baru.</p>
+        <Button variant="outline" size="sm" onClick={() => void refetchInvoices()}>Muat ulang tagihan</Button>
+      </div>}
+      {canManageBilling && !isInvoicesError && invoices.filter((invoice) => invoice.status === 'PENDING' || invoice.status === 'CHALLENGE').map((invoice) => {
+        const isCurrentChecking = payment.isChecking && payment.invoiceId === invoice.id
+        const hasPaymentFeedback = payment.invoiceId === invoice.id && payment.phase !== 'idle' && payment.message
+        const isError = payment.invoiceId === invoice.id && payment.phase === 'error'
 
-      {/* Plan Features Checklist Section */}
-      <Card className="shadow-xs">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-semibold">Fitur & Layanan Aktif</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Rincian fungsionalitas sistem yang terbuka berdasarkan paket langganan Anda saat ini.
-              </CardDescription>
-            </div>
-            <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {FEATURE_METAS.map((feat) => {
-              const isEnabled = Boolean(usage.features?.[feat.key])
-              return (
+        return (
+          <Card key={invoice.id} className={cn("subscription-pending", isError && "border-destructive/60 bg-destructive/5")}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertCircle className={cn("subscription-pending-icon h-5 w-5 shrink-0", isError && "text-destructive")} aria-hidden="true" />
+                Pembayaran belum selesai
+              </CardTitle>
+              <CardDescription>{invoice.invoice_number} · {SUBSCRIPTION_TIER_LABELS[invoice.tier]}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="subscription-pending-amount"><CurrencyText value={invoice.amount} /></p>
+              {hasPaymentFeedback ? (
                 <div
-                  key={feat.key}
+                  role={isError ? "alert" : "status"}
                   className={cn(
-                    "flex items-start gap-3 p-3.5 rounded-lg border transition-colors",
-                    isEnabled
-                      ? "bg-card border-border/80"
-                      : "bg-muted/30 border-dashed border-border/50 opacity-60"
+                    "subscription-pending-description text-sm rounded-md p-2.5",
+                    isError
+                      ? "bg-destructive/10 text-destructive border border-destructive/20 font-medium"
+                      : "bg-amber-500/10 text-foreground border border-amber-500/20"
                   )}
                 >
-                  <div
-                    className={cn(
-                      "mt-0.5 rounded-full p-1 shrink-0",
-                      isEnabled
-                        ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400"
-                        : "bg-muted text-muted-foreground"
-                    )}
+                  {payment.message}
+                </div>
+              ) : (
+                <p className="subscription-pending-description text-sm">
+                  {invoice.status === 'CHALLENGE'
+                    ? 'Pembayaran sedang ditinjau oleh penyedia pembayaran. Periksa status sebelum mencoba lagi.'
+                    : 'Lanjutkan pembayaran yang sudah dibuat atau batalkan untuk memilih paket lain.'}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {invoice.status === 'PENDING' && (
+                  <Button
+                    size="sm"
+                    disabled={payment.phase === 'opening' || isCurrentChecking || !!cancellingInvoiceId}
+                    onClick={() => void handlePayInvoice(invoice)}
                   >
-                    {isEnabled ? (
-                      <Check className="h-3.5 w-3.5 stroke-[2.5]" />
-                    ) : (
-                      <XCircle className="h-3.5 w-3.5" />
-                    )}
-                  </div>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-foreground">
-                        {feat.title}
-                      </span>
-                      {isEnabled ? (
-                        <Badge variant="success" className="text-[10px] py-0 px-1.5 h-4">
-                          Aktif
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
-                          Terkunci
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{feat.description}</p>
+                    Lanjutkan pembayaran
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isCurrentChecking || payment.phase === 'opening' || !!cancellingInvoiceId}
+                  aria-busy={isCurrentChecking}
+                  onClick={() => void payment.checkStatus(invoice.id)}
+                >
+                  {isCurrentChecking ? (
+                    <>
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      Memeriksa…
+                    </>
+                  ) : (
+                    'Cek status'
+                  )}
+                </Button>
+                {invoice.status === 'PENDING' && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={isCurrentChecking || !!cancellingInvoiceId}
+                    onClick={() => setCancelConfirmation(invoice.id)}
+                  >
+                    Batalkan tagihan
+                  </Button>
+                )}
+              </div>
+              {cancelConfirmation === invoice.id && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-sm">Batalkan tagihan ini? Setelah pembatalan dikonfirmasi, pembayaran ini tidak dapat dilanjutkan.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={!!cancellingInvoiceId}
+                      onClick={() => void handleCancelInvoice(invoice)}
+                    >
+                      {cancellingInvoiceId ? 'Membatalkan…' : 'Ya, batalkan tagihan'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!!cancellingInvoiceId}
+                      onClick={() => setCancelConfirmation(null)}
+                    >
+                      Tetap lanjutkan
+                    </Button>
                   </div>
                 </div>
-              )
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
+
+      <div className="subscription-details-grid">
+        <section className="subscription-panel" aria-labelledby="subscription-quota-title">
+          <div className="subscription-panel-heading">
+            <div><h2 id="subscription-quota-title">Penggunaan Kuota Toko</h2><p>Kapasitas yang tersedia untuk aktivitas toko Anda.</p></div>
+          </div>
+          <div className="subscription-quota-grid">
+            {QUOTA_RESOURCES.map((res) => {
+              const item = usage.quotas[res.key] || { current: 0, limit: 0, remaining: 0 }
+              const Icon = res.icon
+              const isUnlimited = item.limit === -1
+              const percentage = isUnlimited || item.limit <= 0 ? 0 : Math.min(100, Math.round((item.current / item.limit) * 100))
+              const reached = !isUnlimited && item.current >= item.limit
+              return <div key={res.key} className="subscription-quota">
+                <div className="subscription-quota-top"><Icon className="h-4 w-4" aria-hidden="true" />{res.label}</div>
+                <div className="subscription-quota-value"><strong>{item.current.toLocaleString('id-ID')}</strong><span>/ {isUnlimited ? 'tanpa batas' : item.limit.toLocaleString('id-ID')}</span></div>
+                <Progress value={isUnlimited ? 0 : percentage} indicatorClassName={reached ? 'bg-destructive' : percentage >= 80 ? 'bg-warning' : 'bg-primary'} className="h-1.5" aria-label={`Penggunaan ${res.label}`} />
+                <div className="subscription-quota-caption">
+                  <span>{isUnlimited ? 'Kapasitas tanpa batas' : reached ? 'Batas tercapai' : `${Math.max(0, item.limit - item.current).toLocaleString('id-ID')} tersedia`}</span>
+                  {canManageBilling && usage.tier !== 'MAX_GROWTH' && reached && <button type="button" onClick={() => handleOpenUpgrade()} className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">Lihat pilihan paket</button>}
+                </div>
+              </div>
             })}
           </div>
-        </CardContent>
-      </Card>
+        </section>
+        <section className="subscription-panel" aria-labelledby="subscription-features-title">
+          <div className="subscription-panel-heading"><div><h2 id="subscription-features-title">Fitur & Layanan Aktif</h2><p>Akses fitur sesuai paket langganan.</p></div></div>
+          <div className="subscription-feature-list">
+            {FEATURE_METAS.map((feature) => {
+              const enabled = Boolean(usage.features?.[feature.key])
+              return <div key={feature.key} className="subscription-feature" data-enabled={enabled}>
+                <span className="subscription-feature-mark" aria-hidden="true">{enabled ? <Check className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}</span>
+                <div><h3>{feature.title}</h3><p>{feature.description}</p><span className="subscription-feature-state">{enabled ? 'Termasuk dalam paket' : 'Belum tersedia di paket Anda'}</span></div>
+              </div>
+            })}
+          </div>
+        </section>
+      </div>
 
       {/* Invoices / Billing History Table Section */}
-      <Card className="shadow-xs">
+      {canManageBilling && <Card className="subscription-panel shadow-none">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
@@ -563,7 +587,7 @@ export default function SubscriptionPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {isInvoicesLoading ? (
+          {isInvoicesError ? <div role="alert" className="p-4 text-sm">Riwayat tagihan gagal dimuat. Gunakan tombol refresh untuk mencoba lagi.</div> : isInvoicesLoading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
@@ -592,12 +616,12 @@ export default function SubscriptionPage() {
               <TableBody>
                 {invoices.map((inv) => {
                   const isPending = inv.status === "PENDING"
-                  const isPayingThis = payingInvoiceId === inv.id
+                  const isPayingThis = payment.phase === 'opening'
                   const dateStr = inv.paid_at || inv.created_at || inv.billing_period_start
 
                   return (
                     <TableRow key={inv.id}>
-                      <TableCell className="font-mono text-xs font-semibold text-foreground">
+                      <TableCell className="text-xs font-medium text-foreground">
                         {inv.invoice_number || inv.id.slice(0, 12)}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
@@ -612,7 +636,7 @@ export default function SubscriptionPage() {
                           {SUBSCRIPTION_TIER_LABELS[inv.tier]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs font-mono font-medium">
+                      <TableCell className="text-xs tabular-nums font-medium">
                         <CurrencyText value={inv.amount} />
                       </TableCell>
                       <TableCell className="text-xs uppercase text-muted-foreground">
@@ -626,7 +650,7 @@ export default function SubscriptionPage() {
                             variant="default"
                             onClick={() => handlePayInvoice(inv)}
                             disabled={isPayingThis}
-                            className="h-7 px-2.5 text-xs font-medium gap-1 bg-amber-600 hover:bg-amber-700 text-white"
+                            className="h-8 px-3 text-xs font-medium gap-1"
                           >
                             {isPayingThis ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -646,7 +670,7 @@ export default function SubscriptionPage() {
             </Table>
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Upgrade / Change Plan Modal */}
       <UpgradeModal
@@ -656,8 +680,43 @@ export default function SubscriptionPage() {
           setInitialSelectedTier(undefined)
         }}
         initialSelectedTier={initialSelectedTier}
-        reason="Pilih paket langganan yang sesuai dengan kebutuhan kapasitas dan fitur operasional toko Anda."
       />
+
+      {/* Active Native Payment Instructions Modal */}
+      {activePaymentModal && (
+        <Dialog
+          open={!!activePaymentModal}
+          onOpenChange={(open) => {
+            if (!open) setActivePaymentModal(null)
+          }}
+        >
+          <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Instruksi Pembayaran</DialogTitle>
+              <DialogDescription>
+                Selesaikan pembayaran untuk mengaktifkan paket langganan Anda.
+              </DialogDescription>
+            </DialogHeader>
+            <NativePaymentDisplay
+              invoice={activePaymentModal.invoice}
+              instructions={activePaymentModal.instructions}
+              onCheckStatus={async (id) => {
+                await payment.checkStatus(id)
+                await handleRefresh()
+                if (payment.phase === 'confirmed') {
+                  setActivePaymentModal(null)
+                }
+              }}
+              onCancelInvoice={async (inv) => {
+                await handleCancelInvoice(inv)
+                setActivePaymentModal(null)
+              }}
+              isChecking={payment.isChecking}
+              statusMessage={payment.message}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

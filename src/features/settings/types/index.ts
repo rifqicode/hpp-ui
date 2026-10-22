@@ -7,6 +7,7 @@ export interface StoreInfo {
   description?: string;
   isMain?: boolean;
   status: "online" | "offline";
+  role?: "OWNER" | "STAFF" | string;
   createdAt?: string;
 }
 

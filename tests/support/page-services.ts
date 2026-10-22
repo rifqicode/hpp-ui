@@ -12,6 +12,7 @@ import { salesService } from '@/features/sales/services/sales-service'
 import { settingsService } from '@/features/settings/services/settings-service'
 import { subscriptionService } from '@/features/subscription/services/subscriptionService'
 import { dashboardService } from '@/features/dashboard/services/dashboard-service'
+import { dashboardFixture } from './dashboard-fixture'
 import { useAuthStore } from '@/store/use-auth-store'
 import { batch, calendar, order, permissions, product, stock, stockDetail, store, supplier, usage, user } from './fixtures'
 
@@ -26,9 +27,14 @@ export function resetSession(authenticated = true) {
 }
 
 export function mockPageServices() {
+  vi.spyOn(dashboardService, 'getOverview').mockResolvedValue(dashboardFixture())
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true, json: async () => ({ success: true, data: { whatsapp: null } }),
+  }))
   // Any request missing a fixture must fail before reaching the network.
-  const adapter = vi.fn(async () => { throw new Error('Unexpected API request: add a test fixture') })
-  vi.spyOn(apiClient.defaults, 'adapter', 'get').mockReturnValue(adapter)
+  for (const method of ['get', 'post', 'put', 'patch', 'delete'] as const) {
+    vi.spyOn(apiClient, method).mockRejectedValue(new Error('Unexpected API request: add a test fixture'))
+  }
 
   vi.spyOn(authService, 'getCurrentUser').mockResolvedValue({ user, token: 'test-token' })
   vi.spyOn(authService, 'getInviteDetails').mockResolvedValue({ email: user.email, name: user.name, store_name: store.name, role_name: 'Kasir', is_existing_user: false })
@@ -69,7 +75,7 @@ export function mockPageServices() {
   vi.spyOn(overheadService, 'getOverheads').mockResolvedValue([])
   vi.spyOn(overheadService, 'getPaginatedOverheads').mockResolvedValue({ items: [], total: 0, page: 1, limit: 10, totalPages: 1 })
   vi.spyOn(overheadService, 'getOverheadSummary').mockResolvedValue({ total_overheads: 0, active_count: 0, inactive_count: 0, production_count: 0, operational_count: 0 })
-  vi.spyOn(customerService, 'getCustomers').mockResolvedValue({ items: [], total: 0, page: 1, limit: 10, totalPages: 1 })
+  vi.spyOn(customerService, 'getCustomers').mockResolvedValue({ data: [], total: 0, page: 1, per_page: 10, total_pages: 1 })
   vi.spyOn(customerService, 'getCustomerSummary').mockResolvedValue({ total_customers: 0, active_customers: 0, total_spent_amount: 0 })
   vi.spyOn(salesService, 'getProducts').mockResolvedValue([])
   vi.spyOn(salesService, 'getPaginatedSales').mockResolvedValue({ data: [], total: 0, page: 1, per_page: 10, total_pages: 1 })
@@ -78,6 +84,23 @@ export function mockPageServices() {
   vi.spyOn(subscriptionService, 'getInvoices').mockResolvedValue([])
   vi.spyOn(subscriptionService, 'getPlans').mockResolvedValue([])
   vi.spyOn(subscriptionService, 'getNotifications').mockResolvedValue([])
+  vi.spyOn(subscriptionService, 'syncStatus').mockResolvedValue({
+    invoice: {
+      id: 'inv-default',
+      invoice_number: 'INV-DEFAULT',
+      tier: 'GROWTH',
+      amount: 175000,
+      currency: 'IDR',
+      status: 'PAID',
+      payment_method: 'MIDTRANS',
+      billing_period_start: new Date().toISOString(),
+      billing_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
+    },
+    changed: false,
+    provider_checked: true,
+    provider_status: 'settlement',
+    checked_at: new Date().toISOString(),
+  })
   vi.spyOn(dashboardService, 'getOperationalDashboard').mockResolvedValue({ active_batches: [], active_batch_count: 0, waste_scrap_summary: { total_target_quantity: '0', total_good_quantity: '0', total_waste_quantity: '0', scrap_rate_pct: '0', completed_batches: 0 }, low_stock_alerts: [], expiring_batches: [], pending_po_count: 0, total_inventory_valuation: '0' })
   vi.spyOn(dashboardService, 'getHPPDashboard').mockResolvedValue({ period: 'week', cost_breakdown: { bom_cost: '0', labor_cost: '0', overhead_cost: '0', total_cost: '0', bom_share_pct: '0', labor_share_pct: '0', overhead_share_pct: '0' }, average_product_margin: '0', star_products: [], at_risk_products: [], realized_vs_recipe_hpp: [], sales_summary: { total_revenue: '0', total_cost: '0', gross_profit: '0', profit_margin_pct: '0', total_transactions: 0 } })
 }

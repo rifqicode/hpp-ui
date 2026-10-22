@@ -8,7 +8,7 @@ import {
 } from '@/lib/number-format'
 
 describe('localized number formatting', () => {
-  it.each([
+  it.each<[number | string | null | undefined, string]>([
     [undefined, ''], [null, ''], ['', ''], ['   ', ''],
     [0, '0'], [1500000, '1.500.000'], ['0001250', '1.250'],
   ])('formats %s as %s', (value, expected) => {

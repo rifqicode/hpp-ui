@@ -1,26 +1,8 @@
 import * as React from "react"
 import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useSearchParams } from "react-router-dom"
-import {
-  Settings,
-  User,
-  Shield,
-  KeyRound,
-  Laptop,
-  Smartphone,
-  AlertOctagon,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Trash2,
-  Camera,
-  Phone,
-  Mail,
-  RefreshCw,
-  Eye,
-  EyeOff,
-} from "lucide-react"
+import { User, Shield, KeyRound, Laptop, Smartphone, AlertOctagon, CheckCircle2, AlertCircle, Loader2, Trash2, Camera, RefreshCw, Eye, EyeOff } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -36,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import { ProfilePhotoDialog } from "@/features/settings/components/profile-photo-dialog"
 import {
@@ -49,37 +30,41 @@ import {
 } from "@/components/ui/dialog"
 
 import { useAccountSettings } from "@/features/settings/hooks"
-import { cn } from "@/lib/utils"
 
-interface AccountTabItem {
-  value: string
+const ACCOUNT_TABS = [
+  { value: "profile", label: "Profil Pengguna", description: "Identitas & kontak", icon: User },
+  { value: "security", label: "Keamanan & Sesi", description: "Kata sandi & perangkat", icon: Shield },
+  { value: "danger", label: "Zona Bahaya", description: "Penghapusan akun", icon: AlertOctagon },
+] as const
+
+interface PasswordFieldProps {
+  id: string
   label: string
-  icon: React.ElementType
-  className?: string
+  value: string
+  onChange: (value: string) => void
+  visible: boolean
+  onToggle: () => void
+  autoComplete: string
+  placeholder?: string
 }
 
-const ACCOUNT_TABS: AccountTabItem[] = [
-  {
-    value: "profile",
-    label: "Profil Pengguna",
-    icon: User,
-  },
-  {
-    value: "security",
-    label: "Keamanan & Sesi",
-    icon: Shield,
-  },
-  {
-    value: "danger",
-    label: "Zona Bahaya",
-    icon: AlertOctagon,
-    className: "hover:text-destructive hover:bg-destructive/10 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground data-[state=active]:shadow-md data-[state=active]:shadow-destructive/30 data-[state=active]:font-bold",
-  },
-]
+function PasswordField({ id, label, value, onChange, visible, onToggle, autoComplete, placeholder }: PasswordFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs font-medium">{label}</Label>
+      <div className="relative">
+        <Input id={id} type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} autoComplete={autoComplete} placeholder={placeholder} required className="h-11 pr-12 text-sm" />
+        <button type="button" aria-label={`${visible ? "Sembunyikan" : "Tampilkan"} ${label.toLowerCase()}`} aria-pressed={visible} onClick={onToggle} className="absolute right-0 top-0 flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{visible ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}</button>
+      </div>
+    </div>
+  )
+}
 
 export default function GeneralSettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get("tab") || "profile"
+  const requestedTab = searchParams.get("tab")
+  const activeTab = ACCOUNT_TABS.some((tab) => tab.value === requestedTab) ? requestedTab! : "profile"
+  const isCompactLayout = useIsMobile(1280)
 
   const handleTabChange = (val: string) => {
     setSearchParams({ tab: val }, { replace: true })
@@ -135,7 +120,7 @@ export default function GeneralSettingsPage() {
   const isStaff =
     currentUser?.account_type?.toUpperCase() === "STAFF" ||
     (!currentUser?.account_type && currentUser?.role?.toUpperCase() === "STAFF")
-  const accountRoleLabel = isStaff ? "Staff" : "Account Owner"
+  const accountRoleLabel = isStaff ? "Staf" : "Pemilik Akun"
 
   const isInitialLoading = useInitialLoading(loadingInitial)
   if (isInitialLoading) {
@@ -144,508 +129,127 @@ export default function GeneralSettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-12 animate-in fade-in duration-500 w-full">
-      {/* Header */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Settings className="h-6 w-6 text-primary" />
-            Pengaturan & Profil Akun
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Kelola profil pemilik usaha, keamanan akun, dan preferensi kalkulasi HPP.
-          </p>
-        </div>
-      </div>
+    <div className="w-full min-w-0 space-y-5 pb-8">
+      <header>
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Pengaturan & Profil Akun</h1>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Kelola profil pribadi, kata sandi, dan perangkat yang terhubung.</p>
+      </header>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="flex overflow-x-auto sm:grid sm:grid-flow-col sm:auto-cols-fr gap-1 bg-muted/60 p-1 rounded-xl border border-border h-auto w-full md:w-auto md:inline-grid no-scrollbar">
-          {ACCOUNT_TABS.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className={cn(
-                  "shrink-0 rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold whitespace-nowrap",
-                  tab.className
-                )}
-              >
-                <Icon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{tab.label}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={handleTabChange} orientation={isCompactLayout ? "horizontal" : "vertical"} className="grid min-w-0 items-start gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
+        <aside aria-label="Bagian pengaturan akun" className="min-w-0 xl:sticky xl:top-0">
+          <TabsList aria-label="Pengaturan akun" className="grid h-auto w-full grid-cols-2 justify-start gap-1 rounded-xl border bg-card p-1.5 sm:grid-cols-3 xl:grid-cols-1">
+            {ACCOUNT_TABS.map((tab) => {
+              const Icon = tab.icon
+              return (
+                <TabsTrigger key={tab.value} value={tab.value} aria-label={tab.label} className={`group/account-tab min-h-11 min-w-0 justify-start gap-2 rounded-lg px-2.5 py-2.5 text-left text-xs font-medium text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground data-[state=active]:bg-primary data-[state=active]:font-semibold data-[state=active]:text-primary-foreground data-[state=active]:shadow-none data-[state=active]:hover:bg-primary/90 data-[state=active]:hover:text-primary-foreground xl:gap-3 xl:px-3 ${tab.value === "danger" ? "col-span-2 sm:col-span-1" : ""}`}>
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0"><span className="block whitespace-normal leading-4">{tab.label}</span><span className="mt-0.5 hidden text-[10px] font-normal text-muted-foreground group-data-[state=active]/account-tab:text-primary-foreground xl:block">{tab.description}</span></span>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </aside>
 
-        {/* ================= TAB 1: PROFIL PENGGUNA ================= */}
-        <TabsContent value="profile" className="mt-4 space-y-6">
-          <Card className="rounded-xl shadow-sm border-border w-full">
-            <CardHeader className="pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base">Informasi Profil Akun</CardTitle>
-                  <CardDescription>
-                    Data profil pengelola yang ditampilkan di header dan catatan riwayat operasional toko.
-                  </CardDescription>
-                </div>
-                <Badge variant="default" className="self-start sm:self-center shrink-0 bg-primary text-primary-foreground text-[10px] font-bold">
-                  {isStaff ? "STAFF" : "ACCOUNT OWNER"}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {profileMsg && (
-                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>{profileMsg}</span>
-                </div>
-              )}
-
-              {profileError && (
-                <div className="p-3.5 rounded-xl bg-destructive/10 text-destructive text-xs font-medium flex items-center gap-2 animate-in fade-in">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{profileError}</span>
-                </div>
-              )}
-
-              {/* Avatar Section */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-border">
-                <div className="flex items-center gap-4">
-                  <div className="relative group cursor-pointer" onClick={() => setIsPhotoDialogOpen(true)}>
-                    <UserAvatar
-                      src={avatarUrl}
-                      name={name}
-                      className="size-20 border-2 border-primary/20 shadow-md transition-transform group-hover:scale-[1.02]"
-                      fallbackClassName="text-2xl font-bold"
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setIsPhotoDialogOpen(true)
-                      }}
-                      className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
-                      title="Ganti Foto Profil"
-                    >
-                      <Camera className="h-5 w-5" />
-                    </button>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-lg text-foreground">{name || "Pengguna HPP"}</span>
-                      <span className="text-emerald-600 font-semibold text-xs flex items-center gap-1">
-                        <ShieldCheck className="h-3.5 w-3.5" /> Terverifikasi
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{email}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Klik avatar atau tombol di samping untuk mengganti foto profil Anda.
-                    </p>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl text-xs"
-                  onClick={() => setIsPhotoDialogOpen(true)}
-                >
-                  <Camera className="mr-1.5 h-3.5 w-3.5" />
-                  Ubah Foto Profil
-                </Button>
-              </div>
-
-              {/* Profile Details Form */}
-              <form onSubmit={handleSaveProfile} className="space-y-5 w-full">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="prof-name" className="text-xs font-semibold">
-                      Nama Lengkap <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="prof-name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Contoh: Budi Santoso"
-                        className="pl-9 rounded-xl"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="prof-email" className="text-xs font-semibold">
-                      Alamat Email <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="prof-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="nama@tokoroti.com"
-                        className="pl-9 rounded-xl"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="prof-phone" className="text-xs font-semibold">
-                      Nomor Telepon / WhatsApp
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="prof-phone"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="0812-3456-7890"
-                        className="pl-9 rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Peran Akun (Role)</Label>
-                    <Input
-                      value={accountRoleLabel}
-                      disabled
-                      className="rounded-xl bg-muted/40 text-muted-foreground text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="prof-bio" className="text-xs font-semibold">
-                    Bio Singkat / Catatan Jabatan
-                  </Label>
-                  <Textarea
-                    id="prof-bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Contoh: Pemilik Toko Roti Enak & Praktisi Kuliner UMKM"
-                    rows={3}
-                    className="rounded-xl text-sm"
-                  />
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button type="submit" className="rounded-xl shadow-sm font-semibold px-6" disabled={isSavingProfile}>
-                    {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Simpan Perubahan Profil
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ================= TAB 2: KEAMANAN & SESI ================= */}
-        <TabsContent value="security" className="mt-4 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Change Password Card */}
-            <Card className="rounded-xl shadow-sm border-border">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <KeyRound className="h-4 w-4 text-primary" />
-                  Ubah Kata Sandi
-                </CardTitle>
-                <CardDescription>
-                  Gunakan kata sandi yang kuat untuk menjaga keamanan data finansial toko Anda.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {passwordMsg && (
-                  <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span>{passwordMsg}</span>
-                  </div>
-                )}
-
-                {passwordError && (
-                  <div className="mb-4 p-3.5 rounded-xl bg-destructive/10 text-destructive text-xs font-medium flex items-center gap-2 animate-in fade-in">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    <span>{passwordError}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleChangePassword} className="space-y-4 w-full">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="old-pass" className="text-xs font-semibold">
-                      Kata Sandi Saat Ini
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="old-pass"
-                        type={showOldPassword ? "text" : "password"}
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="rounded-xl pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowOldPassword(!showOldPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showOldPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="new-pass" className="text-xs font-semibold">
-                        Kata Sandi Baru
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="new-pass"
-                          type={showNewPassword ? "text" : "password"}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          className="rounded-xl pr-10"
-                          placeholder="Minimal 8 karakter"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showNewPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
+        <div className="min-w-0">
+          <TabsContent value="profile" className="m-0 min-w-0 space-y-4">
+            <Card className="min-w-0 gap-0 border border-border py-0 shadow-none ring-0">
+              <CardHeader className="gap-1 border-b px-4 py-4 sm:px-5"><CardTitle className="text-base">Informasi Profil Akun</CardTitle><CardDescription className="text-xs leading-5">Profil ini digunakan untuk mengenali Anda di catatan aktivitas toko.</CardDescription></CardHeader>
+              <CardContent className="p-0">
+                <form onSubmit={handleSaveProfile}>
+                  <fieldset disabled={isSavingProfile} className="space-y-6 p-4 sm:p-5">
+                    {profileMsg && <div role="status" className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"><CheckCircle2 className="size-4 shrink-0" /><span>{profileMsg}</span></div>}
+                    {profileError && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive"><AlertCircle className="size-4 shrink-0" /><span>{profileError}</span></div>}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <button type="button" onClick={() => setIsPhotoDialogOpen(true)} aria-label="Ganti foto lewat avatar" className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                          <UserAvatar src={avatarUrl} name={name} className="size-16 shadow-none" fallbackClassName="text-xl" />
+                          <span className="absolute -bottom-0.5 -right-0.5 flex size-6 items-center justify-center rounded-full border bg-card text-muted-foreground"><Camera className="size-3" aria-hidden="true" /></span>
                         </button>
+                        <div className="min-w-0"><p className="break-words text-sm font-semibold">{name || "Pengguna HPP"}</p><Badge variant="secondary" className="mt-1.5 text-[10px]">{accountRoleLabel}</Badge></div>
                       </div>
-                      <PasswordStrengthIndicator password={newPassword} />
+                      <Button type="button" variant="outline" onClick={() => setIsPhotoDialogOpen(true)} className="h-10 gap-1.5 text-xs"><Camera className="size-3.5" />Ubah Foto Profil</Button>
                     </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="conf-pass" className="text-xs font-semibold">
-                        Konfirmasi Sandi Baru
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="conf-pass"
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="rounded-xl pr-10"
-                          placeholder="Ulangi kata sandi"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
+                    <section aria-labelledby="account-identity-heading" className="space-y-4 border-t pt-5">
+                      <div><h2 id="account-identity-heading" className="text-sm font-semibold">Identitas pengguna</h2><p className="mt-1 text-xs text-muted-foreground">Nama dan email untuk akun Anda.</p></div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5"><Label htmlFor="prof-name" className="text-xs font-medium">Nama Lengkap <span className="text-destructive">*</span></Label><Input id="prof-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="Nama lengkap Anda" required className="h-11 text-sm" /></div>
+                        <div className="space-y-1.5"><Label htmlFor="prof-email" className="text-xs font-medium">Alamat Email <span className="text-destructive">*</span></Label><Input id="prof-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="email@example.com" required className="h-11 text-sm" /></div>
                       </div>
-                    </div>
-                  </div>
+                    </section>
+                    <section aria-labelledby="account-contact-heading" className="space-y-4 border-t pt-5">
+                      <div><h2 id="account-contact-heading" className="text-sm font-semibold">Kontak & catatan</h2><p className="mt-1 text-xs text-muted-foreground">Tambahkan nomor kontak dan informasi singkat tentang Anda.</p></div>
+                      <div className="space-y-1.5 sm:max-w-sm"><Label htmlFor="prof-phone" className="text-xs font-medium">Nomor Telepon / WhatsApp</Label><Input id="prof-phone" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="tel" placeholder="Nomor telepon Anda" className="h-11 text-sm" /></div>
+                      <div className="space-y-1.5"><Label htmlFor="prof-bio" className="text-xs font-medium">Bio Singkat / Catatan Jabatan</Label><Textarea id="prof-bio" value={bio} onChange={(event) => setBio(event.target.value)} placeholder="Jabatan atau tanggung jawab Anda di toko" rows={3} className="min-h-24 text-sm" /></div>
+                    </section>
+                  </fieldset>
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-4 sm:px-5"><p className="text-[11px] text-muted-foreground">Perubahan disimpan ke akun ini.</p><Button type="submit" disabled={isSavingProfile} className="h-11 w-full gap-2 text-xs sm:w-auto">{isSavingProfile && <Loader2 className="size-4 animate-spin" />}Simpan Perubahan Profil</Button></div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                  <div className="flex justify-end pt-2">
-                    <Button type="submit" variant="default" className="rounded-xl shadow-sm px-6 font-semibold" disabled={passwordLoading}>
-                      {passwordLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Perbarui Kata Sandi
-                    </Button>
-                  </div>
+          <TabsContent value="security" className="m-0 min-w-0 space-y-4">
+            <Card className="min-w-0 gap-0 border border-border py-0 shadow-none ring-0">
+              <CardHeader className="gap-1 border-b px-4 py-4 sm:px-5"><CardTitle className="flex items-center gap-2 text-base"><KeyRound className="size-4 text-primary" />Ubah Kata Sandi</CardTitle><CardDescription className="text-xs leading-5">Gunakan kata sandi yang kuat dan berbeda dari kata sandi sebelumnya.</CardDescription></CardHeader>
+              <CardContent className="p-0">
+                <form onSubmit={handleChangePassword}>
+                  <fieldset disabled={passwordLoading} className="space-y-4 p-4 sm:p-5">
+                    {passwordMsg && <div role="status" className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"><CheckCircle2 className="size-4 shrink-0" /><span>{passwordMsg}</span></div>}
+                    {passwordError && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive"><AlertCircle className="size-4 shrink-0" /><span>{passwordError}</span></div>}
+                    <div className="grid items-start gap-4 lg:grid-cols-3">
+                      <PasswordField id="old-pass" label="Kata Sandi Saat Ini" value={currentPassword} onChange={setCurrentPassword} visible={showOldPassword} onToggle={() => setShowOldPassword(!showOldPassword)} autoComplete="current-password" />
+                      <div className="space-y-2"><PasswordField id="new-pass" label="Kata Sandi Baru" value={newPassword} onChange={setNewPassword} visible={showNewPassword} onToggle={() => setShowNewPassword(!showNewPassword)} autoComplete="new-password" placeholder="Minimal 8 karakter" /><PasswordStrengthIndicator password={newPassword} /></div>
+                      <PasswordField id="conf-pass" label="Konfirmasi Sandi Baru" value={confirmPassword} onChange={setConfirmPassword} visible={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} autoComplete="new-password" placeholder="Ulangi kata sandi baru" />
+                    </div>
+                  </fieldset>
+                  <div className="flex justify-end border-t bg-muted/20 px-4 py-4 sm:px-5"><Button type="submit" disabled={passwordLoading} className="h-11 w-full gap-2 text-xs sm:w-auto">{passwordLoading && <Loader2 className="size-4 animate-spin" />}Perbarui Kata Sandi</Button></div>
                 </form>
               </CardContent>
             </Card>
 
-            {/* 2FA Card (Disabled / Segera Hadir) */}
-            <Card className="rounded-xl shadow-sm border-border flex flex-col justify-between opacity-80 bg-muted/10 relative overflow-hidden">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                    Autentikasi Dua Faktor (2FA)
-                  </CardTitle>
-                  <Badge variant="secondary" className="text-[10px] font-semibold bg-muted text-muted-foreground border-border">
-                    Segera Hadir
-                  </Badge>
-                </div>
-                <CardDescription>
-                  Tingkatkan keamanan akun Anda dengan verifikasi OTP saat masuk dari perangkat baru.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 rounded-xl border border-dashed border-border bg-muted/20 space-y-3 opacity-75">
-                  <div className="flex items-start sm:items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-sm font-semibold text-muted-foreground">Aplikasi Authenticator (TOTP)</span>
-                      <Badge variant="secondary" className="text-[10px] text-muted-foreground">
-                        Dalam Pengembangan
-                      </Badge>
-                    </div>
-                    <Switch
-                      checked={false}
-                      disabled={true}
-                    />
+            <Card className="min-w-0 gap-0 border border-border py-0 shadow-none ring-0">
+              <CardHeader className="border-b px-4 py-4 sm:px-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><CardTitle className="text-base">Perangkat & sesi aktif</CardTitle><CardDescription className="mt-1 text-xs leading-5">Lihat perangkat yang terhubung dan cabut sesi yang tidak digunakan.</CardDescription></div><Button type="button" variant="outline" size="sm" onClick={loadSessions} disabled={sessionsLoading} className="h-10 gap-1.5 text-xs"><RefreshCw className={`size-3.5 ${sessionsLoading ? "animate-spin motion-reduce:animate-none" : ""}`} />Refresh</Button></div></CardHeader>
+              <CardContent className="p-4 sm:p-5">
+                {sessionsLoading ? <p role="status" className="py-8 text-center text-xs text-muted-foreground">Memuat sesi perangkat...</p> : sessions.length === 0 ? <p className="py-8 text-center text-xs text-muted-foreground">Sesi perangkat belum tersedia. Klik Refresh untuk mencoba lagi.</p> : <div className="divide-y overflow-hidden rounded-xl border">{sessions.map((session) => (
+                  <div key={session.id} className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4">
+                    <div className="flex min-w-0 flex-1 basis-52 items-start gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">{session.type === "mobile" ? <Smartphone className="size-4" /> : <Laptop className="size-4" />}</span><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="break-words text-sm font-medium">{session.device || "Perangkat tidak dikenal"}</span>{session.isCurrent && <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Sesi Saat Ini</Badge>}</div><p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{[session.browser, session.location].filter(Boolean).join(" · ")}</p>{session.lastActive && <p className="mt-0.5 text-[11px] text-muted-foreground">Aktif: {session.lastActive}</p>}</div></div>
+                    {!session.isCurrent && <Button type="button" variant="outline" onClick={() => handleRevokeSession(session.id)} disabled={revokingSessionId !== null} className="h-10 w-full shrink-0 gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-auto">{revokingSessionId === session.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}Hapus Sesi</Button>}
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Dukungan Google Authenticator dan TOTP sedang disiapkan untuk rilis mendatang demi keamanan ekstra.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-muted/40 border border-border text-muted-foreground text-xs">
-                  <span className="font-semibold block mb-0.5 text-foreground/80">Informasi Fitur:</span>
-                  Fitur autentikasi 2FA saat ini sedang dalam tahap integrasi backend dan akan diaktifkan secara bertahap.
-                </div>
+                ))}</div>}
               </CardContent>
             </Card>
-          </div>
 
-          {/* Active Sessions Card (Full Width) */}
-          <Card className="rounded-xl shadow-sm border-border w-full">
-            <CardHeader className="pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Laptop className="h-4 w-4 text-primary" />
-                    Manajemen Sesi Perangkat Aktif
-                  </CardTitle>
-                  <CardDescription>
-                    Daftar perangkat yang saat ini memiliki akses login aktif ke akun bisnis Anda.
-                  </CardDescription>
+            <div className="flex items-start gap-3 rounded-xl border border-emerald-200/60 bg-emerald-50/20 dark:border-emerald-900/50 dark:bg-emerald-950/10 p-4 sm:p-5">
+              <Shield className="mt-0.5 size-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-sm font-semibold">Autentikasi Dua Faktor (2FA)</h2>
+                  <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    Proteksi Aktif
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={loadSessions}
-                    className="rounded-xl text-xs"
-                    disabled={sessionsLoading}
-                  >
-                    <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${sessionsLoading ? "animate-spin" : ""}`} />
-                    Refresh
-                  </Button>
-                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Autentikasi dua faktor berbasis perangkat (Adaptive 2FA) aktif secara otomatis. Setiap kali Anda masuk dari browser atau perangkat baru yang belum terdaftar, kode verifikasi 6 digit akan dikirimkan ke email Anda untuk melindungi akun dari akses tidak sah.
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 w-full">
-                {sessions.map((sess) => (
-                  <div
-                    key={sess.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/20 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-muted text-muted-foreground shrink-0">
-                        {sess.type === "mobile" ? (
-                          <Smartphone className="h-5 w-5" />
-                        ) : (
-                          <Laptop className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">
-                            {sess.device || "Browser Sesi"}
-                          </span>
-                          {sess.isCurrent && (
-                            <Badge variant="default" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                              Sesi Saat Ini
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2 mt-0.5">
-                          <span>{sess.browser || "Chrome"}</span>
-                          <span>&bull;</span>
-                          <span>{sess.location || "Indonesia"}</span>
-                          <span>&bull;</span>
-                          <span>Aktif: {sess.lastActive}</span>
-                        </div>
-                      </div>
-                    </div>
+            </div>
+          </TabsContent>
 
-                    {!sess.isCurrent && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRevokeSession(sess.id)}
-                        disabled={revokingSessionId === sess.id}
-                        className="w-full sm:w-auto rounded-xl text-xs text-destructive border-destructive/30 hover:bg-destructive/10 h-8 px-3 shrink-0 font-medium"
-                      >
-                        {revokingSessionId === sess.id ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                        )}
-                        Hapus Sesi
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ================= TAB 4: ZONA BERBAHAYA ================= */}
-        <TabsContent value="danger" className="mt-4 space-y-6">
-          <Card className="rounded-xl shadow-sm border-destructive/30 bg-destructive/5 w-full">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base text-destructive flex items-center gap-2">
-                <AlertOctagon className="h-5 w-5" />
-                Zona Bahaya
-              </CardTitle>
-              <CardDescription>
-                Tindakan di bagian ini memiliki dampak permanen terhadap akun dan akses data bisnis Anda.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Delete Account */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-xl border border-destructive/20 bg-background gap-3">
-                <div>
-                  <span className="font-semibold text-sm text-destructive block">
-                    Hapus Akun & Seluruh Data Toko
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Data stok, resep produksi, riwayat pembelian, dan laporan penjualan akan dihapus secara permanen.
-                  </span>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="rounded-xl text-xs shrink-0"
-                  onClick={() => setIsDeleteAccountOpen(true)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                  Hapus Akun Permanen
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          <TabsContent value="danger" className="m-0 min-w-0 space-y-4">
+            <Card className="min-w-0 gap-0 border border-destructive/30 py-0 shadow-none ring-0">
+              <CardHeader className="gap-1 border-b border-destructive/20 px-4 py-4 sm:px-5"><CardTitle className="flex items-center gap-2 text-base text-destructive"><AlertOctagon className="size-5" />Zona Bahaya</CardTitle><CardDescription className="text-xs leading-5">Penghapusan akun bersifat permanen dan tidak dapat dibatalkan.</CardDescription></CardHeader>
+              <CardContent className="p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div className="min-w-0 flex-1 basis-60"><h2 className="text-sm font-semibold">Hapus Akun & Seluruh Data Toko</h2><p className="mt-2 max-w-lg text-xs leading-5 text-muted-foreground">Data stok, resep produksi, riwayat pembelian, dan laporan penjualan akan dihapus secara permanen.</p></div><Button variant="destructive" onClick={() => setIsDeleteAccountOpen(true)} className="h-11 w-full shrink-0 gap-1.5 text-xs sm:w-auto"><Trash2 className="size-3.5" />Hapus Akun Permanen</Button></div></CardContent>
+            </Card>
+          </TabsContent>
+        </div>
       </Tabs>
 
       {/* Delete Account Confirmation Dialog */}
-      <Dialog open={isDeleteAccountOpen} onOpenChange={setIsDeleteAccountOpen}>
+      <Dialog open={isDeleteAccountOpen} onOpenChange={(open) => {
+        if (isDeletingAccount) return
+        setIsDeleteAccountOpen(open)
+        if (!open) setDeleteConfirmText("")
+      }}>
         <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
@@ -665,10 +269,12 @@ export default function GeneralSettingsPage() {
           )}
 
           <div className="space-y-3 py-2">
-            <Label className="text-xs font-semibold text-foreground">
+            <Label htmlFor="delete-account-confirmation" className="text-xs font-semibold text-foreground">
               Ketik <span className="font-mono text-destructive font-bold">&quot;HAPUS AKUN&quot;</span> untuk melanjutkan:
             </Label>
             <Input
+              id="delete-account-confirmation"
+              disabled={isDeletingAccount}
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder="HAPUS AKUN"
@@ -679,6 +285,7 @@ export default function GeneralSettingsPage() {
           <DialogFooter className="flex gap-2 sm:justify-end">
             <Button
               variant="outline"
+              disabled={isDeletingAccount}
               onClick={() => {
                 setIsDeleteAccountOpen(false)
                 setDeleteConfirmText("")

@@ -139,6 +139,7 @@ export default function RecipeDetailPage() {
           const computedMargin = prod.targetMargin || (prod.sellingPrice > 0 ? calculateGrossMargin(prod.sellingPrice, prod.latestHpp || 0) : 50)
           setEditMargin(Math.round(computedMargin))
           setEditProductData({
+            sku: prod.sku,
             name: prod.name,
             category: prod.category,
             categoryId: prod.categoryId,
@@ -256,6 +257,10 @@ export default function RecipeDetailPage() {
   async function handleUpdateProduct(e: React.FormEvent) {
     e.preventDefault()
     if (!productId) return
+    if (!editProductData.sku?.trim()) {
+      setEditProductError("SKU produk tidak boleh kosong")
+      return
+    }
     if (!editProductData.name?.trim()) {
       setEditProductError("Nama produk tidak boleh kosong")
       return
@@ -273,6 +278,21 @@ export default function RecipeDetailPage() {
       }
       const updated = await recipeService.updateProduct(productId, payload)
       setProduct(updated)
+      setEditProductData({
+        sku: updated.sku,
+        name: updated.name,
+        category: updated.category,
+        categoryId: updated.categoryId,
+        unit: updated.unit,
+        mode: updated.mode,
+        yieldQty: updated.yieldQty,
+        wastePct: updated.wastePct,
+        imageUrl: updated.imageUrl,
+        sellingPrice: updated.sellingPrice,
+        targetMargin: updated.targetMargin,
+        minStock: updated.minStock,
+        description: updated.description,
+      })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal memperbarui info produk"
       setEditProductError(msg)
@@ -401,6 +421,11 @@ export default function RecipeDetailPage() {
                   <h1 className="text-xl sm:text-2xl font-black tracking-tight text-foreground truncate">
                     {product.name}
                   </h1>
+                  {product.sku && (
+                    <Badge variant="outline" className="text-xs font-mono font-medium bg-muted text-muted-foreground shrink-0 border-border">
+                      SKU: {product.sku}
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="text-xs font-semibold bg-muted/40 shrink-0">
                     {product.category}
                   </Badge>
@@ -1133,17 +1158,31 @@ export default function RecipeDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Kolom Kiri & Tengah: Informasi Umum Produk */}
                   <div className="lg:col-span-2 space-y-5">
-                    <div className="grid gap-2">
-                      <Label className="text-xs font-semibold">
-                        Nama Produk / Formula Resep <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        value={editProductData.name || ""}
-                        onChange={(e) => setEditProductData({ ...editProductData, name: e.target.value })}
-                        placeholder="Contoh: Roti Manis Coklat Lumer"
-                        className="rounded-xl h-11 text-sm font-medium"
-                        required
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="grid gap-2">
+                        <Label className="text-xs font-semibold">
+                          SKU Produk <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          value={editProductData.sku || ""}
+                          onChange={(e) => setEditProductData({ ...editProductData, sku: e.target.value.toUpperCase() })}
+                          placeholder="PRD-001"
+                          className="rounded-xl h-11 text-sm font-mono tracking-wide"
+                          required
+                        />
+                      </div>
+                      <div className="grid gap-2 sm:col-span-2">
+                        <Label className="text-xs font-semibold">
+                          Nama Produk / Formula Resep <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          value={editProductData.name || ""}
+                          onChange={(e) => setEditProductData({ ...editProductData, name: e.target.value })}
+                          placeholder="Contoh: Roti Manis Coklat Lumer"
+                          className="rounded-xl h-11 text-sm font-medium"
+                          required
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

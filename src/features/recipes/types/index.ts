@@ -69,6 +69,7 @@ export interface ProductEstimate {
 export interface Product {
   id: string;
   storeId?: string;
+  sku: string;
   name: string;
   category: string; // e.g. "Roti", "Pastry & Cake", "Donat", "Minuman"
   categoryId?: string;
@@ -92,6 +93,7 @@ export interface Product {
 }
 
 export interface CreateProductInput {
+  sku: string;
   name: string;
   category: string;
   categoryId?: string;
@@ -108,6 +110,7 @@ export interface CreateProductInput {
 }
 
 export interface UpdateProductInput {
+  sku?: string;
   name?: string;
   category?: string;
   categoryId?: string;

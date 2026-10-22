@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   Layers,
   Plus,
-  Search,
   Edit2,
   Trash2,
   AlertCircle,
@@ -12,7 +11,7 @@ import {
   Building2,
   X,
   HelpCircle,
-  Filter,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +36,15 @@ import {
 } from '@/components/ui/dialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { TablePagination } from '@/components/ui/table-pagination';
+import { ListFilters } from '@/components/ui/list-filters';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { overheadService } from '@/features/overheads/services/overhead-service';
 import {
   useOverheadsQuery,
@@ -60,6 +68,7 @@ export default function OverheadListPage() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [sortBy, setSortBy] = useState<string>('name-asc');
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -87,6 +96,7 @@ export default function OverheadListPage() {
     search: search.trim() || undefined,
     category,
     activeOnly,
+    sortBy,
   });
 
   const {
@@ -97,6 +107,16 @@ export default function OverheadListPage() {
   const items = overheadsData?.items ?? [];
   const total = overheadsData?.total ?? 0;
   const totalPages = overheadsData?.totalPages ?? 1;
+
+  const hasFilters = Boolean(search.trim()) || statusFilter !== 'ALL' || categoryFilter !== 'ALL' || sortBy !== 'name-asc';
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('ALL');
+    setCategoryFilter('ALL');
+    setSortBy('name-asc');
+    setPage(1);
+  };
 
   // Feedback Notification Banner
   const [feedback, setFeedback] = useState<FeedbackMessage | null>(null);
@@ -411,147 +431,99 @@ export default function OverheadListPage() {
         ) : (
           <div className="space-y-4">
             {/* Filter and Search Bar */}
-            <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between bg-card p-3 rounded-xl border border-border shadow-2xs">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Cari nama biaya atau keterangan..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
+            <ListFilters
+              label="Filter biaya overhead"
+              search={{
+                label: 'Cari biaya overhead',
+                placeholder: 'Cari nama biaya atau keterangan...',
+                value: search,
+                onChange: (val) => {
+                  setSearch(val);
+                  setPage(1);
+                },
+              }}
+              filters={[
+                {
+                  id: 'status',
+                  label: 'Status',
+                  value: statusFilter,
+                  onChange: (val) => {
+                    setStatusFilter(val as 'ALL' | 'ACTIVE' | 'INACTIVE');
                     setPage(1);
-                  }}
-                  className="pl-9 bg-background/50 h-9 text-xs"
-                />
-                {search && (
-                  <button
-                    onClick={() => {
-                      setSearch('');
-                      setPage(1);
-                    }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 min-w-0">
-                {/* Status Filter */}
-                <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/50 text-xs overflow-x-auto max-w-full no-scrollbar">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter('ALL');
-                      setPage(1);
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
-                      statusFilter === 'ALL'
-                        ? 'bg-background text-foreground shadow-2xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Semua ({stats.total})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter('ACTIVE');
-                      setPage(1);
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
-                      statusFilter === 'ACTIVE'
-                        ? 'bg-background text-foreground shadow-2xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Aktif ({stats.active})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter('INACTIVE');
-                      setPage(1);
-                    }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
-                      statusFilter === 'INACTIVE'
-                        ? 'bg-background text-foreground shadow-2xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Non-aktif ({stats.inactive})
-                  </button>
-                </div>
-
-                {/* Category Filters */}
-                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full no-scrollbar pb-0.5">
-                  <div className="h-4 w-px bg-border mx-1 hidden sm:block shrink-0" />
-                  <Filter className="h-3.5 w-3.5 text-muted-foreground hidden sm:block shrink-0" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter('ALL');
-                      setPage(1);
-                    }}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                      categoryFilter === 'ALL'
-                        ? 'bg-primary text-primary-foreground shadow-2xs'
-                        : 'bg-muted/70 hover:bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    Semua Kategori
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter('PRODUCTION');
-                      setPage(1);
-                    }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
-                      categoryFilter === 'PRODUCTION'
-                        ? 'bg-primary text-primary-foreground shadow-2xs'
-                        : 'bg-muted/70 hover:bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    <Factory className="h-3.5 w-3.5" />
-                    Biaya Produksi
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                        categoryFilter === 'PRODUCTION'
-                          ? 'bg-primary-foreground/20 text-primary-foreground'
-                          : 'bg-background/80 text-muted-foreground'
-                      }`}
+                  },
+                  options: [
+                    { value: 'ALL', label: 'Semua status' },
+                    { value: 'ACTIVE', label: 'Aktif' },
+                    { value: 'INACTIVE', label: 'Non-aktif' },
+                  ],
+                },
+                {
+                  id: 'category',
+                  label: 'Kategori',
+                  value: categoryFilter,
+                  onChange: (val) => {
+                    setCategoryFilter(val);
+                    setPage(1);
+                  },
+                  options: [
+                    { value: 'ALL', label: 'Semua kategori' },
+                    { value: 'PRODUCTION', label: 'Biaya Produksi' },
+                    { value: 'OPERATIONAL', label: 'Biaya Operasional' },
+                  ],
+                },
+              ]}
+              summary={loading ? 'Memuat biaya overhead...' : `${total} biaya overhead`}
+              hasFilters={hasFilters}
+              onReset={resetFilters}
+              isFetching={loading}
+              fetchingLabel="Memperbarui biaya overhead"
+              trailingActions={
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-10 gap-1.5 text-xs rounded-md shadow-2xs">
+                      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      Urutkan
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 text-xs">
+                    <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
+                      Urutan
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setSortBy('name-asc')}
+                      className="cursor-pointer"
                     >
-                      {stats.production}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter('OPERATIONAL');
-                      setPage(1);
-                    }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
-                      categoryFilter === 'OPERATIONAL'
-                        ? 'bg-primary text-primary-foreground shadow-2xs'
-                        : 'bg-muted/70 hover:bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    <Building2 className="h-3.5 w-3.5" />
-                    Biaya Operasional
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                        categoryFilter === 'OPERATIONAL'
-                          ? 'bg-primary-foreground/20 text-primary-foreground'
-                          : 'bg-background/80 text-muted-foreground'
-                      }`}
+                      Nama (A - Z)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSortBy('name-desc')}
+                      className="cursor-pointer"
                     >
-                      {stats.operational}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
+                      Nama (Z - A)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSortBy('amount-desc')}
+                      className="cursor-pointer"
+                    >
+                      Nominal Terbesar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSortBy('amount-asc')}
+                      className="cursor-pointer"
+                    >
+                      Nominal Terkecil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => setSortBy('date-desc')}
+                      className="cursor-pointer"
+                    >
+                      Terbaru Ditambahkan
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            />
 
             {/* Polished Table Container */}
             <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">

@@ -82,74 +82,74 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
 },
   {
     "id": "simulation",
-    "title": "Coba resep & rencana masak",
+    "title": "Coba resep & rencana produksi",
     "shortTitle": "Coba resep",
-    "tagline": "Rencanakan biaya sebelum mulai masak.",
-    "description": "Coba ubah takaran atau jumlah porsi. Lihat kebutuhan bahan dan perkiraan biayanya sebelum mulai memasak.",
+    "tagline": "Rencanakan bahan & cek stok sebelum produksi.",
+    "description": "Coba ubah takaran atau jumlah porsi. Lihat kebutuhan bahan dan cek kecukupan stok gudang sebelum mulai produksi.",
     "icon": Calculator,
     "badgeText": "Perkiraan biaya",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
         "title": "Rencana produksi brownies",
         "path": "production/hpp/production-simulation",
-        "subtitle": "Periksa kebutuhan sebelum menjalankan produksi.",
+        "subtitle": "Periksa kecukupan bahan gudang sebelum menjalankan produksi.",
         "columns": [
-            "Perencanaan",
-            "Perkiraan"
+            "Bahan / Komponen",
+            "Kebutuhan & Status"
         ],
         "rows": [
             [
-                "Target produksi",
-                "20 potong"
+                "Tepung terigu (500 gr)",
+                "Stok cukup"
             ],
             [
-                "Total kebutuhan biaya",
-                "Rp 100.000"
+                "Gula pasir (250 gr)",
+                "Stok kurang (-100 gr)"
             ],
             [
-                "Harga jual per potong",
-                "Rp 10.000"
+                "Total kebutuhan stok",
+                "1 bahan perlu dibeli"
             ]
         ],
-        "resultLabel": "Perkiraan biaya per potong",
-        "result": "Rp 5.000",
-        "note": "Ini perkiraan sebelum memasak. Biaya akhirnya mengikuti bahan dan hasil produksi yang dicatat."
+        "resultLabel": "Kesiapan bahan produksi",
+        "result": "Perlu belanja gula",
+        "note": "Aplikasi otomatis mendeteksi bahan yang kurang di gudang sebelum Anda mulai memproduksi menu."
     }
 },
   {
     "id": "overheads",
-    "title": "Upah, listrik & gas",
-    "shortTitle": "Biaya",
-    "tagline": "Harga jual punya dasar biaya lebih lengkap.",
-    "description": "Jangan lupa biaya selain bahan. Masukkan upah, listrik, dan gas agar biaya membuat tiap porsi ikut terhitung.",
+    "title": "Biaya overhead",
+    "shortTitle": "Overhead",
+    "tagline": "Tentukan biaya overhead Anda sendiri, cegah boncos tersembunyi.",
+    "description": "Jangan biarkan biaya tak terlihat menggerus laba. Buat pos biaya kustom—mulai dari gas LPG, upah masak, hingga kemasan—dan otomatis sertakan ke dalam HPP produksi.",
     "icon": ReceiptText,
-    "badgeText": "Biaya produksi",
+    "badgeText": "Kategori biaya",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
-        "title": "Biaya sekali membuat brownies",
+        "title": "Daftar komponen biaya overhead",
         "path": "production/overheads",
-        "subtitle": "Hitung juga upah, listrik, dan gas yang terpakai.",
+        "subtitle": "Bebas tentukan pos biaya produksi & tarif standarnya.",
         "columns": [
-            "Komponen biaya",
-            "Jumlah"
+            "Pos Biaya Kustom",
+            "Kategori & Tarif"
         ],
         "rows": [
             [
-                "Bahan baku",
-                "Rp 80.000"
+                "Gas LPG & listrik oven",
+                "Produksi · Rp 5.000"
             ],
             [
-                "Tenaga kerja",
-                "Rp 15.000"
+                "Upah harian per batch",
+                "Produksi · Rp 15.000"
             ],
             [
-                "Gas dan listrik",
-                "Rp 5.000"
+                "Sewa tempat & utilitas",
+                "Operasional toko"
             ]
         ],
-        "resultLabel": "Total biaya sekali produksi",
-        "result": "Rp 100.000",
-        "note": "Jika menghasilkan 20 potong, biaya membuat tiap potong adalah Rp 5.000."
+        "resultLabel": "Overhead masuk ke HPP",
+        "result": "+Rp 20.000 per produksi",
+        "note": "Biaya overhead otomatis dialokasikan ke modal per porsi, memastikan harga jual Anda benar-benar menghasilkan laba bersih."
     }
 },
   {
@@ -298,38 +298,38 @@ const ADDITIONAL_FEATURES: AdditionalFeature[] = [
 },
   {
     "id": "ai",
-    "title": "Tanya data usaha",
-    "shortTitle": "Tanya data",
-    "tagline": "Mulai dari pertanyaan, pahami data usaha.",
-    "description": "Tanya lewat percakapan, misalnya bahan apa yang hampir habis. Asisten AI membantu membaca catatan toko yang sedang Anda buka.",
+    "title": "Asisten Bisnis AI",
+    "shortTitle": "Asisten AI",
+    "tagline": "Tanya apa saja seputar resep, stok, dan laba layaknya punya analis pribadi.",
+    "description": "Tak perlu repot membongkar puluhan tabel. Cukup ketik pertanyaan: 'Menu apa yang paling untung?', 'Bahan apa yang mau expired?', atau 'Berapa laba kotor hari ini?'. AI menganalisis data toko Anda secara instan.",
     "icon": MessageSquareText,
-    "badgeText": "Asisten AI",
+    "badgeText": "AI Powered",
     "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
     "preview": {
-        "title": "Tanya stok tanpa membuka banyak catatan",
+        "title": "Tanya jawab instan performa toko",
         "path": "store/ai/conversations",
-        "subtitle": "Contoh pertanyaan: bahan apa yang stoknya menipis?",
+        "subtitle": "Konsultasi langsung dengan asisten AI yang membaca data tokomu.",
         "columns": [
-            "Bahan contoh",
-            "Stok tersedia"
+            "Pertanyaan Anda",
+            "Analisis & Jawaban AI"
         ],
         "rows": [
             [
-                "Susu segar",
-                "2 liter"
+                "Menu apa yang paling untung?",
+                "Kopi Susu Aren (Margin 66,1%)"
             ],
             [
-                "Biji kopi",
-                "500 gram"
+                "Ada bahan mau expired?",
+                "Susu segar batch #08 (3 hari lagi)"
             ],
             [
-                "Cup minuman",
-                "40 pcs"
+                "Berapa laba kotor hari ini?",
+                "Rp 600.000 dari 42 transaksi"
             ]
         ],
-        "resultLabel": "Dari pertanyaan ke ringkasan",
-        "result": "Lebih mudah memahami data",
-        "note": "Ini contoh percakapan. Jawaban mengikuti data toko dan batas pemakaian asisten AI."
+        "resultLabel": "Waktu analisis",
+        "result": "Jawaban instan dalam hitungan detik",
+        "note": "AI terhubung langsung ke catatan resep, stok gudang, dan riwayat transaksi toko Anda secara aman."
     }
 },
 ]
@@ -348,13 +348,13 @@ const FEATURES: FeatureItem[] = [
   },
   {
     id: "inventory",
-    title: "Stok & urutan pemakaian",
-    shortTitle: "Stok",
-    tagline: "Prioritaskan bahan yang perlu dipakai lebih dulu",
+    title: "Kontrol stok FIFO & FEFO",
+    shortTitle: "Stok bahan",
+    tagline: "Cegah bahan expired & terbuang dengan rotasi stok otomatis",
     description:
-      "Lihat sisa bahan dan urutan yang perlu dipakai lebih dulu: yang datang duluan atau yang lebih dekat kedaluwarsa. Harga tiap pembelian juga tersimpan.",
+      "Atur metode FIFO untuk bahan kering dan FEFO untuk bahan yang memiliki masa expired. Stok terpotong otomatis per batch saat produksi, lengkap dengan peringatan kedaluwarsa.",
     icon: Boxes,
-    badgeText: "Stok otomatis",
+    badgeText: "Rotasi stok",
     badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
   },
   {
@@ -384,7 +384,14 @@ const FEATURES: FeatureItem[] = [
 
 const MOBILE_PREVIEWS = [
   { title: "Kopi Susu Gula Aren", rows: [["Biaya per porsi", "Rp 6.100"], ["Harga jual", "Rp 18.000"], ["Perkiraan laba kotor", "Rp 11.900"]] },
-  { title: "Susu mana yang dipakai dulu?", rows: [["Pembelian pertama", "Kedaluwarsa 3 hari lagi"], ["Pembelian berikutnya", "Kedaluwarsa 9 hari lagi"], ["Urutan pemakaian", "Yang lebih cepat kedaluwarsa"]] },
+  {
+    title: "Prioritas pemakaian bahan (FEFO)",
+    rows: [
+      ["Batch #08 (Susu segar)", "Kedaluwarsa 3 hari lagi (Prioritas #1)"],
+      ["Batch #14 (Susu segar)", "Kedaluwarsa 9 hari lagi (Antrean #2)"],
+      ["Metode pemotongan", "FEFO (Kedaluwarsa terdekat)"],
+    ],
+  },
   { title: "Produksi brownies", rows: [["Rencana hasil", "30 potong"], ["Biaya bahan", "Dicatat tiap kali produksi"], ["Stok berkurang", "Saat produksi selesai"]] },
   { title: "Contoh transaksi kasir", rows: [["Total penjualan", "Rp 64.000"], ["Total HPP", "Rp 23.120"], ["Laba kotor", "Rp 40.880"]] },
   ...ADDITIONAL_FEATURES.map((feature) => ({ title: feature.preview.title, rows: feature.preview.rows })),
@@ -834,7 +841,7 @@ function FifoInventoryMockup() {
         <div className="rounded-xl border border-slate-200 overflow-hidden text-xs bg-slate-50/50">
           <div className="grid grid-cols-12 gap-2 p-2.5 bg-slate-100/80 font-bold text-slate-700 text-[11px] border-b border-slate-200">
             <span className="col-span-5">Bahan baku</span>
-            <span className="col-span-3 text-center">Pakai lebih dulu</span>
+            <span className="col-span-3 text-center">Metode Stok</span>
             <span className="col-span-4 text-right">Sisa Stok</span>
           </div>
           <div className="divide-y divide-slate-200/70 text-slate-800">
@@ -848,7 +855,7 @@ function FifoInventoryMockup() {
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] font-bold">
-                  Cepat kedaluwarsa
+                  FEFO (Expired terdekat)
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
@@ -862,7 +869,7 @@ function FifoInventoryMockup() {
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] font-bold">
-                  Datang duluan
+                  FIFO (Masuk duluan)
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
@@ -876,7 +883,7 @@ function FifoInventoryMockup() {
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-[10px] font-bold">
-                  Cepat kedaluwarsa
+                  FEFO (Expired terdekat)
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-amber-700 text-[11px]">
@@ -890,7 +897,7 @@ function FifoInventoryMockup() {
               </div>
               <div className="col-span-3 flex justify-center">
                 <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] font-bold">
-                  Datang duluan
+                  FIFO (Masuk duluan)
                 </Badge>
               </div>
               <span className="col-span-4 text-right font-mono font-bold text-slate-900 text-[11px]">
@@ -904,7 +911,7 @@ function FifoInventoryMockup() {
         <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
           <span className="flex items-center gap-1.5 text-[11px]">
             <CheckCircle2 className="size-3.5 text-blue-600" />
-            <span>Urutan pemakaian mengikuti catatan belanja</span>
+            <span>Urutan pemotongan otomatis mengikuti metode FIFO / FEFO</span>
           </span>
           <span className="text-[11px] font-mono text-slate-400">24 jenis bahan</span>
         </div>

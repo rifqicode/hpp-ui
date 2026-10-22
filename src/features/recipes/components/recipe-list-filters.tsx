@@ -1,5 +1,13 @@
-import { LayoutGrid, List } from "lucide-react";
+import { ArrowUpDown, LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ListFilters } from "@/components/ui/list-filters";
 import { PRODUCT_SORTS } from "../lib/product-list";
 import type { useProductList } from "../hooks/use-product-list";
@@ -44,46 +52,53 @@ export function RecipeListFilters({ list }: RecipeListFiltersProps) {
       onReset={list.resetFilters}
       isFetching={list.isFetching && !list.isPending}
       fetchingLabel="Memperbarui produk"
-      actions={
-        <div className="flex min-w-0 items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            Urutkan
-            <select
-              aria-label="Urutkan produk"
-              value={list.sort}
-              onChange={(event) => list.update({ sort: event.target.value })}
-              className="h-8 min-w-0 rounded-md border bg-background px-2 text-xs text-foreground"
-            >
-              {Object.entries(PRODUCT_SORTS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div
-            className="hidden items-center gap-0.5 rounded-md border p-0.5 md:flex"
-            role="group"
-            aria-label="Tampilan produk"
-          >
-            {[
-              { value: "table", label: "Tampilan tabel", icon: List },
-              { value: "grid", label: "Tampilan kartu", icon: LayoutGrid },
-            ].map(({ value, label, icon: Icon }) => (
-              <Button
+      trailingActions={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-10 gap-1.5 text-xs rounded-md shadow-2xs">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              Urutkan
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 text-xs">
+            <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
+              Urutan
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {Object.entries(PRODUCT_SORTS).map(([value, label]) => (
+              <DropdownMenuItem
                 key={value}
-                size="icon"
-                variant={list.view === value ? "secondary" : "ghost"}
-                aria-label={label}
-                aria-pressed={list.view === value}
-                onClick={() => list.update({ view: value }, false)}
-                className="h-7 w-8"
+                onClick={() => list.update({ sort: value })}
+                className="cursor-pointer"
               >
-                <Icon className="h-3.5 w-3.5" />
-              </Button>
+                {label}
+              </DropdownMenuItem>
             ))}
-          </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+      actions={
+        <div
+          className="hidden items-center gap-0.5 rounded-md border p-0.5 md:flex"
+          role="group"
+          aria-label="Tampilan produk"
+        >
+          {[
+            { value: "table", label: "Tampilan tabel", icon: List },
+            { value: "grid", label: "Tampilan kartu", icon: LayoutGrid },
+          ].map(({ value, label, icon: Icon }) => (
+            <Button
+              key={value}
+              size="icon"
+              variant={list.view === value ? "secondary" : "ghost"}
+              aria-label={label}
+              aria-pressed={list.view === value}
+              onClick={() => list.update({ view: value }, false)}
+              className="h-7 w-8"
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </Button>
+          ))}
         </div>
       }
     >

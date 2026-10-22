@@ -56,4 +56,15 @@ describe('ListFilters', () => {
     rerender(<FilterExample />)
     expect(screen.queryByLabelText('Memperbarui data')).not.toBeInTheDocument()
   })
+
+  it('renders trailing actions next to filters when provided', () => {
+    render(<ListFilters
+      label="Filter produk"
+      search={{ label: 'Cari', placeholder: 'Cari...', value: '', onChange: () => {} }}
+      hasFilters={false}
+      onReset={() => {}}
+      trailingActions={<button type="button">Urutkan</button>}
+    />)
+    expect(screen.getByRole('button', { name: 'Urutkan' })).toBeInTheDocument()
+  })
 })

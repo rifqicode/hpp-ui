@@ -3,9 +3,9 @@ import * as React from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/use-auth-store"
 import { useSubscriptionGuards } from "@/features/subscription"
-import { Factory, ChevronRight, Lock, Crown } from "lucide-react"
+import { ChevronRight, Lock, Crown, Sprout, TrendingUp } from "lucide-react"
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarHeader,
+  Sidebar, SidebarContent, SidebarHeader,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
   SidebarMenuSubItem, SidebarMenuSubButton, SidebarRail, useSidebar,
 } from "@/components/ui/sidebar"
@@ -148,27 +148,32 @@ export function SidebarMain() {
     )
   }
 
+  const tier = usage?.effective_tier
+  const TierIcon = tier === "MAX_GROWTH" ? Crown : tier === "GROWTH" ? TrendingUp : Sprout
+  const tierLabel = usage ? SUBSCRIPTION_TIER_LABELS[usage.effective_tier] : isSubscriptionLoading ? "Memuat paket…" : "Lihat paket"
+
   return (
     <Sidebar collapsible="offcanvas" className="border-r border-primary/20 bg-sidebar shadow-md">
       <SidebarHeader className="p-3 pb-2 group-data-[collapsible=icon]:p-2">
-        <div className="rounded-xl border border-sidebar-border/70 bg-card/60 p-1.5 shadow-2xs transition-all group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:shadow-none flex flex-col gap-1">
+        <div className="rounded-2xl border border-sidebar-border bg-card shadow-sm group-data-[collapsible=icon]:rounded-lg">
           <StoreDropdown />
-
-          {/* Hairline Divider */}
-          <div className="h-px bg-sidebar-border/60 mx-1 group-data-[collapsible=icon]:hidden" />
-
           <Link
             to="/subscription"
-            className="flex min-h-9 items-center justify-between gap-2 rounded-lg px-2 text-xs hover:bg-sidebar-accent/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-data-[collapsible=icon]:hidden"
-            aria-label="Lihat paket langganan"
+            data-tier={tier}
+            aria-label={usage ? `Paket ${tierLabel}. ${tier === "FREE" ? "Upgrade paket" : "Kelola langganan"}` : "Lihat paket langganan"}
+            aria-busy={isSubscriptionLoading}
+            className="sidebar-membership group/membership flex min-h-14 items-center gap-2.5 rounded-b-2xl border-t px-3 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sidebar-ring group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-b-lg group-data-[collapsible=icon]:p-1"
           >
-            <span className="text-muted-foreground">Paket aktif</span>
-            <span
-              data-tier={usage?.effective_tier}
-              className="subscription-tier inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground"
-            >
-              {usage?.effective_tier === "MAX_GROWTH" && <Crown className="size-3 shrink-0" aria-hidden="true" />}
-              {usage ? SUBSCRIPTION_TIER_LABELS[usage.effective_tier] : isSubscriptionLoading ? "Memuat..." : "Tidak tersedia"}
+            <span className="sidebar-membership-emblem flex size-6 shrink-0 items-center justify-center rounded-md">
+              <TierIcon className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+              <span className="mb-0.5 block text-[10px] font-medium text-muted-foreground">{usage ? "Paket aktif" : "Langganan"}</span>
+              <span className="block truncate text-xs font-semibold leading-4 text-sidebar-foreground">{tierLabel}</span>
+            </span>
+            <span className="sidebar-membership-action flex shrink-0 items-center gap-0.5 text-[11px] font-semibold group-data-[collapsible=icon]:hidden">
+              {usage ? tier === "FREE" ? "Upgrade" : "Kelola" : "Lihat"}
+              <ChevronRight className="size-3.5 transition-transform group-hover/membership:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
             </span>
           </Link>
         </div>
@@ -204,17 +209,6 @@ export function SidebarMain() {
         </nav>
       </SidebarContent>
 
-      <SidebarFooter className="p-3 group-data-[collapsible=icon]:p-2">
-        <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg bg-sidebar-accent/20 border border-sidebar-border/40 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-1 group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent">
-          <div className="flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
-            <Factory className="size-4" />
-          </div>
-          <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
-            <span className="font-bold text-xs tracking-tight text-foreground">HPP Manager</span>
-            <span className="text-[10px] text-muted-foreground">v1.0 • Bakery Edition</span>
-          </div>
-        </div>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )

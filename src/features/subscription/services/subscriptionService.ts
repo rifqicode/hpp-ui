@@ -8,12 +8,29 @@ import type {
   SubscribeResponseData,
   CheckoutResponseData,
   MidtransConfigData,
+  SyncInvoiceStatusResponse,
+  PaymentChannelConfig,
 } from '../types/subscription';
 
 export const subscriptionService = {
   getPlans: async (): Promise<PlanConfig[]> => {
     const response = await apiClient.get<PlanConfig[]>('/subscription/plans');
     return response.data;
+  },
+
+  getPaymentChannels: async (): Promise<PaymentChannelConfig[]> => {
+    try {
+      const response = await apiClient.get<PaymentChannelConfig[]>('/subscription/payment-methods');
+      return response.data;
+    } catch {
+      return [
+        { code: 'qris', name: 'QRIS', category: 'QRIS', description: 'GoPay, OVO, DANA, ShopeePay, BCA, Livin, dll', enabled: true },
+        { code: 'bca_va', name: 'BCA Virtual Account', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via BCA Mobile, KlikBCA, atau ATM', enabled: true },
+        { code: 'mandiri_va', name: 'Mandiri Virtual Account', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via Livin\' by Mandiri atau ATM', enabled: true },
+        { code: 'bni_va', name: 'BNI Virtual Account', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via BNI Mobile atau ATM', enabled: true },
+        { code: 'bri_va', name: 'BRI Virtual Account (BRIVA)', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via BRImo atau ATM', enabled: true },
+      ];
+    }
   },
 
   getUsage: async (): Promise<SubscriptionUsageData> => {
@@ -29,10 +46,10 @@ export const subscriptionService = {
     return response.data;
   },
 
-  checkout: async (tier: SubscriptionTier): Promise<CheckoutResponseData> => {
+  checkout: async (tier: SubscriptionTier, paymentMethod?: string): Promise<CheckoutResponseData> => {
     const response = await apiClient.post<CheckoutResponseData>(
       '/subscription/checkout',
-      { tier }
+      { tier, payment_method: paymentMethod }
     );
     return response.data;
   },
@@ -44,6 +61,18 @@ export const subscriptionService = {
 
   getInvoices: async (): Promise<SubscriptionInvoice[]> => {
     const response = await apiClient.get<SubscriptionInvoice[]>('/subscription/invoices');
+    return response.data;
+  },
+
+  cancelInvoice: async (invoiceId: string): Promise<void> => {
+    await apiClient.post(`/subscription/invoices/${encodeURIComponent(invoiceId)}/cancel`);
+  },
+
+  syncStatus: async (invoiceId: string, transactionId?: string): Promise<SyncInvoiceStatusResponse> => {
+    const params = transactionId ? `?transaction_id=${encodeURIComponent(transactionId)}` : '';
+    const response = await apiClient.post<SyncInvoiceStatusResponse>(
+      `/subscription/invoices/${encodeURIComponent(invoiceId)}/sync-status${params}`
+    );
     return response.data;
   },
 

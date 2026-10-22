@@ -28,3 +28,7 @@ export const PERMISSION_GROUP_INFO: Record<string, { label: string; desc: string
     desc: "Mengubah identitas toko, cabang, dan preferensi perhitungan",
   },
 }
+
+export function permissionGroupInfo(group: string) {
+  return PERMISSION_GROUP_INFO[group.toUpperCase()] ?? { label: group, desc: "" }
+}

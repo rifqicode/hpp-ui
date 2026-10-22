@@ -1,4 +1,5 @@
-import { Bell, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles } from "lucide-react"
+import { Link } from "react-router-dom"
+import { Bell, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -136,6 +137,16 @@ export function NotificationDropdown() {
               </div>
             ))
           )}
+        </div>
+
+        <div className="p-2 border-t border-border/70 bg-muted/20">
+          <Link
+            to="/notifications"
+            className="flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-medium text-primary hover:text-primary/80 hover:bg-muted/50 rounded-md transition-colors"
+          >
+            <span>Lihat semua notifikasi</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

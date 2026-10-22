@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import {
   Plus,
   ArrowRightLeft,
+  ArrowUpDown,
   RefreshCw,
   Loader2,
   Package,
@@ -81,25 +82,6 @@ function formatStock(row: MaterialStockRow) {
 }
 
 type StatusFilter = "all" | StockStatus
-type SortKey = "name" | "baseUnit" | "current" | "status"
-type SortDir = "asc" | "desc"
-
-function sortRows(rows: MaterialStockRow[], sortKey: SortKey, sortDir: SortDir) {
-  const sorted = [...rows]
-  sorted.sort((a, b) => {
-    const dir = sortDir === "asc" ? 1 : -1
-
-    if (sortKey === "name") return a.name.localeCompare(b.name) * dir
-    if (sortKey === "baseUnit") return a.baseUnit.localeCompare(b.baseUnit) * dir
-    if (sortKey === "current") return (a.current - b.current) * dir
-
-    const aStatus = getStatus(a)
-    const bStatus = getStatus(b)
-    const order: Record<StockStatus, number> = { out: 0, low: 1, healthy: 2 }
-    return (order[aStatus] - order[bStatus]) * dir
-  })
-  return sorted
-}
 
 function StatusBadge({ status }: { status: StockStatus }) {
   if (status === "healthy") {
@@ -134,6 +116,8 @@ export default function StockListPage() {
     totalPages,
     search,
     setSearch,
+    sortBy,
+    setSortBy,
     setPage,
     inventoryMethod,
     setInventoryMethod,
@@ -152,8 +136,6 @@ export default function StockListPage() {
   const canAdjust = can("stocks:adjust")
 
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all")
-  const [sortKey, setSortKey] = React.useState<SortKey>("name")
-  const [sortDir, setSortDir] = React.useState<SortDir>("asc")
 
   // Modal Dialog States
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
@@ -178,8 +160,8 @@ export default function StockListPage() {
   const filteredRows = React.useMemo(() => {
     let rows = materialRows
     if (statusFilter !== "all") rows = rows.filter((r) => getStatus(r) === statusFilter)
-    return sortRows(rows, sortKey, sortDir)
-  }, [materialRows, statusFilter, sortKey, sortDir])
+    return rows
+  }, [materialRows, statusFilter])
 
   const handleRefresh = async () => {
     await Promise.all([loadStocks(), refetchSummary()])
@@ -538,29 +520,49 @@ export default function StockListPage() {
         summary={loading ? "Memuat bahan baku..." : error ? "Data belum tersedia" : statusFilter !== "all"
           ? `${filteredRows.length} bahan baku di halaman ini`
           : `${total} bahan baku${search.trim() || inventoryMethod ? ` dari ${summary?.total_materials ?? total}` : ""}`}
-        hasFilters={Boolean(search.trim()) || inventoryMethod !== undefined || statusFilter !== "all"}
-        onReset={() => { setSearch(""); setInventoryMethod(undefined); setStatusFilter("all"); setPage(1) }}
+        hasFilters={Boolean(search.trim()) || inventoryMethod !== undefined || statusFilter !== "all" || sortBy !== "name-asc"}
+        onReset={() => { setSearch(""); setInventoryMethod(undefined); setStatusFilter("all"); setSortBy("name-asc"); setPage(1) }}
         isFetching={isFetching && !loading}
         fetchingLabel="Memperbarui bahan baku"
-        actions={
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            Urutkan
-            <select
-              aria-label="Urutkan bahan baku"
-              value={`${sortKey}-${sortDir}`}
-              onChange={(event) => {
-                const value = event.target.value
-                setSortKey(value.startsWith("current-") ? "current" : "name")
-                setSortDir(value.endsWith("-desc") ? "desc" : "asc")
-              }}
-              className="h-8 min-w-0 rounded-md border bg-background px-2 text-xs text-foreground"
-            >
-              <option value="name-asc">Nama A–Z</option>
-              <option value="name-desc">Nama Z–A</option>
-              <option value="current-desc">Stok terbanyak</option>
-              <option value="current-asc">Stok paling sedikit</option>
-            </select>
-          </label>
+        trailingActions={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-10 gap-1.5 text-xs rounded-md shadow-2xs">
+                <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                Urutkan
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 text-xs">
+              <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
+                Urutan
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setSortBy("name-asc")}
+                className="cursor-pointer"
+              >
+                Nama (A - Z)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setSortBy("name-desc")}
+                className="cursor-pointer"
+              >
+                Nama (Z - A)
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setSortBy("current-desc")}
+                className="cursor-pointer"
+              >
+                Stok Terbanyak
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setSortBy("current-asc")}
+                className="cursor-pointer"
+              >
+                Stok Paling Sedikit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
       />
 

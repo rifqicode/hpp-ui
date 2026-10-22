@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Camera,
-  Sparkles,
 } from "lucide-react"
 import {
   Dialog,
@@ -193,7 +192,7 @@ export function ProfilePhotoDialog({
             <span>Foto Profil Pengguna</span>
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Perbarui foto profil Anda. Jika dikosongkan, sistem otomatis menggunakan inisial profesional dengan warna gradient personal.
+            Pilih foto untuk profil akun Anda.
           </DialogDescription>
         </DialogHeader>
 
@@ -217,22 +216,11 @@ export function ProfilePhotoDialog({
               <span className="font-bold text-sm text-foreground block truncate">
                 {userName}
               </span>
-              <span className="text-[11px] text-muted-foreground block">
-                {activeDisplayUrl ? (
-                  <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="size-3 text-emerald-600" />
-                    <span>Foto Kustom Aktif</span>
-                  </span>
-                ) : (
-                  <span className="text-indigo-600 font-semibold flex items-center gap-1">
-                    <Sparkles className="size-3 text-indigo-600" />
-                    <span>Avatar Inisial Gradient Standar</span>
-                  </span>
-                )}
-              </span>
-              <p className="text-[10px] text-muted-foreground">
-                Tampil di sidebar, topbar, dan pencatatan transaksi kasir.
-              </p>
+              {activeDisplayUrl && (
+                <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                  <CheckCircle2 className="size-3" aria-hidden="true" />Foto Kustom Aktif
+                </span>
+              )}
             </div>
           </div>
 

@@ -1,3 +1,13 @@
+import { ArrowUpDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { ListFilters } from '@/components/ui/list-filters'
 import type { usePurchaseOrders } from '../hooks/use-purchase-orders'
 import type { PurchaseOrderCategory } from '../types'
@@ -7,12 +17,13 @@ interface Props {
 }
 
 export function PurchaseOrderListFilters({ list }: Props) {
-  const hasFilters = Boolean(list.search.trim()) || list.categoryFilter !== 'ALL' || list.statusFilter !== 'ALL'
+  const hasFilters = Boolean(list.search.trim()) || list.categoryFilter !== 'ALL' || list.statusFilter !== 'ALL' || list.sortBy !== 'date-desc'
 
   function resetFilters() {
     list.setSearch('')
     list.setCategoryFilter('ALL')
     list.setStatusFilter('ALL')
+    list.setSortBy('date-desc')
   }
 
   return <ListFilters
@@ -49,5 +60,45 @@ export function PurchaseOrderListFilters({ list }: Props) {
     onReset={resetFilters}
     isFetching={list.isFetching && !list.loading}
     fetchingLabel="Memperbarui pembelian"
+    trailingActions={
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-10 gap-1.5 text-xs rounded-md shadow-2xs">
+            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+            Urutkan
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48 text-xs">
+          <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
+            Urutan
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => list.setSortBy("date-desc")}
+            className="cursor-pointer"
+          >
+            Tanggal Terbaru
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => list.setSortBy("date-asc")}
+            className="cursor-pointer"
+          >
+            Tanggal Terlama
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => list.setSortBy("amount-desc")}
+            className="cursor-pointer"
+          >
+            Nominal Tertinggi
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => list.setSortBy("amount-asc")}
+            className="cursor-pointer"
+          >
+            Nominal Terendah
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    }
   />
 }

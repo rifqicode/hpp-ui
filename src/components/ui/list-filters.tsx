@@ -26,6 +26,7 @@ export interface ListFiltersProps {
   isFetching?: boolean
   fetchingLabel?: string
   actions?: ReactNode
+  trailingActions?: ReactNode
   children?: ReactNode
 }
 
@@ -40,10 +41,11 @@ export function ListFilters({
   isFetching = false,
   fetchingLabel = 'Memperbarui data',
   actions,
+  trailingActions,
   children,
 }: ListFiltersProps) {
   return <section aria-label={label} className="space-y-2.5 rounded-xl border bg-card p-3">
-    <div className="flex flex-col gap-2 lg:flex-row">
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
       <div className="relative min-w-0 flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
@@ -75,6 +77,12 @@ export function ListFilters({
           {filter.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>)}
       </div>}
+
+      {trailingActions && (
+        <div className="flex items-center gap-2 shrink-0">
+          {trailingActions}
+        </div>
+      )}
     </div>
 
     <div className="flex flex-wrap items-center justify-between gap-2">

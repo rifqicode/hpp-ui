@@ -11,8 +11,14 @@ export function useStocks(initialQuery?: StockQuery) {
   const [search, setSearch] = React.useState<string>(initialQuery?.search || '');
   const [debouncedSearch, setDebouncedSearch] = React.useState<string>(initialQuery?.search || '');
   const [inventoryMethod, setInventoryMethod] = React.useState<StockQuery['inventory_method']>(initialQuery?.inventory_method);
+  const [sortBy, setSortByState] = React.useState<string>(initialQuery?.sortBy || initialQuery?.sort_by || 'name-asc');
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const [mutationError, setMutationError] = React.useState<string>('');
+
+  const setSortBy = React.useCallback((newSort: string) => {
+    setSortByState(newSort);
+    setPage(1);
+  }, []);
 
   // Debounce search input
   React.useEffect(() => {
@@ -28,7 +34,9 @@ export function useStocks(initialQuery?: StockQuery) {
     limit,
     search: debouncedSearch.trim() || undefined,
     inventory_method: inventoryMethod,
-  }), [page, limit, debouncedSearch, inventoryMethod]);
+    sortBy,
+    sort_by: sortBy,
+  }), [page, limit, debouncedSearch, inventoryMethod, sortBy]);
 
   const {
     data,
@@ -52,6 +60,9 @@ export function useStocks(initialQuery?: StockQuery) {
         setDebouncedSearch(overrideQuery.search);
       }
       if (overrideQuery.inventory_method !== undefined) setInventoryMethod(overrideQuery.inventory_method);
+      if (overrideQuery.sortBy !== undefined || overrideQuery.sort_by !== undefined) {
+        setSortByState(overrideQuery.sortBy || overrideQuery.sort_by || 'name-asc');
+      }
     }
     await refetch();
   }, [refetch]);
@@ -117,6 +128,8 @@ export function useStocks(initialQuery?: StockQuery) {
     totalPages,
     search,
     setSearch,
+    sortBy,
+    setSortBy,
     setPage,
     inventoryMethod,
     setInventoryMethod,

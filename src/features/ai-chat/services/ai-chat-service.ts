@@ -11,6 +11,7 @@ export const aiChatService = {
   async getConversations(page = 1, limit = 20): Promise<PaginatedConversations> {
     const res = await apiClient.get<PaginatedConversations>('/store/ai/conversations', {
       params: { page, limit },
+      skipLoading: true,
     });
     return res.data;
   },
@@ -18,6 +19,7 @@ export const aiChatService = {
   async getActiveConversation(limit = 20): Promise<ConversationDetail> {
     const res = await apiClient.get<ConversationDetail>('/store/ai/conversations/active', {
       params: { limit },
+      skipLoading: true,
     });
     return res.data;
   },
@@ -25,31 +27,39 @@ export const aiChatService = {
   async getConversation(id: string, limit = 20, before?: string): Promise<ConversationDetail> {
     const res = await apiClient.get<ConversationDetail>(`/store/ai/conversations/${id}`, {
       params: { limit, before },
+      skipLoading: true,
     });
     return res.data;
   },
 
   async createConversation(payload: CreateConversationPayload): Promise<AIChatResponse> {
-    const res = await apiClient.post<AIChatResponse>('/store/ai/conversations', payload);
+    const res = await apiClient.post<AIChatResponse>('/store/ai/conversations', payload, {
+      skipLoading: true,
+    });
     return res.data;
   },
 
   async sendMessage(conversationId: string, payload: SendMessagePayload): Promise<AIChatResponse> {
     const res = await apiClient.post<AIChatResponse>(
       `/store/ai/conversations/${conversationId}/messages`,
-      payload
+      payload,
+      { skipLoading: true }
     );
     return res.data;
   },
 
   async retryMessage(conversationId: string): Promise<AIChatResponse> {
     const res = await apiClient.post<AIChatResponse>(
-      `/store/ai/conversations/${conversationId}/retry`
+      `/store/ai/conversations/${conversationId}/retry`,
+      undefined,
+      { skipLoading: true }
     );
     return res.data;
   },
 
   async deleteConversation(id: string): Promise<void> {
-    await apiClient.delete(`/store/ai/conversations/${id}`);
+    await apiClient.delete(`/store/ai/conversations/${id}`, {
+      skipLoading: true,
+    });
   },
 };

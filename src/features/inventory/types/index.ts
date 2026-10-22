@@ -82,6 +82,8 @@ export interface StockQuery {
   limit?: number;
   search?: string;
   inventory_method?: InventoryMethod;
+  sortBy?: string;
+  sort_by?: string;
 }
 
 export interface PaginatedStocks {

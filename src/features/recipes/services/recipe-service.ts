@@ -66,6 +66,7 @@ interface RawProduct {
   id: string;
   store_id?: string;
   storeId?: string;
+  sku?: string;
   name: string;
   category?: string;
   category_id?: string;
@@ -164,6 +165,7 @@ export function transformProductFromApi(raw: RawProduct): Product {
   return {
     id: raw.id,
     storeId: raw.store_id || raw.storeId,
+    sku: raw.sku || '',
     name: raw.name,
     category: categoryName || 'Roti',
     categoryId,
@@ -188,13 +190,20 @@ export function transformProductFromApi(raw: RawProduct): Product {
 }
 
 export const recipeService = {
-  getProducts: async (query?: { search?: string; category?: string }, options?: { storeId?: string; signal?: AbortSignal }): Promise<Product[]> => {
+  getProducts: async (query?: { search?: string; category?: string; sort?: string }, options?: { storeId?: string; signal?: AbortSignal }): Promise<Product[]> => {
     const products: Product[] = [];
     let page = 1;
     let totalPages: number;
     do {
       const response = await apiClient.get<PaginatedResponse<RawProduct> | RawProduct[]>('/products', {
-        params: { search: query?.search, category: query?.category !== 'All' ? query?.category : undefined, page, limit: 100 },
+        params: {
+          search: query?.search,
+          category: query?.category !== 'All' ? query?.category : undefined,
+          sort_by: query?.sort,
+          sortBy: query?.sort,
+          page,
+          limit: 100,
+        },
         headers: options?.storeId ? { 'X-Store-ID': options.storeId } : undefined,
         signal: options?.signal,
       });
@@ -243,6 +252,7 @@ export const recipeService = {
   createProduct: async (data: CreateProductInput): Promise<Product> => {
     try {
       const payload: Record<string, unknown> = {
+        sku: data.sku,
         name: data.name,
         category: data.category || 'Roti',
         unit: data.unit || 'pcs',
@@ -299,6 +309,7 @@ export const recipeService = {
 
       const newProduct: Product = {
         id: `prod-${Date.now()}`,
+        sku: data.sku || `SKU-${Date.now()}`,
         name: data.name,
         category: data.category || "Roti",
         categoryId: data.categoryId || '',
@@ -327,6 +338,7 @@ export const recipeService = {
   updateProduct: async (id: string, data: UpdateProductInput): Promise<Product> => {
     try {
       const payload: Record<string, unknown> = {};
+      if (data.sku !== undefined) payload.sku = data.sku;
       if (data.name !== undefined) payload.name = data.name;
       if (data.category !== undefined) payload.category = data.category;
       if (data.categoryId !== undefined) payload.category_id = data.categoryId;

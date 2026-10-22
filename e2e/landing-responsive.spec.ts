@@ -25,9 +25,9 @@ test('navigation, all feature previews, and FAQ remain usable at this viewport',
   await expect(page.locator('header').getByRole('link', { name: 'Masuk', exact: true })).toBeVisible();
   await expect(page.locator('header').getByRole('link', { name: 'Mulai Gratis', exact: true })).toBeVisible();
   const groups = [
-    { name: 'Biaya & Produksi', titles: ['Biaya resep & harga jual', 'Coba resep & rencana masak', 'Upah, listrik & gas', 'Catat hasil produksi'] },
-    { name: 'Stok & Penjualan', titles: ['Stok & urutan pemakaian', 'Belanja bahan & pemasok', 'Kasir & laba penjualan', 'Catatan pelanggan'] },
-    { name: 'Kelola Usaha', titles: ['Ringkasan usaha', 'Kelola beberapa toko', 'Atur akses karyawan', 'Tanya data usaha'] },
+    { name: 'Biaya & Produksi', titles: ['Biaya resep & harga jual', 'Coba resep & rencana produksi', 'Biaya overhead', 'Catat hasil produksi'] },
+    { name: 'Stok & Penjualan', titles: ['Kontrol stok FIFO & FEFO', 'Belanja bahan & pemasok', 'Kasir & laba penjualan', 'Catatan pelanggan'] },
+    { name: 'Kelola Usaha', titles: ['Ringkasan usaha', 'Kelola beberapa toko', 'Atur akses karyawan', 'Asisten Bisnis AI'] },
   ];
   for (const group of groups) {
     const category = page.getByRole('group', { name: 'Kategori fitur' }).getByRole('button', { name: group.name, exact: true });

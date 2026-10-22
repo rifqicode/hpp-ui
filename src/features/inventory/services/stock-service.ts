@@ -27,6 +27,12 @@ export const stockService = {
     if (query?.search) params.append('search', query.search);
     if (query?.inventory_method) params.append('inventory_method', query.inventory_method);
 
+    const sort = query?.sort_by || query?.sortBy;
+    if (sort) {
+      params.append('sort_by', sort);
+      params.append('sortBy', sort);
+    }
+
     const queryString = params.toString();
     const url = queryString ? `/stocks?${queryString}` : '/stocks';
     const response = await apiClient.get<PaginatedStocks>(url);

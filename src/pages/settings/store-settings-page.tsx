@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { useInitialLoading } from "@/hooks/use-initial-loading"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import {
@@ -17,9 +18,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronDown,
-  Sparkles,
   Shield,
-  Layers,
   Pencil,
 } from "lucide-react"
 
@@ -61,8 +60,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { useStoreSettings } from "@/features/settings/hooks"
-import { PERMISSION_GROUP_INFO } from "@/features/settings/constants"
-import type { Permission } from "@/features/settings/types"
+import type { Role } from "@/features/settings/types"
+import { RolePermissionsDialog } from "@/features/settings/components/role-permissions-dialog"
+import { permissionGroupInfo } from "@/features/settings/constants"
 
 const STORE_CATEGORIES = [
   "Bakery & Pastry",
@@ -82,18 +82,18 @@ const STORE_CATEGORIES = [
 export default function StoreSettingsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeTab = searchParams.get("tab") || "profile"
+  const requestedTab = searchParams.get("tab")
+  const activeTab = requestedTab && ["profile", "staff", "roles", "stores"].includes(requestedTab) ? requestedTab : "profile"
+  const isCompactLayout = useIsMobile(1280)
 
   const handleTabChange = (val: string) => {
     setSearchParams({ tab: val }, { replace: true })
   }
 
-  const [expandedRoleIds, setExpandedRoleIds] = React.useState<string[]>([])
-
-  const toggleExpandRole = (roleId: string) => {
-    setExpandedRoleIds((prev) =>
-      prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
-    )
+  const roleDetailsTrigger = React.useRef<HTMLElement | null>(null)
+  const openRoleDetails = (role: Role, trigger: HTMLElement | null) => {
+    roleDetailsTrigger.current = trigger
+    setSelectedRoleDetail(role)
   }
 
   const {
@@ -103,7 +103,6 @@ export default function StoreSettingsPage() {
     storesList,
     staffList,
     rolesList,
-    permissionsCatalog,
     formData,
     setFormData,
     isSavingProfile,
@@ -159,10 +158,10 @@ export default function StoreSettingsPage() {
   }
 
   const TABS = [
-    { id: "profile", label: "Profil Toko", icon: Building2 },
-    { id: "staff", label: "Anggota Tim", icon: Users },
-    { id: "roles", label: "Peran & Hak Akses", icon: ShieldCheck },
-    { id: "stores", label: "Daftar Toko", icon: Store },
+    { id: "profile", label: "Profil Toko", description: "Identitas & kontak", icon: Building2 },
+    { id: "staff", label: "Anggota Tim", description: "Staf & undangan", icon: Users },
+    { id: "roles", label: "Peran & Hak Akses", description: "Izin operasional", icon: ShieldCheck },
+    { id: "stores", label: "Daftar Toko", description: "Toko & cabang", icon: Store },
   ] as const
 
   const isInitialLoading = useInitialLoading(loading)
@@ -172,200 +171,82 @@ export default function StoreSettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-12 animate-in fade-in duration-500 w-full">
-      {/* Header */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Store className="h-6 w-6 text-primary" />
-            Pengaturan Toko & Outlet
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Kelola profil outlet, manajemen peran & hak akses staf, serta perpindahan antar-cabang.
-          </p>
-        </div>
-        {store && (
-          <div className="flex items-center gap-2 mt-2 sm:mt-0">
-            <Badge variant="outline" className="px-3 py-1 bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
-              Toko Aktif: {store.name}
-            </Badge>
-            {store.isMain && (
-              <Badge variant="default" className="text-[10px] bg-amber-500 text-white font-bold">
-                Toko Utama
-              </Badge>
-            )}
-          </div>
-        )}
-      </div>
+    <div className="w-full min-w-0 space-y-5 pb-8">
+      <header>
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Pengaturan Toko & Outlet</h1>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Atur profil toko, anggota tim, dan akses setiap cabang.</p>
+      </header>
 
-      {/* Navigation Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-cols-2 sm:grid-flow-col sm:auto-cols-fr gap-1 bg-muted/60 p-1 rounded-xl border border-border h-auto w-full md:w-auto md:inline-grid">
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            return (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold"
-              >
-                <Icon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{tab.label}</span>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={handleTabChange} orientation={isCompactLayout ? "horizontal" : "vertical"} className="grid min-w-0 items-start gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
+        <aside aria-label="Bagian pengaturan toko" className="min-w-0 space-y-3 xl:sticky xl:top-0">
+          <TabsList aria-label="Pengaturan toko" className="grid h-auto w-full grid-cols-2 justify-start gap-1 rounded-xl border bg-card p-1.5 sm:grid-cols-4 xl:grid-cols-1">
+            {TABS.map((tab) => {
+              const Icon = tab.icon
+              return (
+                <TabsTrigger key={tab.id} value={tab.id} aria-label={tab.label} className="group/store-tab min-h-11 min-w-0 justify-start gap-2 rounded-lg px-2.5 py-2.5 text-left text-xs font-medium text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground data-[state=active]:bg-primary data-[state=active]:font-semibold data-[state=active]:text-primary-foreground data-[state=active]:shadow-none data-[state=active]:hover:bg-primary/90 data-[state=active]:hover:text-primary-foreground xl:gap-3 xl:px-3">
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0"><span className="block whitespace-normal leading-4">{tab.label}</span><span className="mt-0.5 hidden text-[10px] font-normal text-muted-foreground group-data-[state=active]/store-tab:text-primary-foreground xl:block">{tab.description}</span></span>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </aside>
 
-        {/* ================= TAB 1: PROFIL TOKO ================= */}
-        <TabsContent value="profile" className="mt-4 space-y-4">
-          <Card className="rounded-xl shadow-sm border-border w-full">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">Informasi Toko & Outlet</CardTitle>
-                  <CardDescription>
-                    Detail informasi ini digunakan pada faktur, Purchase Order, dan bukti transaksi kasir.
-                  </CardDescription>
-                </div>
-                {store?.isMain && (
-                  <Badge variant="outline" className="border-amber-500/30 text-amber-600 bg-amber-500/10 text-xs font-semibold">
-                    <Sparkles className="h-3 w-3 mr-1 text-amber-500" />
-                    Toko Utama
-                  </Badge>
-                )}
-              </div>
+        <div className="min-w-0">
+        <TabsContent value="profile" className="m-0 space-y-4">
+          <Card className="min-w-0 gap-0 border border-border py-0 shadow-none ring-0">
+            <CardHeader className="gap-1 border-b px-4 py-4 sm:px-5">
+              <CardTitle className="text-base">Informasi Toko & Outlet</CardTitle>
+              <CardDescription className="text-xs leading-5">Informasi toko ditampilkan pada faktur, pesanan pembelian, dan struk kasir.</CardDescription>
             </CardHeader>
-            <CardContent>
-              {profileSuccessMsg && (
-                <div className="mb-4 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>{profileSuccessMsg}</span>
-                </div>
-              )}
+            <CardContent className="p-0">
+              <form onSubmit={handleSaveProfile}>
+                <div className="space-y-6 p-4 sm:p-5">
+                  {profileSuccessMsg && <div role="status" className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"><CheckCircle2 className="size-4 shrink-0" /><span>{profileSuccessMsg}</span></div>}
+                  {profileErrorMsg && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive"><AlertCircle className="size-4 shrink-0" /><span>{profileErrorMsg}</span></div>}
 
-              {profileErrorMsg && (
-                <div className="mb-4 p-3.5 rounded-xl bg-destructive/10 text-destructive text-xs font-medium flex items-center gap-2 animate-in fade-in">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{profileErrorMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSaveProfile} className="space-y-4 w-full">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="store-name" className="text-xs font-semibold">
-                      Nama Toko / Outlet <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="store-name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="pl-9 rounded-xl"
-                        placeholder="Contoh: Dapur Roti Senopati"
-                        required
-                      />
+                  <section aria-labelledby="store-identity-heading" className="space-y-4">
+                    <div><h2 id="store-identity-heading" className="text-sm font-semibold">Identitas toko</h2><p className="mt-1 text-xs text-muted-foreground">Nama dan jenis usaha yang dikenali pelanggan.</p></div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="store-name" className="text-xs font-medium">Nama Toko / Outlet <span className="text-destructive">*</span></Label>
+                        <Input id="store-name" value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} required className="h-11 text-sm" placeholder="Nama toko Anda" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="store-category" className="text-xs font-medium">Kategori Bisnis <span className="text-destructive">*</span></Label>
+                        <select id="store-category" value={formData.category} onChange={(event) => setFormData({ ...formData, category: event.target.value })} className="h-11 w-full min-w-0 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                          {formData.category && !STORE_CATEGORIES.includes(formData.category) && <option value={formData.category}>{formData.category}</option>}
+                          {STORE_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="store-category" className="text-xs font-semibold">
-                      Kategori Bisnis <span className="text-destructive">*</span>
-                    </Label>
-                    <select
-                      id="store-category"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 rounded-xl h-9 text-sm border border-input bg-background text-foreground shadow-xs focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      {formData.category && !STORE_CATEGORIES.includes(formData.category) && (
-                        <option value={formData.category}>
-                          {formData.category}
-                        </option>
-                      )}
-                      {STORE_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="store-phone" className="text-xs font-semibold">
-                      Nomor Telepon / WhatsApp Bisnis
-                    </Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="store-phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        placeholder="0812-xxxx-xxxx"
-                        className="pl-9 rounded-xl"
-                      />
+                  <section aria-labelledby="store-contact-heading" className="space-y-4 border-t pt-5">
+                    <div><h2 id="store-contact-heading" className="text-sm font-semibold">Kontak & operasional</h2><p className="mt-1 text-xs text-muted-foreground">Nomor bisnis, lokasi, dan catatan untuk toko ini.</p></div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="store-phone" className="text-xs font-medium">Nomor Telepon / WhatsApp Bisnis</Label>
+                        <Input id="store-phone" type="tel" value={formData.phone} onChange={(event) => setFormData({ ...formData, phone: event.target.value })} placeholder="Nomor telepon bisnis" className="h-11 text-sm" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="store-location" className="text-xs font-medium">Alamat Fisik / Dapur Produksi</Label>
+                        <Input id="store-location" value={formData.location} onChange={(event) => setFormData({ ...formData, location: event.target.value })} placeholder="Alamat toko atau dapur produksi" className="h-11 text-sm" />
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="store-location" className="text-xs font-semibold">
-                      Alamat Fisik / Dapur Produksi
-                    </Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="store-location"
-                        value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        placeholder="Contoh: Jl. Senopati No. 45, Jakarta Selatan"
-                        className="pl-9 rounded-xl"
-                      />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="store-desc" className="text-xs font-medium">Deskripsi Singkat / Catatan Operasional</Label>
+                      <Textarea id="store-desc" value={formData.description} onChange={(event) => setFormData({ ...formData, description: event.target.value })} placeholder="Jam buka atau catatan operasional toko" className="min-h-24 text-sm" rows={3} />
                     </div>
-                  </div>
+                    <dl className="grid gap-3 rounded-lg bg-muted/40 p-3 text-xs sm:grid-cols-2">
+                      <div><dt className="text-[11px] text-muted-foreground">Mata uang operasional</dt><dd className="mt-1 font-medium">IDR · Rupiah Indonesia</dd></div>
+                      <div><dt className="text-[11px] text-muted-foreground">Zona waktu gerai</dt><dd className="mt-1 font-medium">Asia/Jakarta · WIB (UTC+7)</dd></div>
+                    </dl>
+                  </section>
                 </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Mata Uang Operasional</Label>
-                    <Input
-                      value="IDR (Rp - Rupiah Indonesia)"
-                      disabled
-                      className="rounded-xl bg-muted/40 text-muted-foreground text-xs"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Zona Waktu Gerai</Label>
-                    <Input
-                      value="Asia/Jakarta (WIB - UTC+7)"
-                      disabled
-                      className="rounded-xl bg-muted/40 text-muted-foreground text-xs"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="store-desc" className="text-xs font-semibold">
-                    Deskripsi Singkat / Catatan Operasional
-                  </Label>
-                  <Textarea
-                    id="store-desc"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Tuliskan keterangan mengenai fokus produksi, spesialisasi menu, atau jam operasional gerai..."
-                    className="rounded-xl min-h-[90px]"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button type="submit" className="rounded-xl shadow-sm px-6 font-semibold" disabled={isSavingProfile}>
-                    {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Simpan Perubahan Toko
-                  </Button>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-4 sm:px-5">
+                  <p className="text-[11px] text-muted-foreground">Perubahan berlaku untuk toko ini.</p>
+                  <Button type="submit" disabled={isSavingProfile} className="h-11 w-full gap-2 text-xs sm:w-auto">{isSavingProfile && <Loader2 className="size-4 animate-spin" />}Simpan Perubahan Toko</Button>
                 </div>
               </form>
             </CardContent>
@@ -373,57 +254,25 @@ export default function StoreSettingsPage() {
         </TabsContent>
 
         {/* ================= TAB 2: ANGGOTA TIM & STAF ================= */}
-        <TabsContent value="staff" className="mt-4 space-y-4">
-          {/* Quick Staff Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="rounded-xl border-border shadow-xs bg-card p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Total Anggota</span>
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-              <p className="text-2xl font-bold font-mono mt-1 text-foreground">{staffList.length}</p>
-              <span className="text-[11px] text-muted-foreground">Staf terdaftar di outlet ini</span>
-            </Card>
-            <Card className="rounded-xl border-border shadow-xs bg-card p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Pemilik (Owner)</span>
-                <ShieldCheck className="h-4 w-4 text-amber-500" />
-              </div>
-              <p className="text-2xl font-bold font-mono mt-1 text-foreground">
-                {staffList.filter((s) => s.role === "OWNER").length}
-              </p>
-              <span className="text-[11px] text-muted-foreground">Akses penuh seluruh fitur</span>
-            </Card>
-            <Card className="rounded-xl border-border shadow-xs bg-card p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Staf Operasional</span>
-                <UserCheck className="h-4 w-4 text-emerald-500" />
-              </div>
-              <p className="text-2xl font-bold font-mono mt-1 text-foreground">
-                {staffList.filter((s) => s.role === "STAFF").length}
-              </p>
-              <span className="text-[11px] text-muted-foreground">Akses pencatatan stok & POS</span>
-            </Card>
-          </div>
-
-          <Card className="rounded-xl shadow-sm border-border w-full">
-            <CardHeader className="pb-4">
+        <TabsContent value="staff" className="m-0 min-w-0 space-y-4">
+          <Card className="min-w-0 gap-0 rounded-xl border border-border py-0 shadow-none ring-0">
+            <CardHeader className="border-b px-4 py-4 sm:px-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <span>Anggota Tim Toko: {store?.name}</span>
+                    <span>Anggota Tim</span><Badge variant="secondary" className="text-[10px]">{staffList.length}</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Kelola hak akses staf yang dapat mencatat stok bahan, resep produksi, dan kasir POS di toko ini.
+                    Atur anggota tim dan undangan untuk toko ini.
                   </CardDescription>
                 </div>
-                <Button onClick={() => setIsInviteOpen(true)} className="w-full sm:w-auto rounded-xl shadow-sm font-semibold" size="sm">
+                <Button onClick={() => setIsInviteOpen(true)} className="h-10 w-full gap-1.5 text-xs sm:w-auto" size="sm">
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
                   Undang Staf Baru
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-5">
               {staffList.length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
                   <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
@@ -442,21 +291,21 @@ export default function StoreSettingsPage() {
                 </div>
               ) : (
                 <div className="rounded-xl border border-border overflow-hidden">
-                  <Table className="min-w-[650px]">
-                    <TableHeader>
+                  <Table className="min-w-0 md:min-w-[650px]">
+                    <TableHeader className="hidden md:table-header-group">
                       <TableRow className="bg-muted/40">
                         <TableHead className="whitespace-nowrap">Nama Anggota</TableHead>
                         <TableHead className="whitespace-nowrap">Email Akun</TableHead>
                         <TableHead className="whitespace-nowrap">Peran / Role</TableHead>
                         <TableHead className="whitespace-nowrap">Tanggal Bergabung</TableHead>
                         <TableHead className="whitespace-nowrap">Status</TableHead>
-                        <TableHead className="w-[80px] text-center whitespace-nowrap"></TableHead>
+                        <TableHead className="w-[80px] text-center whitespace-nowrap">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBody className="block md:table-row-group">
                       {staffList.map((st) => (
-                        <TableRow key={st.id} className="hover:bg-muted/30">
-                          <TableCell className="font-medium text-foreground whitespace-nowrap">
+                        <TableRow key={st.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 p-4 hover:bg-muted/30 md:table-row md:p-0">
+                          <TableCell className="order-1 col-span-2 p-0 font-medium text-foreground md:p-4">
                             <div className="flex items-center gap-2.5">
                               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase shrink-0">
                                 {st.name ? st.name.substring(0, 2) : "ST"}
@@ -467,27 +316,27 @@ export default function StoreSettingsPage() {
                             </div>
                           </TableCell>
 
-                          <TableCell className="text-muted-foreground text-xs font-mono whitespace-nowrap">
+                          <TableCell className="order-2 col-span-2 break-all p-0 text-xs text-muted-foreground md:whitespace-nowrap md:p-4">
                             {st.email}
                           </TableCell>
 
-                          <TableCell className="whitespace-nowrap">
+                          <TableCell className="order-3 p-0 md:whitespace-nowrap md:p-4">
                             {st.role === "OWNER" ? (
                               <Badge variant="default" className="bg-amber-600 hover:bg-amber-600 text-white gap-1 text-[10px]">
                                 <ShieldCheck className="h-3 w-3" /> Pemilik (Owner)
                               </Badge>
                             ) : (
                               <Badge variant="secondary" className="gap-1 text-[10px]">
-                                <UserCheck className="h-3 w-3" /> Staf Operasional
+                                <UserCheck className="h-3 w-3" /> {getRoleDisplayName(st.role)}
                               </Badge>
                             )}
                           </TableCell>
 
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatDate(st.joinedAt)}
+                          <TableCell className="order-5 flex items-center p-0 text-xs text-muted-foreground md:table-cell md:whitespace-nowrap md:p-4">
+                            <span className="mr-1 text-[10px] md:hidden">Bergabung:</span>{formatDate(st.joinedAt)}
                           </TableCell>
 
-                          <TableCell className="whitespace-nowrap">
+                          <TableCell className="order-4 p-0 text-right md:whitespace-nowrap md:p-4 md:text-left">
                             {st.status === "active" ? (
                               <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">
                                 Aktif
@@ -499,13 +348,13 @@ export default function StoreSettingsPage() {
                             )}
                           </TableCell>
 
-                          <TableCell className="text-center whitespace-nowrap">
+                          <TableCell className="order-6 p-0 text-right md:whitespace-nowrap md:p-4 md:text-center">
                             {st.role !== "OWNER" && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setRevokingStaff(st)}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg h-7 px-2 text-xs"
+                                className="h-10 rounded-lg px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <Trash2 className="h-3.5 w-3.5 mr-1" /> Cabut
                               </Button>
@@ -522,59 +371,22 @@ export default function StoreSettingsPage() {
         </TabsContent>
 
         {/* ================= TAB 3: PERAN & HAK AKSES ================= */}
-        <TabsContent value="roles" className="mt-4 space-y-5">
-          {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Card className="p-4 rounded-xl border border-border shadow-xs">
-              <span className="text-xs text-muted-foreground font-medium">Total Peran</span>
-              <p className="text-2xl font-bold font-mono mt-1 text-foreground">
-                {rolesList.length}
-              </p>
-              <span className="text-[11px] text-muted-foreground">Peran aktif di toko</span>
-            </Card>
-
-            <Card className="p-4 rounded-xl border border-border shadow-xs">
-              <span className="text-xs text-muted-foreground font-medium">Peran Bawaan Sistem</span>
-              <p className="text-2xl font-bold font-mono mt-1 text-foreground">
-                {rolesList.filter((r) => r.is_system).length}
-              </p>
-              <span className="text-[11px] text-muted-foreground">Template standar RBAC</span>
-            </Card>
-
-            <Card className="p-4 rounded-xl border border-border shadow-xs">
-              <span className="text-xs text-muted-foreground font-medium">Peran Kustom Toko</span>
-              <p className="text-2xl font-bold font-mono mt-1 text-primary">
-                {rolesList.filter((r) => !r.is_system).length}
-              </p>
-              <span className="text-[11px] text-muted-foreground">Dibuat khusus pengguna</span>
-            </Card>
-
-            <Card className="p-4 rounded-xl border border-border shadow-xs">
-              <span className="text-xs text-muted-foreground font-medium">Katalog Hak Akses</span>
-              <p className="text-2xl font-bold font-mono mt-1 text-foreground">
-                {permissionsCatalog.length}
-              </p>
-              <span className="text-[11px] text-muted-foreground">
-                {Object.keys(PERMISSION_GROUP_INFO).length} Modul Terintegrasi
-              </span>
-            </Card>
-          </div>
-
-          <Card className="rounded-xl shadow-sm border-border w-full">
-            <CardHeader className="pb-4">
+        <TabsContent value="roles" className="m-0 min-w-0 space-y-4">
+          <Card className="min-w-0 gap-0 rounded-xl border border-border py-0 shadow-none ring-0">
+            <CardHeader className="border-b px-4 py-4 sm:px-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5 text-primary" />
-                    <span>Daftar Peran & Hak Akses Toko</span>
+                    <span>Peran & Hak Akses</span><Badge variant="secondary" className="text-[10px]">{rolesList.length}</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Kelola wewenang dan izin operasional untuk setiap peran tim staf toko Anda.
+                    Tentukan fitur dan tindakan yang dapat diakses setiap peran.
                   </CardDescription>
                 </div>
                 <Button
                   onClick={() => navigate("/settings/role/new")}
-                  className="w-full sm:w-auto rounded-xl shadow-sm font-semibold"
+                  className="h-10 w-full gap-1.5 text-xs sm:w-auto"
                   size="sm"
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -582,7 +394,7 @@ export default function StoreSettingsPage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-5">
               {rolesList.length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
                   <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
@@ -606,8 +418,8 @@ export default function StoreSettingsPage() {
                 </div>
               ) : (
                 <div className="rounded-xl border border-border overflow-hidden bg-card shadow-xs">
-                  <Table className="min-w-[680px]">
-                    <TableHeader>
+                  <Table className="min-w-0 md:min-w-[680px]">
+                    <TableHeader className="hidden md:table-header-group">
                       <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                         <TableHead className="font-bold text-foreground text-xs py-3.5 pl-4">
                           Peran & Deskripsi
@@ -619,216 +431,30 @@ export default function StoreSettingsPage() {
                         </TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {rolesList.map((r) => {
-                        const isExpanded = expandedRoleIds.includes(r.id)
-                        const rolePerms = r.permissions || []
-                        const activeGroups = Array.from(new Set(rolePerms.map((p) => p.group)))
-                        const isSystem = Boolean(r.is_system)
-
+                    <TableBody className="block md:table-row-group">
+                      {rolesList.map((role) => {
+                        const permissions = role.permissions ?? []
+                        const groups = Array.from(new Set(permissions.map((permission) => permission.group)))
                         return (
-                          <React.Fragment key={r.id}>
-                            {/* Main Clickable Row */}
-                            <TableRow
-                              onClick={() => toggleExpandRole(r.id)}
-                              className={`cursor-pointer transition-colors border-b border-border/70 ${
-                                isExpanded ? "bg-muted/40 font-medium" : "hover:bg-muted/30"
-                              }`}
-                            >
-                              {/* Nama Peran & Deskripsi */}
-                              <TableCell className="py-4 pl-4 align-top">
-                                <div className="flex items-start gap-3">
-                                  <div
-                                    className={`p-2 rounded-xl shrink-0 mt-0.5 transition-colors ${
-                                      isExpanded
-                                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                                        : "bg-primary/10 text-primary"
-                                    }`}
-                                  >
-                                    <Shield className="h-4 w-4" />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <p className="font-bold text-sm text-foreground leading-tight">
-                                        {r.name}
-                                      </p>
-                                      {isSystem ? (
-                                        <Badge
-                                          variant="outline"
-                                          className="text-[10px] bg-muted/60 text-muted-foreground border-border py-0 h-4"
-                                        >
-                                          Sistem
-                                        </Badge>
-                                      ) : (
-                                        <Badge
-                                          variant="default"
-                                          className="text-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-semibold py-0 h-4"
-                                        >
-                                          Kustom
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-foreground/80 leading-relaxed max-w-md whitespace-normal">
-                                      {r.description || "Tidak ada deskripsi tambahan untuk peran ini."}
-                                    </p>
-                                  </div>
+                          <TableRow key={role.id} className="grid cursor-pointer grid-cols-2 gap-3 p-4 hover:bg-muted/30 md:table-row md:p-0" onClick={(event) => openRoleDetails(role, event.currentTarget.querySelector<HTMLButtonElement>('[data-role-details]'))}>
+                            <TableCell className="col-span-2 p-0 align-top md:p-4">
+                              <div className="flex items-start gap-3">
+                                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Shield className="size-4" aria-hidden="true" /></span>
+                                <div className="min-w-0 space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2"><button type="button" onClick={(event) => { event.stopPropagation(); openRoleDetails(role, event.currentTarget) }} className="rounded text-left text-sm font-semibold hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{role.name}</button><Badge variant="secondary" className="text-[10px]">{role.is_system ? "Sistem" : "Kustom"}</Badge></div>
+                                  <p className="max-w-md whitespace-normal text-xs leading-5 text-muted-foreground">{role.description || "Belum ada deskripsi peran."}</p>
                                 </div>
-                              </TableCell>
-
-                              {/* Jumlah Izin */}
-                              <TableCell className="align-top py-4">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold text-xs border border-primary/20">
-                                  <Check className="h-3.5 w-3.5 stroke-[3]" />
-                                  {rolePerms.length} Izin
-                                </span>
-                              </TableCell>
-
-                              {/* Cakupan Modul */}
-                              <TableCell className="align-top py-4">
-                                <div className="flex flex-wrap gap-1 max-w-[260px]">
-                                  {activeGroups.map((grp) => {
-                                    const groupInfo = PERMISSION_GROUP_INFO[grp]
-                                    return (
-                                      <span
-                                        key={grp}
-                                        className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-background border border-border text-foreground shadow-2xs"
-                                      >
-                                        {groupInfo?.label
-                                          ? groupInfo.label.replace("Akses ", "").replace("Modul ", "")
-                                          : grp}
-                                      </span>
-                                    )
-                                  })}
-                                </div>
-                              </TableCell>
-
-                              {/* Action Buttons */}
-                              <TableCell className="text-right align-top py-4 pr-4">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={isSystem}
-                                    title={isSystem ? "Peran bawaan sistem tidak dapat diedit" : "Edit peran & izin"}
-                                    className="rounded-lg text-xs h-8 px-2.5 gap-1.5 hover:bg-primary/10 hover:text-primary hover:border-primary/40 text-foreground disabled:opacity-40"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      navigate(`/settings/role/${r.id}`)
-                                    }}
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                    <span>Edit</span>
-                                  </Button>
-
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className={`rounded-lg text-xs h-8 px-2.5 gap-1.5 transition-all ${
-                                      isExpanded
-                                        ? "bg-primary text-primary-foreground border-primary hover:bg-primary/90 hover:text-primary-foreground font-bold shadow-xs"
-                                        : "hover:bg-primary/10 hover:text-primary hover:border-primary/40 border-border text-foreground font-semibold"
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      toggleExpandRole(r.id)
-                                    }}
-                                  >
-                                    <span>{isExpanded ? "Tutup" : "Izin"}</span>
-                                    <ChevronDown
-                                      className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                                        isExpanded ? "rotate-180" : ""
-                                      }`}
-                                    />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-
-                            {/* Expandable Accordion Content Row */}
-                            {isExpanded && (
-                              <TableRow className="bg-muted/15 hover:bg-muted/15 border-b border-border/80">
-                                <TableCell colSpan={4} className="p-4 sm:p-6">
-                                  <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm space-y-4 animate-in fade-in-50 duration-200">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border">
-                                      <div>
-                                        <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                          <Layers className="h-4 w-4 text-primary" />
-                                          <span>Rincian Lengkap Hak Akses: {r.name}</span>
-                                        </h4>
-                                        <p className="text-xs text-muted-foreground mt-0.5">
-                                          Daftar wewenang tindakan yang diizinkan untuk staf dengan peran ini.
-                                        </p>
-                                      </div>
-                                      <Badge variant="secondary" className="font-mono text-xs px-2.5 py-1 font-bold shrink-0 self-start sm:self-auto">
-                                        {rolePerms.length} dari {permissionsCatalog.length} Izin Tersedia
-                                      </Badge>
-                                    </div>
-
-                                    {rolePerms.length === 0 ? (
-                                      <div className="py-6 text-center text-xs text-muted-foreground">
-                                        Peran ini belum memiliki hak akses aktif.
-                                      </div>
-                                    ) : (
-                                      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-                                        {Object.entries(
-                                          rolePerms.reduce((acc, p) => {
-                                            acc[p.group] = acc[p.group] || []
-                                            acc[p.group].push(p)
-                                            return acc
-                                          }, {} as Record<string, Permission[]>)
-                                        ).map(([grp, perms]) => {
-                                          const groupInfo = PERMISSION_GROUP_INFO[grp]
-                                          return (
-                                            <div
-                                              key={grp}
-                                              className="rounded-xl border border-border/80 p-3 bg-muted/25 space-y-2.5 shadow-2xs"
-                                            >
-                                              <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
-                                                <span className="text-xs font-bold text-foreground">
-                                                  {groupInfo?.label || grp}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
-                                                  {perms.length} izin
-                                                </span>
-                                              </div>
-
-                                              <div className="space-y-1.5">
-                                                {perms.map((p) => (
-                                                  <div
-                                                    key={p.id || p.code}
-                                                    className="p-2.5 rounded-lg bg-card border border-border/70 text-xs flex items-start gap-2.5 shadow-2xs"
-                                                  >
-                                                    <div className="p-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
-                                                      <Check className="h-3 w-3 stroke-[3]" />
-                                                    </div>
-                                                    <div className="min-w-0 flex-1 whitespace-normal">
-                                                      <p className="font-bold text-foreground text-xs leading-tight">
-                                                        {p.name}
-                                                      </p>
-                                                      {p.description && (
-                                                        <p className="text-[11px] text-foreground/80 leading-snug mt-0.5">
-                                                          {p.description}
-                                                        </p>
-                                                      )}
-                                                      <span className="inline-block font-mono text-[9px] text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.2 rounded font-bold mt-1.5">
-                                                        {p.code}
-                                                      </span>
-                                                    </div>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </React.Fragment>
+                              </div>
+                            </TableCell>
+                            <TableCell className="col-span-2 p-0 align-top md:p-4"><span className="text-xs font-medium">{permissions.length} izin</span></TableCell>
+                            <TableCell className="col-span-2 p-0 align-top md:p-4"><div className="flex max-w-60 flex-wrap gap-1">{groups.length === 0 ? <span className="text-xs text-muted-foreground">Belum ada modul</span> : groups.map((group) => <span key={group} className="rounded-md border px-2 py-1 text-[10px] text-muted-foreground">{permissionGroupInfo(group).label}</span>)}</div></TableCell>
+                            <TableCell className="col-span-2 border-t p-0 pt-3 text-right align-top md:border-0 md:p-4" onClick={(event) => event.stopPropagation()}>
+                              <div className="flex items-center gap-2 [&>button]:flex-1 md:justify-end md:[&>button]:flex-none">
+                                <Button type="button" variant="outline" size="sm" disabled={Boolean(role.is_system)} title={role.is_system ? "Peran bawaan sistem tidak dapat diedit" : "Edit peran & izin"} onClick={() => navigate(`/settings/role/${role.id}`)} className="h-10 gap-1.5 text-xs"><Pencil className="size-3.5" />Edit</Button>
+                                <Button type="button" variant="outline" size="sm" data-role-details aria-haspopup="dialog" onClick={(event) => openRoleDetails(role, event.currentTarget)} className="h-10 gap-1.5 text-xs"><ShieldCheck className="size-3.5" />Lihat izin</Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )
                       })}
                     </TableBody>
@@ -840,21 +466,21 @@ export default function StoreSettingsPage() {
         </TabsContent>
 
         {/* ================= TAB 4: DAFTAR TOKO ================= */}
-        <TabsContent value="stores" className="mt-4 space-y-4">
+        <TabsContent value="stores" className="m-0 min-w-0 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-foreground">Daftar Toko</h3>
+              <h2 className="text-base font-semibold text-foreground">Daftar Toko <span className="ml-1 text-xs font-normal text-muted-foreground">({storesList.length})</span></h2>
               <p className="text-xs text-muted-foreground">
-                Pilih atau beralih toko untuk mengelola stok bahan dan laporan HPP cabang terkait.
+                Pilih toko yang ingin dikelola atau tambahkan cabang baru.
               </p>
             </div>
-            <Button onClick={() => setIsNewStoreOpen(true)} className="w-full sm:w-auto rounded-xl shadow-sm font-semibold" size="sm">
+            <Button onClick={() => setIsNewStoreOpen(true)} className="h-10 w-full gap-1.5 text-xs sm:w-auto" size="sm">
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               Tambah Toko Baru
             </Button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2">
             {storesList.map((s) => {
               const isCurrent = store?.id === s.id
               return (
@@ -867,23 +493,41 @@ export default function StoreSettingsPage() {
                   }`}
                 >
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`p-2.5 rounded-xl ${isCurrent ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground"}`}>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 basis-32 items-center gap-2.5">
+                        <div className={`p-2.5 rounded-xl shrink-0 ${isCurrent ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground"}`}>
                           <Store className="h-4 w-4" />
                         </div>
-                        <div>
-                          <CardTitle className="text-sm font-bold text-foreground">
+                        <div className="min-w-0">
+                          <CardTitle className="text-sm font-bold text-foreground truncate">
                             {s.name}
                           </CardTitle>
-                          <span className="text-[11px] text-muted-foreground">{s.category}</span>
+                          <span className="text-[11px] text-muted-foreground block truncate">{s.category}</span>
                         </div>
                       </div>
-                      {isCurrent && (
-                        <Badge variant="default" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                          <Check className="h-3 w-3" /> Aktif
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                        {s.role && (
+                          <Badge
+                            variant={s.role.toUpperCase() === "OWNER" ? "default" : "secondary"}
+                            className={`text-[10px] px-2 py-0.5 ${
+                              s.role.toUpperCase() === "OWNER"
+                                ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
+                                : "bg-muted text-muted-foreground border-border"
+                            }`}
+                          >
+                            {s.role.toUpperCase() === "OWNER"
+                              ? "Pemilik"
+                              : s.role.toUpperCase() === "STAFF"
+                              ? "Staf"
+                              : s.role}
+                          </Badge>
+                        )}
+                        {isCurrent && (
+                          <Badge variant="default" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                            <Check className="h-3 w-3" /> Aktif
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3 pt-0">
@@ -906,7 +550,7 @@ export default function StoreSettingsPage() {
                       </span>
 
                       {isCurrent ? (
-                        <Button variant="outline" size="sm" className="rounded-xl text-xs h-8 cursor-default" disabled>
+                        <Button variant="outline" size="sm" className="h-10 cursor-default rounded-lg text-xs" disabled>
                           Sedang Aktif
                         </Button>
                       ) : (
@@ -914,7 +558,7 @@ export default function StoreSettingsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleSwitchStore(s.id)}
-                          className="rounded-xl text-xs h-8 hover:bg-primary/10 hover:text-primary border-primary/20"
+                          className="h-10 rounded-lg border-primary/20 text-xs hover:bg-primary/10 hover:text-primary"
                         >
                           Beralih ke Toko Ini
                         </Button>
@@ -926,6 +570,7 @@ export default function StoreSettingsPage() {
             })}
           </div>
         </TabsContent>
+        </div>
       </Tabs>
 
       {/* Modal Undang Staf */}
@@ -1064,119 +709,7 @@ export default function StoreSettingsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Detail Hak Akses Peran */}
-      <Dialog
-        open={!!selectedRoleDetail}
-        onOpenChange={(open) => !open && setSelectedRoleDetail(null)}
-      >
-        <DialogContent className="sm:max-w-[560px] max-h-[85vh] flex flex-col rounded-2xl p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-3 border-b border-border/60">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-base font-bold">
-                      {selectedRoleDetail?.name}
-                    </DialogTitle>
-                    <p className="text-[11px] font-mono text-muted-foreground">
-                      ID: {selectedRoleDetail?.name}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {selectedRoleDetail?.is_system ? (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] bg-muted/60 text-muted-foreground border-border"
-                >
-                  Bawaan Sistem
-                </Badge>
-              ) : (
-                <Badge
-                  variant="default"
-                  className="text-[10px] bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-semibold"
-                >
-                  Peran Kustom
-                </Badge>
-              )}
-            </div>
-            <DialogDescription className="text-xs pt-2">
-              {selectedRoleDetail?.description || "Tidak ada deskripsi tambahan untuk peran ini."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="p-6 pt-4 flex-1 overflow-y-auto space-y-4 pr-4">
-            <div className="flex items-center justify-between text-xs pb-1 border-b border-border/50">
-              <span className="font-semibold text-foreground">
-                Daftar Izin Aktif ({selectedRoleDetail?.permissions?.length || 0})
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                {selectedRoleDetail?.is_system
-                  ? "Standar hak akses sistem terproteksi"
-                  : "Dikonfigurasi khusus toko"}
-              </span>
-            </div>
-
-            {(!selectedRoleDetail?.permissions || selectedRoleDetail.permissions.length === 0) ? (
-              <div className="py-8 text-center text-xs text-muted-foreground">
-                Peran ini belum memiliki hak akses aktif.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(
-                  (selectedRoleDetail.permissions || []).reduce((acc, p) => {
-                    acc[p.group] = acc[p.group] || []
-                    acc[p.group].push(p)
-                    return acc
-                  }, {} as Record<string, Permission[]>)
-                ).map(([grp, perms]) => {
-                  const groupInfo = PERMISSION_GROUP_INFO[grp]
-                  return (
-                    <div key={grp} className="rounded-xl border border-border/60 p-3 bg-muted/15 space-y-2">
-                      <span className="text-xs font-bold text-foreground block">
-                        {groupInfo?.label || grp}
-                      </span>
-                      <div className="grid gap-1.5 sm:grid-cols-2">
-                        {perms.map((p) => (
-                          <div
-                            key={p.id || p.code}
-                            className="p-2 rounded-lg bg-background border border-border/60 text-xs flex items-center gap-2"
-                          >
-                            <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="font-medium text-foreground leading-tight truncate">
-                                {p.name}
-                              </p>
-                              <span className="font-mono text-[9px] text-muted-foreground">
-                                {p.code}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="p-4 border-t border-border/60 bg-muted/20">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setSelectedRoleDetail(null)}
-              className="rounded-xl text-xs w-full sm:w-auto"
-            >
-              Tutup
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RolePermissionsDialog role={selectedRoleDetail} onClose={() => setSelectedRoleDetail(null)} returnFocusTo={roleDetailsTrigger} />
 
       {/* Modal Tambah Cabang Baru */}
       <Dialog open={isNewStoreOpen} onOpenChange={setIsNewStoreOpen}>

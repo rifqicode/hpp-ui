@@ -4,4 +4,6 @@ export * from './useCheckout';
 export * from './useSubscriptionGuards';
 export * from './useNotifications';
 export * from './usePlans';
+export * from './usePaymentChannels';
+export * from './useSubscriptionPayment';
 export * from './useInvoices';

@@ -76,6 +76,8 @@ export const overheadService = {
       if (query?.search) params.append('search', query.search);
       if (query?.activeOnly !== undefined) params.append('active_only', query.activeOnly.toString());
       if (query?.category) params.append('category', query.category);
+      if (query?.sort_by) params.append('sort_by', query.sort_by);
+      if (query?.sortBy) params.append('sortBy', query.sortBy);
 
       const qs = params.toString() ? `?${params.toString()}` : '';
       const response = await apiClient.get<PaginatedOverheadRawResponse | OverheadRawResponse[]>(`/overheads${qs}`);
@@ -119,6 +121,18 @@ export const overheadService = {
         mock = mock.filter(
           (item) => item.name.toLowerCase().includes(s) || item.notes.toLowerCase().includes(s)
         );
+      }
+      const sortVal = query?.sort_by || query?.sortBy;
+      if (sortVal === 'name-desc' || sortVal === 'name_desc') {
+        mock.sort((a, b) => b.name.localeCompare(a.name));
+      } else if (sortVal === 'amount-desc' || sortVal === 'amount_desc') {
+        mock.sort((a, b) => (b.defaultAmount ?? 0) - (a.defaultAmount ?? 0));
+      } else if (sortVal === 'amount-asc' || sortVal === 'amount_asc') {
+        mock.sort((a, b) => (a.defaultAmount ?? 0) - (b.defaultAmount ?? 0));
+      } else if (sortVal === 'date-desc' || sortVal === 'created-desc') {
+        mock.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else {
+        mock.sort((a, b) => a.name.localeCompare(b.name));
       }
       const page = query?.page || 1;
       const limit = query?.limit || 10;

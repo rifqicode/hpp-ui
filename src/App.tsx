@@ -32,6 +32,7 @@ const PosPage = React.lazy(() => import("./pages/sales/pos-page"))
 const TransactionHistoryPage = React.lazy(() => import("./pages/sales/transaction-history-page"))
 const CustomerListPage = React.lazy(() => import("./pages/sales/customer-list-page"))
 const SubscriptionPage = React.lazy(() => import("./pages/subscription/subscription-page"))
+const NotificationListPage = React.lazy(() => import("./pages/notifications/notification-list-page"))
 const LoginPage = React.lazy(() => import("./pages/auth/login-page"))
 const RegisterPage = React.lazy(() => import("./pages/auth/register-page"))
 const AcceptInvitePage = React.lazy(() => import("./pages/auth/accept-invite-page"))
@@ -110,6 +111,7 @@ function App() {
             <Route path="/settings/role/:id" element={<RoleCreatePage />} />
             <Route path="/settings" element={<AccountSettingPage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/notifications" element={<NotificationListPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

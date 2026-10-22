@@ -182,8 +182,8 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 sm:gap-3">
               {isAuthenticated ? (
                 <Button asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm font-medium text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-4">
-                  <Link to="/dashboard" aria-label="Buka aplikasi" className="flex items-center gap-2">
-                    <span>Buka aplikasi</span>
+                  <Link to="/dashboard" aria-label="Buka dashboard" className="flex items-center gap-2">
+                    <span>Buka Dashboard</span>
                     <ArrowRight className="hidden sm:block size-4" />
                   </Link>
                 </Button>
@@ -255,7 +255,7 @@ export default function LandingPage() {
                       className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 h-12 px-7 font-bold text-base"
                     >
                       <Link to="/dashboard" className="flex items-center justify-center gap-2">
-                        <span>Buka aplikasi</span>
+                        <span>Buka Dashboard</span>
                         <ArrowRight className="size-5" />
                       </Link>
                     </Button>
@@ -282,7 +282,6 @@ export default function LandingPage() {
                           onClick={(e) => handleScrollTo(e, "alur-kerja")}
                           className="flex items-center justify-center gap-2"
                         >
-                          <ArrowRight className="size-4 text-primary" />
                           <span>Lihat cara kerja</span>
                         </a>
                       </Button>
@@ -294,19 +293,19 @@ export default function LandingPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 sm:pt-6 border-t border-slate-200/80 text-xs font-semibold text-slate-600">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Paket gratis Rp 0</span>
+                    <span>Hitung HPP Sesuai Resep</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Biaya tiap porsi</span>
+                    <span>Kontrol Stok FIFO & FEFO</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Tanpa Kartu Kredit</span>
+                    <span>Biaya Overhead</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Mulai dari 1 toko</span>
+                    <span>Catat Produksi & Penjualan POS</span>
                   </div>
                 </div>
               </div>
@@ -404,7 +403,7 @@ export default function LandingPage() {
                 onClick={() => handlePlanAction("FREE")}
                 className="w-full text-sm font-semibold h-11 rounded-xl border-slate-300 hover:bg-slate-50 cursor-pointer"
               >
-                {isAuthenticated ? "Buka aplikasi" : "Mulai Gratis"}
+                {isAuthenticated ? "Buka Dashboard" : "Mulai Gratis"}
               </Button>
             </div>
 
@@ -516,12 +515,12 @@ export default function LandingPage() {
       <section id="faq" className="scroll-mt-32 lg:scroll-mt-20 py-12 sm:py-20 bg-white border-b border-slate-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-xl mx-auto mb-14">
-            <h2 className="text-xs uppercase tracking-widest font-bold text-primary mb-2">
+            <p className="text-xs uppercase tracking-widest font-bold text-primary mb-2">
               Tanya jawab
-            </h2>
-            <p className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Sebelum Anda mulai
             </p>
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Pertanyaan seputar perhitungan HPP dan resep
+            </h2>
           </div>
 
           <div className="space-y-3">
@@ -583,7 +582,7 @@ export default function LandingPage() {
                 className="bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 shadow-xl shadow-primary/30"
               >
                 <Link to="/dashboard" className="flex items-center gap-2">
-                  <span>Buka aplikasi</span>
+                  <span>Buka Dashboard</span>
                   <ArrowRight className="size-5" />
                 </Link>
               </Button>

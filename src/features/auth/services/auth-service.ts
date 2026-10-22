@@ -138,5 +138,27 @@ export const authService = {
       throw toError(err, "Gagal mengirim ulang kode verifikasi.");
     }
   },
+
+  verifyDevice: async (challengeToken: string, code: string): Promise<AuthResponse> => {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/verify-device', {
+        challenge_token: challengeToken,
+        code,
+      });
+      return response.data;
+    } catch (err: unknown) {
+      throw toError(err, "Kode verifikasi salah atau telah kedaluwarsa.");
+    }
+  },
+
+  resendDeviceOTP: async (challengeToken: string): Promise<void> => {
+    try {
+      await apiClient.post('/auth/resend-device-otp', {
+        challenge_token: challengeToken,
+      });
+    } catch (err: unknown) {
+      throw toError(err, "Gagal mengirim ulang kode verifikasi.");
+    }
+  },
 };
 

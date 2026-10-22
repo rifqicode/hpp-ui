@@ -1,0 +1,114 @@
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import StoreSettingsPage from '@/pages/settings/store-settings-page'
+import { settingsService } from '@/features/settings/services/settings-service'
+import { mockPageServices, resetSession } from '../support/page-services'
+import { mockPopulatedPages } from '../support/populated-pages'
+import { store } from '../support/fixtures'
+import { renderPage } from '../support/render'
+const change = (el: HTMLElement, value: string) => fireEvent.change(el, { target: { value } })
+beforeEach(() => {
+  resetSession(); mockPageServices(); mockPopulatedPages()
+  vi.spyOn(settingsService, 'updateStoreProfile').mockResolvedValue(store)
+  vi.spyOn(settingsService, 'inviteStaff').mockResolvedValue({ id: 'newstaff', name: 'Baru', email: 'new@example.com', role: 'Kasir', status: 'invited' })
+  vi.spyOn(settingsService, 'revokeStaff').mockResolvedValue(undefined)
+  vi.spyOn(settingsService, 'createStore').mockResolvedValue(store)
+  vi.spyOn(settingsService, 'switchStore').mockRejectedValue(new Error('Tidak bisa beralih'))
+  vi.spyOn(window, 'alert').mockImplementation(() => {})
+})
+async function setup(tab = 'profile') {
+  const user = userEvent.setup(); renderPage(<StoreSettingsPage />, `/settings/store?tab=${tab}`)
+  await screen.findByRole('heading', { name: 'Pengaturan Toko & Outlet' }); return user
+}
+describe('store settings forms and tabs', () => {
+  it.each([false, true])('supports keyboard navigation with compact layout=%s', async (compact) => {
+    vi.mocked(window.matchMedia).mockReturnValue({
+      matches: compact, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    } as unknown as MediaQueryList)
+    const user = await setup()
+    expect(screen.getByRole('tablist', { name: 'Pengaturan toko' })).toHaveAttribute('aria-orientation', compact ? 'horizontal' : 'vertical')
+    screen.getByRole('tab', { name: 'Profil Toko' }).focus()
+    await user.keyboard(compact ? '{ArrowRight}' : '{ArrowDown}')
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Anggota Tim' })).toHaveAttribute('aria-selected', 'true'))
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('?tab=staff')
+    expect(await screen.findByRole('button', { name: 'Undang Staf Baru' })).toBeVisible()
+  })
+  it('edits profile fields and saves the store', async () => {
+    const user = await setup()
+    change(screen.getByLabelText(/Nama Toko \/ Outlet/), 'Toko Baru')
+    await user.selectOptions(screen.getByLabelText(/Kategori Bisnis/), 'Cafe & Coffee Shop')
+    change(screen.getByLabelText(/Nomor Telepon/), '081200000')
+    change(screen.getByLabelText(/Alamat Fisik/), 'Bandung')
+    change(screen.getByLabelText(/Deskripsi Singkat/), 'Buka pagi')
+    await user.click(screen.getByRole('button', { name: 'Simpan Perubahan Toko' }))
+    await waitFor(() => expect(settingsService.updateStoreProfile).toHaveBeenCalledWith(expect.objectContaining({ name: 'Toko Baru', category: 'Cafe & Coffee Shop', phone: '081200000', location: 'Bandung', description: 'Buka pagi' })))
+    expect(await screen.findByText(/berhasil diperbarui/)).toBeVisible()
+  })
+  it('invites staff with a selected role, cancels invitations, and revokes access', async () => {
+    const user = await setup('staff')
+    await screen.findByText('Staf Toko')
+    await user.click(screen.getByRole('button', { name: 'Undang Staf Baru' }))
+    let dialog = screen.getByRole('dialog', { name: 'Undang Anggota Tim Baru' })
+    change(within(dialog).getByLabelText(/Nama Lengkap/), 'Staf Baru')
+    change(within(dialog).getByLabelText(/Alamat Email/), 'new@example.com')
+    await user.click(within(dialog).getByRole('button', { name: /Pilih peran/ }))
+    await user.click(screen.getByRole('menuitem', { name: /Kasir/ }))
+    fireEvent.submit(within(dialog).getByLabelText(/Nama Lengkap/).closest('form')!)
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(settingsService.inviteStaff).toHaveBeenCalledWith(expect.objectContaining({ name: 'Staf Baru', email: 'new@example.com', role_id: 'role1' }))
+    await user.click(screen.getByRole('button', { name: 'Undang Staf Baru' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Batal' }))
+    await user.click(within(screen.getByRole('row', { name: /Staf Toko/ })).getByRole('button', { name: 'Cabut' }))
+    dialog = screen.getByRole('dialog', { name: 'Cabut Akses Staf?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Batal' }))
+    await user.click(within(screen.getByRole('row', { name: /Staf Toko/ })).getByRole('button', { name: 'Cabut' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /Cabut Akses/ }))
+    await waitFor(() => expect(settingsService.revokeStaff).toHaveBeenCalled())
+  })
+  it('opens role permissions in a searchable dialog and routes to role editors', async () => {
+    const user = await setup('roles')
+    const row = await screen.findByRole('row', { name: /Kasir/ })
+    expect(screen.queryByText('Toko yang diatur')).not.toBeInTheDocument()
+    await user.click(row)
+    let dialog = screen.getByRole('dialog', { name: 'Hak Akses: Kasir' })
+    expect(within(dialog).getByText('products:read')).toBeVisible()
+    await user.type(within(dialog).getByRole('textbox', { name: 'Cari hak akses' }), 'tidak-ada')
+    expect(within(dialog).getByText('Tidak ada hak akses yang cocok.')).toBeVisible()
+    await user.click(within(dialog).getByRole('button', { name: 'Tutup' }))
+    const detailsButton = within(row).getByRole('button', { name: 'Lihat izin' })
+    expect(detailsButton).toHaveFocus()
+    detailsButton.focus()
+    await user.keyboard('{Enter}')
+    dialog = screen.getByRole('dialog', { name: 'Hak Akses: Kasir' })
+    expect(within(dialog).getByRole('textbox', { name: 'Cari hak akses' })).toHaveValue('')
+    await user.keyboard('{Escape}')
+    expect(detailsButton).toHaveFocus()
+    await user.click(within(row).getByRole('button', { name: 'Edit' }))
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/settings/role/role1')
+  })
+  it('adds a branch and reports a failed switch', async () => {
+    const user = await setup('stores')
+    await screen.findByText('Toko Kedua')
+    await user.click(screen.getByRole('button', { name: 'Beralih ke Toko Ini' }))
+    await waitFor(() => expect(settingsService.switchStore).toHaveBeenCalledWith('store-2'))
+    await user.click(screen.getByRole('button', { name: 'Tambah Toko Baru' }))
+    let dialog = screen.getByRole('dialog', { name: 'Tambah Cabang Toko Baru' })
+    await user.click(within(dialog).getByRole('button', { name: 'Batal' }))
+    await user.click(screen.getByRole('button', { name: 'Tambah Toko Baru' }))
+    dialog = screen.getByRole('dialog', { name: 'Tambah Cabang Toko Baru' })
+    change(within(dialog).getByLabelText(/^Nama Toko/), 'Cabang Baru')
+    await user.selectOptions(within(dialog).getByLabelText('Kategori Usaha'), 'Minuman & Boba')
+    change(within(dialog).getByLabelText('Alamat / Lokasi Cabang'), 'Jakarta')
+    change(within(dialog).getByLabelText('No. Telepon Cabang'), '08120000')
+    await user.click(within(dialog).getByRole('button', { name: 'Buat Cabang Toko' }))
+    await waitFor(() => expect(settingsService.createStore).toHaveBeenCalledWith(expect.objectContaining({ name: 'Cabang Baru', category: 'Minuman & Boba', location: 'Jakarta', phone: '08120000' })))
+  })
+  it('switches tabs and starts role creation', async () => {
+    const user = await setup()
+    await user.click(screen.getByRole('tab', { name: 'Peran & Hak Akses' }))
+    await screen.findByText('Kasir')
+    await user.click(screen.getByRole('button', { name: 'Tambah Peran Baru' }))
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/settings/role/new')
+  })
+})

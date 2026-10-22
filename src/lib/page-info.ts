@@ -94,5 +94,10 @@ export function getActiveMenuTitle(pathname: string): string {
     return 'Paket & Langganan';
   }
 
+  // Notifications
+  if (path === '/notifications' || path.startsWith('/notifications/')) {
+    return 'Notifikasi';
+  }
+
   return 'HPP Manager';
 }

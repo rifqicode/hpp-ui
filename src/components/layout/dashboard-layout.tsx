@@ -14,6 +14,8 @@ import { UserDropdown } from "./user-dropdown"
 import { GracePeriodBanner, UpgradeModal } from "@/features/subscription"
 import { SUBSCRIPTION_TIER_LABELS, type SubscriptionTier } from "@/features/subscription/types/subscription"
 import { AIChatFloatingDrawer } from "@/features/ai-chat"
+import { PaymentNotice } from '@/features/subscription/components/PaymentNotice'
+import { SubscriptionWelcome } from '@/features/subscription/components/SubscriptionWelcome'
 
 export function DashboardLayout() {
   const location = useLocation()
@@ -24,19 +26,19 @@ export function DashboardLayout() {
   }, [location.pathname])
   const token = useAuthStore((state) => state.token)
   const isFetching = useLoadingStore((state) => state.pending > 0)
-  const [isUpgradeOpen, setIsUpgradeOpen] = React.useState<boolean>(false)
-  const [upgradeReason, setUpgradeReason] = React.useState<string>("")
-  const [initialSelectedTier, setInitialSelectedTier] = React.useState<SubscriptionTier | undefined>()
+  const [registrationTier] = React.useState<SubscriptionTier | undefined>(() => {
+    const tier = sessionStorage.getItem('pending_upgrade_tier') || localStorage.getItem('pending_upgrade_tier')
+    return tier === 'GROWTH' || tier === 'MAX_GROWTH' ? tier : undefined
+  })
+  const [isUpgradeOpen, setIsUpgradeOpen] = React.useState(Boolean(registrationTier))
+  const [upgradeReason, setUpgradeReason] = React.useState(registrationTier ? `Selesaikan pembayaran untuk mengaktifkan paket ${SUBSCRIPTION_TIER_LABELS[registrationTier]} akun Anda.` : '')
+  const [initialSelectedTier, setInitialSelectedTier] = React.useState<SubscriptionTier | undefined>(registrationTier)
 
   React.useEffect(() => {
     // Check if user came from registration with a pending upgrade tier
-    const pendingTier = sessionStorage.getItem("pending_upgrade_tier") || localStorage.getItem("pending_upgrade_tier")
-    if (pendingTier && (pendingTier === "GROWTH" || pendingTier === "MAX_GROWTH")) {
+    if (registrationTier) {
       sessionStorage.removeItem("pending_upgrade_tier")
       localStorage.removeItem("pending_upgrade_tier")
-      setInitialSelectedTier(pendingTier as SubscriptionTier)
-      setUpgradeReason(`Selesaikan pembayaran untuk mengaktifkan paket ${SUBSCRIPTION_TIER_LABELS[pendingTier]} akun Anda.`)
-      setIsUpgradeOpen(true)
     }
 
     const handleOpenUpgrade = (event: Event) => {
@@ -50,7 +52,7 @@ export function DashboardLayout() {
 
     window.addEventListener("open-upgrade-modal", handleOpenUpgrade)
     return () => window.removeEventListener("open-upgrade-modal", handleOpenUpgrade)
-  }, [])
+  }, [registrationTier])
 
   if (!token) {
     return <Navigate to="/login" replace />
@@ -79,6 +81,7 @@ export function DashboardLayout() {
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              <AIChatFloatingDrawer />
               <NotificationDropdown />
               <UserDropdown />
             </div>
@@ -86,6 +89,7 @@ export function DashboardLayout() {
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
             <main ref={contentRef} className="flex-1 overflow-auto overscroll-contain p-3.5 sm:p-4 lg:p-6 w-full min-w-0">
               <div className="w-full min-w-0">
+                {location.pathname !== '/subscription' && <div className="mb-4"><PaymentNotice compact /></div>}
                 <Outlet />
               </div>
             </main>
@@ -102,7 +106,7 @@ export function DashboardLayout() {
             initialSelectedTier={initialSelectedTier}
           />
 
-          <AIChatFloatingDrawer />
+          <SubscriptionWelcome />
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

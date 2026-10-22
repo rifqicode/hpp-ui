@@ -29,6 +29,7 @@ export interface SubscriptionFeatures {
   multi_role_customization: boolean;
   production_analytics: boolean;
   advanced_pos: boolean;
+  ai_assistant: boolean;
 }
 
 export interface PlanLimits {
@@ -52,6 +53,8 @@ export interface PlanConfig {
 }
 
 export interface SubscriptionUsageData {
+  owner_id: string;
+  can_manage_billing: boolean;
   tier: SubscriptionTier;
   status: SubscriptionStatus;
   effective_tier: SubscriptionTier;
@@ -70,27 +73,57 @@ export interface SubscriptionInvoice {
   tier: SubscriptionTier;
   amount: number;
   currency: string;
-  status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED';
+  status: 'PENDING' | 'PAID' | 'FAILED' | 'CANCELLED' | 'EXPIRED' | 'CHALLENGE' | 'CANCEL' | 'DENY';
   payment_method: string;
   billing_period_start: string;
   billing_period_end: string;
   paid_at?: string | null;
   snap_token?: string | null;
   snap_redirect_url?: string | null;
+  metadata?: string | null;
   created_at?: string;
   updated_at?: string;
 }
 
+export interface PaymentChannelConfig {
+  code: string;
+  name: string;
+  category: string;
+  description: string;
+  enabled: boolean;
+}
+
+export interface PaymentInstructions {
+  payment_method: string;
+  bank?: string;
+  va_number?: string;
+  bill_key?: string;
+  biller_code?: string;
+  qr_url?: string;
+  qr_string?: string;
+  expires_at?: string;
+}
+
 export interface CheckoutResponseData {
   invoice: SubscriptionInvoice;
-  snap_token: string;
-  snap_redirect_url: string;
-  client_key: string;
+  instructions?: PaymentInstructions;
+  snap_token?: string;
+  snap_redirect_url?: string;
+  client_key?: string;
+  is_production: boolean;
 }
 
 export interface MidtransConfigData {
   client_key: string;
   is_production: boolean;
+}
+
+export interface SyncInvoiceStatusResponse {
+  invoice: SubscriptionInvoice;
+  changed: boolean;
+  provider_checked: boolean;
+  provider_status: string;
+  checked_at: string | null;
 }
 
 export interface SubscriptionRecord {
@@ -110,9 +143,13 @@ export interface SubscribeResponseData {
 
 export interface SubscriptionNotification {
   id: string;
-  type: 'SUBSCRIPTION_EXPIRING_SOON' | 'SUBSCRIPTION_IN_GRACE_PERIOD' | 'SUBSCRIPTION_EXPIRED' | 'SUBSCRIPTION_RENEWED';
+  user_id?: string;
+  store_id?: string | null;
+  type: string;
   title: string;
   message: string;
+  data?: any;
   is_read: boolean;
   created_at: string;
+  read_at?: string | null;
 }

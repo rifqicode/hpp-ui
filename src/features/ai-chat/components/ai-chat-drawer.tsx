@@ -7,7 +7,6 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
-  Sparkles,
   Bot,
   Send,
   Plus,
@@ -19,10 +18,14 @@ import {
   X,
   MessageSquare,
   MessagesSquare,
+  Crown,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAIChat } from '../hooks/use-ai-chat';
+import { useSubscriptionGuards } from '@/features/subscription/hooks/useSubscriptionGuards';
 import { AIChatFloatingButton } from './ai-chat-floating-button';
 import { AIChatMessageItem } from './ai-chat-message-item';
+import { SofiVectorAvatar } from './sofi-vector-avatar';
 import { cn } from '@/lib/utils';
 
 const STARTER_PROMPTS = [
@@ -82,9 +85,37 @@ export function AIChatFloatingDrawer() {
 
   const isNewSession = !activeConversation || activeConversation.messages.length === 0;
 
+  const { canAccessFeature } = useSubscriptionGuards();
+  const hasAIAccess = canAccessFeature('ai_assistant');
+
+  const openUpgradeModal = () => {
+    window.dispatchEvent(
+      new CustomEvent('open-upgrade-modal', {
+        detail: {
+          message:
+            'Fitur Asisten AI Bisnis hanya tersedia untuk paket Max Growth Enterprise. Silakan tingkatkan paket Anda untuk membuka fitur ini.',
+          code: 'FEATURE_LOCKED',
+          tier: 'MAX_GROWTH',
+        },
+      })
+    );
+  };
+
+  const handleFloatingButtonClick = () => {
+    if (!hasAIAccess) {
+      openUpgradeModal();
+      return;
+    }
+    setIsOpen(true);
+  };
+
   return (
     <>
-      <AIChatFloatingButton onClick={() => setIsOpen(true)} isOpen={isOpen} />
+      <AIChatFloatingButton
+        onClick={handleFloatingButtonClick}
+        isOpen={isOpen}
+        isLocked={!hasAIAccess}
+      />
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
@@ -95,19 +126,61 @@ export function AIChatFloatingDrawer() {
         >
           {/* Header */}
           <SheetHeader className="p-3.5 border-b border-border/60 bg-card/60 backdrop-blur shrink-0 flex flex-row items-center justify-between space-y-0">
-            <div className="flex items-center gap-2 min-w-0">
-              {showHistoryView ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  data-testid="ai-back-btn"
-                  className="h-8 w-8 rounded-lg cursor-pointer shrink-0"
-                  onClick={() => setShowHistoryView(false)}
-                  title="Kembali ke chat"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+            <div className="flex items-center gap-2.5 min-w-0">
+              {!hasAIAccess ? (
+                <>
+                  <div className="h-9 w-9 rounded-full overflow-hidden border border-amber-500/20 bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <Crown className="h-4.5 w-4.5 text-amber-500" />
+                  </div>
+                  <div className="min-w-0 pl-0.5">
+                    <SheetTitle className="text-sm font-semibold leading-tight truncate">
+                      Sofi — Asisten Bisnis AI
+                    </SheetTitle>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      Fitur Khusus Max Growth
+                    </p>
+                  </div>
+                </>
+              ) : showHistoryView ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    data-testid="ai-back-btn"
+                    className="h-8 w-8 rounded-lg cursor-pointer shrink-0"
+                    onClick={() => setShowHistoryView(false)}
+                    title="Kembali ke chat"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="min-w-0 pl-1">
+                    <SheetTitle className="text-sm font-semibold leading-tight truncate">
+                      Riwayat Sesi Percakapan
+                    </SheetTitle>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {conversations.length} sesi percakapan tersimpan
+                    </p>
+                  </div>
+                </>
               ) : (
+                <>
+                  <div className="h-9 w-9 rounded-full overflow-hidden border border-primary/20 shadow-xs bg-primary/5 shrink-0 flex items-center justify-center p-1">
+                    <SofiVectorAvatar className="h-full w-full" />
+                  </div>
+                  <div className="min-w-0 pl-0.5">
+                    <SheetTitle className="text-sm font-semibold leading-tight truncate">
+                      Sofi — Asisten Bisnis AI
+                    </SheetTitle>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      Analisis HPP, Stok & Penjualan Real-time
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {hasAIAccess && !showHistoryView && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -125,26 +198,6 @@ export function AIChatFloatingDrawer() {
                   )}
                 </Button>
               )}
-
-              <div className="min-w-0 pl-1">
-                <SheetTitle className="text-sm font-semibold leading-tight truncate">
-                  {showHistoryView
-                    ? 'Riwayat Sesi Percakapan'
-                    : isNewSession
-                    ? 'Percakapan Baru'
-                    : activeConversation.title || 'Asisten Bisnis AI'}
-                </SheetTitle>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {showHistoryView
-                    ? `${conversations.length} sesi percakapan tersimpan`
-                    : isNewSession
-                    ? 'Sesi bersih • Analisis data toko aktif'
-                    : 'Sesi aktif • Data faktual toko'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -159,7 +212,53 @@ export function AIChatFloatingDrawer() {
 
           {/* Body Section */}
           <div className="flex-1 overflow-y-auto flex flex-col p-4">
-            {showHistoryView ? (
+            {!hasAIAccess ? (
+              /* Locked State Banner */
+              <div
+                data-testid="ai-locked-state"
+                className="flex-1 flex flex-col items-center justify-center p-4 text-center my-auto"
+              >
+                <div className="h-16 w-16 rounded-3xl bg-gradient-to-br from-violet-600/20 via-indigo-600/20 to-amber-500/20 border border-amber-500/30 flex items-center justify-center shadow-inner mb-4">
+                  <Crown className="h-8 w-8 text-amber-500" />
+                </div>
+
+                <span className="text-[11px] font-bold tracking-wider uppercase text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 mb-2">
+                  Eksklusif Max Growth
+                </span>
+
+                <h3 className="font-bold text-foreground text-lg mb-1.5">
+                  Asisten AI Bisnis Terkunci
+                </h3>
+
+                <p className="text-xs text-muted-foreground max-w-sm leading-relaxed mb-6">
+                  Fitur Asisten AI Bisnis hanya tersedia untuk paket Max Growth Enterprise. Silakan tingkatkan paket Anda untuk membuka fitur ini.
+                </p>
+
+                <div className="w-full max-w-xs space-y-2.5 text-left mb-6 bg-card/60 border border-border/70 rounded-2xl p-4 text-xs">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <span className="text-foreground">Analisis HPP resep dan rekomendasi margin menu</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <span className="text-foreground">Peringatan stok bahan menipis dan rekomendasi PO</span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <span className="text-foreground">Wawasan cerdas performa laba dan penjualan toko</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={openUpgradeModal}
+                  data-testid="ai-upgrade-btn"
+                  className="w-full max-w-xs h-10 bg-gradient-to-r from-violet-600 via-indigo-600 to-primary text-white font-semibold rounded-xl shadow-md hover:opacity-95 cursor-pointer transition-all gap-2"
+                >
+                  <Crown className="h-4 w-4" />
+                  <span>Tingkatkan ke Max Growth</span>
+                </Button>
+              </div>
+            ) : showHistoryView ? (
               /* History Sessions View */
               <div className="flex flex-col gap-2">
                 <Button
@@ -269,8 +368,8 @@ export function AIChatFloatingDrawer() {
                 ) : isNewSession ? (
                   /* Empty Welcome State */
                   <div className="py-8 flex flex-col items-center text-center">
-                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md mb-3">
-                      <Sparkles className="h-6 w-6" />
+                    <div className="h-16 w-16 rounded-2xl overflow-hidden border border-primary/20 bg-primary/5 shadow-md mb-3 flex items-center justify-center p-2">
+                      <SofiVectorAvatar className="h-full w-full" />
                     </div>
                     <h3 className="font-semibold text-foreground text-base">
                       Halo! Ada yang bisa saya bantu?
@@ -328,7 +427,7 @@ export function AIChatFloatingDrawer() {
           </div>
 
           {/* Quota Exceeded / Error Banner */}
-          {quotaExceeded && (
+          {hasAIAccess && quotaExceeded && (
             <div className="mx-4 mb-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2.5">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -338,7 +437,7 @@ export function AIChatFloatingDrawer() {
             </div>
           )}
 
-          {error && !quotaExceeded && (
+          {hasAIAccess && error && !quotaExceeded && (
             <div className="mx-4 mb-2 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-xs flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <p className="flex-1 leading-relaxed">{error}</p>
@@ -346,7 +445,7 @@ export function AIChatFloatingDrawer() {
           )}
 
           {/* Input Box Footer */}
-          {!showHistoryView && (
+          {hasAIAccess && !showHistoryView && (
             <div className="p-3 border-t border-border/60 bg-card/60 backdrop-blur shrink-0">
               <form onSubmit={handleSend} className="relative flex items-center gap-2">
                 <Button

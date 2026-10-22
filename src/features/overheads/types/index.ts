@@ -34,6 +34,8 @@ export interface OverheadQuery {
   search?: string;
   activeOnly?: boolean;
   category?: OverheadCategory;
+  sortBy?: string;
+  sort_by?: string;
 }
 
 export interface PaginatedOverheads {

@@ -10,16 +10,16 @@
   }
   :root {
     /* Subscription badge palette: edit these tokens to restyle every tier badge. */
-    --tier-free-bg: #f1f5f9;
-    --tier-free-fg: #475569;
-    --tier-free-border: #cbd5e1;
-    --tier-growth-bg: linear-gradient(135deg, #ecfdf5, #d1fae5);
-    --tier-growth-fg: #065f46;
-    --tier-growth-border: #6ee7b7;
-    --tier-max-growth-bg: linear-gradient(135deg, #f5f3ff, #ede9fe);
-    --tier-max-growth-fg: #6d28d9;
-    --tier-max-growth-border: #c4b5fd;
-    --tier-max-growth-shadow: 0 2px 6px #7c3aed14, inset 0 1px 0 #ffffff80;
+    --tier-free-bg: linear-gradient(135deg, #1e293b, #334155);
+    --tier-free-fg: #ffffff;
+    --tier-free-border: rgba(255, 255, 255, 0.2);
+    --tier-growth-bg: linear-gradient(135deg, #064e3b, #047857);
+    --tier-growth-fg: #ffffff;
+    --tier-growth-border: rgba(167, 243, 208, 0.35);
+    --tier-max-growth-bg: linear-gradient(135deg, #4c1d95, #6d28d9);
+    --tier-max-growth-fg: #ffffff;
+    --tier-max-growth-border: rgba(196, 181, 253, 0.45);
+    --tier-max-growth-shadow: 0 2px 6px rgba(109, 40, 217, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 
     /* Modern Indigo theme (clean SaaS) */
     --background: hsl(0, 0%, 100%);
@@ -80,6 +80,18 @@
     --sidebar-ring: hsl(243, 75%, 59%);
   }
   .dark {
+    /* Dark mode subscription badge palette */
+    --tier-free-bg: linear-gradient(135deg, #1e293b, #334155);
+    --tier-free-fg: #ffffff;
+    --tier-free-border: rgba(255, 255, 255, 0.2);
+    --tier-growth-bg: linear-gradient(135deg, #064e3b, #047857);
+    --tier-growth-fg: #ffffff;
+    --tier-growth-border: rgba(167, 243, 208, 0.35);
+    --tier-max-growth-bg: linear-gradient(135deg, #4c1d95, #6d28d9);
+    --tier-max-growth-fg: #ffffff;
+    --tier-max-growth-border: rgba(196, 181, 253, 0.45);
+    --tier-max-growth-shadow: 0 2px 6px rgba(109, 40, 217, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+
     /* Dark mode: indigo + slate */
     --background: hsl(222, 47%, 7%);
     --foreground: hsl(210, 40%, 98%);
@@ -175,7 +187,14 @@
 }
 
 /* Attribute selectors keep tier colors consistent even on shared Badge components. */
-.subscription-tier[data-tier] {
+.subscription-tier {
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.subscription-tier[data-tier],
+.subscription-tier[data-tier="FREE"] {
   background: var(--tier-free-bg);
   color: var(--tier-free-fg);
   border-color: var(--tier-free-border);
@@ -195,15 +214,63 @@
 }
 
 :root.dark {
-    --tier-free-bg: #1e293b;
-    --tier-free-fg: #cbd5e1;
-    --tier-free-border: #475569;
-    --tier-growth-bg: linear-gradient(135deg, #062f26, #064e3b);
-    --tier-growth-fg: #a7f3d0;
-    --tier-growth-border: #047857;
-    --tier-max-growth-bg: linear-gradient(135deg, #2e1065, #4c1d95);
-    --tier-max-growth-fg: #ede9fe;
-    --tier-max-growth-border: #7c3aed;
-    --tier-max-growth-shadow: 0 2px 8px #7c3aed26, inset 0 1px 0 #c4b5fd24;
+  --tier-free-bg: linear-gradient(135deg, #1e293b, #334155);
+  --tier-free-fg: #ffffff;
+  --tier-free-border: rgba(255, 255, 255, 0.2);
+  --tier-growth-bg: linear-gradient(135deg, #064e3b, #047857);
+  --tier-growth-fg: #ffffff;
+  --tier-growth-border: rgba(167, 243, 208, 0.35);
+  --tier-max-growth-bg: linear-gradient(135deg, #4c1d95, #6d28d9);
+  --tier-max-growth-fg: #ffffff;
+  --tier-max-growth-border: rgba(196, 181, 253, 0.45);
+  --tier-max-growth-shadow: 0 2px 6px rgba(109, 40, 217, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
 
+/* Keep the membership accent local so the store switcher stays the primary control. */
+.sidebar-membership {
+  --membership-accent: #475569;
+  --membership-emblem: #e2e8f0;
+  --membership-tint: 5%;
+  background: color-mix(in srgb, var(--membership-accent) var(--membership-tint), var(--sidebar));
+  border-color: color-mix(in srgb, var(--membership-accent) 20%, var(--sidebar));
+}
+
+.sidebar-membership[data-tier="GROWTH"] {
+  --membership-accent: #047857;
+  --membership-emblem: #d1fae5;
+}
+
+.sidebar-membership[data-tier="MAX_GROWTH"] {
+  --membership-accent: #6d28d9;
+  --membership-emblem: #ede9fe;
+}
+
+.sidebar-membership:hover {
+  --membership-tint: 10%;
+  border-color: color-mix(in srgb, var(--membership-accent) 40%, var(--sidebar));
+}
+
+.sidebar-membership-emblem {
+  color: var(--membership-accent);
+  background: var(--membership-emblem);
+  border: 1px solid color-mix(in srgb, var(--membership-accent) 16%, var(--membership-emblem));
+}
+
+.sidebar-membership-action {
+  color: var(--membership-accent);
+}
+
+.dark .sidebar-membership {
+  --membership-accent: #cbd5e1;
+  --membership-emblem: #334155;
+}
+
+.dark .sidebar-membership[data-tier="GROWTH"] {
+  --membership-accent: #6ee7b7;
+  --membership-emblem: #064e3b;
+}
+
+.dark .sidebar-membership[data-tier="MAX_GROWTH"] {
+  --membership-accent: #c4b5fd;
+  --membership-emblem: #4c1d95;
 }

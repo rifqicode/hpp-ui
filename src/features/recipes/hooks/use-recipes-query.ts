@@ -5,14 +5,14 @@ import { recipeService } from '../services/recipe-service';
 export const recipeKeys = {
   all: ['products'] as const,
   products: ['products'] as const,
-  productList: (query?: { search?: string; category?: string }, storeId?: string | null) => [...recipeKeys.products, 'list', storeId, query] as const,
+  productList: (query?: { search?: string; category?: string; sort?: string }, storeId?: string | null) => [...recipeKeys.products, 'list', storeId, query] as const,
   productSummary: () => [...recipeKeys.products, 'summary'] as const,
   productDetail: (id: string) => [...recipeKeys.products, 'detail', id] as const,
   productEstimate: (id: string) => [...recipeKeys.products, 'estimate', id] as const,
   categories: () => [...recipeKeys.products, 'categories'] as const,
 };
 
-export function useProductsQuery(query?: { search?: string; category?: string }, options?: { enabled?: boolean }) {
+export function useProductsQuery(query?: { search?: string; category?: string; sort?: string }, options?: { enabled?: boolean }) {
   const storeId = useAuthStore((state) => state.activeStoreId);
   return useQuery({
     queryKey: recipeKeys.productList(query, storeId),

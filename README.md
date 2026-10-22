@@ -2,7 +2,7 @@
 
 ## Unit & component tests
 
-Unit tests ada di `tests/unit/`. Component tests ada di `tests/components/`, memakai Vitest, React Testing Library, dan jsdom. Test ini tidak memerlukan browser, dev server, atau backend.
+Unit tests ada di `tests/unit/`, component tests di `tests/components/`, hook tests di `tests/hooks/`, dan page tests di `tests/pages/`. Test memakai Vitest, React Testing Library, dan jsdom tanpa browser, dev server, atau backend.
 
 Jalankan dari direktori `hpp-ui` dengan Node.js 22.22+:
 
@@ -10,6 +10,7 @@ Jalankan dari direktori `hpp-ui` dengan Node.js 22.22+:
 npm install
 npm test
 npm run test:typecheck
+npm run test:coverage
 ```
 
 `npm install` memasang dependency test dan memperbarui `package-lock.json`. Commit lockfile yang diperbarui sebelum menggunakan `npm ci` di CI.
@@ -22,7 +23,9 @@ npm test -- tests/components/formatted-number-input.test.tsx
 npm run test:legacy
 ```
 
-`test:legacy` menjalankan test Node.js yang sudah ada untuk navigasi sidebar dan konversi satuan. `npm test` hanya mengambil file unit/component yang ditentukan di `vitest.config.ts`.
+`test:legacy` menjalankan test Node.js yang sudah ada untuk navigasi sidebar dan konversi satuan. `npm test` mengambil `tests/**/*.test.ts` dan `tests/**/*.test.tsx`.
+
+Coverage menghitung seluruh source UI, termasuk semua halaman. Gate 85% berlaku untuk statements, branches, functions, dan lines. Laporan HTML tersedia di `coverage/index.html` setelah runner berhasil dijalankan. Detail scope, hasil scan 34 halaman, serta batas pengujian ada di [TESTING.md](./TESTING.md).
 
 Skenario yang dicakup:
 
