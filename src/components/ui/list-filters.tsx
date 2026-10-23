@@ -45,7 +45,9 @@ export function ListFilters({
   children,
 }: ListFiltersProps) {
   return <section aria-label={label} className="space-y-2.5 rounded-xl border bg-card p-3">
-    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+    <div className={cn('gap-2', filters.length >= 4
+      ? 'grid grid-cols-1 lg:grid-cols-[minmax(8rem,1fr)_minmax(0,3fr)_auto] lg:items-center'
+      : 'flex flex-col lg:flex-row lg:items-center')}>
       <div className="relative min-w-0 flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
@@ -64,7 +66,8 @@ export function ListFilters({
       </div>
 
       {filters.length > 0 && <div className={cn('grid min-w-0 gap-2',
-        filters.length === 1 ? 'grid-cols-1 lg:w-[185px]'
+        filters.length >= 4 ? 'grid-cols-2 sm:grid-cols-4'
+          : filters.length === 1 ? 'grid-cols-1 lg:w-[185px]'
           : filters.length === 2 ? 'grid-cols-2 lg:w-[370px]'
             : 'grid-cols-2 sm:grid-cols-3 lg:w-[555px]')}>
         {filters.map((filter) => <select

@@ -8,13 +8,16 @@ import {
 } from "./use-purchase-orders-query"
 import { useAuthStore } from "@/store/use-auth-store"
 import { usePermission } from "@/hooks/use-permission"
+import { usePurchaseOrderKanbanQuery } from './use-purchase-order-kanban-query'
 import type {
   PurchaseOrder,
   PurchaseOrderQueryParams,
   PurchaseOrderCategory,
+  ReceivePOInput,
+  PayPOInput,
 } from "../types"
 
-export function usePurchaseOrders() {
+export function usePurchaseOrders(viewMode: 'table' | 'kanban' = 'table') {
   const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.user)
   const { can } = usePermission()
@@ -23,6 +26,8 @@ export function usePurchaseOrders() {
   const [debouncedSearch, setDebouncedSearch] = React.useState<string>("")
   const [categoryFilter, setCategoryFilter] = React.useState<PurchaseOrderCategory | "ALL">("ALL")
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
+  const [receiptStatusFilter, setReceiptStatusFilter] = React.useState<string>("ALL")
+  const [paymentStatusFilter, setPaymentStatusFilter] = React.useState<string>("ALL")
   const [sortBy, setSortBy] = React.useState<string>("date-desc")
   const [page, setPage] = React.useState<number>(1)
   const [limit, setLimit] = React.useState<number>(10)
@@ -56,17 +61,22 @@ export function usePurchaseOrders() {
     search: debouncedSearch.trim() || undefined,
     status: statusFilter === "ALL" ? undefined : statusFilter,
     category: categoryFilter === "ALL" ? undefined : categoryFilter,
+    receipt_status: receiptStatusFilter === "ALL" ? undefined : receiptStatusFilter,
+    payment_status: paymentStatusFilter === "ALL" ? undefined : paymentStatusFilter,
     sort_by: sortBy,
   }
 
-  const ordersQuery = usePurchaseOrdersQuery(queryParams)
+  const ordersQuery = usePurchaseOrdersQuery(queryParams, { enabled: viewMode === 'table' })
+  const kanban = usePurchaseOrderKanbanQuery(queryParams, viewMode === 'kanban')
   const summaryQuery = usePurchaseOrderSummaryQuery()
 
-  const orders: PurchaseOrder[] = ordersQuery.data?.items || []
-  const total = ordersQuery.data?.total || 0
+  const orders: PurchaseOrder[] = viewMode === 'table' ? ordersQuery.data?.items || [] : kanban.flatMap((column) => column.orders)
+  const total = viewMode === 'table' ? ordersQuery.data?.total || 0 : kanban.reduce((sum, column) => sum + column.total, 0)
   const totalPages = ordersQuery.data?.totalPages || 1
-  const loading = ordersQuery.isLoading || summaryQuery.isLoading
-  const error = ordersQuery.error instanceof Error ? ordersQuery.error.message : ""
+  const loading = (viewMode === 'table' ? ordersQuery.isLoading : kanban.some((column) => column.loading)) || summaryQuery.isLoading
+  const error = viewMode === 'table'
+    ? ordersQuery.error instanceof Error ? ordersQuery.error.message : ''
+    : kanban.every((column) => column.error && column.orders.length === 0) ? kanban[0].error : ''
 
   const loadOrders = React.useCallback(async () => {
     await Promise.all([
@@ -176,20 +186,69 @@ export function usePurchaseOrders() {
   }
 
   // --- Handlers: Cancel ---
-  async function handleCancelPO(po: PurchaseOrder) {
-    const isRequest = po.status === "PURCHASE_REQUEST"
-    const confirmMsg = isRequest
-      ? `Apakah Anda yakin ingin membatalkan Purchase Request ${po.poNumber}?`
-      : `Apakah Anda yakin ingin membatalkan Purchase Order ${po.poNumber}?`
-    if (!window.confirm(confirmMsg)) return
+  async function handleCancelPO(po: PurchaseOrder, reason?: string) {
+    if (!reason) {
+      const isRequest = po.status === "PURCHASE_REQUEST"
+      const confirmMsg = isRequest
+        ? `Apakah Anda yakin ingin membatalkan Purchase Request ${po.poNumber}?`
+        : `Apakah Anda yakin ingin membatalkan Purchase Order ${po.poNumber}?`
+      if (!window.confirm(confirmMsg)) return
+    }
 
     setSubmitting(true)
     try {
-      await purchaseOrderService.cancelPurchaseOrder(po.id)
+      await purchaseOrderService.cancelPurchaseOrder(po.id, {
+        reason: reason || "Dibatalkan oleh pengguna",
+      })
       await loadOrders()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal membatalkan pesanan"
       alert(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleReceive(id: string, input?: ReceivePOInput) {
+    setSubmitting(true)
+    try {
+      const res = await purchaseOrderService.receivePurchaseOrder(id, input)
+      await loadOrders()
+      return res
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal mencatat penerimaan barang"
+      alert(msg)
+      throw err
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handlePay(id: string, input: PayPOInput) {
+    setSubmitting(true)
+    try {
+      const res = await purchaseOrderService.payPurchaseOrder(id, input)
+      await loadOrders()
+      return res
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal memproses pembayaran"
+      alert(msg)
+      throw err
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleCancel(id: string, reason: string) {
+    setSubmitting(true)
+    try {
+      const res = await purchaseOrderService.cancelPurchaseOrder(id, { reason })
+      await loadOrders()
+      return res
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal membatalkan pesanan"
+      alert(msg)
+      throw err
     } finally {
       setSubmitting(false)
     }
@@ -245,9 +304,12 @@ export function usePurchaseOrders() {
     canRequest,
     canEditPO,
     orders,
+    kanban,
     loading,
-    isFetching: ordersQuery.isFetching || summaryQuery.isFetching,
+    isFetching: (viewMode === 'table' ? ordersQuery.isFetching : kanban.some((column) => column.isFetching)) || summaryQuery.isFetching,
     error,
+    summaryLoading: summaryQuery.isLoading,
+    summaryError: summaryQuery.isError,
     search,
     setSearch,
     categoryFilter,
@@ -258,6 +320,16 @@ export function usePurchaseOrders() {
     statusFilter,
     setStatusFilter: (status: string) => {
       setStatusFilter(status)
+      setPage(1)
+    },
+    receiptStatusFilter,
+    setReceiptStatusFilter: (status: string) => {
+      setReceiptStatusFilter(status)
+      setPage(1)
+    },
+    paymentStatusFilter,
+    setPaymentStatusFilter: (status: string) => {
+      setPaymentStatusFilter(status)
       setPage(1)
     },
     sortBy,
@@ -272,6 +344,10 @@ export function usePurchaseOrders() {
     total,
     handleNextPage,
     handlePrevPage,
+    // Actions & Operations
+    handleReceive,
+    handlePay,
+    handleCancel,
     // Approve modal
     approvingPO,
     setApprovingPO,

@@ -15,6 +15,10 @@ export type PurchaseOrderStatus =
   | "CANCELLED"
   | "REJECTED";
 
+export type PurchaseOrderReceiptStatus = "NOT_RECEIVED" | "RECEIVED";
+export type PurchaseOrderPaymentStatus = "UNPAID" | "PAID";
+export type PurchaseOrderPaymentMethod = "CASH" | "TRANSFER" | "TEMPO";
+
 export interface PurchaseOrderItem {
   id: string;
   stockId: string;
@@ -23,6 +27,7 @@ export interface PurchaseOrderItem {
   baseUnit: string;
   unitPrice: number;
   totalPrice: number;
+  inventoryMethod?: "FIFO" | "FEFO";
 }
 
 export interface PurchaseOrderLog {
@@ -49,6 +54,17 @@ export interface PurchaseOrder {
   orderDate: string;
   completedDate?: string;
   status: PurchaseOrderStatus;
+  receiptStatus: PurchaseOrderReceiptStatus;
+  paymentStatus: PurchaseOrderPaymentStatus;
+  paymentMethod?: PurchaseOrderPaymentMethod;
+  paymentDueDate?: string;
+  receivedAt?: string;
+  receivedByUserId?: string;
+  receivedByName?: string;
+  paidAt?: string;
+  paidByUserId?: string;
+  paidByName?: string;
+  cancellationReason?: string;
   notes?: string;
   items: PurchaseOrderItem[];
   logs?: PurchaseOrderLog[];
@@ -98,6 +114,7 @@ export interface CompletePOPriceItem {
   item_id: string;
   unit_price: number;
   total_price?: number;
+  expired_at?: string;
 }
 
 export interface CompletePurchaseOrderInput {
@@ -106,14 +123,34 @@ export interface CompletePurchaseOrderInput {
   prices: CompletePOPriceItem[];
 }
 
+export interface ReceivePOInput {
+  notes?: string;
+  completion_attachments?: POAttachment[];
+  prices?: CompletePOPriceItem[];
+}
+
+export interface PayPOInput {
+  payment_method: PurchaseOrderPaymentMethod;
+  notes?: string;
+}
+
+export interface CancelPOInput {
+  reason: string;
+}
+
 export interface PurchaseOrderQueryParams {
+  kanban_column?: PurchaseOrderKanbanColumn;
   category?: PurchaseOrderCategory;
   page?: number;
   limit?: number;
   search?: string;
   status?: string;
+  receipt_status?: string;
+  payment_status?: string;
   sort_by?: string;
 }
+
+export type PurchaseOrderKanbanColumn = 'pengajuan' | 'dipesan' | 'diterima' | 'selesai' | 'ditutup';
 
 export interface PaginatedPurchaseOrders {
   items: PurchaseOrder[];

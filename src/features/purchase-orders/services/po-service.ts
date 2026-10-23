@@ -9,6 +9,12 @@ import type {
   RejectPOInput,
   CompletePurchaseOrderInput,
   CompletePOPriceItem,
+  ReceivePOInput,
+  PayPOInput,
+  CancelPOInput,
+  PurchaseOrderReceiptStatus,
+  PurchaseOrderPaymentStatus,
+  PurchaseOrderPaymentMethod,
   PurchaseOrderQueryParams,
   PaginatedPurchaseOrders,
   PurchaseOrderStatus,
@@ -23,6 +29,7 @@ interface RawPurchaseOrderItem {
   base_unit: string;
   unit_price: number | string;
   total_price: number | string;
+  inventory_method?: 'FIFO' | 'FEFO';
 }
 
 interface RawPurchaseOrderLog {
@@ -49,6 +56,17 @@ interface RawPurchaseOrder {
   order_date: string;
   completed_date?: string;
   status: PurchaseOrderStatus;
+  receipt_status?: PurchaseOrderReceiptStatus;
+  payment_status?: PurchaseOrderPaymentStatus;
+  payment_method?: PurchaseOrderPaymentMethod;
+  payment_due_date?: string;
+  received_at?: string;
+  received_by_user_id?: string;
+  received_by_name?: string;
+  paid_at?: string;
+  paid_by_user_id?: string;
+  paid_by_name?: string;
+  cancellation_reason?: string;
   notes?: string;
   total_amount: number | string;
   items?: RawPurchaseOrderItem[];
@@ -80,6 +98,17 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
     orderDate: raw.order_date,
     completedDate: raw.completed_date,
     status: raw.status,
+    receiptStatus: raw.receipt_status || "NOT_RECEIVED",
+    paymentStatus: raw.payment_status || "UNPAID",
+    paymentMethod: raw.payment_method,
+    paymentDueDate: raw.payment_due_date,
+    receivedAt: raw.received_at,
+    receivedByUserId: raw.received_by_user_id,
+    receivedByName: raw.received_by_name,
+    paidAt: raw.paid_at,
+    paidByUserId: raw.paid_by_user_id,
+    paidByName: raw.paid_by_name,
+    cancellationReason: raw.cancellation_reason,
     notes: raw.notes || "",
     totalAmount: Number(raw.total_amount) || 0,
     createdAt: raw.created_at,
@@ -91,6 +120,7 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
       baseUnit: it.base_unit,
       unitPrice: Number(it.unit_price) || 0,
       totalPrice: Number(it.total_price) || 0,
+      inventoryMethod: it.inventory_method,
     })),
     logs: (raw.logs || []).map((l) => ({
       id: l.id,
@@ -198,13 +228,25 @@ export const purchaseOrderService = {
     return mapRawPOToPurchaseOrder(response.data);
   },
 
+  receivePurchaseOrder: async (id: string, input?: ReceivePOInput): Promise<PurchaseOrder> => {
+    const response = await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/receive`, input || {});
+    return mapRawPOToPurchaseOrder(response.data);
+  },
+
+  payPurchaseOrder: async (id: string, input: PayPOInput): Promise<PurchaseOrder> => {
+    const response = await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/pay`, input);
+    return mapRawPOToPurchaseOrder(response.data);
+  },
+
   getPurchaseOrderSummary: async (): Promise<PurchaseOrderSummary> => {
     const response = await apiClient.get<PurchaseOrderSummary>('/purchase-orders/summary');
     return response.data;
   },
 
-  cancelPurchaseOrder: async (id: string): Promise<PurchaseOrder> => {
-    const response = await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/cancel`);
+  cancelPurchaseOrder: async (id: string, input?: CancelPOInput): Promise<PurchaseOrder> => {
+    const response = input
+      ? await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/cancel`, input)
+      : await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/cancel`);
     return mapRawPOToPurchaseOrder(response.data);
   },
 };

@@ -1,28 +1,32 @@
 import { ArrowUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ListFilters } from '@/components/ui/list-filters'
 import type { usePurchaseOrders } from '../hooks/use-purchase-orders'
 import type { PurchaseOrderCategory } from '../types'
+import { hasPurchaseOrderFilters } from '../lib/list-filters'
 
 interface Props {
   list: ReturnType<typeof usePurchaseOrders>
 }
 
+const sorts = {
+  'date-desc': 'Tanggal Terbaru', 'date-asc': 'Tanggal Terlama',
+  'amount-desc': 'Nominal Tertinggi', 'amount-asc': 'Nominal Terendah',
+}
+
 export function PurchaseOrderListFilters({ list }: Props) {
-  const hasFilters = Boolean(list.search.trim()) || list.categoryFilter !== 'ALL' || list.statusFilter !== 'ALL' || list.sortBy !== 'date-desc'
+  const hasFilters = hasPurchaseOrderFilters(list)
 
   function resetFilters() {
     list.setSearch('')
     list.setCategoryFilter('ALL')
     list.setStatusFilter('ALL')
+    list.setReceiptStatusFilter('ALL')
+    list.setPaymentStatusFilter('ALL')
     list.setSortBy('date-desc')
   }
 
@@ -30,9 +34,8 @@ export function PurchaseOrderListFilters({ list }: Props) {
     label="Filter pembelian"
     search={{
       label: 'Cari pembelian',
-      placeholder: 'Cari nomor pembelian, supplier, atau bahan baku...',
-      value: list.search,
-      onChange: list.setSearch,
+      placeholder: 'Cari pembelian...',
+      value: list.search, onChange: list.setSearch,
     }}
     filters={[
       {
@@ -45,9 +48,9 @@ export function PurchaseOrderListFilters({ list }: Props) {
         ],
       },
       {
-        id: 'status', label: 'Status', value: list.statusFilter, onChange: list.setStatusFilter,
+        id: 'status', label: 'Status Dokumen', value: list.statusFilter, onChange: list.setStatusFilter,
         options: [
-          { value: 'ALL', label: 'Semua status' },
+          { value: 'ALL', label: 'Semua status dokumen' },
           { value: 'PURCHASE_REQUEST', label: 'Purchase Request' },
           { value: 'PURCHASE_ORDER', label: 'Purchase Order' },
           { value: 'COMPLETED', label: 'Selesai' },
@@ -55,7 +58,16 @@ export function PurchaseOrderListFilters({ list }: Props) {
           { value: 'CANCELLED', label: 'Dibatalkan' },
         ],
       },
+      {
+        id: 'receipt', label: 'Penerimaan', value: list.receiptStatusFilter, onChange: list.setReceiptStatusFilter,
+        options: [{ value: 'ALL', label: 'Semua penerimaan' }, { value: 'NOT_RECEIVED', label: 'Belum Diterima' }, { value: 'RECEIVED', label: 'Sudah Diterima' }],
+      },
+      {
+        id: 'payment', label: 'Pembayaran', value: list.paymentStatusFilter, onChange: list.setPaymentStatusFilter,
+        options: [{ value: 'ALL', label: 'Semua pembayaran' }, { value: 'UNPAID', label: 'Belum Dibayar' }, { value: 'PAID', label: 'Sudah Dibayar' }],
+      },
     ]}
+    summary={list.loading ? 'Memuat pembelian...' : list.error ? 'Data belum tersedia' : `${list.total} pembelian${hasFilters && !list.summaryError ? ` dari ${list.totalCount}` : ''}`}
     hasFilters={hasFilters}
     onReset={resetFilters}
     isFetching={list.isFetching && !list.loading}
@@ -69,34 +81,9 @@ export function PurchaseOrderListFilters({ list }: Props) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 text-xs">
-          <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
-            Urutan
-          </DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">Urutan</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => list.setSortBy("date-desc")}
-            className="cursor-pointer"
-          >
-            Tanggal Terbaru
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => list.setSortBy("date-asc")}
-            className="cursor-pointer"
-          >
-            Tanggal Terlama
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => list.setSortBy("amount-desc")}
-            className="cursor-pointer"
-          >
-            Nominal Tertinggi
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => list.setSortBy("amount-asc")}
-            className="cursor-pointer"
-          >
-            Nominal Terendah
-          </DropdownMenuItem>
+          {Object.entries(sorts).map(([value, label]) => <DropdownMenuItem key={value} onClick={() => list.setSortBy(value)} className="cursor-pointer">{label}</DropdownMenuItem>)}
         </DropdownMenuContent>
       </DropdownMenu>
     }

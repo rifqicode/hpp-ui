@@ -21,6 +21,9 @@ import {
   History,
   ChevronDown,
   ExternalLink,
+  Truck,
+  CreditCard,
+  AlertCircle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -63,7 +66,12 @@ import {
 
 import { purchaseOrderService } from "@/features/purchase-orders/services/po-service"
 import { supplierService } from "@/features/suppliers/services/supplier-service"
-import type { PurchaseOrder, PurchaseOrderStatus } from "@/features/purchase-orders/types"
+import type {
+  PurchaseOrder,
+  PurchaseOrderStatus,
+  PurchaseOrderPaymentMethod,
+  CompletePOPriceItem,
+} from "@/features/purchase-orders/types"
 import type { Supplier } from "@/features/suppliers/types"
 import { useAuthStore } from "@/store/use-auth-store"
 import { usePermission } from "@/hooks/use-permission"
@@ -95,6 +103,22 @@ export default function PurchaseOrderDetailPage() {
   const [completionAttachments, setCompletionAttachments] = React.useState<POAttachment[]>([])
   const [uploadingCompletionAttachments, setUploadingCompletionAttachments] = React.useState(false)
   const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({})
+
+  // Receive modal
+  const [isReceiveOpen, setIsReceiveOpen] = React.useState<boolean>(false)
+  const [receiveNotes, setReceiveNotes] = React.useState<string>("")
+  const [receivePrices, setReceivePrices] = React.useState<Record<string, number>>({})
+  const [receiveExpiredAt, setReceiveExpiredAt] = React.useState<Record<string, string>>({})
+  const [receiveError, setReceiveError] = React.useState<string>("")
+
+  // Pay modal
+  const [isPayOpen, setIsPayOpen] = React.useState<boolean>(false)
+  const [payMethod, setPayMethod] = React.useState<PurchaseOrderPaymentMethod>("TRANSFER")
+  const [payNotes, setPayNotes] = React.useState<string>("")
+
+  // Cancel modal
+  const [isCancelOpen, setIsCancelOpen] = React.useState<boolean>(false)
+  const [cancelReason, setCancelReason] = React.useState<string>("")
 
   const canProcess = can("purchases:process")
   const canRequest = can("purchases:request")
@@ -220,16 +244,98 @@ export default function PurchaseOrderDetailPage() {
     }
   }
 
-  async function handleCancel() {
+  async function handleConfirmReceive(e: React.FormEvent) {
+    e.preventDefault()
     if (!order) return
-    if (!confirm("Apakah Anda yakin ingin membatalkan Purchase Order ini?")) return
-    try {
-      const updated = await purchaseOrderService.cancelPurchaseOrder(order.id)
-      setOrder(updated)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal membatalkan PO"
-      alert(msg)
+
+    // Validation: Check FEFO items have expired_at
+    const missingFefo = order.items.find((it) => it.inventoryMethod === "FEFO" && !receiveExpiredAt[it.id])
+    if (missingFefo) {
+      setReceiveError(`Tanggal kadaluarsa wajib diisi untuk bahan FEFO '${missingFefo.stockName}'`)
+      return
     }
+
+    const hasFefo = order.items.some((it) => it.inventoryMethod === "FEFO")
+    const hasExpired = Object.values(receiveExpiredAt).some(Boolean)
+    const hasCustomPrices = Object.values(receivePrices).some((p) => p > 0)
+
+    let pricesPayload: CompletePOPriceItem[] | undefined
+    if (hasFefo || hasExpired || hasCustomPrices) {
+      for (const it of order.items) {
+        const p = receivePrices[it.id] ?? it.unitPrice
+        if (!p || p <= 0) {
+          setReceiveError(`Harga satuan untuk '${it.stockName}' harus lebih besar dari 0`)
+          return
+        }
+      }
+      pricesPayload = order.items.map((it) => ({
+        item_id: it.id,
+        unit_price: receivePrices[it.id] ?? it.unitPrice,
+        expired_at: receiveExpiredAt[it.id] ? new Date(receiveExpiredAt[it.id]).toISOString() : undefined,
+      }))
+    }
+
+    setSubmitting(true)
+    setReceiveError("")
+    try {
+      const updated = await purchaseOrderService.receivePurchaseOrder(order.id, {
+        notes: receiveNotes.trim() || undefined,
+        prices: pricesPayload,
+      })
+      setOrder(updated)
+      setIsReceiveOpen(false)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal mencatat penerimaan barang"
+      setReceiveError(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleConfirmPay(e: React.FormEvent) {
+    e.preventDefault()
+    if (!order) return
+    setSubmitting(true)
+    try {
+      const updated = await purchaseOrderService.payPurchaseOrder(order.id, {
+        payment_method: payMethod,
+        notes: payNotes.trim() || undefined,
+      })
+      setOrder(updated)
+      setIsPayOpen(false)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal memproses pembayaran"
+      alert(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleConfirmCancel(e: React.FormEvent) {
+    e.preventDefault()
+    if (!order) return
+    if (!cancelReason.trim()) {
+      alert("Alasan pembatalan wajib diisi")
+      return
+    }
+    setSubmitting(true)
+    try {
+      const updated = await purchaseOrderService.cancelPurchaseOrder(order.id, {
+        reason: cancelReason.trim(),
+      })
+      setOrder(updated)
+      setIsCancelOpen(false)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal membatalkan pesanan"
+      alert(msg)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleCancel() {
+    setCancelReason("")
+    setIsCancelOpen(true)
   }
 
   function formatDate(dateStr?: string) {
@@ -381,13 +487,70 @@ export default function PurchaseOrderDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/30 px-3 py-2.5 lg:flex-col lg:items-end lg:gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">
-            {order.status === "PURCHASE_REQUEST" || order.status === "REJECTED" ? "Status pengajuan" : "Status pembelian"}
-          </span>
-          {getStatusBadge(order.status)}
+        <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-3 shadow-2xs lg:items-end">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {order.status === "PURCHASE_REQUEST" || order.status === "REJECTED" ? "Status pengajuan:" : "Status dokumen:"}
+            </span>
+            {getStatusBadge(order.status)}
+          </div>
+
+          {(order.status === "PURCHASE_ORDER" || order.status === "COMPLETED") && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-1 border-t border-border/60 text-xs">
+              {/* Receipt Status Badge */}
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-semibold ${
+                    order.receiptStatus === "RECEIVED"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                  }`}
+                >
+                  <Truck className="h-3 w-3" />
+                  {order.receiptStatus === "RECEIVED" ? "Sudah Diterima" : "Belum Diterima"}
+                </span>
+                {order.receiptStatus === "RECEIVED" && order.receivedAt && (
+                  <span className="text-[11px] text-muted-foreground">
+                    ({formatDate(order.receivedAt)}{order.receivedByName ? ` oleh ${order.receivedByName}` : ""})
+                  </span>
+                )}
+              </div>
+
+              {/* Payment Status Badge */}
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-semibold ${
+                    order.paymentStatus === "PAID"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                  }`}
+                >
+                  <CreditCard className="h-3 w-3" />
+                  {order.paymentStatus === "PAID" ? "Sudah Dibayar" : "Belum Dibayar"}
+                </span>
+                {order.paymentStatus === "PAID" && (
+                  <span className="text-[11px] text-muted-foreground">
+                    ({order.paymentMethod || "Transfer"}{order.paidAt ? ` - ${formatDate(order.paidAt)}` : ""}{order.paidByName ? ` oleh ${order.paidByName}` : ""})
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Cancellation Reason Alert */}
+      {order.status === "CANCELLED" && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-xs space-y-1">
+          <div className="flex items-center gap-2 font-semibold text-destructive">
+            <Ban className="h-4 w-4" />
+            Pesanan ini telah dibatalkan
+          </div>
+          <p className="text-destructive/90 pl-6">
+            Alasan pembatalan: <strong className="text-foreground">{order.cancellationReason || "Tidak ada rincian alasan."}</strong>
+          </p>
+        </div>
+      )}
 
       {order.status === "PURCHASE_REQUEST" && (canEdit || canProcess) && (
         <section
@@ -444,17 +607,65 @@ export default function PurchaseOrderDetailPage() {
       )}
 
       {order.status === "PURCHASE_ORDER" && canProcess && (
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <section
+          aria-labelledby="purchase-order-actions"
+          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="min-w-0">
+            <h2 id="purchase-order-actions" className="text-sm font-semibold text-foreground">
+              Aksi Pembelian
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Perbarui status penerimaan barang fisik atau status pelunasan faktur vendor.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {order.receiptStatus !== "RECEIVED" && (
               <Button
+                type="button"
                 variant="outline"
-                className="rounded-xl text-destructive hover:text-destructive"
-                onClick={handleCancel}
+                className="rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40"
+                disabled={submitting}
+                onClick={() => {
+                  setReceiveNotes("")
+                  const initialPrices: Record<string, number> = {}
+                  const initialExpired: Record<string, string> = {}
+                  order.items.forEach((it) => {
+                    initialPrices[it.id] = it.unitPrice || 0
+                    initialExpired[it.id] = ""
+                  })
+                  setReceivePrices(initialPrices)
+                  setReceiveExpiredAt(initialExpired)
+                  setReceiveError("")
+                  setIsReceiveOpen(true)
+                }}
               >
-                <Ban className="mr-2 h-4 w-4" />
-                Batalkan PO
+                <Truck className="mr-2 h-4 w-4" />
+                Terima Barang
               </Button>
+            )}
+
+            {order.paymentStatus !== "PAID" && (
               <Button
-                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                type="button"
+                variant="outline"
+                className="rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+                disabled={submitting}
+                onClick={() => {
+                  setPayMethod("TRANSFER")
+                  setPayNotes("")
+                  setIsPayOpen(true)
+                }}
+              >
+                <CreditCard className="mr-2 h-4 w-4" />
+                Tandai Lunas
+              </Button>
+            )}
+
+            {order.receiptStatus !== "RECEIVED" && (
+              <Button
+                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+                disabled={submitting}
                 onClick={() => {
                   setCompleteSupplierId(order.supplierId || "")
                   setCompletionAttachments([])
@@ -470,7 +681,19 @@ export default function PurchaseOrderDetailPage() {
                 <Check className="mr-2 h-4 w-4" />
                 Set Harga & Selesaikan PO
               </Button>
-        </div>
+            )}
+
+            <Button
+              variant="outline"
+              className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+              disabled={submitting}
+              onClick={handleCancel}
+            >
+              <Ban className="mr-2 h-4 w-4" />
+              Batalkan PO
+            </Button>
+          </div>
+        </section>
       )}
 
       {/* Info Cards */}
@@ -953,6 +1176,303 @@ export default function PurchaseOrderDetailPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Modal 4: Terima Barang */}
+      {order && (
+        <Dialog
+          open={isReceiveOpen}
+          onOpenChange={(open) => !open && !submitting && setIsReceiveOpen(false)}
+        >
+          <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto rounded-xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-amber-600" />
+                Terima Barang Fisik
+              </DialogTitle>
+              <DialogDescription>
+                Catat kedatangan barang fisik untuk PO{" "}
+                <strong className="text-foreground">{order.poNumber}</strong>. Status penerimaan akan ditandai{" "}
+                <strong>Sudah Diterima</strong>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleConfirmReceive} className="space-y-4 py-2">
+              {receiveError && (
+                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{receiveError}</span>
+                </div>
+              )}
+
+              <div className="rounded-lg border border-border p-3 bg-muted/30 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Supplier:</span>
+                  <span className="font-semibold text-foreground">
+                    {order.supplierName || "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Item:</span>
+                  <span className="font-semibold text-foreground">
+                    {order.items.length} macam item
+                  </span>
+                </div>
+              </div>
+
+              {/* Items detail: Price & Expiry */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-foreground">
+                  Daftar Bahan & Informasi Penerimaan
+                </Label>
+                <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
+                  {order.items.map((it) => {
+                    const isFefo = it.inventoryMethod === "FEFO"
+                    return (
+                      <div
+                        key={it.id}
+                        className="rounded-lg border border-border p-3 bg-card space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-foreground">{it.stockName}</span>
+                          <div className="flex items-center gap-1.5">
+                            {isFefo && (
+                              <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                                FEFO
+                              </Badge>
+                            )}
+                            <span className="text-muted-foreground font-mono">
+                              {it.quantity} {it.baseUnit}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <Label htmlFor={`price-${it.id}`} className="text-[11px] text-muted-foreground">
+                              Harga Satuan (Rp)
+                            </Label>
+                            <Input
+                              id={`price-${it.id}`}
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={receivePrices[it.id] ?? (it.unitPrice || "")}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value) || 0
+                                setReceivePrices((prev) => ({ ...prev, [it.id]: val }))
+                              }}
+                              placeholder="Harga per unit"
+                              className="h-8 text-xs font-mono mt-1"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor={`expired-${it.id}`} className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              Tanggal Kadaluarsa {isFefo && <span className="text-destructive font-bold">*</span>}
+                            </Label>
+                            <Input
+                              id={`expired-${it.id}`}
+                              type="date"
+                              required={isFefo}
+                              value={receiveExpiredAt[it.id] || ""}
+                              onChange={(e) => {
+                                const val = e.target.value
+                                setReceiveExpiredAt((prev) => ({ ...prev, [it.id]: val }))
+                              }}
+                              className="h-8 text-xs mt-1"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="detail-receive-notes" className="text-sm font-semibold">
+                  Catatan Penerimaan (Opsional)
+                </Label>
+                <Textarea
+                  id="detail-receive-notes"
+                  value={receiveNotes}
+                  onChange={(e) => setReceiveNotes(e.target.value)}
+                  placeholder="e.g. Kondisi barang baik, diterima oleh staf gudang."
+                  className="min-h-[70px]"
+                />
+              </div>
+
+              <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsReceiveOpen(false)}
+                  disabled={submitting}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                  disabled={submitting}
+                >
+                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Konfirmasi Terima Barang
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal 5: Tandai Lunas */}
+      {order && (
+        <Dialog
+          open={isPayOpen}
+          onOpenChange={(open) => !open && !submitting && setIsPayOpen(false)}
+        >
+          <DialogContent className="sm:max-w-[480px] rounded-xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5 text-emerald-600" />
+                Tandai Lunas Pembayaran
+              </DialogTitle>
+              <DialogDescription>
+                Catat penyelesaian pembayaran untuk PO{" "}
+                <strong className="text-foreground">{order.poNumber}</strong>. Status pembayaran akan ditandai{" "}
+                <strong>Lunas</strong>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleConfirmPay} className="space-y-4 py-2">
+              <div className="rounded-lg border border-border p-3 bg-muted/30 text-xs space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Tagihan:</span>
+                  <span className="font-mono font-bold text-foreground">
+                    <CurrencyText value={order.totalAmount} />
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Supplier:</span>
+                  <span className="font-semibold text-foreground">
+                    {order.supplierName || "-"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Metode Pembayaran</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["TRANSFER", "CASH", "TEMPO"] as const).map((method) => (
+                    <Button
+                      key={method}
+                      type="button"
+                      variant={payMethod === method ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs font-semibold"
+                      onClick={() => setPayMethod(method)}
+                    >
+                      {method === "TRANSFER"
+                        ? "Transfer Bank"
+                        : method === "CASH"
+                        ? "Tunai"
+                        : "Tempo"}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="detail-pay-notes" className="text-sm font-semibold">
+                  Catatan Pembayaran (Opsional)
+                </Label>
+                <Textarea
+                  id="detail-pay-notes"
+                  value={payNotes}
+                  onChange={(e) => setPayNotes(e.target.value)}
+                  placeholder="e.g. Bukti transfer BCA #TRX-123456"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsPayOpen(false)}
+                  disabled={submitting}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  disabled={submitting}
+                >
+                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Konfirmasi Lunas
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal 6: Batalkan PO */}
+      {order && (
+        <Dialog
+          open={isCancelOpen}
+          onOpenChange={(open) => !open && !submitting && setIsCancelOpen(false)}
+        >
+          <DialogContent className="sm:max-w-[480px] rounded-xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Ban className="h-5 w-5" />
+                Batalkan Purchase Order
+              </DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin membatalkan pesanan{" "}
+                <strong className="text-foreground">{order.poNumber}</strong>? Alasan pembatalan wajib dicatat.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleConfirmCancel} className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="detail-cancel-reason" className="text-sm font-semibold">
+                  Alasan Pembatalan <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="detail-cancel-reason"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="e.g. Stok supplier habis / spesifikasi bahan diubah"
+                  className="min-h-[90px]"
+                  required
+                />
+              </div>
+
+              <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCancelOpen(false)}
+                  disabled={submitting}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={submitting || !cancelReason.trim()}
+                >
+                  {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Konfirmasi Batalkan
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

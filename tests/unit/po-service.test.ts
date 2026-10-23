@@ -30,7 +30,37 @@ describe('purchase order response mapping and commands', () => {
     await service.completePurchaseOrder('po1', []); expect(http.post).toHaveBeenLastCalledWith('/purchase-orders/po1/complete', { prices: [] })
     await service.completePurchaseOrder('po1', { prices: [], supplier_id: 's1' }); expect(http.post).toHaveBeenLastCalledWith('/purchase-orders/po1/complete', { prices: [], supplier_id: 's1' })
     await service.cancelPurchaseOrder('po1'); expect(http.post).toHaveBeenLastCalledWith('/purchase-orders/po1/cancel')
+    await service.cancelPurchaseOrder('po1', { reason: 'Batal' }); expect(http.post).toHaveBeenLastCalledWith('/purchase-orders/po1/cancel', { reason: 'Batal' })
+    await service.receivePurchaseOrder('po1', { notes: 'Diterima' }); expect(http.post).toHaveBeenLastCalledWith('/purchase-orders/po1/receive', { notes: 'Diterima' })
+    await service.payPurchaseOrder('po1', { payment_method: 'CASH', notes: 'Lunas tunai' }); expect(http.post).toHaveBeenLastCalledWith('/purchase-orders/po1/pay', { payment_method: 'CASH', notes: 'Lunas tunai' })
     await service.getPurchaseOrderSummary(); expect(http.get).toHaveBeenLastCalledWith('/purchase-orders/summary')
+  })
+
+  it('maps pragmatic dual-status fields correctly', async () => {
+    http.get.mockResolvedValueOnce({
+      data: {
+        ...raw,
+        receipt_status: 'RECEIVED',
+        payment_status: 'PAID',
+        payment_method: 'TRANSFER',
+        payment_due_date: '2026-11-01T00:00:00Z',
+        received_at: '2026-10-23T10:00:00Z',
+        received_by_name: 'Staf Gudang',
+        paid_at: '2026-10-23T11:00:00Z',
+        paid_by_name: 'Finance User',
+        cancellation_reason: 'Alasan batal',
+      },
+    })
+    const result = await service.getPurchaseOrderById('po1')
+    expect(result.receiptStatus).toBe('RECEIVED')
+    expect(result.paymentStatus).toBe('PAID')
+    expect(result.paymentMethod).toBe('TRANSFER')
+    expect(result.paymentDueDate).toBe('2026-11-01T00:00:00Z')
+    expect(result.receivedAt).toBe('2026-10-23T10:00:00Z')
+    expect(result.receivedByName).toBe('Staf Gudang')
+    expect(result.paidAt).toBe('2026-10-23T11:00:00Z')
+    expect(result.paidByName).toBe('Finance User')
+    expect(result.cancellationReason).toBe('Alasan batal')
   })
 })
 
