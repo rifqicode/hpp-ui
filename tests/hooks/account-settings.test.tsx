@@ -22,6 +22,17 @@ async function setup() {
 }
 
 describe('account settings', () => {
+  it('saves a username staff profile without requiring an email address', async () => {
+    const staff = { ...user, account_type: 'STAFF' as const, role: 'STAFF', email: '', username: 'rina@toko' }
+    useAuthStore.setState({ user: staff })
+    vi.mocked(authService.getCurrentUser).mockResolvedValue({ user: staff, token: 'test-token' })
+    vi.mocked(authService.updateProfile).mockResolvedValue(staff)
+    const { result } = await setup()
+    await act(() => result.current.handleSaveProfile(event()))
+    expect(authService.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ email: '', name: staff.name }))
+    expect(result.current.profileError).toBe('')
+    expect(result.current.profileMsg).toContain('berhasil disimpan')
+  })
   it('validates required fields, saves profile data and updates the session', async () => {
     const { result } = await setup()
     act(() => result.current.setName(' '))

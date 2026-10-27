@@ -164,7 +164,7 @@ export function Topbar() {
   const logout = useAuthStore((state) => state.logout)
 
   const userName = user?.name || "Budi Santoso"
-  const userEmail = user?.email || "budi@tokoroti.com"
+  const userEmail = user?.username || user?.email || ""
   const userAvatar = user?.avatar
   const crumbs = getBreadcrumbs(location.pathname)
 

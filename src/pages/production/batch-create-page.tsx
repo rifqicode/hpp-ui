@@ -43,7 +43,7 @@ import {
 
 import { productionService } from "@/features/production/services/production-service"
 import { recipeService } from "@/features/recipes/services/recipe-service"
-import type { Product } from "@/features/recipes/types"
+import type { ProductVariantView as Product } from "@/features/recipes/types"
 import type { ProductionPreviewResponse } from "@/features/production/types"
 import { CurrencyText } from "@/components/ui/currency-text"
 
@@ -71,12 +71,12 @@ export default function BatchCreatePage() {
     let mounted = true
     setLoadingProducts(true)
     recipeService
-      .getProducts()
+      .getVariants()
       .then((res) => {
         if (mounted) {
-          setProducts(res)
-          if (res.length > 0) {
-            setSelectedProductId(res[0].id)
+          setProducts(res.filter(p=>p.mode==='MAKE_TO_STOCK'))
+          if (res.filter(p=>p.mode==='MAKE_TO_STOCK').length > 0) {
+            setSelectedProductId(res.find(p=>p.mode==='MAKE_TO_STOCK')!.id)
           }
         }
       })
@@ -110,7 +110,7 @@ export default function BatchCreatePage() {
     let ignore = false
     setLoadingPreview(true)
     productionService
-      .previewProduction({ productId: selectedProductId, quantity: qty })
+      .previewProduction({ variantId: selectedProductId, quantity: qty })
       .then((res) => {
         if (!ignore) {
           setPreview(res)
@@ -226,7 +226,7 @@ export default function BatchCreatePage() {
         .join(" | ")
 
       const newBatch = await productionService.startProduction({
-        productId: selectedProduct.id,
+        variantId: selectedProduct.id,
         targetQuantity: submitQty,
         notes: combinedNotes,
       })
@@ -401,7 +401,7 @@ export default function BatchCreatePage() {
                     </div>
                   </div>
                   <Link
-                    to={`/production/products/${selectedProduct.id}`}
+                    to={`/production/products/${selectedProduct.productId}`}
                     target="_blank"
                     className="text-primary hover:underline font-semibold flex items-center gap-1 shrink-0 sm:text-right"
                   >

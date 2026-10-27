@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link, useParams } from "react-router-dom"
-import { ArrowLeft, Package, Layers, RotateCcw, Plus, ArrowLeftRight, Loader2 } from "lucide-react"
+import { ArrowLeft, Package, Layers, RotateCcw, ArrowLeftRight, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,17 +28,10 @@ import {
 
 import { useStockDetail } from "@/features/inventory/hooks/use-stock-detail"
 import { usePermission } from "@/hooks/use-permission"
-import { RecordPurchaseDialog } from "@/features/inventory/components/record-purchase-dialog"
 import { RecordMovementDialog } from "@/features/inventory/components/record-movement-dialog"
 import { cn } from "@/lib/utils"
 import type { StockMovementType } from "@/features/inventory/types"
 import { CurrencyText } from "@/components/ui/currency-text"
-
-function formatQty(value: string | number, unit: string) {
-  const num = typeof value === "number" ? value : parseFloat(value) || 0
-  const fixed = Number.isInteger(num) ? num.toString() : num.toFixed(2)
-  return `${fixed} ${unit}`
-}
 
 function formatDateTime(dateStr?: string) {
   if (!dateStr) return "—"
@@ -118,17 +111,19 @@ export default function StockDetailPage() {
   const { materialId } = useParams<{ materialId: string }>()
   const { detail, loading, error, loadDetail } = useStockDetail(materialId)
 
-  const [isPurchaseOpen, setIsPurchaseOpen] = React.useState(false)
   const [isMovementOpen, setIsMovementOpen] = React.useState(false)
 
   const { can } = usePermission()
-  const canCreate = can("stocks:create")
   const canAdjust = can("stocks:adjust")
 
   const stock = detail?.stock
   const batches = detail?.active_batches ?? []
   const movements = detail?.movements ?? []
   const lastMovement = movements.length > 0 ? movements[movements.length - 1] : undefined
+
+  const totalAssetValue = batches
+    .filter((b) => getBatchExpiredStatus(b.expired_at)?.status !== "expired")
+    .reduce((acc, b) => acc + Number(b.remaining_quantity) * Number(b.price_per_unit), 0)
 
   if (loading) {
     return (
@@ -179,15 +174,6 @@ export default function StockDetailPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {canCreate && (
-            <Button
-              onClick={() => setIsPurchaseOpen(true)}
-              className="rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 flex-1 sm:flex-initial"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Record Purchase
-            </Button>
-          )}
           {canAdjust && (
             <Button
               onClick={() => setIsMovementOpen(true)}
@@ -195,7 +181,7 @@ export default function StockDetailPage() {
               className="rounded-xl flex-1 sm:flex-initial"
             >
               <ArrowLeftRight className="mr-2 h-4 w-4" />
-              Record Movement
+              Stock Adjustment
             </Button>
           )}
         </div>
@@ -209,8 +195,11 @@ export default function StockDetailPage() {
               Stok Tersedia (Available)
             </CardDescription>
             <CardTitle className="text-2xl font-mono">
-              {formatQty(stock.available_stock !== undefined ? stock.available_stock : stock.current_stock, stock.base_unit)}
+              <CurrencyText value={stock.available_stock !== undefined ? stock.available_stock : stock.current_stock} prefix="" suffix={` ${stock.base_unit}`} />
             </CardTitle>
+            <p className="text-xs text-muted-foreground font-mono mt-1">
+              Estimasi Nilai: <CurrencyText value={totalAssetValue} />
+            </p>
           </CardHeader>
         </Card>
         <Card className={cn(
@@ -229,7 +218,7 @@ export default function StockDetailPage() {
               "text-2xl font-mono",
               Number(stock.expired_stock) > 0 && "text-destructive"
             )}>
-              {formatQty(stock.expired_stock || 0, stock.base_unit)}
+              <CurrencyText value={stock.expired_stock || 0} prefix="" suffix={` ${stock.base_unit}`} />
             </CardTitle>
           </CardHeader>
         </Card>
@@ -275,7 +264,7 @@ export default function StockDetailPage() {
                       <TableHead>Batch ID</TableHead>
                       <TableHead>Initial</TableHead>
                       <TableHead>Remaining</TableHead>
-                      <TableHead className="text-right">Cost Per Unit</TableHead>
+                      <TableHead className="text-right">Cost per unit / Total</TableHead>
                       <TableHead className="text-right">Kadaluwarsa (Expired At)</TableHead>
                       <TableHead className="text-right">Received Date</TableHead>
                     </TableRow>
@@ -289,14 +278,22 @@ export default function StockDetailPage() {
                         <TableRow key={b.id} className={cn(isExpired && "bg-destructive/5 opacity-75")}>
                           <TableCell className="py-2 font-mono text-xs whitespace-nowrap">{b.id}</TableCell>
                           <TableCell className="py-2 font-mono text-sm whitespace-nowrap">
-                            <CurrencyText value={b.initial_quantity} prefix="" suffix={stock.base_unit} />
+                            <CurrencyText value={b.initial_quantity} prefix="" suffix={` ${stock.base_unit}`} />
                           </TableCell>
                           <TableCell className="py-2 font-mono text-sm whitespace-nowrap">
                             <span className={cn(isExpired && "line-through text-destructive")}>
-                              {formatQty(b.remaining_quantity, stock.base_unit)}
+                              <CurrencyText value={b.remaining_quantity} prefix="" suffix={` ${stock.base_unit}`} />
                             </span>
                           </TableCell>
-                          <TableCell className="py-2 text-right font-mono text-sm whitespace-nowrap"><CurrencyText value={b.price_per_unit} /></TableCell>
+                          <TableCell className="py-2 text-right font-mono whitespace-nowrap">
+                            <div className="text-sm font-semibold text-foreground">
+                              <CurrencyText value={b.price_per_unit} />
+                              <span className="text-xs font-normal text-muted-foreground">/{stock.base_unit}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Total: <CurrencyText value={Number(b.remaining_quantity) * Number(b.price_per_unit)} />
+                            </div>
+                          </TableCell>
                           <TableCell className="py-2 text-right whitespace-nowrap">
                             {b.expired_at ? (
                               <div className="flex items-center justify-end gap-1.5">
@@ -346,7 +343,7 @@ export default function StockDetailPage() {
                           <Badge variant={movementVariant(m.type)}>{movementLabel(m.type)}</Badge>
                         </TableCell>
                         <TableCell className="font-mono whitespace-nowrap">
-                          {formatQty(m.quantity, stock.base_unit)}
+                          <CurrencyText value={m.quantity} prefix="" suffix={` ${stock.base_unit}`} />
                         </TableCell>
                         <TableCell className="text-muted-foreground font-mono text-xs whitespace-nowrap">{m.reference_id || "—"}</TableCell>
                         <TableCell className="text-right text-muted-foreground whitespace-nowrap">{formatDateTime(m.created_at)}</TableCell>
@@ -367,13 +364,6 @@ export default function StockDetailPage() {
           </Tabs>
         </CardContent>
       </Card>
-
-      <RecordPurchaseDialog
-        open={isPurchaseOpen}
-        onOpenChange={setIsPurchaseOpen}
-        initialStockId={stock.id}
-        onSuccess={loadDetail}
-      />
 
       <RecordMovementDialog
         open={isMovementOpen}

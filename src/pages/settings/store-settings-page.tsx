@@ -15,15 +15,17 @@ import {
   UserCheck,
   Clock,
   Loader2,
-  CheckCircle2,
   AlertCircle,
   ChevronDown,
   Shield,
   Pencil,
+  Globe,
+  Printer,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { FeedbackAlert } from "@/components/ui/feedback-alert"
 import {
   Card,
   CardContent,
@@ -63,6 +65,10 @@ import { useStoreSettings } from "@/features/settings/hooks"
 import type { Role } from "@/features/settings/types"
 import { RolePermissionsDialog } from "@/features/settings/components/role-permissions-dialog"
 import { permissionGroupInfo } from "@/features/settings/constants"
+import { StorefrontSettingsTab } from "@/features/storefront/components/storefront-settings-tab"
+import { ReceiptSettingsTab } from "@/features/settings/components/receipt-settings-tab"
+import { StaffPasswordField } from "@/features/settings/components/staff-password-field"
+import { useAuthStore } from "@/store/use-auth-store"
 
 const STORE_CATEGORIES = [
   "Bakery & Pastry",
@@ -80,10 +86,11 @@ const STORE_CATEGORIES = [
 
 
 export default function StoreSettingsPage() {
+  const currentUser = useAuthStore((state) => state.user)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get("tab")
-  const activeTab = requestedTab && ["profile", "staff", "roles", "stores"].includes(requestedTab) ? requestedTab : "profile"
+  const activeTab = requestedTab && ["profile", "storefront", "receipt", "staff", "roles", "stores"].includes(requestedTab) ? requestedTab : "profile"
   const isCompactLayout = useIsMobile(1280)
 
   const handleTabChange = (val: string) => {
@@ -91,6 +98,8 @@ export default function StoreSettingsPage() {
   }
 
   const roleDetailsTrigger = React.useRef<HTMLElement | null>(null)
+  const staffCreateTrigger = React.useRef<HTMLButtonElement | null>(null)
+  const staffResetTrigger = React.useRef<HTMLButtonElement | null>(null)
   const openRoleDetails = (role: Role, trigger: HTMLElement | null) => {
     roleDetailsTrigger.current = trigger
     setSelectedRoleDetail(role)
@@ -100,6 +109,8 @@ export default function StoreSettingsPage() {
     loading: profileLoading,
     tabLoading,
     store,
+    setStore,
+    loadProfile,
     storesList,
     staffList,
     rolesList,
@@ -107,7 +118,9 @@ export default function StoreSettingsPage() {
     setFormData,
     isSavingProfile,
     profileSuccessMsg,
+    setProfileSuccessMsg,
     profileErrorMsg,
+    setProfileErrorMsg,
     handleSaveProfile,
     isInviteOpen,
     setIsInviteOpen,
@@ -116,6 +129,16 @@ export default function StoreSettingsPage() {
     isInviting,
     inviteError,
     handleInviteSubmit,
+    closeInvite,
+    staffMessage,
+    resettingStaff,
+    staffPassword,
+    setStaffPassword,
+    resetPasswordError,
+    isResettingPassword,
+    openPasswordReset,
+    closePasswordReset,
+    handleResetStaffPassword,
     revokingStaff,
     setRevokingStaff,
     isRevoking,
@@ -132,6 +155,8 @@ export default function StoreSettingsPage() {
     handleSwitchStore,
   } = useStoreSettings(activeTab)
   const loading = profileLoading || tabLoading
+  const isOwner = ["OWNER", "STORE_OWNER"].includes(currentUser?.role || "")
+  const staffRoles = rolesList.filter((role) => role.name !== "OWNER" && role.name !== "STORE_OWNER" && !role.name.startsWith("TIER_"))
 
   function formatDate(dateStr?: string) {
     if (!dateStr) return "-"
@@ -159,8 +184,10 @@ export default function StoreSettingsPage() {
 
   const TABS = [
     { id: "profile", label: "Profil Toko", description: "Identitas & kontak", icon: Building2 },
-    { id: "staff", label: "Anggota Tim", description: "Staf & undangan", icon: Users },
+    { id: "storefront", label: "Toko Online", description: "Katalog & checkout", icon: Globe },
+    { id: "staff", label: "Anggota Tim", description: "Akun & akses staf", icon: Users },
     { id: "roles", label: "Peran & Hak Akses", description: "Izin operasional", icon: ShieldCheck },
+    { id: "receipt", label: "Struk & Printer", description: "Format & ukuran kertas", icon: Printer },
     { id: "stores", label: "Daftar Toko", description: "Toko & cabang", icon: Store },
   ] as const
 
@@ -202,8 +229,8 @@ export default function StoreSettingsPage() {
             <CardContent className="p-0">
               <form onSubmit={handleSaveProfile}>
                 <div className="space-y-6 p-4 sm:p-5">
-                  {profileSuccessMsg && <div role="status" className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"><CheckCircle2 className="size-4 shrink-0" /><span>{profileSuccessMsg}</span></div>}
-                  {profileErrorMsg && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive"><AlertCircle className="size-4 shrink-0" /><span>{profileErrorMsg}</span></div>}
+                  {profileSuccessMsg && <FeedbackAlert variant="success" onDismiss={() => setProfileSuccessMsg("")}>{profileSuccessMsg}</FeedbackAlert>}
+                  {profileErrorMsg && <FeedbackAlert variant="error" onDismiss={() => setProfileErrorMsg("")}>{profileErrorMsg}</FeedbackAlert>}
 
                   <section aria-labelledby="store-identity-heading" className="space-y-4">
                     <div><h2 id="store-identity-heading" className="text-sm font-semibold">Identitas toko</h2><p className="mt-1 text-xs text-muted-foreground">Nama dan jenis usaha yang dikenali pelanggan.</p></div>
@@ -263,16 +290,17 @@ export default function StoreSettingsPage() {
                     <span>Anggota Tim</span><Badge variant="secondary" className="text-[10px]">{staffList.length}</Badge>
                   </CardTitle>
                   <CardDescription>
-                    Atur anggota tim dan undangan untuk toko ini.
+                    Buat akun staf dan atur akses mereka ke toko ini.
                   </CardDescription>
                 </div>
-                <Button onClick={() => setIsInviteOpen(true)} className="h-10 w-full gap-1.5 text-xs sm:w-auto" size="sm">
+                <Button onClick={(event) => { staffCreateTrigger.current = event.currentTarget; setIsInviteOpen(true) }} className="min-h-11 w-full gap-1.5 text-xs sm:w-auto" size="sm">
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Undang Staf Baru
+                  Tambah Staf Baru
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-5">
+              {staffMessage && <p role="status" className="mb-4 break-words rounded-lg border bg-muted/30 p-3 text-sm text-foreground">{staffMessage}</p>}
               {staffList.length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
                   <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground">
@@ -281,12 +309,12 @@ export default function StoreSettingsPage() {
                   <div className="space-y-1">
                     <p className="font-semibold text-sm text-foreground">Belum Ada Staf Tambahan</p>
                     <p className="text-xs text-muted-foreground max-w-sm">
-                      Undang barista, chef dapur, atau kasir Anda agar mereka dapat membantu operasional toko.
+                      Tambahkan barista, chef dapur, atau kasir untuk membantu operasional toko.
                     </p>
                   </div>
-                  <Button onClick={() => setIsInviteOpen(true)} variant="outline" size="sm" className="rounded-xl text-xs">
+                  <Button onClick={(event) => { staffCreateTrigger.current = event.currentTarget; setIsInviteOpen(true) }} variant="outline" size="sm" className="min-h-11 rounded-xl text-xs">
                     <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    Undang Staf Pertama
+                    Tambah Staf Pertama
                   </Button>
                 </div>
               ) : (
@@ -295,7 +323,7 @@ export default function StoreSettingsPage() {
                     <TableHeader className="hidden md:table-header-group">
                       <TableRow className="bg-muted/40">
                         <TableHead className="whitespace-nowrap">Nama Anggota</TableHead>
-                        <TableHead className="whitespace-nowrap">Email Akun</TableHead>
+                        <TableHead className="whitespace-nowrap">Username / Email</TableHead>
                         <TableHead className="whitespace-nowrap">Peran / Role</TableHead>
                         <TableHead className="whitespace-nowrap">Tanggal Bergabung</TableHead>
                         <TableHead className="whitespace-nowrap">Status</TableHead>
@@ -316,8 +344,8 @@ export default function StoreSettingsPage() {
                             </div>
                           </TableCell>
 
-                          <TableCell className="order-2 col-span-2 break-all p-0 text-xs text-muted-foreground md:whitespace-nowrap md:p-4">
-                            {st.email}
+                          <TableCell className="order-2 col-span-2 break-all p-0 text-xs text-muted-foreground md:max-w-64 md:whitespace-normal md:p-4">
+                            {st.username || st.email}
                           </TableCell>
 
                           <TableCell className="order-3 p-0 md:whitespace-nowrap md:p-4">
@@ -349,12 +377,15 @@ export default function StoreSettingsPage() {
                           </TableCell>
 
                           <TableCell className="order-6 p-0 text-right md:whitespace-nowrap md:p-4 md:text-center">
-                            {st.role !== "OWNER" && (
+                            {isOwner && st.username && st.status === "active" && !["OWNER", "STORE_OWNER"].includes(st.role) && (
+                              <Button variant="outline" size="sm" onClick={(event) => { staffResetTrigger.current = event.currentTarget; openPasswordReset(st) }} className="mb-1 min-h-11 rounded-lg px-2 text-xs md:mb-0 md:mr-2">Reset Kata Sandi</Button>
+                            )}
+                            {!["OWNER", "STORE_OWNER"].includes(st.role) && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setRevokingStaff(st)}
-                                className="h-10 rounded-lg px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                className="min-h-11 rounded-lg px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                               >
                                 <Trash2 className="h-3.5 w-3.5 mr-1" /> Cabut
                               </Button>
@@ -570,27 +601,48 @@ export default function StoreSettingsPage() {
             })}
           </div>
         </TabsContent>
+
+        {/* ============================================================
+            TAB: TOKO ONLINE & CHECKOUT BUILDER
+           ============================================================ */}
+        <TabsContent value="storefront" className="m-0">
+          <StorefrontSettingsTab store={store} />
+        </TabsContent>
+
+        {/* ============================================================
+            TAB: STRUK & PRINTER
+           ============================================================ */}
+        <TabsContent value="receipt" className="m-0">
+          <ReceiptSettingsTab
+            store={store}
+            onUpdated={(updated) => {
+              setStore(updated);
+              void loadProfile();
+            }}
+          />
+        </TabsContent>
         </div>
       </Tabs>
 
-      {/* Modal Undang Staf */}
-      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-        <DialogContent className="sm:max-w-[480px] rounded-2xl">
+      <Dialog open={isInviteOpen} onOpenChange={(open) => open ? setIsInviteOpen(true) : closeInvite()}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[480px] rounded-2xl" closeButtonClassName="right-1 top-1 flex size-11 items-center justify-center" showCloseButton={!isInviting} onCloseAutoFocus={(event) => { event.preventDefault(); staffCreateTrigger.current?.focus() }}>
           <DialogHeader>
-            <DialogTitle>Undang Anggota Tim Baru</DialogTitle>
+            <DialogTitle>Tambah Anggota Tim Baru</DialogTitle>
             <DialogDescription className="text-xs">
-              Kirimkan undangan untuk bergabung mengelola toko <strong>{store?.name}</strong>.
+              Buat akun untuk toko <strong>{store?.name}</strong>. Staf langsung bisa login tanpa email atau verifikasi.
             </DialogDescription>
           </DialogHeader>
 
           {inviteError && (
-            <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium flex items-center gap-2">
+            <div role="alert" className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs font-medium flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{inviteError}</span>
             </div>
           )}
+          {!store?.staff_login_code && <p role="alert" className="text-sm text-foreground">Kode login toko belum tersedia. Muat ulang halaman atau hubungi pengelola aplikasi.</p>}
 
           <form onSubmit={handleInviteSubmit} className="space-y-4 py-2">
+            <fieldset disabled={isInviting} className="min-w-0 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="staff-name" className="text-xs font-semibold">
                 Nama Lengkap Staf <span className="text-destructive">*</span>
@@ -600,31 +652,40 @@ export default function StoreSettingsPage() {
                 value={inviteData.name}
                 onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
                 placeholder="Contoh: Rina Kusuma"
-                className="rounded-xl"
+                className="h-11 rounded-xl"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="staff-email" className="text-xs font-semibold">
-                Alamat Email <span className="text-destructive">*</span>
+              <Label htmlFor="staff-username" className="text-xs font-semibold">
+                Username Staf <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="staff-email"
-                type="email"
-                value={inviteData.email}
-                onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
-                placeholder="Contoh: rina@tokoroti.com"
-                className="rounded-xl"
+                id="staff-username"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={inviteData.username}
+                onChange={(e) => setInviteData({ ...inviteData, username: e.target.value })}
+                placeholder="Contoh: rina"
+                minLength={3}
+                maxLength={32}
+                aria-describedby="staff-login-preview staff-username-hint"
+                className="h-11 rounded-xl"
                 required
               />
+              <p id="staff-username-hint" className="text-xs text-muted-foreground">3–32 karakter: huruf, angka, titik, garis bawah, atau tanda hubung.</p>
+              <p id="staff-login-preview" className="break-all rounded-lg border bg-muted/30 p-3 text-sm text-foreground">Login staf: <strong>{inviteData.username.trim().toLowerCase() || "username"}@{store?.staff_login_code || "kode-toko-belum-tersedia"}</strong></p>
             </div>
+
+            <StaffPasswordField id="staff-password" value={inviteData.password} onChange={(password) => setInviteData({ ...inviteData, password })} />
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Peran / Hak Akses</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="outline" className="w-full justify-between rounded-xl h-9 text-xs">
+                  <Button type="button" variant="outline" disabled={isInviting} className="w-full justify-between rounded-xl h-11 text-xs">
                     <span className={cn("truncate", !inviteData.role_id && "text-muted-foreground")}>
                       {inviteData.role_id
                         ? getRoleDisplayName(rolesList.find((r) => r.id === inviteData.role_id)?.name || "")
@@ -634,11 +695,11 @@ export default function StoreSettingsPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] rounded-xl max-h-56 overflow-y-auto" align="start">
-                  {rolesList.map((r) => (
+                  {staffRoles.map((r) => (
                     <DropdownMenuItem
                       key={r.id}
                       onClick={() => setInviteData({ ...inviteData, role_id: r.id })}
-                      className="cursor-pointer text-xs flex flex-col items-start gap-0.5 py-1.5"
+                      className="min-h-11 cursor-pointer text-xs flex flex-col items-start gap-0.5 py-1.5"
                     >
                       <div className="flex items-center gap-1.5 w-full justify-between">
                         <span className="font-semibold text-foreground">{r.name}</span>
@@ -659,17 +720,38 @@ export default function StoreSettingsPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsInviteOpen(false)}
-                className="rounded-xl text-xs"
+                onClick={closeInvite}
+                className="min-h-11 rounded-xl text-xs"
                 disabled={isInviting}
               >
                 Batal
               </Button>
-              <Button type="submit" className="rounded-xl text-xs font-semibold" disabled={isInviting}>
+              <Button type="submit" className="min-h-11 rounded-xl text-xs font-semibold" disabled={isInviting || !store?.staff_login_code}>
                 {isInviting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Kirim Undangan
+                {isInviting ? "Menambahkan Staf..." : "Buat Akun Staf"}
               </Button>
             </DialogFooter>
+            </fieldset>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resettingStaff} onOpenChange={(open) => !open && closePasswordReset()}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-[440px]" closeButtonClassName="right-1 top-1 flex size-11 items-center justify-center" showCloseButton={!isResettingPassword} onCloseAutoFocus={(event) => { event.preventDefault(); staffResetTrigger.current?.focus() }}>
+          <DialogHeader>
+            <DialogTitle>Reset Kata Sandi Staf</DialogTitle>
+            <DialogDescription className="break-words">Ganti kata sandi untuk {resettingStaff?.name}. Sesi login lama akan dicabut.</DialogDescription>
+          </DialogHeader>
+          <p className="break-all text-sm font-medium">{resettingStaff?.username}</p>
+          <form onSubmit={handleResetStaffPassword}>
+            <fieldset disabled={isResettingPassword} className="min-w-0 space-y-4">
+              {resetPasswordError && <p role="alert" className="text-sm text-destructive">{resetPasswordError}</p>}
+              <StaffPasswordField id="reset-staff-password" value={staffPassword} onChange={setStaffPassword} />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closePasswordReset} className="min-h-11">Batal</Button>
+                <Button type="submit" className="min-h-11">{isResettingPassword ? "Menyimpan..." : "Simpan Kata Sandi Baru"}</Button>
+              </DialogFooter>
+            </fieldset>
           </form>
         </DialogContent>
       </Dialog>

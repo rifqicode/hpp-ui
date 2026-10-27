@@ -39,6 +39,13 @@ describe('auth state', () => {
     expect(localStorage.getItem('token')).toBeNull()
     expect(sessionStorage.getItem('perm-cache')).toBeNull()
   })
+  it('clears the previous store and grants when starting a new authenticated session', () => {
+    useAuthStore.setState({ user, token: 'old-token', activeStoreId: store.id, activeStoreName: store.name, permissions: ['products:write'] })
+    sessionStorage.setItem('perm-cache', 'old-cache')
+    useAuthStore.getState().setAuth({ ...user, id: 'other-user' }, 'new-token')
+    expect(useAuthStore.getState()).toMatchObject({ token: 'new-token', activeStoreId: null, activeStoreName: null, permissions: [] })
+    expect(sessionStorage.getItem('perm-cache')).toBeNull()
+  })
   it('reactively checks single, any, and all permissions', () => {
     const { result } = renderHook(usePermission)
     expect(result.current.can('products:read')).toBe(false)

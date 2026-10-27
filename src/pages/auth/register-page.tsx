@@ -15,7 +15,6 @@ import {
   Sparkles,
   Store,
   MapPin,
-  Phone,
   Check,
   Coffee,
   UtensilsCrossed,
@@ -29,17 +28,18 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import {
   PasswordStrengthIndicator,
   validatePassword,
 } from "@/components/ui/password-strength-indicator"
-import { cn } from "@/lib/utils"
+import { APP_NAME, cn } from "@/lib/utils"
 
 import { authService } from "@/features/auth/services/auth-service"
 import { settingsService } from "@/features/settings/services/settings-service"
 import { useAuthStore } from "@/store/use-auth-store"
+import { RegistrationAgreement } from "@/features/auth/components/registration-agreement"
+import { useServiceAgreement } from "@/features/auth/hooks/use-service-agreement"
+import { normalizeOperationalPhoneInput } from "@/features/auth/lib/phone"
 
 interface StoreCategoryOption {
   id: string
@@ -117,6 +117,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   const setAuth = useAuthStore((state) => state.setAuth)
   const setActiveStoreId = useAuthStore((state) => state.setActiveStoreId)
   const logout = useAuthStore((state) => state.logout)
+  const registrationCompleted = React.useRef(false)
 
   // Determine starting step: if on /setup-store or user already has token, start at step 2
   const isSetupStoreRoute =
@@ -144,6 +145,13 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   const [showPassword, setShowPassword] = React.useState<boolean>(false)
   const [showConfirmPassword, setShowConfirmPassword] = React.useState<boolean>(false)
   const [agreeTerms, setAgreeTerms] = React.useState<boolean>(false)
+  const [hasReadTerms, setHasReadTerms] = React.useState(false)
+  const agreement = useServiceAgreement(!isSetupStoreRoute || !token)
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const canContinue = Boolean(
+    name.trim() && validEmail && password && !validatePassword(password) &&
+    password === confirmPassword && agreement.document && hasReadTerms && agreeTerms
+  )
 
   // Step 2: Store State
   const [storeName, setStoreName] = React.useState<string>("")
@@ -151,11 +159,16 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   const [customCategory, setCustomCategory] = React.useState<string>("")
   const [storeLocation, setStoreLocation] = React.useState<string>("")
   const [phone, setPhone] = React.useState<string>("")
-  const [description, setDescription] = React.useState<string>("")
 
   // Loading & Error State
   const [loading, setLoading] = React.useState<boolean>(false)
   const [error, setError] = React.useState<string>("")
+
+  React.useEffect(() => {
+    if (step !== 3) return
+    const timer = window.setTimeout(() => navigate("/onboarding", { replace: true }), 1500)
+    return () => window.clearTimeout(timer)
+  }, [step, navigate])
 
   // Check if authenticated user already has stores; if so, redirect to dashboard
   React.useEffect(() => {
@@ -163,7 +176,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       if (token) {
         try {
           const stores = await settingsService.getStoresList()
-          if (stores && stores.length > 0) {
+          if (stores && stores.length > 0 && !registrationCompleted.current) {
             navigate("/dashboard", { replace: true })
           }
         } catch {
@@ -171,7 +184,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
         }
       }
     }
-    if (isSetupStoreRoute || token) {
+    if ((isSetupStoreRoute || token) && !registrationCompleted.current) {
       checkExistingStores()
     }
   }, [token, isSetupStoreRoute, navigate])
@@ -181,6 +194,11 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !password) {
       setError("Nama lengkap, email bisnis, dan kata sandi wajib diisi.")
+      return
+    }
+
+    if (!validEmail) {
+      setError("Masukkan alamat email bisnis yang valid.")
       return
     }
 
@@ -195,7 +213,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       return
     }
 
-    if (!agreeTerms) {
+    if (!agreement.document || !hasReadTerms || !agreeTerms) {
       setError("Anda harus menyetujui Ketentuan Layanan & Kebijakan Privasi.")
       return
     }
@@ -207,6 +225,11 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
   // Step 2: Submit Bulk Registration or Create First Store
   async function handleSubmitRegistration(e: React.FormEvent) {
     e.preventDefault()
+    if (!(isSetupStoreRoute && token) && (!agreement.document || !hasReadTerms || !agreeTerms)) {
+      setError("Anda harus membaca dan menyetujui Ketentuan Layanan & Kebijakan Privasi.")
+      setStep(1)
+      return
+    }
     if (!storeName.trim()) {
       setError("Nama toko atau unit usaha wajib diisi.")
       return
@@ -232,14 +255,10 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       return
     }
 
-    if (phone.trim()) {
-      const clean = phone.trim().replace(/[\s-]/g, "")
-      if (!/^(\+62|62|0)8[0-9]{8,12}$/.test(clean)) {
-        setError(
-          "Format nomor WhatsApp tidak valid. Masukkan nomor yang valid (contoh: 08123456789 atau +628123456789)."
-        )
-        return
-      }
+    const formattedPhone = phone ? `+62${phone}` : ""
+    if (formattedPhone && !/^\+628[0-9]{8,11}$/.test(formattedPhone)) {
+      setError("Nomor WhatsApp harus diawali 8 dan terdiri dari 9–12 digit setelah +62. Contoh: 81234567890.")
+      return
     }
 
     setLoading(true)
@@ -252,15 +271,12 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
           name: storeName.trim(),
           category: finalCategory,
           location: storeLocation.trim(),
-          phone: phone.trim(),
-          description: description.trim(),
+          phone: formattedPhone,
         })
 
+        registrationCompleted.current = true
         setActiveStoreId(newStore.id)
         setStep(3)
-        setTimeout(() => {
-          navigate("/dashboard", { replace: true })
-        }, 1500)
       } catch (err: unknown) {
         const msg =
           err instanceof Error
@@ -275,17 +291,23 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
 
     // Scenario B: Bulk registration (User + Store)
     try {
+      if (!agreement.document || !hasReadTerms || !agreeTerms) {
+        throw new Error("Anda harus membaca dan menyetujui Ketentuan Layanan & Kebijakan Privasi.")
+      }
       const res = await authService.register({
         name: name.trim(),
         email: email.trim(),
         password,
+        consent: {
+          accepted: hasReadTerms && agreeTerms,
+          document_version: agreement.document.version,
+        },
         store: {
           name: storeName.trim(),
           category: finalCategory,
           location: storeLocation.trim(),
           address: storeLocation.trim(),
-          phone: phone.trim(),
-          description: description.trim(),
+          phone: formattedPhone,
         },
       })
 
@@ -300,6 +322,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
         return
       }
 
+      registrationCompleted.current = true
       setAuth(res.user, res.token)
       if (res.active_store_id) {
         setActiveStoreId(res.active_store_id)
@@ -308,9 +331,6 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       }
 
       setStep(3)
-      setTimeout(() => {
-        navigate("/dashboard", { replace: true })
-      }, 1500)
     } catch (err: unknown) {
       const msg =
         err instanceof Error
@@ -330,16 +350,16 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 -left-20 size-96 rounded-full bg-violet-600/15 blur-3xl" />
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center py-12 text-center">
-          <Link to="/" aria-label="HPP Tracker — Beranda" className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950">
+          <Link to="/" aria-label={`${APP_NAME} — Beranda`} className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950">
             <Factory aria-hidden="true" className="size-6" />
           </Link>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white xl:text-4xl">HPP TRACKER</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight text-white xl:text-4xl">{APP_NAME.toUpperCase()}</h2>
           <p className="mt-4 text-base leading-relaxed text-slate-400">
             Biaya lebih jelas.<br />Usaha lebih terarah.
           </p>
         </div>
 
-        <p className="relative z-10 text-center text-xs text-slate-500">&copy; {new Date().getFullYear()} HPP Tracker</p>
+        <p className="relative z-10 text-center text-xs text-slate-500">&copy; {new Date().getFullYear()} {APP_NAME}</p>
       </aside>
 
       {/* ======================================================== */}
@@ -355,7 +375,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 <Factory className="size-5" />
               </div>
               <span className="font-black text-lg tracking-tight text-slate-900">
-                HPP TRACKER
+                {APP_NAME.toUpperCase()}
               </span>
             </Link>
           </div>
@@ -585,32 +605,25 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   </div>
                 </div>
 
-                {/* Agree to terms */}
-                <div className="pt-1">
-                  <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 select-none">
-                    <input
-                      type="checkbox"
-                      checked={agreeTerms}
-                      onChange={(e) => setAgreeTerms(e.target.checked)}
-                      className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4 mt-0.5 cursor-pointer"
-                    />
-                    <span className="leading-relaxed">
-                      Saya menyetujui{" "}
-                      <Link to="/" className="text-primary font-semibold hover:underline">
-                        Ketentuan Layanan
-                      </Link>{" "}
-                      dan{" "}
-                      <Link to="/" className="text-primary font-semibold hover:underline">
-                        Kebijakan Privasi
-                      </Link>{" "}
-                      HPP Tracker.
-                    </span>
-                  </label>
-                </div>
+                <RegistrationAgreement
+                  document={agreement.document}
+                  loading={agreement.loading}
+                  error={agreement.error}
+                  onRetry={() => {
+                    setHasReadTerms(false)
+                    setAgreeTerms(false)
+                    agreement.retry()
+                  }}
+                  hasRead={hasReadTerms}
+                  agreed={agreeTerms}
+                  onReadComplete={() => setHasReadTerms(true)}
+                  onAgreeChange={setAgreeTerms}
+                />
 
                 {/* Next Step Button */}
                 <Button
                   type="submit"
+                  disabled={!canContinue}
                   className="w-full rounded-xl h-11 shadow-md shadow-primary/25 font-bold text-sm bg-primary hover:bg-primary/90 text-white transition-all hover:-translate-y-0.5 mt-2 cursor-pointer"
                 >
                   <span className="flex items-center justify-center gap-2">
@@ -754,44 +767,20 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     No. WhatsApp Operasional <span className="text-slate-400 font-normal text-[11px]">(Opsional)</span>
                   </Label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                    <span aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-700">+62</span>
                     <Input
                       id="store-phone"
                       type="tel"
-                      inputMode="tel"
-                      maxLength={16}
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      aria-describedby="store-phone-help"
                       value={phone}
-                      onChange={(e) => {
-                        const sanitized = e.target.value.replace(/[^0-9+\s-]/g, "")
-                        setPhone(sanitized)
-                      }}
-                      placeholder="Contoh: 0812-3456-7890"
-                      className="pl-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
+                      onChange={(e) => setPhone(normalizeOperationalPhoneInput(e.target.value))}
+                      placeholder="81234567890"
+                      className="pl-14 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                     />
                   </div>
-                </div>
-
-                {/* Currency Standard Badge */}
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-                  <span className="text-slate-600 font-medium">Mata Uang Finansial:</span>
-                  <Badge variant="outline" className="bg-white text-primary border-indigo-200 font-bold">
-                    IDR (Rp) - Format Rupiah
-                  </Badge>
-                </div>
-
-                {/* Store Description (Optional) */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="store-desc" className="text-xs font-bold text-slate-700">
-                    Catatan Singkat Usaha <span className="text-slate-400 font-normal text-[11px]">(Opsional)</span>
-                  </Label>
-                  <Textarea
-                    id="store-desc"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Contoh: Produksi harian kue artisan dan bakery fresh untuk cafe & takeaway."
-                    rows={2}
-                    className="rounded-xl text-xs bg-slate-50/50 border-slate-200"
-                  />
+                  <p id="store-phone-help" className="text-xs leading-relaxed text-slate-600">Kode negara +62 sudah ditambahkan. Masukkan nomor mulai dari 8.</p>
                 </div>
 
                 {/* Action Buttons: Back & Complete */}
@@ -867,7 +856,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   Ruang Kerja Anda Telah Siap!
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Selamat datang di <strong className="text-slate-900">HPP Tracker</strong>. Gerai{" "}
+                  Selamat datang di <strong className="text-slate-900">{APP_NAME}</strong>. Gerai{" "}
                   <strong className="text-primary font-bold">{storeName || "Toko Baru"}</strong> telah berhasil dibuat dan siap digunakan.
                 </p>
               </div>
@@ -891,14 +880,14 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
               <div className="space-y-3 w-full max-w-xs pt-2">
                 <div className="flex items-center justify-center gap-2 text-xs text-primary font-semibold">
                   <Loader2 className="size-4 animate-spin" />
-                  <span>Membuka Dashboard Kerja...</span>
+                  <span>Membuka panduan toko Anda...</span>
                 </div>
 
                 <Button
-                  onClick={() => navigate("/dashboard", { replace: true })}
+                  onClick={() => navigate("/onboarding", { replace: true })}
                   className="w-full rounded-xl h-10 font-bold bg-primary hover:bg-primary/90 text-white cursor-pointer"
                 >
-                  Masuk ke Dashboard Sekarang
+                  Mulai Panduan Toko
                 </Button>
               </div>
             </div>
@@ -915,7 +904,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
           <Link to="/" className="underline hover:text-slate-600">
             Kebijakan Privasi
           </Link>{" "}
-          HPP Tracker.
+          {APP_NAME}.
         </div>
       </div>
     </div>

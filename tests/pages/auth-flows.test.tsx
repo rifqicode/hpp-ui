@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LoginPage from '@/pages/auth/login-page'
@@ -13,6 +13,8 @@ import { useAuthStore } from '@/store/use-auth-store'
 import { mockPageServices, resetSession } from '../support/page-services'
 import { renderPage, deferred } from '../support/render'
 import { user as account, store } from '../support/fixtures'
+import { agreementDocument } from '../support/agreement-fixture'
+import type { ServiceAgreementDocument } from '@/features/auth/types'
 
 beforeEach(() => { resetSession(false); mockPageServices() })
 
@@ -28,7 +30,7 @@ describe('login page', () => {
     const user = userEvent.setup()
     renderPage(<LoginPage />, '/login')
     await user.click(screen.getByRole('button', { name: 'Masuk ke Dashboard' }))
-    expect(screen.getByText('Email dan kata sandi wajib diisi')).toBeVisible()
+    expect(screen.getByText('Email atau username dan kata sandi wajib diisi')).toBeVisible()
     expect(login).not.toHaveBeenCalled()
   })
   it('toggles password visibility and the remember checkbox', async () => {
@@ -63,12 +65,26 @@ describe('login page', () => {
     await user.click(screen.getByRole('button', { name: 'Masuk ke Dashboard' }))
     await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/setup-store'))
   })
+  it('waits for store permissions before opening the dashboard on first login', async () => {
+    const pending = deferred<{ permissions: string[]; role: string }>()
+    vi.spyOn(authService, 'login').mockResolvedValue({ user: account, token: 'test-token' })
+    vi.mocked(settingsService.getStorePermissions).mockReturnValue(pending.promise)
+    useAuthStore.setState({ permissions: [] })
+    renderPage(<LoginPage />, '/login')
+    const user = await fillLogin()
+    await user.click(screen.getByRole('button', { name: 'Masuk ke Dashboard' }))
+    await waitFor(() => expect(settingsService.getStorePermissions).toHaveBeenCalledWith(store.id))
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/login')
+    expect(screen.getByRole('button', { name: 'Memverifikasi Akun...' })).toBeDisabled()
+    pending.resolve({ permissions: ['menu:dashboard'], role: 'OWNER' })
+    await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/dashboard'))
+  })
   it.each([new Error('Unauthorized'), new Error('Server tidak tersedia'), null])('renders a login failure and allows retry: %s', async (error) => {
     vi.spyOn(authService, 'login').mockRejectedValue(error)
     renderPage(<LoginPage />, '/login')
     const user = await fillLogin()
     await user.click(screen.getByRole('button', { name: 'Masuk ke Dashboard' }))
-    expect(await screen.findByText(error instanceof Error ? error.message === 'Unauthorized' ? 'Email atau kata sandi salah. Silakan coba lagi.' : error.message : 'Gagal masuk. Periksa kembali email dan kata sandi Anda.')).toBeVisible()
+    expect(await screen.findByText(error instanceof Error ? error.message === 'Unauthorized' ? 'Email, username, atau kata sandi salah. Silakan coba lagi.' : error.message : 'Gagal masuk. Periksa kembali email atau username dan kata sandi Anda.')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Masuk ke Dashboard' })).toBeEnabled()
   })
   it('directs an unverified account to email verification', async () => {
@@ -112,11 +128,100 @@ describe('login page', () => {
 })
 
 describe('registration page', () => {
+  it('keeps a late store lookup from opening the dashboard after first store creation', async () => {
+    resetSession(true)
+    const pendingStores = deferred<(typeof store)[]>()
+    vi.mocked(settingsService.getStoresList).mockReturnValue(pendingStores.promise)
+    vi.spyOn(settingsService, 'createStore').mockResolvedValue(store)
+    const user = userEvent.setup()
+    renderPage(<RegisterPage initialStep={2} />, '/setup-store')
+    await user.type(screen.getByLabelText(/Nama Toko/), store.name)
+    await user.type(screen.getByLabelText(/Kota \/ Alamat Gerai/), 'Jakarta')
+    await user.click(screen.getByRole('button', { name: 'Selesaikan Pendaftaran' }))
+    expect(await screen.findByRole('button', { name: 'Mulai Panduan Toko' })).toBeVisible()
+    await act(async () => { pendingStores.resolve([store]) })
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/setup-store')
+    await user.click(screen.getByRole('button', { name: 'Mulai Panduan Toko' }))
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/onboarding')
+  })
+
+  it('opens onboarding directly when registration returns an authenticated session', async () => {
+    vi.spyOn(authService, 'register').mockResolvedValue({ user: account, token: 'test-token', active_store_id: store.id })
+    const user = userEvent.setup()
+    renderPage(<RegisterPage />, '/register')
+    await user.type(screen.getByLabelText(/Nama Lengkap Pemilik/), account.name)
+    await user.type(screen.getByLabelText(/Alamat Email Bisnis/), account.email)
+    await user.type(screen.getByLabelText(/^Kata Sandi/), 'Abcdef12!')
+    await user.type(screen.getByLabelText(/Konfirmasi Kata Sandi/), 'Abcdef12!')
+    await readAgreement(user)
+    await user.click(screen.getByRole('button', { name: /Lanjut/ }))
+    await user.type(screen.getByLabelText(/Nama Toko/), store.name)
+    await user.type(screen.getByLabelText(/Kota \/ Alamat Gerai/), 'Jakarta')
+    await user.click(screen.getByRole('button', { name: 'Selesaikan Pendaftaran' }))
+    expect(await screen.findByRole('button', { name: 'Mulai Panduan Toko' })).toBeVisible()
+    expect(settingsService.getStoresList).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/onboarding'), { timeout: 2500 })
+  })
+
+  it('keeps agreement controls locked while the backend document is loading', async () => {
+    const pending = deferred<ServiceAgreementDocument>()
+    vi.mocked(authService.getServiceAgreement).mockReturnValue(pending.promise)
+    const user = userEvent.setup()
+    renderPage(<RegisterPage />, '/register')
+    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    expect(screen.getByText('Memuat dokumen ketentuan...')).toBeVisible()
+    const document = screen.getByRole('region', { name: 'Dokumen Ketentuan Layanan dan Kebijakan Privasi' })
+    Object.defineProperties(document, {
+      scrollHeight: { configurable: true, value: 2000 },
+      clientHeight: { configurable: true, value: 400 },
+    })
+    fireEvent.scroll(document, { target: { scrollTop: 1600 } })
+    expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
+    pending.resolve(agreementDocument)
+    expect(await screen.findByText(`Versi ${agreementDocument.version} · ${agreementDocument.app_name}`)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
+    fireEvent.scroll(document, { target: { scrollTop: 1600 } })
+    await user.click(screen.getByRole('button', { name: 'Selesai membaca dan setuju' }))
+    expect(screen.getByRole('checkbox')).toBeChecked()
+  })
+
+  it('allows retry after a document failure and displays the document returned by the backend', async () => {
+    vi.mocked(authService.getServiceAgreement)
+      .mockRejectedValueOnce(new Error('Dokumen tidak dapat dimuat'))
+      .mockResolvedValueOnce({ ...agreementDocument, version: 'server-document-v8', title: 'Dokumen terbaru dari backend' })
+    const user = userEvent.setup()
+    renderPage(<RegisterPage />, '/register')
+    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dokumen tidak dapat dimuat')
+    expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Coba lagi' }))
+    expect(await screen.findByRole('heading', { name: 'Dokumen terbaru dari backend' })).toBeVisible()
+    expect(screen.getByText('Versi server-document-v8 · Curo')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('checkbox')).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Lanjut/ })).toBeDisabled()
+  })
+
+  async function readAgreement(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: 'Baca Ketentuan Layanan & Kebijakan Privasi' }))
+    const document = screen.getByRole('region', { name: 'Dokumen Ketentuan Layanan dan Kebijakan Privasi' })
+    Object.defineProperties(document, {
+      scrollHeight: { configurable: true, value: 2000 },
+      clientHeight: { configurable: true, value: 400 },
+    })
+    fireEvent.scroll(document, { target: { scrollTop: 1600 } })
+    await user.click(screen.getByRole('button', { name: 'Selesai membaca dan setuju' }))
+  }
+
   it('does not advance an empty form or call register', async () => {
     const register = vi.spyOn(authService, 'register')
     const user = userEvent.setup()
     renderPage(<RegisterPage />, '/register')
-    await user.click(screen.getByRole('button', { name: /Lanjut/ }))
+    const next = screen.getByRole('button', { name: /Lanjut/ })
+    expect(next).toBeDisabled()
+    await user.click(next)
+    fireEvent.submit(next.closest('form')!)
     expect(screen.getByText('Nama lengkap, email bisnis, dan kata sandi wajib diisi.')).toBeVisible()
     expect(register).not.toHaveBeenCalled()
   })
@@ -126,19 +231,117 @@ describe('registration page', () => {
     await user.type(screen.getByLabelText(/Nama Lengkap Pemilik/), account.name)
     await user.type(screen.getByLabelText(/Alamat Email Bisnis/), account.email)
     await user.type(screen.getByLabelText(/^Kata Sandi/), 'Abcdef12!')
-    await user.click(screen.getByRole('button', { name: /Lanjut/ }))
+    const next = screen.getByRole('button', { name: /Lanjut/ })
+    fireEvent.submit(next.closest('form')!)
     expect(screen.getByText('Konfirmasi kata sandi tidak cocok dengan kata sandi.')).toBeVisible()
     await user.type(screen.getByLabelText(/Konfirmasi Kata Sandi/), 'Abcdef12!')
-    await user.click(screen.getByRole('button', { name: /Lanjut/ }))
+    fireEvent.submit(next.closest('form')!)
     expect(screen.getByText('Anda harus menyetujui Ketentuan Layanan & Kebijakan Privasi.')).toBeVisible()
-    await user.click(screen.getByRole('checkbox'))
+    expect(screen.getByRole('checkbox')).toBeDisabled()
+    await readAgreement(user)
+    expect(screen.getByRole('checkbox')).toBeChecked()
+    expect(screen.queryByText('Dokumen sudah dibaca sampai akhir. Centang persetujuan untuk melanjutkan pendaftaran.')).not.toBeInTheDocument()
+    expect(next).toBeEnabled()
     await user.click(screen.getByRole('button', { name: /Lanjut/ }))
     expect(screen.getByRole('heading', { name: 'Setup Profil Toko Pertama' })).toBeVisible()
+  })
+
+  it('keeps consent locked after opening, partially scrolling, closing, and reopening the document', async () => {
+    const user = userEvent.setup()
+    renderPage(<RegisterPage />, '/register')
+    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    const document = screen.getByRole('region', { name: 'Dokumen Ketentuan Layanan dan Kebijakan Privasi' })
+    expect(document).toHaveFocus()
+    Object.defineProperties(document, {
+      scrollHeight: { configurable: true, value: 2000 },
+      clientHeight: { configurable: true, value: 400 },
+    })
+    fireEvent.scroll(document, { target: { scrollTop: 800 } })
+    expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('checkbox')).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
+    await user.keyboard('{Escape}')
+    await readAgreement(user)
+    const consent = screen.getByRole('checkbox')
+    expect(consent).toBeEnabled()
+    expect(consent).toBeChecked()
+    expect(screen.getByRole('button', { name: /Lanjut/ })).toBeDisabled()
+  })
+
+  it('requires a valid email and disables continuation when consent is withdrawn', async () => {
+    const user = userEvent.setup()
+    renderPage(<RegisterPage />, '/register')
+    await user.type(screen.getByLabelText(/Nama Lengkap Pemilik/), account.name)
+    await user.type(screen.getByLabelText(/Alamat Email Bisnis/), 'invalid-email')
+    await user.type(screen.getByLabelText(/^Kata Sandi/), 'Abcdef12!')
+    await user.type(screen.getByLabelText(/Konfirmasi Kata Sandi/), 'Abcdef12!')
+    await readAgreement(user)
+    const next = screen.getByRole('button', { name: /Lanjut/ })
+    expect(next).toBeDisabled()
+    fireEvent.submit(next.closest('form')!)
+    expect(screen.getByText('Masukkan alamat email bisnis yang valid.')).toBeVisible()
+    await user.clear(screen.getByLabelText(/Alamat Email Bisnis/))
+    await user.type(screen.getByLabelText(/Alamat Email Bisnis/), account.email)
+    expect(next).toBeEnabled()
+    await user.click(screen.getByRole('checkbox'))
+    expect(next).toBeDisabled()
+  })
+
+  it('submits registration after reading and agreeing, retaining consent when navigating back', async () => {
+    const register = vi.spyOn(authService, 'register').mockResolvedValue({
+      user: account, token: '', requires_verification: true,
+    })
+    const user = userEvent.setup()
+    renderPage(<RegisterPage />, '/register')
+    await user.type(screen.getByLabelText(/Nama Lengkap Pemilik/), account.name)
+    await user.type(screen.getByLabelText(/Alamat Email Bisnis/), account.email)
+    await user.type(screen.getByLabelText(/^Kata Sandi/), 'Abcdef12!')
+    await user.type(screen.getByLabelText(/Konfirmasi Kata Sandi/), 'Abcdef12!')
+    await readAgreement(user)
+    await user.click(screen.getByRole('button', { name: /Lanjut/ }))
+    await user.click(screen.getByRole('button', { name: 'Kembali' }))
+    expect(screen.getByRole('checkbox')).toBeChecked()
+    await user.click(screen.getByRole('button', { name: /Lanjut/ }))
+    await user.type(screen.getByLabelText(/Nama Toko/), 'Dapur Rina')
+    await user.type(screen.getByLabelText(/Kota \/ Alamat Gerai/), 'Jakarta')
+    const phone = screen.getByLabelText(/No. WhatsApp Operasional/)
+    expect(screen.getByText('+62', { exact: true })).toBeVisible()
+    await user.type(phone, '1234')
+    await user.click(screen.getByRole('button', { name: 'Selesaikan Pendaftaran' }))
+    expect(screen.getByText(/Nomor WhatsApp harus diawali 8/)).toBeVisible()
+    expect(register).not.toHaveBeenCalled()
+    await user.clear(phone)
+    await user.click(phone)
+    await user.paste('+62 812-3456-7890')
+    expect(phone).toHaveValue('81234567890')
+    await user.click(screen.getByRole('button', { name: 'Selesaikan Pendaftaran' }))
+    await waitFor(() => expect(register).toHaveBeenCalledWith(expect.objectContaining({
+      email: account.email,
+      consent: { accepted: true, document_version: agreementDocument.version },
+      store: expect.objectContaining({ name: 'Dapur Rina', location: 'Jakarta', phone: '+6281234567890' }),
+    })))
+    await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/verify-email'))
   })
 })
 
 describe('email verification page', () => {
   function setup() { return renderPage(<VerifyEmailPage />, '/verify-email?email=rina%40example.com') }
+  it.each([
+    { name: 'owner with a store', user: account, store: { id: store.id, name: store.name }, route: '/onboarding' },
+    { name: 'owner without a store', user: account, store: undefined, route: '/setup-store' },
+    { name: 'staff with a store', user: { ...account, account_type: 'STAFF' as const, role: 'CASHIER' }, store: { id: store.id, name: store.name }, route: '/dashboard' },
+  ])('routes $name to $route after verification', async ({ user: verifiedUser, store: verifiedStore, route }) => {
+    vi.spyOn(authService, 'verifyEmail').mockResolvedValue({ user: verifiedUser, token: 'test-token', store: verifiedStore, permissions: [] })
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByLabelText('Digit ke-1'))
+    await user.paste('123456')
+    await user.click(screen.getByRole('button', { name: 'Verifikasi Email' }))
+    await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent(route))
+    expect(useAuthStore.getState().activeStoreId).toBe(verifiedStore?.id ?? null)
+  })
   it('requires all six digits and moves focus between inputs', async () => {
     const user = userEvent.setup()
     setup()
@@ -149,16 +352,17 @@ describe('email verification page', () => {
     expect(screen.getByLabelText('Digit ke-1')).toHaveFocus()
   })
   it('accepts a pasted code, verifies it, and stores the authenticated session', async () => {
-    vi.spyOn(authService, 'verifyEmail').mockResolvedValue({ user: account, token: 'test-token', active_store_id: store.id, store: { id: store.id, name: store.name } })
+    vi.spyOn(authService, 'verifyEmail').mockResolvedValue({ user: account, token: 'test-token', active_store_id: store.id, store: { id: store.id, name: store.name }, permissions: ['menu:dashboard', 'products:read'] })
     const user = userEvent.setup()
     setup()
     await user.click(screen.getByLabelText('Digit ke-1'))
     await user.paste('12-34 56')
     expect(screen.getByLabelText('Digit ke-6')).toHaveValue('6')
     await user.click(screen.getByRole('button', { name: 'Verifikasi Email' }))
-    await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/dashboard'))
+    await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/onboarding'))
     expect(authService.verifyEmail).toHaveBeenCalledWith({ email: account.email, code: '123456' })
     expect(useAuthStore.getState().activeStoreName).toBe(store.name)
+    expect(useAuthStore.getState().permissions).toEqual(['menu:dashboard', 'products:read'])
   })
   it('shows verification errors and restores the submit control', async () => {
     vi.spyOn(authService, 'verifyEmail').mockRejectedValue(new Error('Kode kedaluwarsa'))
@@ -169,6 +373,20 @@ describe('email verification page', () => {
     await user.click(screen.getByRole('button', { name: 'Verifikasi Email' }))
     expect(await screen.findByText('Kode kedaluwarsa')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Verifikasi Email' })).toBeEnabled()
+  })
+  it('loads permissions before opening onboarding when verification omits grants', async () => {
+    const pending = deferred<{ permissions: string[]; role: string }>()
+    vi.spyOn(authService, 'verifyEmail').mockResolvedValue({ user: account, token: 'test-token', active_store_id: store.id })
+    vi.mocked(settingsService.getStorePermissions).mockReturnValue(pending.promise)
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByLabelText('Digit ke-1'))
+    await user.paste('123456')
+    await user.click(screen.getByRole('button', { name: 'Verifikasi Email' }))
+    await waitFor(() => expect(settingsService.getStorePermissions).toHaveBeenCalledWith(store.id))
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/verify-email')
+    pending.resolve({ permissions: ['menu:dashboard'], role: 'OWNER' })
+    await waitFor(() => expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/onboarding'))
   })
   it('persists the resend cooldown across remounts', async () => {
     const resend = vi.spyOn(authService, 'resendVerification').mockResolvedValue(undefined)

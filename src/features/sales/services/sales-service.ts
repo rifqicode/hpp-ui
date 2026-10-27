@@ -8,6 +8,9 @@ import type {
   SalesSummary,
   SaleQuery,
   PaginatedSales,
+  AcceptOnlineOrderInput,
+  FulfillOnlineOrderInput,
+  RejectOnlineOrderInput,
 } from '../types';
 
 export function normalizeSale(raw: any): Sale {
@@ -17,18 +20,23 @@ export function normalizeSale(raw: any): Sale {
         returnedQuantity: Number(it.returned_quantity || 0),
         saleId: it.sale_id ?? it.saleId ?? raw.id,
         sale_id: it.sale_id ?? it.saleId ?? raw.id,
-        productId: it.product_id ?? it.productId ?? it.product?.id,
-        product_id: it.product_id ?? it.productId ?? it.product?.id,
+        variantId:it.variant_id,
+        variantName:it.variant_name??it.variant?.variant_name??'',
+        costStatus:it.cost_status??'ESTIMATED',
+        modifiers:(it.modifiers??[]).map((m:{id:string;name:string;price:string|number;cost:string|number;total_cost:string|number})=>({id:m.id,name:m.name,price:Number(m.price),cost:Number(m.cost),totalCost:Number(m.total_cost)})),
+        productionLogId:it.production_log_id,
+        productId: it.variant?.product_id??'',
+        product_id: it.variant?.product_id??'',
         productName:
-          it.product?.name ?? it.product_name ?? it.productName ?? 'Product',
+          (it.product_name??it.variant?.product?.name??'Produk')+' - '+(it.variant_name??it.variant?.variant_name??'Varian'),
         product_name:
-          it.product?.name ?? it.product_name ?? it.productName ?? 'Product',
+          (it.product_name??it.variant?.product?.name??'Produk')+' - '+(it.variant_name??it.variant?.variant_name??'Varian'),
         category:
-          it.product?.category?.name ??
-          it.product?.category ??
+          it.variant?.product?.category_model?.name ??
+          it.variant?.product?.category ??
           it.category ??
           'Uncategorized',
-        unit: it.product?.unit ?? it.unit ?? 'pcs',
+        unit: it.unit??it.variant?.unit ?? it.unit ?? 'pcs',
         quantity: Number(it.quantity ?? 0),
         priceAtSale: Number(it.price_at_sale ?? it.priceAtSale ?? 0),
         price_at_sale: Number(it.price_at_sale ?? it.priceAtSale ?? 0),
@@ -108,6 +116,34 @@ export function normalizeSale(raw: any): Sale {
     createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
     created_at: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
     status: raw.status ?? 'COMPLETED',
+    orderSource: raw.order_source ?? raw.orderSource ?? 'POS',
+    order_source: raw.order_source ?? raw.orderSource ?? 'POS',
+    fulfillmentType: raw.fulfillment_type ?? raw.fulfillmentType ?? 'DINE_IN',
+    fulfillment_type: raw.fulfillment_type ?? raw.fulfillmentType ?? 'DINE_IN',
+    customerPhone: raw.customer_phone ?? raw.customerPhone ?? raw.customer?.phone ?? '',
+    customer_phone: raw.customer_phone ?? raw.customerPhone ?? raw.customer?.phone ?? '',
+    customerEmail: raw.customer_email ?? raw.customerEmail ?? raw.customer?.email ?? '',
+    customer_email: raw.customer_email ?? raw.customerEmail ?? raw.customer?.email ?? '',
+    tableNumber: raw.table_number ?? raw.tableNumber ?? '',
+    table_number: raw.table_number ?? raw.tableNumber ?? '',
+    deliveryAddress: raw.delivery_address ?? raw.deliveryAddress ?? '',
+    delivery_address: raw.delivery_address ?? raw.deliveryAddress ?? '',
+    deliveryFee: Number(raw.delivery_fee ?? raw.deliveryFee ?? 0),
+    delivery_fee: Number(raw.delivery_fee ?? raw.deliveryFee ?? 0),
+    deliveryCourierName: raw.delivery_courier_name ?? raw.deliveryCourierName ?? '',
+    delivery_courier_name: raw.delivery_courier_name ?? raw.deliveryCourierName ?? '',
+    deliveryTrackingInfo: raw.delivery_tracking_info ?? raw.deliveryTrackingInfo ?? '',
+    delivery_tracking_info: raw.delivery_tracking_info ?? raw.deliveryTrackingInfo ?? '',
+    pickupTime: raw.pickup_time ?? raw.pickupTime ?? '',
+    pickup_time: raw.pickup_time ?? raw.pickupTime ?? '',
+    customFieldLabel: raw.custom_field_label ?? raw.customFieldLabel ?? '',
+    custom_field_label: raw.custom_field_label ?? raw.customFieldLabel ?? '',
+    customFieldValue: raw.custom_field_value ?? raw.customFieldValue ?? '',
+    custom_field_value: raw.custom_field_value ?? raw.customFieldValue ?? '',
+    rejectionReason: raw.rejection_reason ?? raw.rejectionReason ?? '',
+    rejection_reason: raw.rejection_reason ?? raw.rejectionReason ?? '',
+    publicTrackingToken: raw.public_tracking_token ?? raw.publicTrackingToken ?? '',
+    public_tracking_token: raw.public_tracking_token ?? raw.publicTrackingToken ?? '',
     items,
     customer: raw.customer,
   };
@@ -163,7 +199,8 @@ export const salesService = {
       customer_phone: input.customerPhone || input.customer_phone || undefined,
       customer_name: input.customerName || input.customer_name || undefined,
       items: input.items.map((it) => ({
-        product_id: it.productId || it.product_id,
+        variant_id: it.variantId,
+ modifier_option_ids:it.modifierOptionIds??[],
         quantity: it.quantity,
       })),
       discount_amount: input.discountAmount || input.discount_amount || 0,
@@ -210,5 +247,38 @@ export const salesService = {
       averageMarginPct,
       averageOrderValue,
     };
+  },
+
+  acceptOnlineOrder: async (
+    saleId: string,
+    payload?: AcceptOnlineOrderInput
+  ): Promise<Sale> => {
+    const res = await apiClient.post<any>(
+      `/sales/${saleId}/accept-online`,
+      payload || {}
+    );
+    return normalizeSale(res.data);
+  },
+
+  fulfillOnlineOrder: async (
+    saleId: string,
+    payload: FulfillOnlineOrderInput
+  ): Promise<Sale> => {
+    const res = await apiClient.post<any>(
+      `/sales/${saleId}/fulfill-online`,
+      payload
+    );
+    return normalizeSale(res.data);
+  },
+
+  rejectOnlineOrder: async (
+    saleId: string,
+    payload: RejectOnlineOrderInput
+  ): Promise<Sale> => {
+    const res = await apiClient.post<any>(
+      `/sales/${saleId}/reject-online`,
+      payload
+    );
+    return normalizeSale(res.data);
   },
 };

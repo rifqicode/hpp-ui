@@ -16,8 +16,8 @@ export function PaymentChannelSelector({
   onSelectChannel,
   disabled = false,
 }: PaymentChannelSelectorProps) {
-  const qrisChannels = channels.filter((ch) => ch.category === 'QRIS' && ch.enabled);
-  const vaChannels = channels.filter((ch) => ch.category === 'VIRTUAL_ACCOUNT' && ch.enabled);
+  const qrisChannels = channels.filter((ch) => ch.category === 'QRIS' && ch.enabled !== false);
+  const vaChannels = channels.filter((ch) => ch.category === 'VIRTUAL_ACCOUNT' && ch.enabled !== false);
 
   return (
     <div className="space-y-4">

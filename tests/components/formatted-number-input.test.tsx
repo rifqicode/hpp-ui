@@ -54,6 +54,14 @@ describe('FormattedNumberInput', () => {
     expect(screen.getByRole('textbox', { name: 'Harga' })).toHaveValue('125')
   })
 
+  it('formats 50000 smoothly without getting stuck when allowDecimal is true', async () => {
+    const user = userEvent.setup()
+    render(<PriceInput allowDecimal />)
+    await user.type(screen.getByRole('textbox', { name: 'Harga' }), '50000')
+    expect(screen.getByRole('textbox', { name: 'Harga' })).toHaveValue('50.000')
+    expect(screen.getByLabelText('Nilai tersimpan')).toHaveTextContent(/^50000$/)
+  })
+
   it.each([{ disabled: true }, { readOnly: true }])('prevents edits when %j', async (props) => {
     const user = userEvent.setup()
     const onChange = vi.fn()

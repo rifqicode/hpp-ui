@@ -1,6 +1,9 @@
+import { modifierService } from '@/features/recipes/services/modifier-service';
+import { onboardingService } from '@/features/onboarding/services/onboarding-service';
 import { vi } from 'vitest'
 import apiClient from '@/lib/api-client'
 import { authService } from '@/features/auth/services/auth-service'
+import { agreementDocument } from './agreement-fixture'
 import { stockService } from '@/features/inventory/services/stock-service'
 import { recipeService } from '@/features/recipes/services/recipe-service'
 import { supplierService } from '@/features/suppliers/services/supplier-service'
@@ -14,7 +17,7 @@ import { subscriptionService } from '@/features/subscription/services/subscripti
 import { dashboardService } from '@/features/dashboard/services/dashboard-service'
 import { dashboardFixture } from './dashboard-fixture'
 import { useAuthStore } from '@/store/use-auth-store'
-import { batch, calendar, order, permissions, product, stock, stockDetail, store, supplier, usage, user } from './fixtures'
+import { batch, order, permissions, product, stock, stockDetail, store, supplier, usage, user } from './fixtures'
 
 export function resetSession(authenticated = true) {
   localStorage.clear()
@@ -22,11 +25,14 @@ export function resetSession(authenticated = true) {
   useAuthStore.setState({
     user: authenticated ? user : null, token: authenticated ? 'test-token' : null,
     activeStoreId: authenticated ? store.id : null, activeStoreName: authenticated ? store.name : null,
-    permissions: permissions.map(p => p.code),
+    permissions: [...permissions.map(p => p.code), 'menu:reports'],
   })
 }
 
 export function mockPageServices() {
+  vi.spyOn(onboardingService, 'get').mockResolvedValue({ state: { id: 'onboarding-1', store_id: 'store-1', status: 'IN_PROGRESS', step: 1, revision: 0, draft: {}, product_id: null }, should_start: false });
+  vi.spyOn(onboardingService, 'materials').mockResolvedValue([]);
+  vi.spyOn(onboardingService, 'products').mockResolvedValue([]);
   vi.spyOn(dashboardService, 'getOverview').mockResolvedValue(dashboardFixture())
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true, json: async () => ({ success: true, data: { whatsapp: null } }),
@@ -37,6 +43,7 @@ export function mockPageServices() {
   }
 
   vi.spyOn(authService, 'getCurrentUser').mockResolvedValue({ user, token: 'test-token' })
+  vi.spyOn(authService, 'getServiceAgreement').mockResolvedValue(agreementDocument)
   vi.spyOn(authService, 'getInviteDetails').mockResolvedValue({ email: user.email, name: user.name, store_name: store.name, role_name: 'Kasir', is_existing_user: false })
   vi.spyOn(authService, 'validateResetToken').mockResolvedValue({ valid: true, email: user.email })
   vi.spyOn(settingsService, 'getStoresList').mockResolvedValue([store])
@@ -55,12 +62,13 @@ export function mockPageServices() {
   vi.spyOn(stockService, 'getStockDetail').mockResolvedValue(stockDetail)
   vi.spyOn(stockService, 'getStockSummary').mockResolvedValue({ total_materials: 0, healthy_stock: 0, low_stock: 0, out_of_stock: 0 })
   vi.spyOn(stockService, 'getMaterials').mockResolvedValue([{ id: stock.id, name: stock.name, baseUnit: stock.base_unit }])
+  vi.spyOn(modifierService, 'list').mockResolvedValue([])
   vi.spyOn(recipeService, 'getProducts').mockResolvedValue([])
   vi.spyOn(recipeService, 'getProductById').mockResolvedValue(product())
   vi.spyOn(recipeService, 'getProductSummary').mockResolvedValue({ total_products: 0, active_products: 0, low_stock_count: 0 })
   vi.spyOn(recipeService, 'getCategories').mockResolvedValue([])
   vi.spyOn(recipeService, 'getAvailableMaterials').mockResolvedValue([{ id: stock.id, name: stock.name, baseUnit: 'g', currentStock: 5000, avgCostPerUnit: 10 }])
-  vi.spyOn(recipeService, 'getProductEstimate').mockResolvedValue({ productId: 'product-1', productName: 'Roti Coklat', sellingPrice: 10000, targetMargin: 50, yieldQty: 10, wastePct: 0, rawMaterialTotal: 0, bomCostPerUnit: 0, bomItems: [], estimatedHpp: 0, recommendedPrice: 0, actualMargin: 0, actualMarkup: 0 })
+  vi.spyOn(recipeService, 'getProductEstimate').mockResolvedValue({ variantId: 'variant-product-1', productName: 'Roti Coklat', sellingPrice: 10000, targetMargin: 0.5, rawMaterialTotal: 0, bomCostPerUnit: 0, bomItems: [], estimatedHpp: 0, recommendedPrice: 0, actualMargin: 0, actualMarkup: 0 })
   vi.spyOn(supplierService, 'getSuppliers').mockResolvedValue({ items: [], total: 0, page: 1, limit: 10, totalPages: 1 })
   vi.spyOn(supplierService, 'getAllSuppliers').mockResolvedValue([supplier])
   vi.spyOn(supplierService, 'getSupplierById').mockResolvedValue(supplier)
@@ -71,7 +79,6 @@ export function mockPageServices() {
   vi.spyOn(purchaseOrderService, 'getPurchaseOrderSummary').mockResolvedValue({ total_orders: 0, request_count: 0, order_count: 0, completed_count: 0, total_completed_amount: 0 })
   vi.spyOn(productionService, 'getBatches').mockResolvedValue([])
   vi.spyOn(productionService, 'getBatchById').mockResolvedValue(batch)
-  vi.spyOn(productionService, 'getCalendar').mockResolvedValue(calendar)
   vi.spyOn(overheadService, 'getOverheads').mockResolvedValue([])
   vi.spyOn(overheadService, 'getPaginatedOverheads').mockResolvedValue({ items: [], total: 0, page: 1, limit: 10, totalPages: 1 })
   vi.spyOn(overheadService, 'getOverheadSummary').mockResolvedValue({ total_overheads: 0, active_count: 0, inactive_count: 0, production_count: 0, operational_count: 0 })

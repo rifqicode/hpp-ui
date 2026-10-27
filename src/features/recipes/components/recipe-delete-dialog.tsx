@@ -31,13 +31,14 @@ export function RecipeDeleteDialog({ list }: RecipeDeleteDialogProps) {
           </DialogDescription>
         </DialogHeader>
         {list.deleteError && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm text-red-700 dark:text-red-300">
             {list.deleteError.message}
           </p>
         )}
         <DialogFooter className="gap-2">
           <Button
             variant="outline"
+            className="h-11"
             onClick={list.closeDelete}
             disabled={list.isDeleting}
           >
@@ -45,6 +46,7 @@ export function RecipeDeleteDialog({ list }: RecipeDeleteDialogProps) {
           </Button>
           <Button
             variant="destructive"
+            className="h-11 text-red-700 dark:text-red-300"
             onClick={() => void list.confirmDelete()}
             disabled={list.isDeleting}
           >

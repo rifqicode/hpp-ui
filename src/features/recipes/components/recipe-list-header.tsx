@@ -22,8 +22,9 @@ export function RecipeListHeader({ list }: RecipeListHeaderProps) {
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
+          className="h-11"
           onClick={() => void list.refetch()}
           disabled={list.isFetching}
           aria-label="Refresh produk"
@@ -37,7 +38,7 @@ export function RecipeListHeader({ list }: RecipeListHeaderProps) {
           Refresh
         </Button>
         {list.canCreate && (
-          <Button size="sm" onClick={list.createProduct}>
+          <Button className="h-11" onClick={list.createProduct}>
             <Plus className="mr-1.5 h-4 w-4" />
             Tambah Produk
           </Button>

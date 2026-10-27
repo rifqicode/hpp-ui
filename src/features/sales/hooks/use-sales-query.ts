@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/store/use-auth-store';
 import { useQuery } from '@tanstack/react-query';
 import { salesService } from '../services/sales-service';
 import { customerService } from '../services/customer-service';
@@ -19,49 +20,55 @@ export const salesKeys = {
 };
 
 export function useSalesTransactionsQuery(query?: SaleQuery, options?: { enabled?: boolean }) {
+  const storeId=useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: salesKeys.list(query),
+    queryKey: [salesKeys.list(query),storeId],
     queryFn: () => salesService.getPaginatedSales(query),
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useSalesListQuery(query?: SaleQuery, options?: { enabled?: boolean }) {
+  const storeId=useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: [...salesKeys.lists(), 'raw', query],
+    queryKey: [...salesKeys.lists(), storeId, 'raw', query],
     queryFn: () => salesService.getSales(query),
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useSalesSummaryQuery(query?: SaleQuery, options?: { enabled?: boolean }) {
+  const storeId=useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: salesKeys.summary(query),
+    queryKey: [salesKeys.summary(query),storeId],
     queryFn: () => salesService.getSummary(query),
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useCustomersQuery(query?: { search?: string; page?: number; per_page?: number }, options?: { enabled?: boolean }) {
+  const storeId=useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: salesKeys.customers.list(query),
+    queryKey: [salesKeys.customers.list(query),storeId],
     queryFn: () => customerService.getCustomers(query),
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useCustomerSummaryQuery(options?: { enabled?: boolean }) {
+  const storeId=useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: salesKeys.customers.summary(),
+    queryKey: [salesKeys.customers.summary(),storeId],
     queryFn: () => customerService.getCustomerSummary(),
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useCustomerDetailQuery(id?: string, options?: { enabled?: boolean }) {
+  const storeId=useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: salesKeys.customers.detail(id || ''),
+    queryKey: [salesKeys.customers.detail(id || ''),storeId],
     queryFn: () => customerService.getCustomerById(id!),
-    enabled: Boolean(id) && (options?.enabled ?? true),
+    enabled: Boolean(storeId) && Boolean(id) && (options?.enabled ?? true),
   });
 }

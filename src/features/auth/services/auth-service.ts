@@ -9,6 +9,7 @@ import type {
   AcceptInvitePayload,
   ResetPasswordPayload,
   ValidateResetTokenResponse,
+  ServiceAgreementDocument,
 } from '../types';
 
 const NETWORK_ERROR_MSG = "Tidak dapat terhubung ke server. Periksa koneksi Anda.";
@@ -19,7 +20,7 @@ function toError(err: unknown, fallback: string): Error & { status?: number; res
       const msg = err.response.data?.message;
       let error: Error & { status?: number; response?: any };
       if (msg?.toLowerCase() === 'unauthorized' || err.response.status === 401) {
-        error = new Error("Email atau kata sandi salah. Silakan coba lagi.");
+        error = new Error("Email, username, atau kata sandi salah. Silakan coba lagi.");
       } else {
         error = new Error(msg || fallback);
       }
@@ -33,12 +34,32 @@ function toError(err: unknown, fallback: string): Error & { status?: number; res
 }
 
 export const authService = {
+  getServiceAgreement: async (): Promise<ServiceAgreementDocument> => {
+    try {
+      const response = await apiClient.get<ServiceAgreementDocument>('/auth/service-agreement', { skipLoading: true });
+      const document = response.data;
+      if (!document || typeof document.version !== 'string' || !document.version.trim() ||
+        typeof document.title !== 'string' || !document.title.trim() ||
+        typeof document.app_name !== 'string' || !document.app_name.trim() ||
+        typeof document.closing_text !== 'string' || !document.closing_text.trim() ||
+        !Array.isArray(document.sections) || !document.sections.length ||
+        !document.sections.every(section => section && typeof section.title === 'string' && section.title.trim() &&
+          Array.isArray(section.paragraphs) && section.paragraphs.length &&
+          section.paragraphs.every(paragraph => typeof paragraph === 'string' && paragraph.trim()))) {
+        throw new Error('Dokumen ketentuan belum tersedia. Silakan coba lagi.');
+      }
+      return document;
+    } catch (err: unknown) {
+      throw toError(err, 'Gagal memuat Ketentuan Layanan & Kebijakan Privasi.');
+    }
+  },
+
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
       const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
       return response.data;
     } catch (err: unknown) {
-      throw toError(err, "Gagal masuk. Periksa kembali email dan kata sandi Anda.");
+      throw toError(err, "Gagal masuk. Periksa kembali email atau username dan kata sandi Anda.");
     }
   },
 

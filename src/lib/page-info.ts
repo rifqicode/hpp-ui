@@ -5,6 +5,9 @@ export function getActiveMenuTitle(pathname: string): string {
   // Normalize trailing slash
   const path = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
 
+  if (path.startsWith('/reports/products/')) return 'Detail Keuntungan Produk';
+  if (path === '/reports') return 'Laporan';
+
   if (path === '/dashboard') {
     return 'Dashboard';
   }
@@ -69,7 +72,7 @@ export function getActiveMenuTitle(pathname: string): string {
 
   // Sales
   if (path === '/sales/pos') {
-    return 'Kasir (POS)';
+    return 'Point of Sale';
   }
   if (path === '/sales/history') {
     return 'Riwayat Transaksi';

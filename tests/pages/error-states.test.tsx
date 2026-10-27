@@ -33,8 +33,8 @@ describe('detail page failures', () => {
   it('handles a missing product', async () => {
     vi.mocked(recipeService.getProductById).mockRejectedValue(new Error('Not found'))
     renderPage(<RecipeDetailPage />, '/production/products/missing', '/production/products/:productId')
-    expect(await screen.findByRole('heading', { name: 'Resep Produk Tidak Ditemukan' })).toBeVisible()
-    expect(screen.getByRole('link', { name: 'Kembali ke Daftar Produk' })).toHaveAttribute('href', '/production/products')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Detail produk belum bisa dimuat. Coba lagi.')
+    expect(screen.getByRole('button', { name: 'Coba lagi' })).toBeVisible()
   })
   it('handles a missing batch', async () => {
     vi.mocked(productionService.getBatchById).mockRejectedValue(new Error('Not found'))

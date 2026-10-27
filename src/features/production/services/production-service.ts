@@ -1,8 +1,6 @@
 import apiClient from '../../../lib/api-client';
 import type {
   ProductionBatch,
-  ProductionCalendarFilters,
-  ProductionCalendarResponse,
   StartProductionInput,
   CompleteProductionInput,
   ConsumedIngredient,
@@ -22,7 +20,7 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
       const snapshotItem = snapshot?.items?.find((item: { stock_id: string }) => item.stock_id === c.stock_id);
       ingredients.push({
         stockId: c.stock_id,
-        stockName: snapshotItem?.stock_name || c.stock?.name || 'Bahan',
+        stockName: c.sale_item_modifier_id ? 'Add-on: '+(snapshot?.modifiers?.find((m: {id:string})=>m.id===c.sale_item_modifier_id)?.name ?? c.stock?.name ?? 'Bahan') : snapshotItem?.stock_name || c.stock?.name || 'Bahan',
         baseUnit: snapshotItem?.unit || c.stock?.base_unit || 'unit',
         quantity: Number(c.quantity || 0),
         cost: Number(c.subtotal_cost || 0),
@@ -30,10 +28,7 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
     }
   } else if (log.recipe_snapshot && Array.isArray(log.recipe_snapshot.items)) {
     const plannedQty = Number(log.qty_planned || log.target_quantity || 1);
-    const rawYield = Number(snapshot.yield_qty);
-    const yieldQty = rawYield > 0 ? rawYield : 1;
-    const wastePct = Math.max(0, Number(snapshot.waste_pct) || 0);
-    const scale = (plannedQty / yieldQty) * (1 + wastePct);
+    const scale = plannedQty;
     for (const it of snapshot.items) {
       const q = Number(it.quantity || 0) * scale;
       ingredients.push({
@@ -46,8 +41,13 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
     }
   }
 
+  if (!hasActualConsumptions && Array.isArray(snapshot?.modifiers)) {
+   const planned=Number(log.qty_planned||log.target_quantity||0);
+   for(const m of snapshot.modifiers){if(m.stock_id)ingredients.push({stockId:m.stock_id,stockName:'Add-on: '+m.name,baseUnit:m.unit,quantity:Number(m.ingredient_quantity)*planned,cost:0});}
+  }
+
   // Map overhead breakdown
-  const overheadBreakdown = { labor: 0, energy: 0, packaging: 0, other: 0 };
+  const overheadBreakdown = { labor: Number(log.labor_cost||0), energy: 0, packaging: 0, other: 0 };
   if (Array.isArray(log.overheads) && log.overheads.length > 0) {
     for (const oh of log.overheads) {
       const amt = Number(oh.amount || 0);
@@ -70,11 +70,12 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
     storeId: log.store_id,
     saleId: log.sale_id || log.saleId || undefined,
     saleItemId: log.sale_item_id || log.saleItemId || undefined,
-    productId: log.product_id,
-    productName: snapshot?.product_name || log.product?.name || 'Produk',
-    productCategory: snapshot?.product_category ?? (log.product?.category_model?.name || log.product?.category || 'Umum'),
-    productUnit: snapshot?.product_unit ?? (log.product?.unit || 'pcs'),
-    sellingPrice: Number(snapshot?.selling_price ?? log.product?.selling_price ?? 0),
+    variantId:log.variant_id,
+ productId: log.variant?.product_id??'',
+    productName: (snapshot?.product_name || log.variant?.product?.name || 'Produk')+' - '+(snapshot?.variant_name || log.variant?.variant_name || 'Varian'),
+    productCategory: snapshot?.product_category ?? (log.variant?.product?.category_model?.name || log.variant?.product?.category || 'Umum'),
+    productUnit: snapshot?.product_unit ?? (log.variant?.unit || 'pcs'),
+    sellingPrice: Number(snapshot?.selling_price ?? log.variant?.selling_price ?? 0),
     status: log.status,
     targetQuantity: Number(log.qty_planned || log.target_quantity || 0),
     goodQuantity: Number(log.qty_actual || log.good_quantity || 0),
@@ -104,19 +105,17 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
 }
 
 export const productionService = {
-  getCalendar: async (filters: ProductionCalendarFilters, storeId: string, signal?: AbortSignal): Promise<ProductionCalendarResponse> => {
-    const response = await apiClient.get<ProductionCalendarResponse>('/production/calendar', {
-      params: filters,
-      headers: { 'X-Store-ID': storeId },
-      signal,
-    });
-    return response.data;
-  },
   getBatches: async (): Promise<ProductionBatch[]> => {
-    const response = await apiClient.get<any>('/production');
-    const data = response.data;
-    const rawList = Array.isArray(data) ? data : data?.items || [];
-    return rawList.map(mapBackendLogToProductionBatch);
+    const batches:ProductionBatch[]=[];let page=1;let pages:number;
+    do{
+      const response=await apiClient.get('/production',{params:{page,page_size:100}});
+      const data=response.data;
+      const rows=Array.isArray(data)?data:data?.items??[];
+      batches.push(...rows.map(mapBackendLogToProductionBatch));
+      pages=Array.isArray(data)?1:Number(data?.total_pages??1);
+      if(page<pages&&!rows.length)throw new Error('Daftar produksi tidak lengkap');page++;
+    }while(page<=pages);
+    return batches;
   },
 
   getBatchById: async (id: string): Promise<ProductionBatch> => {
@@ -129,9 +128,9 @@ export const productionService = {
     return mapBackendLogToProductionBatch(response.data);
   },
 
-  previewProduction: async (input: { productId: string; quantity: number }): Promise<ProductionPreviewResponse> => {
+  previewProduction: async (input: { variantId: string; quantity: number }): Promise<ProductionPreviewResponse> => {
     const response = await apiClient.post<ProductionPreviewResponse>('/production/preview', {
-      product_id: input.productId,
+      variant_id: input.variantId,
       quantity: input.quantity,
     });
     return response.data;
@@ -139,7 +138,7 @@ export const productionService = {
 
   startProduction: async (input: StartProductionInput): Promise<ProductionBatch> => {
     const response = await apiClient.post<any>('/production', {
-      product_id: input.productId,
+      variant_id: input.variantId,
       planned_qty: input.targetQuantity,
       notes: input.notes || '',
     });
@@ -156,9 +155,6 @@ export const productionService = {
         amount: oh.amount,
       }));
     } else {
-      if (input.overheadLabor) {
-        overheads.push({ name: 'Tenaga Kerja Langsung', amount: input.overheadLabor });
-      }
       if (input.overheadEnergy) {
         overheads.push({ name: 'Listrik & Utilitas', amount: input.overheadEnergy });
       }

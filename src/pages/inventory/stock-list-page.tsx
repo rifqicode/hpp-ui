@@ -42,7 +42,6 @@ import { TablePagination } from "@/components/ui/table-pagination"
 import { ListFilters } from "@/components/ui/list-filters"
 import { usePermission } from "@/hooks/use-permission"
 import { useStocks, useStockSummaryQuery } from "@/features/inventory/hooks"
-import { RecordPurchaseDialog } from "@/features/inventory/components/record-purchase-dialog"
 import { RecordMovementDialog } from "@/features/inventory/components/record-movement-dialog"
 import { QuotaBadge, useSubscriptionGuards } from "@/features/subscription"
 
@@ -139,7 +138,6 @@ export default function StockListPage() {
 
   // Modal Dialog States
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
-  const [isPurchaseOpen, setIsPurchaseOpen] = React.useState(false)
   const [isMovementOpen, setIsMovementOpen] = React.useState(false)
   const [newName, setNewName] = React.useState("")
   const [newBaseUnit, setNewBaseUnit] = React.useState("kg")
@@ -268,22 +266,12 @@ export default function StockListPage() {
               className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
             >
               <ArrowRightLeft className="h-3.5 w-3.5" />
-              Catat Mutasi
+              Stock Adjustment
             </Button>
           )}
 
           {canCreate && (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPurchaseOpen(true)}
-                className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
-              >
-                <Package className="h-3.5 w-3.5" />
-                Catat Pembelian
-              </Button>
-
               <Button
                 onClick={handleOpenCreateModal}
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
@@ -695,18 +683,6 @@ export default function StockListPage() {
             label="bahan baku"
           />
         </div>
-      )}
-
-      {/* Record Purchase Dialog */}
-      {isPurchaseOpen && (
-        <RecordPurchaseDialog
-          open={isPurchaseOpen}
-          onOpenChange={setIsPurchaseOpen}
-          onSuccess={() => {
-            loadStocks()
-            refetchSummary()
-          }}
-        />
       )}
 
       {/* Record Movement Dialog */}

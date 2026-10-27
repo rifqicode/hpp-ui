@@ -23,7 +23,7 @@ async function setup() {
   await screen.findByRole('heading', { name: 'Roti Coklat', level: 3 })
   return user
 }
-async function addRoti(user: ReturnType<typeof userEvent.setup>) { await user.click(screen.getByRole('heading', { name: 'Roti Coklat', level: 3 })) }
+async function addRoti(user: ReturnType<typeof userEvent.setup>) { const card=screen.getByRole('heading',{name:'Roti Coklat',level:3}).closest('[data-slot="card"]')!;await user.click(within(card as HTMLElement).getByRole('button',{name:'Pilih Produk'})); }
 
 describe('POS cart and checkout', () => {
   it('adds products using the keyboard and labels quantity controls', async () => {
@@ -32,9 +32,9 @@ describe('POS cart and checkout', () => {
     within(card as HTMLElement).getByRole('button', { name: 'Pilih Produk' }).focus()
     await user.keyboard('{Enter}')
     expect(screen.getByText('Subtotal (1 item)')).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Tambah Roti Coklat' }))
+    await user.click(screen.getByRole('button', { name: 'Tambah Roti Coklat - Regular' }))
     expect(screen.getByText('Subtotal (2 item)')).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Kurangi Roti Coklat' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Kurangi Roti Coklat - Regular' })).toBeEnabled()
   })
   it('shows a retry action when the catalog fails to load', async () => {
     vi.mocked(recipeService.getProducts).mockRejectedValueOnce(new Error('Offline'))
@@ -49,7 +49,7 @@ describe('POS cart and checkout', () => {
     await user.type(screen.getByPlaceholderText('Cari nama produk atau kategori...'), 'Tidak ada')
     expect(screen.getByText('Tidak ada produk ditemukan')).toBeVisible()
     await user.clear(screen.getByPlaceholderText('Cari nama produk atau kategori...'))
-    await user.click(screen.getByRole('button', { name: 'Minuman', exact: true }))
+    await user.click(screen.getByRole('button', { name: 'Minuman' }))
     expect(screen.getByRole('heading', { name: 'Kopi' })).toBeVisible()
     expect(screen.queryByRole('heading', { name: 'Roti Coklat' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Semua Produk' }))
@@ -72,7 +72,7 @@ describe('POS cart and checkout', () => {
     expect(screen.getByText('Subtotal (1 item)')).toBeVisible()
     await user.click(controls[1])
     expect(screen.getByText('Keranjang Masih Kosong')).toBeVisible()
-    await user.click(screen.getByRole('heading', { name: 'Kopi' }))
+    await user.click(within(screen.getByRole('heading',{name:'Kopi'}).closest('[data-slot="card"]') as HTMLElement).getByRole('button',{name:'Pilih Produk'}))
     await user.click(screen.getByRole('button', { name: 'Tambah Lagi' }))
     expect(screen.getByText('Subtotal (2 item)')).toBeVisible()
     await user.click(screen.getByTitle('Hapus item'))
@@ -89,8 +89,8 @@ describe('POS cart and checkout', () => {
     await user.type(screen.getByPlaceholderText('Catatan Pesanan (opsional)'), 'Tanpa plastik')
     expect(screen.getByRole('button', { name: /^Bayar/ })).toHaveTextContent('10.000')
     await user.click(screen.getByRole('button', { name: 'Lihat Keranjang & Bayar' }))
-    await user.click(screen.getByRole('button', { name: 'Kembali', exact: true }))
-    await user.click(screen.getByRole('button', { name: 'Reset', exact: true }))
+    await user.click(screen.getByRole('button', { name: 'Kembali' }))
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
     expect(screen.getByText('Keranjang Masih Kosong')).toBeVisible()
   })
   it.each(['CASH', 'QRIS', 'TRANSFER'] as const)('takes a %s payment, prints a receipt and starts another transaction', async method => {
@@ -110,7 +110,7 @@ describe('POS cart and checkout', () => {
     }
     await user.click(within(dialog).getByRole('button', { name: 'Selesaikan Transaksi' }))
     const receipt = await screen.findByRole('dialog', { name: 'Transaksi Berhasil Disimpan!' })
-    expect(salesService.createSale).toHaveBeenCalledWith(expect.objectContaining({ paymentMethod: method, discountAmount: 0, items: [{ productId: 'product-1', quantity: 1, priceAtSale: 10000, costAtSale: 4000 }], cashReceived: method === 'CASH' ? 10000 : undefined, paymentReference: method === 'TRANSFER' ? 'REF-001' : undefined }))
+    expect(salesService.createSale).toHaveBeenCalledWith(expect.objectContaining({ paymentMethod: method, discountAmount: 0, items: [{ variantId: 'variant-product-1', modifierOptionIds: [], quantity: 1, priceAtSale: 10000, costAtSale: 4000 }], cashReceived: method === 'CASH' ? 10000 : undefined, paymentReference: method === 'TRANSFER' ? 'REF-001' : undefined }))
     await user.click(within(receipt).getByRole('button', { name: 'Cetak Struk' }))
     expect(window.print).toHaveBeenCalledOnce()
     await user.click(within(receipt).getByRole('button', { name: 'Transaksi Baru' }))
@@ -123,8 +123,8 @@ describe('POS cart and checkout', () => {
     await addRoti(user)
     await user.click(screen.getByRole('button', { name: /^Bayar/ }))
     await user.click(screen.getByRole('button', { name: 'Selesaikan Transaksi' }))
-    await waitFor(() => expect(window.alert).toHaveBeenCalled())
-    await user.click(screen.getByRole('button', { name: 'Batal', exact: true }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Offline')
+    await user.click(screen.getByRole('button', { name: 'Batal' }))
     expect(screen.getByText('Subtotal (1 item)')).toBeVisible()
   })
 })

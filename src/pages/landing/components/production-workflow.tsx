@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { ArrowRight, Boxes, Check, ChefHat, ClipboardList, Layers3, Link2, TrendingUp } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { APP_NAME, cn } from "@/lib/utils"
 
 const WORKFLOW_STEPS = [
   {
@@ -78,7 +78,7 @@ export function ProductionWorkflow() {
     <section id="alur-kerja" aria-labelledby="workflow-heading" className="scroll-mt-32 lg:scroll-mt-20 border-b border-slate-200 bg-white py-10 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-6 max-w-2xl text-center sm:mb-10">
-          <h2 id="workflow-heading" className="text-3xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-4xl">Cara kerja HPP Tracker</h2>
+          <h2 id="workflow-heading" className="text-3xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-4xl">Cara kerja {APP_NAME}</h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">Catat belanja bahan, susun resep, lalu lihat biaya tiap porsi (HPP). Pilih langkah di bawah untuk melihat contohnya.</p>
         </div>
 

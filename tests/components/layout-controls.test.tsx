@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Topbar } from '@/components/layout/topbar'
@@ -11,16 +11,19 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { LoadingOverlay } from '@/components/ui/loading-overlay'
 import { settingsService } from '@/features/settings/services/settings-service'
 import { subscriptionService } from '@/features/subscription/services/subscriptionService'
+import { onboardingService } from '@/features/onboarding/services/onboarding-service'
+import type { OnboardingData } from '@/features/onboarding/types'
+import { Route, Routes } from 'react-router-dom'
 import { useAuthStore } from '@/store/use-auth-store'
 import { mockPageServices, resetSession } from '../support/page-services'
 import { allPermissions, mockPopulatedPages } from '../support/populated-pages'
 import { usage } from '../support/fixtures'
-import { renderPage } from '../support/render'
+import { deferred, renderPage } from '../support/render'
 import { render } from '@testing-library/react'
 beforeEach(() => {
   resetSession(); mockPageServices(); mockPopulatedPages()
   HTMLElement.prototype.scrollTo = vi.fn(); HTMLElement.prototype.scrollIntoView = vi.fn()
-  vi.mocked(settingsService.getStorePermissions).mockResolvedValue({ permissions: allPermissions })
+  vi.mocked(settingsService.getStorePermissions).mockResolvedValue({ permissions: allPermissions, role: 'OWNER' })
 })
 describe('topbar breadcrumb routing', () => {
   it.each([
@@ -69,11 +72,65 @@ describe('header dropdown controls', () => {
   })
 })
 describe('main dashboard navigation', () => {
+  function openDashboard() {
+    const body = vi.fn(() => <h2>Konten dashboard</h2>)
+    const DashboardBody = body
+    renderPage(<Routes>
+      <Route element={<DashboardLayout />}><Route path="/dashboard" element={<DashboardBody />} /></Route>
+      <Route path="/onboarding" element={<h2>Panduan toko baru</h2>} />
+    </Routes>, '/dashboard')
+    return body
+  }
+
+  it('never mounts the dashboard while checking onboarding or redirecting a new owner', async () => {
+    const pending = deferred<OnboardingData>()
+    vi.mocked(onboardingService.get).mockReturnValue(pending.promise)
+    sessionStorage.setItem('pending_upgrade_tier', 'GROWTH')
+    const body = openDashboard()
+    expect(screen.getByText('Menyiapkan panduan toko Anda...')).toHaveAttribute('role', 'status')
+    expect(screen.queryByRole('heading', { name: 'Dashboard' })).not.toBeInTheDocument()
+    expect(body).not.toHaveBeenCalled()
+    expect(subscriptionService.getUsage).not.toHaveBeenCalled()
+    pending.resolve({ state: null, should_start: true })
+    expect(await screen.findByRole('heading', { name: 'Panduan toko baru' })).toBeVisible()
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/onboarding')
+    expect(body).not.toHaveBeenCalled()
+    expect(subscriptionService.getUsage).not.toHaveBeenCalled()
+    expect(sessionStorage.getItem('pending_upgrade_tier')).toBe('GROWTH')
+  })
+
+  it.each(['SKIPPED', 'COMPLETED'] as const)('opens the dashboard after confirming onboarding is %s', async status => {
+    const pending = deferred<OnboardingData>()
+    vi.mocked(onboardingService.get).mockReturnValue(pending.promise)
+    const body = openDashboard()
+    expect(body).not.toHaveBeenCalled()
+    pending.resolve({ should_start: true, state: { id: 'o1', store_id: 'store-1', status, step: 1, revision: 1, draft: {}, product_id: null } })
+    expect(await screen.findByRole('heading', { name: 'Konten dashboard' })).toBeVisible()
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/dashboard')
+    expect(onboardingService.get).toHaveBeenCalledTimes(1)
+  })
+
+  it('allows dashboard access when the onboarding check fails without retrying on every mount', async () => {
+    vi.mocked(onboardingService.get).mockRejectedValue(new Error('Progress unavailable'))
+    openDashboard()
+    expect(await screen.findByRole('heading', { name: 'Konten dashboard' })).toBeVisible()
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/dashboard')
+    expect(onboardingService.get).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not delay staff for an owner onboarding check', async () => {
+    const current = useAuthStore.getState().user!
+    useAuthStore.setState({ user: { ...current, account_type: 'STAFF', role: 'CASHIER' } })
+    openDashboard()
+    expect(screen.getByRole('heading', { name: 'Konten dashboard' })).toBeVisible()
+    expect(onboardingService.get).not.toHaveBeenCalled()
+  })
+
   it('expands sections, activates links, and requests an upgrade for a locked feature', async () => {
     vi.mocked(subscriptionService.getUsage).mockResolvedValue(usage({ features: { ...usage().features, production_analytics: false } }))
     const event = vi.fn(); window.addEventListener('open-upgrade-modal', event)
     const user = userEvent.setup(); renderPage(<SidebarProvider><SidebarMain /></SidebarProvider>, '/production/products')
-    await screen.findByRole('button', { name: 'Production', exact: true })
+    await screen.findByRole('button', { name: 'Production' })
     for (const button of screen.getAllByRole('button')) if (button.hasAttribute('aria-controls') && button.getAttribute('aria-expanded') === 'false') await user.click(button)
     await user.click(screen.getByRole('button', { name: /Simulasi Resep Baru/ }))
     expect(event).toHaveBeenCalled()

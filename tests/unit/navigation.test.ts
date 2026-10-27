@@ -13,7 +13,7 @@ describe('page titles', () => {
     ['/production/batches', 'Production'], ['/production/batches/new', 'Mulai Batch'], ['/production/batches/b1', 'Detail Batch'],
     ['/production/hpp', 'Simulasi Resep Baru'], ['/hpp', 'Simulasi Resep Baru'], ['/production/hpp/recipe-simulation', 'Simulasi Resep Baru'],
     ['/production/hpp/production-simulation', 'Simulasi Produksi & Restock'], ['/production/overheads', 'Biaya Overhead'],
-    ['/sales/pos', 'Kasir (POS)'], ['/sales/history', 'Riwayat Transaksi'], ['/sales/customers', 'Pelanggan'],
+    ['/sales/pos', 'Point of Sale'], ['/sales/history', 'Riwayat Transaksi'], ['/sales/customers', 'Pelanggan'],
     ['/settings/store', 'Pengaturan Toko'], ['/settings/role', 'Manajemen Role'], ['/settings', 'Pengaturan Akun'],
     ['/subscription', 'Paket & Langganan'], ['/subscription/invoices', 'Paket & Langganan'], ['/unknown', 'HPP Manager'],
   ])('maps %s to %s', (path, expected) => { expect(getActiveMenuTitle(path)).toBe(expected) })

@@ -1,9 +1,12 @@
+import { variantViews } from '@/features/recipes/services/recipe-service';
+import { cartKey } from '@/features/sales/lib/cart';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
   ShoppingCart,
   Trash2,
+  Pencil,
   Plus,
   Minus,
   CreditCard,
@@ -20,17 +23,20 @@ import {
   X,
   ArrowRight,
   UserRound,
+  Globe,
 } from 'lucide-react';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { useProductsQuery, recipeKeys } from '../../features/recipes/hooks/use-recipes-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useProductsQuery } from '../../features/recipes/hooks/use-recipes-query';
 import { salesService } from '../../features/sales/services/sales-service';
 import { customerService } from '../../features/sales/services/customer-service';
 import type { CartItem, PaymentMethod, Sale, Customer } from '../../features/sales/types';
-import type { Product } from '../../features/recipes/types';
+import type { Product, ProductVariantView, ModifierOption } from '../../features/recipes/types';
 import { useAuthStore } from '../../store/use-auth-store';
+import { settingsService } from '@/features/settings/services/settings-service';
 
 import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { FormattedNumberInput } from '../../components/ui/formatted-number-input';
 import { Card } from '../../components/ui/card';
@@ -43,11 +49,20 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 import { CurrencyText } from '@/components/ui/currency-text';
+import { OnlineOrdersDrawer } from '../../features/sales/components/online-orders-drawer';
 
-export default function PosPage() {
+function PosSession() {
   const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
+  const activeStoreName = useAuthStore((state) => state.activeStoreName);
   const cashierName = user?.name || 'Kasir 1';
+
+  const { data: storeProfile } = useQuery({
+    queryKey: ['store-profile'],
+    queryFn: () => settingsService.getStoreProfile(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const receiptConfig = storeProfile?.receipt_config || storeProfile?.receiptConfig;
 
   const { data: products = [], isLoading: loading, isError, refetch } = useProductsQuery();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -99,6 +114,43 @@ export default function PosPage() {
   const [completedSale, setCompletedSale] = React.useState<Sale | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = React.useState(false);
 
+  // Online Orders Queue State
+  const [isOnlineDrawerOpen, setIsOnlineDrawerOpen] = React.useState(false);
+  const [onlineOrders, setOnlineOrders] = React.useState<Sale[]>([]);
+  const [isLoadingOnlineOrders, setIsLoadingOnlineOrders] = React.useState(false);
+
+  const fetchOnlineOrders = React.useCallback(async () => {
+    try {
+      setIsLoadingOnlineOrders(true);
+      const list = await salesService.getSales({ per_page: 50 });
+      setOnlineOrders(
+        list.filter((s) => (s.orderSource || s.order_source) === 'ONLINE')
+      );
+    } catch {
+      // Ignore background fetch error
+    } finally {
+      setIsLoadingOnlineOrders(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void fetchOnlineOrders();
+    const timer = window.setInterval(() => {
+      void fetchOnlineOrders();
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [fetchOnlineOrders]);
+
+  const pendingOnlineOrders = React.useMemo(
+    () => onlineOrders.filter((o) => o.status === 'PENDING_CONFIRMATION'),
+    [onlineOrders]
+  );
+
+  const activeOnlineOrders = React.useMemo(
+    () => onlineOrders.filter((o) => o.status === 'IN_PROGRESS'),
+    [onlineOrders]
+  );
+
   // Categories list
   const categories = React.useMemo(() => {
     const set = new Set<string>();
@@ -114,11 +166,11 @@ export default function PosPage() {
       const query = searchQuery.toLowerCase();
       const matchSearch =
         p.name.toLowerCase().includes(query) ||
-        (p.sku && p.sku.toLowerCase().includes(query)) ||
+        p.variants.some(v=>v.sku.toLowerCase().includes(query)||v.variantName.toLowerCase().includes(query)) ||
         (p.category && p.category.toLowerCase().includes(query));
       const matchCat = selectedCategory === 'ALL' || p.category === selectedCategory;
-      const matchStock = !onlyInStock || p.currentStock > 0;
-      return matchSearch && matchCat && matchStock;
+      const matchStock = !onlyInStock || p.mode==='MAKE_TO_ORDER' || p.variants.some(v=>v.isActive&&v.currentStock>0);
+      return p.variants.some(v=>v.isActive) && matchSearch && matchCat && matchStock;
     });
   }, [products, searchQuery, selectedCategory, onlyInStock]);
 
@@ -150,59 +202,119 @@ export default function PosPage() {
   const cashChange = Math.max(0, cashReceivedNum - totalBill);
   const isCashSufficient = paymentMethod !== 'CASH' || cashReceivedNum >= totalBill;
 
-  // Cart Handlers
-  const handleAddToCart = (product: Product) => {
-    const isMTO = product.mode === 'MAKE_TO_ORDER';
-    if (!isMTO && product.currentStock <= 0) return;
 
+  const [configuring, setConfiguring] = React.useState<Product | null>(null);
+  const [editingCartKey, setEditingCartKey] = React.useState<string | null>(null);
+  const [chosenVariant, setChosenVariant] = React.useState('');
+  const [chosenOptions, setChosenOptions] = React.useState<string[]>([]);
+  const [checkoutError, setCheckoutError] = React.useState('');
+  const configVariant = configuring?.variants.find((v) => v.id === chosenVariant);
+  const configGroups = configuring?.mode === 'MAKE_TO_ORDER' ? configuring.modifierGroups : [];
+  const configOptions = (configGroups ?? []).flatMap((g) => g.options).filter((o) => chosenOptions.includes(o.id));
+  const configValid = Boolean(configVariant?.isActive) && (configuring?.mode === 'MAKE_TO_ORDER' || Number(configVariant?.currentStock) > 0) && (configGroups ?? []).every((g) => { const count = g.options.filter((o) => chosenOptions.includes(o.id)).length; return count >= g.minSelection && count <= g.maxSelection; });
+
+  const commitCart = (product: ProductVariantView, modifiers: ModifierOption[]) => {
+    const key = cartKey(product.id, modifiers.map((o) => o.id));
     setCart((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
-      if (existingIndex > -1) {
-        const item = prev[existingIndex];
-        if (!isMTO && item.quantity >= product.currentStock) {
-          return prev; // cannot exceed stock for MTS
-        }
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...item,
-          quantity: item.quantity + 1,
-        };
-        return updated;
-      } else {
-        return [
-          ...prev,
-          {
-            product,
-            quantity: 1,
-            price: product.sellingPrice,
-            cost: product.latestHpp || 0,
-          },
-        ];
-      }
+      const existing = prev.find((item) => item.key === key);
+      if (product.mode === 'MAKE_TO_STOCK' && (existing?.quantity ?? 0) >= product.currentStock) return prev;
+      if (existing) return prev.map((item) => item.key === key ? { ...item, quantity: item.quantity + 1 } : item);
+      return [...prev, { key, product, modifiers, quantity: 1, price: product.sellingPrice + modifiers.reduce((sum, o) => sum + o.price, 0), cost: product.latestHpp || product.estimatedHpp || 0 }];
     });
   };
 
-  const handleUpdateQty = (productId: string, newQty: number) => {
-    if (newQty <= 0) {
-      handleRemoveItem(productId);
+  const handleAddToCart = (product: Product) => {
+    setEditingCartKey(null);
+    const variants = variantViews([product]);
+    if (variants.length === 1 && (product.mode === 'MAKE_TO_STOCK' || product.modifierGroups.length === 0)) {
+      if (product.mode === 'MAKE_TO_ORDER' || variants[0].currentStock > 0) commitCart(variants[0], []);
       return;
     }
-    setCart((prev) =>
-      prev.map((item) => {
-        if (item.product.id === productId) {
-          const isMTO = item.product.mode === 'MAKE_TO_ORDER';
-          const max = isMTO ? Infinity : item.product.currentStock;
-          const cappedQty = Math.min(newQty, max);
-          return { ...item, quantity: cappedQty };
-        }
-        return item;
-      })
-    );
+    setChosenVariant((product.variants.find((v) => v.isActive && v.isDefault) ?? product.variants.find((v) => v.isActive))?.id ?? '');
+    setChosenOptions([]);
+    setConfiguring(product);
   };
 
-  const handleRemoveItem = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  const handleEditCartItem = (item: CartItem) => {
+    const parentProduct = products.find((p) => p.id === item.product.productId);
+    if (!parentProduct) return;
+    setChosenVariant(item.product.id);
+    setChosenOptions(item.modifiers.map((m) => m.id));
+    setEditingCartKey(item.key);
+    setConfiguring(parentProduct);
   };
+
+  const confirmConfiguration = () => {
+    if (!configValid || !configuring) return;
+    const variant = variantViews([configuring]).find((v) => v.id === chosenVariant);
+    if (!variant) return;
+
+    if (editingCartKey) {
+      const existingItem = cart.find((c) => c.key === editingCartKey);
+      if (!existingItem) {
+        commitCart(variant, configOptions);
+        setEditingCartKey(null);
+        setConfiguring(null);
+        return;
+      }
+      const newKey = cartKey(variant.id, configOptions.map((o) => o.id));
+      const newPrice = variant.sellingPrice + configOptions.reduce((sum, o) => sum + o.price, 0);
+      const newCost = variant.latestHpp || variant.estimatedHpp || 0;
+
+      if (newKey === editingCartKey) {
+        setCart((prev) =>
+          prev.map((item) =>
+            item.key === editingCartKey
+              ? {
+                  ...item,
+                  product: variant,
+                  modifiers: configOptions,
+                  price: newPrice,
+                  cost: newCost,
+                }
+              : item
+          )
+        );
+      } else {
+        setCart((prev) => {
+          const filtered = prev.filter((item) => item.key !== editingCartKey);
+          const target = filtered.find((item) => item.key === newKey);
+          if (target) {
+            const combinedQty = target.quantity + existingItem.quantity;
+            const cappedQty =
+              variant.mode === 'MAKE_TO_STOCK'
+                ? Math.min(combinedQty, variant.currentStock)
+                : combinedQty;
+            return filtered.map((item) =>
+              item.key === newKey ? { ...item, quantity: cappedQty } : item
+            );
+          }
+          const cappedQty =
+            variant.mode === 'MAKE_TO_STOCK'
+              ? Math.min(existingItem.quantity, variant.currentStock)
+              : existingItem.quantity;
+          return [
+            ...filtered,
+            {
+              key: newKey,
+              product: variant,
+              modifiers: configOptions,
+              quantity: cappedQty,
+              price: newPrice,
+              cost: newCost,
+            },
+          ];
+        });
+      }
+      setEditingCartKey(null);
+      setConfiguring(null);
+    } else {
+      commitCart(variant, configOptions);
+      setConfiguring(null);
+    }
+  };
+  const handleUpdateQty=(key:string,newQty:number)=>{if(newQty<=0){handleRemoveItem(key);return;}setCart(prev=>prev.map(item=>item.key===key?{...item,quantity:Math.min(newQty,item.product.mode==='MAKE_TO_ORDER'?Infinity:item.product.currentStock)}:item));};
+  const handleRemoveItem=(key:string)=>setCart(prev=>prev.filter(item=>item.key!==key));
 
   const handleClearCart = () => {
     if (cart.length === 0) return;
@@ -213,6 +325,7 @@ export default function PosPage() {
   const handleOpenPayment = () => {
     if (cart.length === 0) return;
     setCashReceived(String(totalBill)); // default to exact amount
+    setCheckoutError('');
     setIsPaymentOpen(true);
   };
 
@@ -230,7 +343,8 @@ export default function PosPage() {
         paymentReference: paymentReference.trim() || undefined,
         notes: orderNotes.trim() || undefined,
         items: cart.map((c) => ({
-          productId: c.product.id,
+          variantId: c.product.id,
+ modifierOptionIds:c.modifiers.map(o=>o.id),
           quantity: c.quantity,
           priceAtSale: c.price,
           costAtSale: c.cost,
@@ -249,10 +363,10 @@ export default function PosPage() {
       setOrderNotes('');
 
       // Refresh product list to show updated stock counts
-      queryClient.invalidateQueries({ queryKey: recipeKeys.all });
+      void queryClient.invalidateQueries();
     } catch (err) {
       console.error('Failed to create sale', err);
-      alert('Gagal memproses transaksi. Silakan coba lagi.');
+      setCheckoutError(err instanceof Error ? err.message : 'Gagal memproses transaksi. Silakan coba lagi.');
     } finally {
       setIsProcessing(false);
     }
@@ -269,9 +383,30 @@ export default function PosPage() {
           <h1 className="text-lg font-bold tracking-tight sm:text-2xl">Kasir & Transaksi POS</h1>
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Pilih produk, cek pesanan, lalu terima pembayaran.</p>
         </div>
-        <Button variant="outline" asChild className="h-11 shrink-0 gap-2 rounded-xl px-3 text-xs">
-          <Link to="/sales/history" aria-label="Riwayat Transaksi"><History className="size-4" /><span className="hidden sm:inline">Riwayat Transaksi</span></Link>
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant={pendingOnlineOrders.length > 0 ? 'default' : 'outline'}
+            onClick={() => setIsOnlineDrawerOpen(true)}
+            className="h-11 shrink-0 gap-2 rounded-xl px-3 text-xs"
+          >
+            <Globe className="size-4" />
+            <span>Pesanan Online</span>
+            {(pendingOnlineOrders.length > 0 || activeOnlineOrders.length > 0) && (
+              <Badge
+                variant={pendingOnlineOrders.length > 0 ? 'secondary' : 'outline'}
+                className="px-1.5 py-0 text-[10px]"
+              >
+                {pendingOnlineOrders.length > 0
+                  ? `${pendingOnlineOrders.length} Baru`
+                  : activeOnlineOrders.length}
+              </Badge>
+            )}
+          </Button>
+          <Button variant="outline" asChild className="h-11 shrink-0 gap-2 rounded-xl px-3 text-xs">
+            <Link to="/sales/history" aria-label="Riwayat Transaksi"><History className="size-4" /><span className="hidden sm:inline">Riwayat Transaksi</span></Link>
+          </Button>
+        </div>
       </header>
 
       <div className="flex rounded-xl border bg-muted/50 p-1 lg:hidden" aria-label="Tampilan kasir">
@@ -332,11 +467,11 @@ export default function PosPage() {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {filteredProducts.map((product) => {
-                const inCartQty = cart.find((c) => c.product.id === product.id)?.quantity || 0;
+                const inCartQty = cart.filter(c=>c.product.productId===product.id).reduce((sum,c)=>sum+c.quantity,0);
                 const isMTO = product.mode === 'MAKE_TO_ORDER';
-                const isOutOfStock = !isMTO && product.currentStock <= 0;
+                const isOutOfStock = !product.variants.some(v=>v.isActive) || (!isMTO && !product.variants.some(v=>v.isActive&&v.currentStock>0));
                 return (
-                  <Card key={product.id} onClick={() => !isOutOfStock && handleAddToCart(product)}
+                  <Card key={product.id}
                     className={`group relative min-w-0 gap-0 rounded-2xl border p-0 shadow-none ring-0 transition-colors ${isOutOfStock ? 'border-border bg-muted/40' : inCartQty > 0 ? 'cursor-pointer border-primary/60 bg-card' : 'cursor-pointer border-border bg-card hover:border-primary/40'}`}>
                     <div className={`relative m-2 mb-0 flex items-center justify-center overflow-hidden rounded-xl bg-muted/70 ${product.imageUrl ? 'h-28 sm:h-32' : 'h-16 sm:h-20'}`}>
                       <Package className="size-9 text-muted-foreground/40" strokeWidth={1.25} aria-hidden="true" />
@@ -345,17 +480,13 @@ export default function PosPage() {
                     </div>
                     <div className="flex flex-1 flex-col p-3">
                       <div className="mb-1 flex items-center gap-1.5 overflow-hidden">
-                        {product.sku && (
-                          <span className="shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                            {product.sku}
-                          </span>
-                        )}
+                        <span className="text-[10px] text-muted-foreground">{product.variants.filter(v=>v.isActive).length} varian</span>
                         <span className="truncate text-[10px] text-muted-foreground">{product.category || 'Tanpa kategori'}</span>
                       </div>
                       <h3 className="min-h-10 text-sm font-semibold leading-5 [overflow-wrap:anywhere]">{product.name}</h3>
-                      <p className="mt-2 text-sm font-bold tabular-nums"><CurrencyText value={product.sellingPrice} /></p>
+                      <p className="mt-2 text-sm font-bold tabular-nums"><CurrencyText value={Math.min(...product.variants.filter(v=>v.isActive).map(v=>v.sellingPrice))} /></p>
                       <p className={`mt-1 text-[11px] ${isOutOfStock ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {isMTO ? 'Dibuat saat dipesan' : isOutOfStock ? 'Stok habis' : `Stok ${product.currentStock} ${product.unit || 'pcs'}`}
+                        {isMTO ? 'Buat saat dipesan' : isOutOfStock ? 'Stok habis' : product.variants.filter(v=>v.isActive).map(v=>`${v.variantName}: ${v.currentStock} ${v.unit}`).join(' · ')}
                       </p>
                       <Button size="sm" disabled={isOutOfStock} variant={inCartQty > 0 ? 'default' : 'outline'}
                         className="mt-3 h-10 w-full gap-1 rounded-lg text-xs shadow-none"
@@ -394,7 +525,7 @@ export default function PosPage() {
                   <p className="mt-1.5 max-w-52 text-xs leading-5 text-muted-foreground">Pilih produk dari katalog untuk mulai pesanan pertama.</p>
                 </div>
               ) : cart.map((item) => (
-                <div key={item.product.id} className="border-b border-border/70 pb-3 last:border-0 last:pb-0">
+                <div key={item.key} className="border-b border-border/70 pb-3 last:border-0 last:pb-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <h4 className="text-sm font-semibold [overflow-wrap:anywhere]">{item.product.name}</h4>
@@ -405,13 +536,17 @@ export default function PosPage() {
                       )}
                       <p className="mt-1 text-xs text-muted-foreground"><CurrencyText value={item.price} /> / {item.product.unit || 'pcs'}</p>
                     </div>
-                    <button type="button" title="Hapus item" aria-label={`Hapus ${item.product.name}`} onClick={() => handleRemoveItem(item.product.id)} className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Trash2 className="size-4" /></button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button type="button" title="Edit item" aria-label={`Edit ${item.product.name}`} onClick={() => handleEditCartItem(item)} className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Pencil className="size-4" /></button>
+                      <button type="button" title="Hapus item" aria-label={`Hapus ${item.product.name}`} onClick={() => handleRemoveItem(item.key)} className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Trash2 className="size-4" /></button>
+                    </div>
                   </div>
+                  {item.modifiers.length>0&&<ul className="mt-1 space-y-1 text-xs text-muted-foreground">{item.modifiers.map(o=><li key={o.id}>+ {o.name} · <CurrencyText value={o.price}/></li>)}</ul>}
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <div className="flex items-center rounded-lg border bg-background">
-                      <button type="button" aria-label={`Kurangi ${item.product.name}`} onClick={() => handleUpdateQty(item.product.id, item.quantity - 1)} className="flex size-10 items-center justify-center rounded-l-lg hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Minus className="size-3.5" /></button>
+                      <button type="button" aria-label={`Kurangi ${item.product.name}`} onClick={() => handleUpdateQty(item.key, item.quantity - 1)} className="flex size-10 items-center justify-center rounded-l-lg hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Minus className="size-3.5" /></button>
                       <span className="min-w-7 text-center text-sm font-semibold tabular-nums">{item.quantity}</span>
-                      <button type="button" aria-label={`Tambah ${item.product.name}`} onClick={() => handleUpdateQty(item.product.id, item.quantity + 1)} disabled={item.product.mode !== 'MAKE_TO_ORDER' && item.quantity >= item.product.currentStock} className="flex size-10 items-center justify-center rounded-r-lg hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Plus className="size-3.5" /></button>
+                      <button type="button" aria-label={`Tambah ${item.product.name}`} onClick={() => handleUpdateQty(item.key, item.quantity + 1)} disabled={item.product.mode !== 'MAKE_TO_ORDER' && item.quantity >= item.product.currentStock} className="flex size-10 items-center justify-center rounded-r-lg hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Plus className="size-3.5" /></button>
                     </div>
                     <span className="text-sm font-semibold tabular-nums"><CurrencyText value={item.price * item.quantity} /></span>
                   </div>
@@ -605,6 +740,7 @@ export default function PosPage() {
             )}
           </div>
 
+          {checkoutError&&<p role="alert" className="text-sm text-destructive">{checkoutError}</p>}
           <div className="flex gap-2 pt-2">
             <Button
               variant="outline"
@@ -631,6 +767,77 @@ export default function PosPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={Boolean(configuring)} onOpenChange={open => { if (!open) { setConfiguring(null); setEditingCartKey(null); } }}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingCartKey ? `Edit: ${configuring?.name}` : configuring?.name}</DialogTitle>
+            <DialogDescription>
+              {editingCartKey ? 'Ubah varian dan tambahan untuk item pesanan ini.' : 'Pilih varian dan tambahan untuk satu unit produk.'}
+            </DialogDescription>
+          </DialogHeader>
+          <fieldset className="space-y-2">
+            <legend className="mb-2 font-medium">Varian</legend>
+            {configuring?.variants.filter(v => v.isActive).map(v => {
+              const isOutOfStock = configuring.mode === 'MAKE_TO_STOCK' && Number(v.currentStock) <= 0;
+              return (
+                <label
+                  key={v.id}
+                  className={
+                    isOutOfStock
+                      ? "flex min-h-11 items-center justify-between gap-3 rounded-lg border border-dashed border-border/80 bg-muted/40 p-3 text-sm text-muted-foreground opacity-60 cursor-not-allowed"
+                      : "flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm cursor-pointer hover:bg-muted/40 transition-colors"
+                  }
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="pos-variant"
+                      checked={chosenVariant === v.id}
+                      disabled={isOutOfStock}
+                      onChange={() => setChosenVariant(v.id)}
+                    />
+                    {v.variantName}
+                  </span>
+                  <span>
+                    <CurrencyText value={v.sellingPrice} />
+                    {configuring.mode === 'MAKE_TO_STOCK' && (
+                      isOutOfStock ? (
+                        <span className="ml-2 font-medium text-destructive text-xs">Stok Habis</span>
+                      ) : (
+                        <span className="ml-2 text-muted-foreground text-xs">Stok {v.currentStock} {v.unit}</span>
+                      )
+                    )}
+                  </span>
+                </label>
+              );
+            })}
+          </fieldset>
+          {(configGroups ?? []).map(g => (
+            <fieldset key={g.id} className="space-y-2">
+              <legend className="mb-2 font-medium">
+                {g.name} <span className="text-xs font-normal text-muted-foreground">Pilih {g.minSelection}–{g.maxSelection}</span>
+              </legend>
+              {g.options.map(o => (
+                <label key={o.id} className="flex min-h-11 items-center justify-between gap-3 rounded-lg border p-3 text-sm">
+                  <span className="flex items-center gap-2">
+                    <input type="checkbox" checked={chosenOptions.includes(o.id)} disabled={!chosenOptions.includes(o.id) && g.options.filter(o => chosenOptions.includes(o.id)).length >= g.maxSelection} onChange={e => setChosenOptions(ids => e.target.checked ? [...ids, o.id] : ids.filter(id => id !== o.id))} />
+                    {o.name}
+                  </span>
+                  <span>+<CurrencyText value={o.price} /></span>
+                </label>
+              ))}
+            </fieldset>
+          ))}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+            <span className="font-semibold">
+              <CurrencyText value={(configVariant?.sellingPrice ?? 0) + configOptions.reduce((sum, o) => sum + o.price, 0)} />
+            </span>
+            <Button disabled={!configValid} onClick={confirmConfiguration}>
+              {editingCartKey ? 'Simpan Perubahan' : 'Tambah ke pesanan'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Receipt Modal */}
       <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl max-h-[90dvh] flex flex-col">
@@ -646,12 +853,14 @@ export default function PosPage() {
               {/* Thermal Paper Receipt Style */}
               <div
                 id="thermal-receipt"
-                className="bg-card border border-border rounded-xl p-4 font-mono text-xs text-foreground shadow-xs space-y-3"
+                className="print-receipt-container bg-card border border-border rounded-xl p-4 font-mono text-xs text-foreground shadow-xs space-y-3"
+                data-paper-size={receiptConfig?.paper_size || '58mm'}
               >
                 <div className="text-center border-b border-border/80 pb-2.5">
-                  <h3 className="font-bold text-sm tracking-tight">TOKO ROTI ENAK</h3>
-                  <p className="text-[10px] text-muted-foreground">Cabang Tebet - Jakarta Selatan</p>
-                  <p className="text-[10px] text-muted-foreground">Telp: (021) 829-4567</p>
+                  <h3 className="font-bold text-sm tracking-tight">{activeStoreName || storeProfile?.name || 'Struk pesanan'}</h3>
+                  {receiptConfig?.header_text && (
+                    <p className="text-[10px] text-muted-foreground whitespace-pre-wrap">{receiptConfig.header_text}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1 text-[11px] border-b border-border/80 pb-2">
@@ -668,14 +877,28 @@ export default function PosPage() {
                       })}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Kasir:</span>
-                    <span>{cashierName}</span>
-                  </div>
+                  {receiptConfig?.show_cashier_name !== false && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Kasir:</span>
+                      <span>{cashierName}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Pelanggan:</span>
                     <span>{completedSale.customerName}</span>
                   </div>
+                  {receiptConfig?.show_customer_phone !== false && customerPhone && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">No. HP:</span>
+                      <span>{customerPhone}</span>
+                    </div>
+                  )}
+                  {receiptConfig?.show_notes !== false && orderNotes && (
+                    <div className="flex justify-between text-[10px] text-muted-foreground italic">
+                      <span>Catatan:</span>
+                      <span>{orderNotes}</span>
+                    </div>
+                  )}
                   {completedSale.status === 'IN_PROGRESS' && (
                     <div className="flex justify-between font-bold text-amber-600 bg-amber-500/10 px-1 py-0.5 rounded">
                       <span>Status:</span>
@@ -690,8 +913,9 @@ export default function PosPage() {
                     <div key={it.id} className="flex justify-between items-baseline text-[11px]">
                       <div className="truncate flex-1 pr-2">
                         <p className="font-medium truncate">{it.productName}</p>
+ {it.modifiers.map(m=><p key={m.id} className="text-[10px] text-muted-foreground">+ {m.name} · <CurrencyText value={m.price}/></p>)}
                         <p className="text-[10px] text-muted-foreground">
-                          {it.quantity} x <CurrencyText value={it.priceAtSale} />
+                          {it.quantity} x <CurrencyText value={it.priceAtSale-it.modifiers.reduce((sum,m)=>sum+m.price,0)} />
                         </p>
                       </div>
                       <span className="font-semibold shrink-0"><CurrencyText value={it.subtotal} /></span>
@@ -733,9 +957,8 @@ export default function PosPage() {
                   )}
                 </div>
 
-                <div className="text-center pt-1 text-[10px] text-muted-foreground">
-                  <p>Terima kasih atas kunjungan Anda!</p>
-                  <p>Stok bahan & produk otomatis diperbarui.</p>
+                <div className="text-center pt-1 text-[10px] text-muted-foreground whitespace-pre-wrap">
+                  <p>{receiptConfig?.footer_text || 'Terima kasih atas kunjungan Anda!'}</p>
                 </div>
               </div>
 
@@ -761,6 +984,21 @@ export default function PosPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <OnlineOrdersDrawer
+        open={isOnlineDrawerOpen}
+        onOpenChange={setIsOnlineDrawerOpen}
+        pendingOrders={pendingOnlineOrders}
+        activeOrders={activeOnlineOrders}
+        isLoading={isLoadingOnlineOrders}
+        onRefresh={() => void fetchOnlineOrders()}
+        onOrderProcessed={() => {
+          void fetchOnlineOrders();
+          void queryClient.invalidateQueries();
+        }}
+      />
     </div>
   );
 }
+
+export default function PosPage(){const storeId=useAuthStore(s=>s.activeStoreId);return <PosSession key={storeId}/>;}

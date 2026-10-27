@@ -10,7 +10,7 @@ export interface RawMaterialStock {
 
 export interface RecipeIngredient {
   id: string;
-  productId: string;
+  variantId: string;
   stockId: string;
   stockName: string;
   baseUnit: string;
@@ -51,12 +51,10 @@ export interface ProductEstimateBomItem {
 }
 
 export interface ProductEstimate {
-  productId: string;
+  variantId: string;
   productName: string;
   sellingPrice: number;
   targetMargin: number;
-  yieldQty: number;
-  wastePct: number;
   rawMaterialTotal: number;
   bomCostPerUnit: number;
   bomItems: ProductEstimateBomItem[];
@@ -66,65 +64,93 @@ export interface ProductEstimate {
   actualMarkup: number;
 }
 
+export interface ProductVariant {
+ id: string;
+ productId: string;
+ variantName: string;
+ sku: string;
+ unit: string;
+ sellingPrice: number;
+ targetMargin: number;
+ currentStock: number;
+ latestHpp: number;
+ estimatedHpp: number;
+ minStock: number;
+ isDefault: boolean;
+ isActive: boolean;
+ ingredients: RecipeIngredient[];
+ batches: ProductBatchLot[];
+}
+
 export interface Product {
-  id: string;
-  storeId?: string;
-  sku: string;
-  name: string;
-  category: string; // e.g. "Roti", "Pastry & Cake", "Donat", "Minuman"
-  categoryId?: string;
-  categoryName?: string;
-  unit: string; // e.g. "pcs", "box", "loyang"
-  mode: ProductMode;
-  yieldQty: number;
-  wastePct: number;
-  imageUrl: string | null;
-  sellingPrice: number;
-  targetMargin?: number;
-  currentStock: number;
-  latestHpp: number;
-  estimatedHpp?: number;
-  minStock: number;
-  description?: string;
-  createdAt: string;
-  updatedAt?: string;
-  ingredients: RecipeIngredient[];
-  batches?: ProductBatchLot[];
+ modifierGroups: ModifierGroup[];
+ id: string;
+ storeId?: string;
+ name: string;
+ category: string;
+ categoryId?: string;
+ mode: ProductMode;
+ imageUrl: string | null;
+ description: string;
+ createdAt: string;
+ updatedAt?: string;
+ variants: ProductVariant[];
 }
 
+// A selected operational variant, enriched with its catalog identity for pickers.
+export interface ProductVariantView extends ProductVariant {
+ name: string;
+ productName: string;
+ category: string;
+ mode: ProductMode;
+ imageUrl: string | null;
+ createdAt: string;
+}
+export interface VariantInput {
+ id?: string;
+ variantName: string;
+ sku: string;
+ unit: string;
+ sellingPrice: number;
+ targetMargin: number;
+ minStock: number;
+ isDefault: boolean;
+ isActive: boolean;
+ ingredients: {stockId: string; quantity: number; unit?: string}[];
+}
 export interface CreateProductInput {
-  sku: string;
-  name: string;
-  category: string;
-  categoryId?: string;
-  unit: string;
-  mode?: ProductMode;
-  yieldQty?: number;
-  wastePct?: number;
-  imageUrl?: string | null;
-  sellingPrice?: number;
-  targetMargin?: number;
-  minStock?: number;
-  description?: string;
-  initialIngredients?: { stockId: string; quantity: number }[];
+ modifierGroupIds?: string[];
+ name: string;
+ category: string;
+ categoryId?: string;
+ mode: ProductMode;
+ imageUrl?: string | null;
+ description?: string;
+ variants: VariantInput[];
 }
+export type UpdateProductInput = Partial<CreateProductInput>;
 
-export interface UpdateProductInput {
-  sku?: string;
-  name?: string;
-  category?: string;
-  categoryId?: string;
-  unit?: string;
-  mode?: ProductMode;
-  yieldQty?: number;
-  wastePct?: number;
-  imageUrl?: string | null;
-  sellingPrice?: number;
-  targetMargin?: number;
-  currentStock?: number;
-  minStock?: number;
-  description?: string;
+export interface ModifierOption {
+ id: string;
+ name: string;
+ price: number;
+ stockId: string | null;
+ quantity: number;
+ unit: string;
+ isActive: boolean;
 }
+export interface ModifierGroup {
+ id: string;
+ name: string;
+ minSelection: number;
+ maxSelection: number;
+ isActive: boolean;
+ productCount: number;
+ options: ModifierOption[];
+}
+export type ModifierGroupInput = Omit<ModifierGroup,'id'|'productCount'|'options'> & {
+ options: (Omit<ModifierOption,'id'> & {id?: string})[];
+};
 
 export interface AddIngredientInput {
   stockId: string;

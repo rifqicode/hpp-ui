@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/table"
 
 import { recipeService } from "@/features/recipes/services/recipe-service"
-import type { Product } from "@/features/recipes/types"
+import type { ProductVariantView as Product } from "@/features/recipes/types"
 import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
 
 interface CustomIngredient {
@@ -161,7 +161,7 @@ export default function HppCalculatorPage() {
   React.useEffect(() => {
     let ignore = false
     recipeService
-      .getProducts()
+      .getVariants()
       .then((data) => {
         if (!ignore) {
           setSavedProducts(data)
@@ -1258,7 +1258,7 @@ Dihitung otomatis dengan HPP Manager.
                             variant="outline"
                             className="w-full h-9 rounded-xl text-xs font-semibold bg-white border-slate-300/80 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                           >
-                            <Link to={`/production/products/${selectedSavedProduct.id}`}>
+                            <Link to={`/production/products/${selectedSavedProduct.productId}`}>
                               Buka Detail Produk Lengkap
                             </Link>
                           </Button>

@@ -4,7 +4,6 @@ import {
   Factory,
   ArrowRight,
   Sparkles,
-  CheckCircle2,
   Check,
   ChevronDown,
 } from "lucide-react"
@@ -12,16 +11,20 @@ import "./landing-page.css"
 import { FeatureScrollShowcase } from "./components/feature-scroll-showcase"
 import { ProductionWorkflow } from "./components/production-workflow"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { APP_NAME, cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/use-auth-store"
 import { UpgradeModal } from "@/features/subscription/components/UpgradeModal"
 import type { SubscriptionTier } from "@/features/subscription/types/subscription"
 
 import { WhatsAppCTA, type WhatsAppCTAConfig } from "./components/whatsapp-cta"
+import {
+  CuroLogo,
+  CuroWordmark,
+} from "@/components/brand/curo-logo"
 
 const FAQ_ITEMS = [
   {
-    question: "Usaha saya masih kecil, bisa pakai HPP Tracker?",
+    question: `Usaha saya masih kecil, bisa pakai ${APP_NAME}?`,
     answer:
       "Bisa. Paket Free Starter gratis untuk satu toko, dengan 20 bahan baku, 10 resep, dan 20 kali produksi per bulan. Mulai dengan mencatat harga bahan dan takaran satu resep. Anda bisa lanjut mencatat produksi dan penjualan saat membutuhkannya.",
   },
@@ -130,20 +133,14 @@ export default function LandingPage() {
         <a href="#konten-utama" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-primary focus:shadow-lg">Lewati navigasi</a>
         {/* Integrated Navigation Header */}
         <header className="w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 sm:h-16 flex items-center justify-between gap-2">
             {/* Brand Logo */}
             <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
-                <Factory className="size-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold tracking-tight text-sm sm:text-lg text-slate-900 leading-tight">
-                  HPP TRACKER
-                </span>
-                <span className="text-[10px] font-semibold tracking-wider uppercase text-primary hidden sm:block">
-                  HPP untuk usaha kuliner
-                </span>
-              </div>
+              <CuroLogo
+                variant="badge"
+                className="size-6 sm:size-7 transition-transform group-hover:scale-105"
+              />
+              <CuroWordmark className="text-xl sm:text-2xl text-[#2E1065]" />
             </Link>
 
             {/* Desktop Navigation Links */}
@@ -181,7 +178,7 @@ export default function LandingPage() {
             {/* Auth actions */}
             <div className="flex items-center gap-2 sm:gap-3">
               {isAuthenticated ? (
-                <Button asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm font-medium text-xs sm:text-sm h-9 sm:h-11 px-3 sm:px-4">
+                <Button asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm font-medium text-xs sm:text-sm h-8 sm:h-11 px-2.5 sm:px-4">
                   <Link to="/dashboard" aria-label="Buka dashboard" className="flex items-center gap-2">
                     <span>Buka Dashboard</span>
                     <ArrowRight className="hidden sm:block size-4" />
@@ -189,10 +186,10 @@ export default function LandingPage() {
                 </Button>
               ) : (
                 <>
-                  <Button variant="ghost" asChild className="h-11 text-slate-700 hover:text-slate-900 font-medium text-xs sm:text-sm px-2 sm:px-4">
+                  <Button variant="ghost" asChild className="h-8 sm:h-11 text-slate-700 hover:text-slate-900 font-medium text-xs sm:text-sm px-2.5 sm:px-4">
                     <Link to="/login">Masuk</Link>
                   </Button>
-                  <Button asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20 font-medium text-xs sm:text-sm h-11 px-2 sm:px-4">
+                  <Button asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20 font-medium text-xs sm:text-sm h-8 sm:h-11 px-2.5 sm:px-4">
                     <Link to="/register" className="flex items-center gap-1.5">
                       <span>Mulai Gratis</span>
                       <ArrowRight className="hidden min-[360px]:block size-3.5" />
@@ -211,7 +208,7 @@ export default function LandingPage() {
               { id: "pricing", label: "Harga" },
               { id: "faq", label: "Bantuan" },
             ].map(({ id, label }) => (
-              <a key={id} href={`#${id}`} onClick={(e) => handleScrollTo(e, id)} className="flex min-h-11 items-center justify-center rounded-md hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{label}</a>
+              <a key={id} href={`#${id}`} onClick={(e) => handleScrollTo(e, id)} className="flex min-h-8 sm:min-h-11 py-0.5 text-[11px] sm:text-xs items-center justify-center rounded-md hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{label}</a>
             ))}
           </nav>
         </header>
@@ -220,7 +217,7 @@ export default function LandingPage() {
       {/* ======================================================== */}
       {/* 1. HERO SECTION       */}
       {/* ======================================================== */}
-      <section id="hero" aria-labelledby="hero-heading" className="relative min-h-[calc(100svh-110px)] lg:min-h-[calc(100svh-65px)] flex flex-col justify-between overflow-hidden bg-white border-b border-slate-200">
+      <section id="hero" aria-labelledby="hero-heading" className="relative min-h-[calc(100svh-80px)] lg:min-h-[calc(100svh-65px)] flex flex-col justify-between overflow-hidden bg-white border-b border-slate-200">
         {/* Subtle Ambient Background Gradients */}
         <div className="absolute top-0 right-0 -translate-y-20 translate-x-20 w-[550px] h-[550px] bg-gradient-to-bl from-indigo-100/70 via-indigo-50/40 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
         <div className="absolute bottom-0 left-0 translate-y-20 -translate-x-20 w-[600px] h-[600px] bg-gradient-to-tr from-violet-100/60 via-slate-100/40 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
@@ -232,22 +229,21 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center">
               {/* Left Column: Heading, Typing Text, Call to Action */}
               <div className="lg:col-span-7 flex flex-col text-left">
-                <p className="mb-4 text-sm font-semibold text-primary">Untuk pemilik usaha kuliner</p>
+                <p className="mb-2 sm:mb-4 text-xs sm:text-sm font-semibold text-primary">Untuk pemilik usaha kuliner</p>
 
                 {/* Main Heading */}
-                <h1 id="hero-heading" className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.12] mb-5">
-                  Tahu Modalnya.{" "}
-                  <span className="text-primary">
-                    Atur Harganya. Jaga Untungnya.
-                  </span>
+                <h1 id="hero-heading" className="text-2xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-3 sm:mb-5">
+                  <span className="block">Tahu Modalnya.</span>
+                  <span className="block text-primary">Atur Harganya.</span>
+                  <span className="block text-primary">Jaga Untungnya.</span>
                 </h1>
 
-                <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-xl mb-5 sm:mb-7">
+                <p className="text-sm sm:text-lg text-slate-600 leading-relaxed max-w-xl mb-3 sm:mb-7">
                   Hitung biaya tiap menu, tentukan harga jual berdasarkan margin, dan kelola bahan baku dalam satu aplikasi.
                 </p>
 
                 {/* Action CTA Buttons */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4 sm:mb-8">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
                   {isAuthenticated ? (
                     <Button
                       size="lg"
@@ -288,34 +284,14 @@ export default function LandingPage() {
                     </>
                   )}
                 </div>
-
-                {/* Trust Highlights Checklist */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 sm:pt-6 border-t border-slate-200/80 text-xs font-semibold text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Hitung HPP Sesuai Resep</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Kontrol Stok FIFO & FEFO</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Biaya Overhead</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span>Catat Produksi & Penjualan POS</span>
-                  </div>
-                </div>
               </div>
 
               <div className="relative lg:col-span-5 flex items-center justify-center">
                 <img
                   src="/images/fnb-hero-cartoon.webp"
-                  alt="Ilustrasi kopi susu, matcha, croissant, brownies, dan rice bowl untuk usaha kuliner"
-                  width={1254}
-                  height={1254}
+                  alt="Ilustrasi kopi susu, matcha, croissant, donat, dan semangkuk ramen untuk usaha kuliner"
+                  width={1024}
+                  height={1024}
                   fetchPriority="high"
                   decoding="async"
                   className="hero-food-illustration h-auto w-[min(48vw,200px)] sm:w-[min(40vw,300px)] lg:w-full lg:max-h-[60svh] object-contain"
@@ -333,7 +309,7 @@ export default function LandingPage() {
             className="flex flex-col items-center gap-1.5 hover:text-primary transition-colors cursor-pointer group"
           >
             <span className="text-xs font-semibold text-slate-600 group-hover:text-primary">
-              Lihat alur kerja HPP Tracker
+              Lihat alur kerja {APP_NAME}
             </span>
             <ChevronDown className="size-4 motion-safe:animate-bounce text-primary" />
           </a>
@@ -618,20 +594,19 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-800">
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center text-white">
-                <Factory className="size-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold text-white tracking-tight">HPP TRACKER</span>
-                <span className="text-xs text-slate-300">HPP, stok, dan penjualan</span>
-              </div>
+              <CuroLogo
+                variant="badge"
+                darkMode
+                className="size-7 sm:size-8"
+              />
+              <CuroWordmark darkMode className="text-2xl text-white" />
             </div>
             <p className="text-xs text-slate-400 text-center md:text-right max-w-md">
               Bantu hitung biaya menu, atur harga jual, catat stok bahan, dan lihat hasil penjualan usaha kuliner Anda.
             </p>
           </div>
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-            <p>© {new Date().getFullYear()} HPP Tracker. Hak cipta dilindungi.</p>
+            <p>© {new Date().getFullYear()} {APP_NAME}. Hak cipta dilindungi.</p>
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center">
               <a
                 href="#fitur"

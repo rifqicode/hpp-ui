@@ -6,7 +6,7 @@ export interface OverviewSummary {
   gross_profit?: string; margin_pct?: string;
 }
 export interface OverviewDay { date: string; net_sales: string; transactions: number }
-export interface OverviewProduct { product_id: string; name: string; unit: string; quantity: string; net_sales: string }
+export interface OverviewProduct { variant_id: string; product_id: string; name: string; unit: string; quantity: string; net_sales: string }
 export interface OverviewAlert { id: string; name: string; kind: string; quantity: string; unit: string; date?: string }
 export interface OverviewAttention { count: number; items: OverviewAlert[] }
 export interface DashboardOverview {

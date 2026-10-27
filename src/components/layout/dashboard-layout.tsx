@@ -16,15 +16,25 @@ import { SUBSCRIPTION_TIER_LABELS, type SubscriptionTier } from "@/features/subs
 import { AIChatFloatingDrawer } from "@/features/ai-chat"
 import { PaymentNotice } from '@/features/subscription/components/PaymentNotice'
 import { SubscriptionWelcome } from '@/features/subscription/components/SubscriptionWelcome'
+import { OnboardingGate } from '@/features/onboarding/components/onboarding-gate'
+import type { OnboardingData } from '@/features/onboarding/types'
 
 export function DashboardLayout() {
+  const token = useAuthStore((state) => state.token)
+  const location = useLocation()
+  if (!token) return <Navigate to="/login" replace />
+  return location.pathname === '/dashboard'
+    ? <OnboardingGate>{(data) => <DashboardWorkspace onboardingData={data} />}</OnboardingGate>
+    : <DashboardWorkspace />
+}
+
+function DashboardWorkspace({ onboardingData }: { onboardingData?: OnboardingData }) {
   const location = useLocation()
   const contentRef = React.useRef<HTMLElement>(null)
 
   React.useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, left: 0 })
   }, [location.pathname])
-  const token = useAuthStore((state) => state.token)
   const isFetching = useLoadingStore((state) => state.pending > 0)
   const [registrationTier] = React.useState<SubscriptionTier | undefined>(() => {
     const tier = sessionStorage.getItem('pending_upgrade_tier') || localStorage.getItem('pending_upgrade_tier')
@@ -54,16 +64,12 @@ export function DashboardLayout() {
     return () => window.removeEventListener("open-upgrade-modal", handleOpenUpgrade)
   }, [registrationTier])
 
-  if (!token) {
-    return <Navigate to="/login" replace />
-  }
-
   const menuTitle = getActiveMenuTitle(location.pathname)
 
   return (
     <TooltipProvider>
       <SidebarProvider className="h-dvh min-h-0 overflow-hidden">
-        <SidebarMain />
+        <SidebarMain onboardingData={onboardingData} />
         <SidebarInset className="h-full min-h-0 min-w-0">
           <GracePeriodBanner
             onUpgradeClick={() => {

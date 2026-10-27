@@ -1,7 +1,9 @@
-import type { Product } from '../../recipes/types';
+import type { ProductVariantView, ModifierOption } from '../../recipes/types';
 
 export type PaymentMethod = 'CASH' | 'QRIS' | 'TRANSFER' | 'DEBIT';
-export type SaleStatus = 'COMPLETED' | 'IN_PROGRESS' | 'CANCELLED' | 'RETURNED';
+export type SaleStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING_CONFIRMATION' | 'CANCELLED' | 'RETURNED';
+export type OrderSource = 'POS' | 'ONLINE' | string;
+export type OrderFulfillmentType = 'DINE_IN' | 'PICKUP' | 'DELIVERY' | string;
 
 export interface Customer {
   id: string;
@@ -54,6 +56,10 @@ export interface CustomerDetail {
 }
 
 export interface SaleItem {
+ variantId: string;
+ variantName: string;
+ costStatus: 'ESTIMATED'|'ACTUAL';
+ modifiers: {id:string;name:string;price:number;cost:number;totalCost:number}[];
   returnedQuantity?: number;
   id: string;
   saleId: string;
@@ -129,6 +135,34 @@ export interface Sale {
   createdAt: string;
   created_at?: string;
   status: SaleStatus;
+  orderSource?: OrderSource;
+  order_source?: OrderSource;
+  fulfillmentType?: OrderFulfillmentType;
+  fulfillment_type?: OrderFulfillmentType;
+  customerPhone?: string;
+  customer_phone?: string;
+  customerEmail?: string;
+  customer_email?: string;
+  tableNumber?: string;
+  table_number?: string;
+  deliveryAddress?: string;
+  delivery_address?: string;
+  deliveryFee?: number;
+  delivery_fee?: number;
+  deliveryCourierName?: string;
+  delivery_courier_name?: string;
+  deliveryTrackingInfo?: string;
+  delivery_tracking_info?: string;
+  pickupTime?: string;
+  pickup_time?: string;
+  customFieldLabel?: string;
+  custom_field_label?: string;
+  customFieldValue?: string;
+  custom_field_value?: string;
+  rejectionReason?: string;
+  rejection_reason?: string;
+  publicTrackingToken?: string;
+  public_tracking_token?: string;
   productionLogId?: string;
   production_log_id?: string;
   productionLogs?: any[];
@@ -138,7 +172,9 @@ export interface Sale {
 }
 
 export interface CartItem {
-  product: Product;
+ key: string;
+ modifiers: ModifierOption[];
+  product: ProductVariantView;
   quantity: number;
   price: number;
   cost: number;
@@ -152,8 +188,8 @@ export interface CreateSaleInput {
   customerName?: string;
   customer_name?: string;
   items: {
-    productId?: string;
-    product_id?: string;
+    variantId: string;
+    modifierOptionIds?: string[];
     quantity: number;
     priceAtSale?: number;
     costAtSale?: number;
@@ -173,12 +209,31 @@ export interface CreateSaleInput {
 
 export interface SaleQuery {
   status?: string;
+  order_source?: string;
   start_date?: string;
   end_date?: string;
   payment_method?: string;
   search?: string;
   page?: number;
   per_page?: number;
+}
+
+export interface AcceptOnlineOrderInput {
+  payment_method?: PaymentMethod;
+  cash_received?: number;
+  payment_reference?: string;
+  delivery_fee?: number;
+  mark_completed?: boolean;
+}
+
+export interface FulfillOnlineOrderInput {
+  delivery_courier_name?: string;
+  delivery_tracking_info?: string;
+  delivery_fee?: number;
+}
+
+export interface RejectOnlineOrderInput {
+  rejection_reason: string;
 }
 
 export interface PaginatedSales {

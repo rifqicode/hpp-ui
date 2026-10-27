@@ -170,10 +170,14 @@ export default function GeneralSettingsPage() {
                       <Button type="button" variant="outline" onClick={() => setIsPhotoDialogOpen(true)} className="h-10 gap-1.5 text-xs"><Camera className="size-3.5" />Ubah Foto Profil</Button>
                     </div>
                     <section aria-labelledby="account-identity-heading" className="space-y-4 border-t pt-5">
-                      <div><h2 id="account-identity-heading" className="text-sm font-semibold">Identitas pengguna</h2><p className="mt-1 text-xs text-muted-foreground">Nama dan email untuk akun Anda.</p></div>
+                      <div><h2 id="account-identity-heading" className="text-sm font-semibold">Identitas pengguna</h2><p className="mt-1 text-xs text-muted-foreground">Nama dan identitas login untuk akun Anda.</p></div>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1.5"><Label htmlFor="prof-name" className="text-xs font-medium">Nama Lengkap <span className="text-destructive">*</span></Label><Input id="prof-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" placeholder="Nama lengkap Anda" required className="h-11 text-sm" /></div>
-                        <div className="space-y-1.5"><Label htmlFor="prof-email" className="text-xs font-medium">Alamat Email <span className="text-destructive">*</span></Label><Input id="prof-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="email@example.com" required className="h-11 text-sm" /></div>
+                        {currentUser?.username ? (
+                          <div className="min-w-0 space-y-1.5"><Label htmlFor="prof-username" className="text-xs font-medium">Username Login</Label><Input id="prof-username" value={currentUser.username} readOnly autoComplete="username" className="h-11 text-sm" /><p className="text-xs text-muted-foreground">Untuk reset kata sandi, hubungi pemilik toko.</p></div>
+                        ) : (
+                          <div className="space-y-1.5"><Label htmlFor="prof-email" className="text-xs font-medium">Alamat Email <span className="text-destructive">*</span></Label><Input id="prof-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="email@example.com" required className="h-11 text-sm" /></div>
+                        )}
                       </div>
                     </section>
                     <section aria-labelledby="account-contact-heading" className="space-y-4 border-t pt-5">

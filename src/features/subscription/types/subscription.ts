@@ -90,7 +90,7 @@ export interface PaymentChannelConfig {
   name: string;
   category: string;
   description: string;
-  enabled: boolean;
+  enabled?: boolean;
 }
 
 export interface PaymentInstructions {

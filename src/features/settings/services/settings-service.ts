@@ -128,7 +128,7 @@ export const settingsService = {
       const res = await apiClient.post<StaffMember>('/staff/invite', input);
       return res.data;
     } catch (error) {
-      throw toError(error, 'Gagal mengundang staf');
+      throw toError(error, 'Gagal menambahkan staf');
     }
   },
 
@@ -137,6 +137,14 @@ export const settingsService = {
       await apiClient.put(`/staff/${userId}/role`, { role_id: roleId });
     } catch (error) {
       throw toError(error, 'Gagal mengubah peran staf');
+    }
+  },
+
+  resetStaffPassword: async (userId: string, password: string): Promise<void> => {
+    try {
+      await apiClient.put(`/staff/${userId}/password`, { password });
+    } catch (error) {
+      throw toError(error, 'Gagal mereset kata sandi staf');
     }
   },
 

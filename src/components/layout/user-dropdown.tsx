@@ -18,7 +18,7 @@ export function UserDropdown() {
   const user = useAuthStore((state) => state.user)
   const logout = useAuthStore((state) => state.logout)
   const userName = user?.name || "Pengguna"
-  const userEmail = user?.email || ""
+  const userEmail = user?.username || user?.email || ""
   const userAvatar = user?.avatar
 
   return (

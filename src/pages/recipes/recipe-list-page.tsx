@@ -1,3 +1,6 @@
+import { useSearchParams } from 'react-router-dom';
+import { ModifierHub } from '@/features/recipes/components/modifier-hub';
+import { CategoryHub } from '@/features/recipes/components/category-hub';
 import { Package, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -6,18 +9,18 @@ import {
   ProductTableRow,
 } from "@/features/recipes/components/product-list-items";
 import { RecipeDeleteDialog } from "@/features/recipes/components/recipe-delete-dialog";
+import { PriceReviewDialog } from "@/features/recipes/components/price-review-dialog";
 import { RecipeListFilters } from "@/features/recipes/components/recipe-list-filters";
 import { RecipeListHeader } from "@/features/recipes/components/recipe-list-header";
 import { RecipeListStats } from "@/features/recipes/components/recipe-list-stats";
 import { useProductList } from "@/features/recipes/hooks/use-product-list";
 import { cn } from "@/lib/utils";
+import { ProductPageHeader } from '@/features/recipes/components/product-form-layout';
 
-export default function RecipeListPage() {
-  const list = useProductList();
+function MenuCatalog({ list }: { list: ReturnType<typeof useProductList> }) {
 
   return (
     <div className="flex min-w-0 flex-col gap-4 pb-10">
-      <RecipeListHeader list={list} />
       <RecipeListStats list={list} />
       <RecipeListFilters list={list} />
 
@@ -122,6 +125,7 @@ export default function RecipeListPage() {
                         returnTo={list.returnTo}
                         canDelete={list.canDelete}
                         onDelete={list.selectDelete}
+                        onReviewPrice={list.openPriceReview}
                       />
                     ))}
                   </tbody>
@@ -146,6 +150,7 @@ export default function RecipeListPage() {
                 returnTo={list.returnTo}
                 canDelete={list.canDelete}
                 onDelete={list.selectDelete}
+                onReviewPrice={list.openPriceReview}
               />
             ))}
           </div>
@@ -170,6 +175,49 @@ export default function RecipeListPage() {
       )}
 
       <RecipeDeleteDialog list={list} />
+      <PriceReviewDialog
+        open={Boolean(list.reviewProductState)}
+        product={list.reviewProductState?.product}
+        initialVariantId={list.reviewProductState?.variantId}
+        onClose={list.closePriceReview}
+      />
     </div>
   );
+}
+
+export default function RecipeListPage() {
+  const [params, setParams] = useSearchParams();
+  const requestedTab = params.get('tab');
+  const tab = requestedTab === 'addons' || requestedTab === 'categories' ? requestedTab : 'menu';
+  const list = useProductList();
+  return <div className="w-full min-w-0 space-y-4">
+    {tab === 'menu' ? <RecipeListHeader list={list} /> : <ProductPageHeader title="Produk" description="Kelola produk, kategori, serta pilihan add-on dalam satu tempat." />}
+    <nav className="flex flex-wrap gap-1 border-b pb-2" aria-label="Manajemen produk">
+      {[
+        ['categories', 'Kategori'],
+        ['menu', 'Daftar Produk'],
+        ['addons', 'Add on'],
+      ].map(([id, label]) => (
+        <Button
+          key={id}
+          type="button"
+          className={`h-10 rounded-xl text-xs font-semibold transition-all ${
+            tab === id
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          }`}
+          variant={tab === id ? 'default' : 'ghost'}
+          aria-pressed={tab === id}
+          onClick={() => setParams(current => {
+            const next = new URLSearchParams(current);
+            if (id === 'menu') next.delete('tab'); else next.set('tab', id);
+            return next;
+          }, { replace: true })}
+        >
+          {label}
+        </Button>
+      ))}
+    </nav>
+    {tab === 'addons' ? <ModifierHub /> : tab === 'categories' ? <CategoryHub /> : <MenuCatalog list={list} />}
+  </div>;
 }

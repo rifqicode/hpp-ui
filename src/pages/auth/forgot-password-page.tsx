@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { useForgotPassword } from "@/features/auth/hooks"
+import { APP_NAME } from "@/lib/utils"
 
 export default function ForgotPasswordPage() {
   const {
@@ -47,7 +48,7 @@ export default function ForgotPasswordPage() {
               <Factory className="h-6 w-6" />
             </div>
             <div>
-              <span className="font-black text-xl tracking-tight text-white block leading-none">HPP TRACKER</span>
+              <span className="font-black text-xl tracking-tight text-white block leading-none">{APP_NAME.toUpperCase()}</span>
               <span className="text-[11px] text-slate-400 font-medium tracking-wide uppercase">SaaS Biaya & Inventaris UMKM</span>
             </div>
           </div>
@@ -79,7 +80,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div className="text-xs text-slate-500 relative z-10">
-            &copy; {new Date().getFullYear()} HPP Tracker. Seluruh hak cipta dilindungi.
+            &copy; {new Date().getFullYear()} {APP_NAME}. Seluruh hak cipta dilindungi.
           </div>
         </div>
 
@@ -133,7 +134,7 @@ export default function ForgotPasswordPage() {
                   <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
                     <Factory className="h-5 w-5" />
                   </div>
-                  <span className="font-extrabold text-lg tracking-tight text-foreground">HPP TRACKER</span>
+                  <span className="font-extrabold text-lg tracking-tight text-foreground">{APP_NAME.toUpperCase()}</span>
                 </div>
 
                 <CardTitle className="text-2xl font-bold tracking-tight">Lupa Kata Sandi?</CardTitle>
@@ -149,6 +150,7 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
+              <p className="mb-4 text-sm text-foreground">Pakai akun staf dengan username? Minta pemilik toko mereset kata sandi dari menu Anggota Tim.</p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-xs font-semibold text-foreground">

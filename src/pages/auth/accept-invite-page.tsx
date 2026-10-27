@@ -33,6 +33,7 @@ import {
 
 import { authService } from "@/features/auth/services/auth-service"
 import type { InviteDetailsResponse } from "@/features/auth/types"
+import { APP_NAME } from "@/lib/utils"
 import { useAuthStore } from "@/store/use-auth-store"
 
 export default function AcceptInvitePage() {
@@ -127,7 +128,7 @@ export default function AcceptInvitePage() {
             <Factory className="h-5 w-5" />
           </div>
           <span className="font-bold text-xl tracking-tight text-foreground">
-            HPP Tracker
+            {APP_NAME}
           </span>
         </div>
 

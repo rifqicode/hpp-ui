@@ -22,25 +22,28 @@ export function useProductsQuery(query?: { search?: string; category?: string; s
 }
 
 export function useProductSummaryQuery(options?: { enabled?: boolean }) {
+  const storeId = useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: recipeKeys.productSummary(),
+    queryKey: [...recipeKeys.productSummary(),storeId],
     queryFn: () => recipeService.getProductSummary(),
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useProductDetailQuery(id?: string, options?: { enabled?: boolean }) {
+  const storeId = useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: recipeKeys.productDetail(id || ''),
+    queryKey: [...recipeKeys.productDetail(id || ''),storeId],
     queryFn: () => recipeService.getProductById(id!),
-    enabled: Boolean(id) && (options?.enabled ?? true),
+    enabled: Boolean(storeId) && Boolean(id) && (options?.enabled ?? true),
   });
 }
 
 export function useProductCategoriesQuery(options?: { enabled?: boolean }) {
+  const storeId = useAuthStore(s=>s.activeStoreId);
   return useQuery({
-    queryKey: recipeKeys.categories(),
+    queryKey: [...recipeKeys.categories(),storeId],
     queryFn: () => recipeService.getCategories(),
-    enabled: options?.enabled ?? true,
+    enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }

@@ -1,112 +1,26 @@
-import { ArrowUpDown, LayoutGrid, List } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ListFilters } from "@/components/ui/list-filters";
-import { PRODUCT_SORTS } from "../lib/product-list";
-import type { useProductList } from "../hooks/use-product-list";
+import { useState } from 'react';
+import { ArrowUpDown, Check, LayoutGrid, List, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+import { PRODUCT_SORTS } from '../lib/product-list';
+import type { useProductList } from '../hooks/use-product-list';
+import { ProductSelect } from './product-form-layout';
 
-interface RecipeListFiltersProps {
-  list: ReturnType<typeof useProductList>;
-}
-
-export function RecipeListFilters({ list }: RecipeListFiltersProps) {
-  const categories = list.category && !list.categories.includes(list.category)
-    ? [list.category, ...list.categories]
-    : list.categories;
-
-  return (
-    <ListFilters
-      label="Filter produk"
-      search={{
-        label: "Cari produk",
-        placeholder: "Cari nama produk, kategori, atau bahan baku...",
-        value: list.search,
-        onChange: (value) => list.update({ q: value || undefined }),
-      }}
-      filters={[
-        {
-          id: "category", label: "Kategori produk", value: list.category,
-          onChange: (value) => list.update({ category: value || undefined }),
-          options: [{ value: "", label: "Semua kategori" }, ...categories.map((category) => ({ value: category, label: category }))],
-        },
-        {
-          id: "attention", label: "Kondisi produk", value: list.attention,
-          onChange: (value) => list.update({ attention: value === "all" ? undefined : value }),
-          options: [
-            { value: "all", label: "Semua kondisi" },
-            { value: "needs-attention", label: "Perlu perhatian" },
-            { value: "low-stock", label: "Stok menipis / habis" },
-            { value: "no-hpp", label: "Belum ada HPP aktual" },
-          ],
-        },
-      ]}
-      summary={list.isPending ? "Memuat produk..." : list.isError ? "Data belum tersedia" : `${list.total} produk${list.hasFilters ? ` dari ${list.stats.total}` : ""}`}
-      hasFilters={list.hasFilters}
-      onReset={list.resetFilters}
-      isFetching={list.isFetching && !list.isPending}
-      fetchingLabel="Memperbarui produk"
-      trailingActions={
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-10 gap-1.5 text-xs rounded-md shadow-2xs">
-              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-              Urutkan
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 text-xs">
-            <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
-              Urutan
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {Object.entries(PRODUCT_SORTS).map(([value, label]) => (
-              <DropdownMenuItem
-                key={value}
-                onClick={() => list.update({ sort: value })}
-                className="cursor-pointer"
-              >
-                {label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      }
-      actions={
-        <div
-          className="hidden items-center gap-0.5 rounded-md border p-0.5 md:flex"
-          role="group"
-          aria-label="Tampilan produk"
-        >
-          {[
-            { value: "table", label: "Tampilan tabel", icon: List },
-            { value: "grid", label: "Tampilan kartu", icon: LayoutGrid },
-          ].map(({ value, label, icon: Icon }) => (
-            <Button
-              key={value}
-              size="icon"
-              variant={list.view === value ? "secondary" : "ghost"}
-              aria-label={label}
-              aria-pressed={list.view === value}
-              onClick={() => list.update({ view: value }, false)}
-              className="h-7 w-8"
-            >
-              <Icon className="h-3.5 w-3.5" />
-            </Button>
-          ))}
-        </div>
-      }
-    >
-      {list.attention === "needs-attention" && (
-        <p className="text-[11px] text-muted-foreground">
-          Produk dengan stok menipis, HPP belum aktual, atau margin rugi.
-        </p>
-      )}
-    </ListFilters>
-  );
+export function RecipeListFilters({ list }: { list: ReturnType<typeof useProductList> }) {
+  const [showFilters, setShowFilters] = useState(false);
+  const categories = list.category && !list.categories.includes(list.category) ? [list.category, ...list.categories] : list.categories;
+  return <section aria-label="Filter produk" className="space-y-3">
+    <div className="grid grid-cols-2 items-center gap-2 md:flex md:flex-wrap">
+      <div className="relative col-span-2 w-full min-w-0 md:w-auto md:flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden /><Input aria-label="Cari produk" placeholder="Cari nama, SKU, kategori, atau bahan..." value={list.search} onChange={e => list.update({ q: e.target.value || undefined })} className="h-11 pl-9 pr-11" />{list.search && <Button type="button" variant="ghost" size="icon" aria-label="Hapus pencarian" className="absolute right-0 top-0 size-11" onClick={() => list.update({ q: undefined })}><X className="size-4" aria-hidden /></Button>}</div>
+      <Button type="button" variant="outline" className="h-11 w-full md:hidden" aria-expanded={showFilters} aria-controls="product-filter-options" onClick={() => setShowFilters(!showFilters)}><SlidersHorizontal className="size-4" aria-hidden />Filter{(list.category || list.attention !== 'all') && ' aktif'}</Button>
+      <div id="product-filter-options" className={cn('order-last col-span-2 w-full grid-cols-2 gap-2 md:order-none md:grid md:w-auto md:max-w-sm', showFilters ? 'grid' : 'hidden')}>
+        <ProductSelect aria-label="Kategori produk" value={list.category} onChange={e => list.update({ category: e.target.value || undefined })}><option value="">Semua kategori</option>{categories.map(category => <option key={category} value={category}>{category}</option>)}</ProductSelect>
+        <ProductSelect aria-label="Kondisi produk" value={list.attention} onChange={e => list.update({ attention: e.target.value === 'all' ? undefined : e.target.value })}><option value="all">Semua kondisi</option><option value="needs-attention">Perlu perhatian</option><option value="low-stock">Stok menipis / habis</option><option value="no-hpp">HPP belum aktual</option><option value="loss">Harga di bawah biaya</option><option value="price-review">Periksa harga</option></ProductSelect>
+      </div>
+      <DropdownMenu><DropdownMenuTrigger asChild><Button type="button" variant="outline" className="h-11 w-full min-w-0 md:w-auto" aria-label={`Urutkan: ${PRODUCT_SORTS[list.sort]}`}><ArrowUpDown className="size-4" aria-hidden /><span className="truncate">{PRODUCT_SORTS[list.sort]}</span></Button></DropdownMenuTrigger><DropdownMenuContent align="end">{Object.entries(PRODUCT_SORTS).map(([value, label]) => <DropdownMenuItem key={value} onClick={() => list.update({ sort: value })}>{label}{list.sort === value && <Check className="ml-auto size-4" aria-hidden />}</DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>
+    </div>
+    <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground" aria-live="polite"><span>{list.isPending ? 'Memuat produk...' : list.isError ? 'Data belum tersedia' : `${list.total} produk${list.hasFilters ? ` dari ${list.stats.total}` : ''}`}</span>{list.hasFilters && <Button type="button" variant="ghost" className="h-11 text-xs text-primary dark:text-indigo-300" onClick={list.resetFilters}>Reset filter</Button>}{list.isFetching && !list.isPending && <span>Memperbarui produk...</span>}</div><div role="group" aria-label="Tampilan produk" className="hidden items-center gap-1 md:flex">{[{ value: 'table', label: 'Tampilan tabel', icon: List }, { value: 'grid', label: 'Tampilan kartu', icon: LayoutGrid }].map(({ value, label, icon: Icon }) => <Button key={value} type="button" size="icon" variant={list.view === value ? 'secondary' : 'ghost'} className="size-9" aria-label={label} aria-pressed={list.view === value} onClick={() => list.update({ view: value }, false)}><Icon className="size-4" /></Button>)}</div></div>
+  </section>;
 }

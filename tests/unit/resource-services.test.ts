@@ -99,13 +99,13 @@ describe('subscription, dashboard, and AI service contracts', () => {
     expect(http.get).toHaveBeenLastCalledWith('/dashboard/hpp?period=month')
   })
   it('paginates conversations, sends messages, retries and deletes a thread', async () => {
-    await aiChatService.getConversations(); expect(http.get).toHaveBeenLastCalledWith('/store/ai/conversations', { params: { page: 1, limit: 20 } })
-    await aiChatService.getActiveConversation(); expect(http.get).toHaveBeenLastCalledWith('/store/ai/conversations/active', { params: { limit: 20 } })
-    await aiChatService.getConversation('c1', 25, 'm1'); expect(http.get).toHaveBeenLastCalledWith('/store/ai/conversations/c1', { params: { limit: 25, before: 'm1' } })
-    await aiChatService.createConversation({ message: 'Stok?' }); expect(http.post).toHaveBeenLastCalledWith('/store/ai/conversations', { message: 'Stok?' })
-    await aiChatService.sendMessage('c1', { message: 'Harga?' }); expect(http.post).toHaveBeenLastCalledWith('/store/ai/conversations/c1/messages', { message: 'Harga?' })
-    await aiChatService.retryMessage('c1'); expect(http.post).toHaveBeenLastCalledWith('/store/ai/conversations/c1/retry')
-    await aiChatService.deleteConversation('c1'); expect(http.delete).toHaveBeenLastCalledWith('/store/ai/conversations/c1')
+    await aiChatService.getConversations(); expect(http.get).toHaveBeenLastCalledWith('/store/ai/conversations', { params: { page: 1, limit: 20 }, skipLoading: true })
+    await aiChatService.getActiveConversation(); expect(http.get).toHaveBeenLastCalledWith('/store/ai/conversations/active', { params: { limit: 20 }, skipLoading: true })
+    await aiChatService.getConversation('c1', 25, 'm1'); expect(http.get).toHaveBeenLastCalledWith('/store/ai/conversations/c1', { params: { limit: 25, before: 'm1' }, skipLoading: true })
+    await aiChatService.createConversation({ message: 'Stok?' }); expect(http.post).toHaveBeenLastCalledWith('/store/ai/conversations', { message: 'Stok?' }, { skipLoading: true })
+    await aiChatService.sendMessage('c1', { message: 'Harga?' }); expect(http.post).toHaveBeenLastCalledWith('/store/ai/conversations/c1/messages', { message: 'Harga?' }, { skipLoading: true })
+    await aiChatService.retryMessage('c1'); expect(http.post).toHaveBeenLastCalledWith('/store/ai/conversations/c1/retry', undefined, { skipLoading: true })
+    await aiChatService.deleteConversation('c1'); expect(http.delete).toHaveBeenLastCalledWith('/store/ai/conversations/c1', { skipLoading: true })
   })
 })
 
@@ -125,8 +125,8 @@ describe('sales service', () => {
   })
   it('creates, loads and corrects a sale', async () => {
     await salesService.getSaleById('sale-1'); expect(http.get).toHaveBeenLastCalledWith('/sales/sale-1')
-    await salesService.createSale({ items: [{ productId: 'p1', quantity: 2, priceAtSale: 10000, costAtSale: 4000 }], paymentMethod: 'CASH', cashReceived: 20000 })
-    expect(http.post).toHaveBeenLastCalledWith('/sales', expect.objectContaining({ items: [expect.objectContaining({ product_id: 'p1', quantity: 2 })] }))
+    await salesService.createSale({ items: [{ variantId: 'v1', quantity: 2, priceAtSale: 10000, costAtSale: 4000 }], paymentMethod: 'CASH', cashReceived: 20000 })
+    expect(http.post).toHaveBeenLastCalledWith('/sales', expect.objectContaining({ items: [expect.objectContaining({ variant_id: 'v1', quantity: 2 })] }))
     const correction = { request_id: 'r1', kind: 'CANCEL' as const, reason: 'Salah input', refund_method: 'CASH', items: [] }
     await salesService.correctSale('sale-1', correction); expect(http.post).toHaveBeenLastCalledWith('/sales/sale-1/corrections', correction)
   })

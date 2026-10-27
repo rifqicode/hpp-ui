@@ -21,6 +21,7 @@ export interface ProductionBatch {
   storeId?: string;
   saleId?: string;
   saleItemId?: string;
+  variantId: string;
   productId: string;
   productName: string;
   productCategory: string;
@@ -49,13 +50,13 @@ export interface ProductionBatch {
   hasActualConsumptions?: boolean;
   overheads?: ProductionOverheadDetail[];
   recipeSnapshot?: {
-    product_id: string;
+    variant_id: string;
+    variant_name: string;
+    modifiers?: {id:string;name:string;price:string|number;stock_id:string|null;ingredient_quantity:string|number;unit:string}[];
     product_name: string;
     product_category?: string;
     product_unit?: string;
     selling_price?: number | string;
-    yield_qty: number;
-    waste_pct: number;
     items?: Array<{
       stock_id: string;
       stock_name: string;
@@ -72,7 +73,7 @@ export interface ProductionBatch {
 }
 
 export interface StartProductionInput {
-  productId: string;
+  variantId: string;
   targetQuantity: number;
   notes?: string;
   customIngredients?: { stockId: string; quantity: number }[];
@@ -106,7 +107,7 @@ export interface ProductionPreviewOverhead {
 }
 
 export interface ProductionPreviewResponse {
-  product_id: string;
+  variant_id: string;
   product_name: string;
   planned_qty: number;
   is_all_sufficient: boolean;
@@ -116,41 +117,4 @@ export interface ProductionPreviewResponse {
   estimated_overhead: number;
   estimated_total: number;
   estimated_hpp: number;
-}
-
-export interface ProductionCalendarFilters {
-  month?: string;
-  product_id?: string;
-  statuses?: string;
-  search?: string;
-}
-
-export interface ProductionCalendarItem {
-  id: string;
-  batch_number: string;
-  product_id: string;
-  product_name: string;
-  product_unit: string;
-  status: ProductionStatus;
-  started_at: string;
-  ended_at: string;
-  start_date: string;
-  end_date: string;
-  qty_planned: string;
-  qty_actual: string;
-  total_cost: string;
-  hpp_per_unit: string;
-}
-
-export interface ProductionCalendarResponse {
-  month: string;
-  timezone: string;
-  today: string;
-  summary: {
-    total: number;
-    by_status: Record<ProductionStatus, number>;
-    completed_cost: string;
-  };
-  items: ProductionCalendarItem[];
-  days: { date: string; item_ids: string[] }[];
 }

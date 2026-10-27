@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authService } from "@/features/auth/services/auth-service"
 import { settingsService } from "@/features/settings/services/settings-service"
+import { APP_NAME } from "@/lib/utils"
 import { useAuthStore } from "@/store/use-auth-store"
 
 export default function LoginPage() {
@@ -101,6 +102,7 @@ export default function LoginPage() {
     if (stores && stores.length > 0) {
       useAuthStore.getState().setActiveStoreId(stores[0].id)
       useAuthStore.getState().setActiveStoreName(stores[0].name)
+      await settingsService.getStorePermissions(stores[0].id)
       navigate("/dashboard")
     } else {
       navigate("/setup-store")
@@ -110,7 +112,7 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     if (!email || !password) {
-      setError("Email dan kata sandi wajib diisi")
+      setError("Email atau username dan kata sandi wajib diisi")
       return
     }
 
@@ -154,9 +156,9 @@ export default function LoginPage() {
       let msg =
         err instanceof Error
           ? err.message
-          : "Gagal masuk. Periksa kembali email dan kata sandi Anda."
+          : "Gagal masuk. Periksa kembali email atau username dan kata sandi Anda."
       if (msg.toLowerCase() === "unauthorized") {
-        msg = "Email atau kata sandi salah. Silakan coba lagi."
+        msg = "Email, username, atau kata sandi salah. Silakan coba lagi."
       }
       setError(msg)
     } finally {
@@ -219,16 +221,16 @@ export default function LoginPage() {
         <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 -left-20 size-96 rounded-full bg-violet-600/15 blur-3xl" />
 
         <div className="relative z-10 flex flex-1 flex-col items-center justify-center py-12 text-center">
-          <Link to="/" aria-label="HPP Tracker — Beranda" className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950">
+          <Link to="/" aria-label={`${APP_NAME} — Beranda`} className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950">
             <Factory aria-hidden="true" className="size-6" />
           </Link>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white xl:text-4xl">HPP TRACKER</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight text-white xl:text-4xl">{APP_NAME.toUpperCase()}</h2>
           <p className="mt-4 text-base leading-relaxed text-slate-400">
             Biaya lebih jelas.<br />Usaha lebih terarah.
           </p>
         </div>
 
-        <p className="relative z-10 text-center text-xs text-slate-500">&copy; {new Date().getFullYear()} HPP Tracker</p>
+        <p className="relative z-10 text-center text-xs text-slate-500">&copy; {new Date().getFullYear()} {APP_NAME}</p>
       </aside>
 
       {/* ======================================================== */}
@@ -244,7 +246,7 @@ export default function LoginPage() {
                 <Factory className="size-5" />
               </div>
               <span className="font-black text-lg tracking-tight text-slate-900">
-                HPP TRACKER
+                {APP_NAME.toUpperCase()}
               </span>
             </Link>
           </div>
@@ -387,7 +389,7 @@ export default function LoginPage() {
                   Selamat Datang Kembali
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1.5">
-                  Masukkan email dan kata sandi Anda untuk mengakses dashboard finansial toko.
+                  Masuk dengan email pemilik atau username staf dan kata sandi Anda.
                 </p>
               </div>
 
@@ -413,6 +415,9 @@ export default function LoginPage() {
                     <Input
                       id="email"
                       type="text"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="nama@email.com atau staf@toko"

@@ -5,7 +5,7 @@ import { useSubscriptionPayment } from '../hooks/useSubscriptionPayment'
 
 export function PaymentNotice({ compact = false }: { compact?: boolean }) {
   const payment = useSubscriptionPayment()
-  if (payment.phase === 'idle') return null
+  if (payment.phase === 'idle' || payment.phase === 'confirmed') return null
   const isChecking = !!payment.isChecking
   const isError = payment.phase === 'error'
   const title = isError ? 'Kendala Pembayaran' : 'Menunggu Konfirmasi Pembayaran'
@@ -31,7 +31,7 @@ export function PaymentNotice({ compact = false }: { compact?: boolean }) {
         </div>
       ) : (
         <div className="flex flex-wrap gap-2 pt-1">
-          {payment.phase !== 'confirmed' && payment.invoiceId && (
+          {payment.invoiceId && (
             <Button
               variant="outline"
               size="sm"

@@ -19,7 +19,7 @@ export function SaleCorrectionPanel({ sale, onCorrected }: { sale: Sale; onCorre
  const [busy, setBusy] = useState(false);
  const [error, setError] = useState('');
  const pending = useRef<{ signature: string; id: string } | null>(null);
- const selected = sale.items.map(item => ({ sale_item_id: item.id, quantity: lines[item.id]?.quantity || 0, restock: lines[item.id]?.restock ?? true })).filter(item => item.quantity > 0);
+ const selected = sale.items.map(item => ({ sale_item_id: item.id, quantity: lines[item.id]?.quantity || 0, restock: item.productionLogId ? false : (lines[item.id]?.restock ?? true) })).filter(item => item.quantity > 0);
  const final = kind === 'CANCEL' || sale.items.every(item => (lines[item.id]?.quantity || 0) === item.quantity - (item.returnedQuantity || 0));
  const gross = sale.items.reduce((sum, item) => sum + item.subtotal, 0);
  const selectedGross = sale.items.reduce((sum, item) => sum + (lines[item.id]?.quantity || 0) * item.priceAtSale, 0);
@@ -54,12 +54,12 @@ export function SaleCorrectionPanel({ sale, onCorrected }: { sale: Sale; onCorre
     <label className="grid gap-1">Jenis koreksi<select disabled={busy} className="h-10 rounded-md border bg-background px-2" value={kind} onChange={e => setKind(e.target.value as 'CANCEL' | 'RETURN')}>
      <option value="RETURN">Retur sebagian / seluruh barang</option><option value="CANCEL">Batalkan seluruh sisa transaksi</option>
     </select></label>
-    <p className="text-xs text-muted-foreground">Pembatalan mengembalikan barang yang sudah diproduksi ke batch asal. Untuk barang rusak, pilih retur dan nonaktifkan kembali ke stok. Pesanan yang belum diproduksi tidak menambah stok.</p>
+    <p className="text-xs text-muted-foreground">Pembatalan produk dengan pilihan Siapkan stok dulu dapat mengembalikan barang layak jual ke hasil produksi asal. Produk dengan pilihan Buat saat dipesan yang sudah dimasak tidak kembali ke stok; bahan dan biaya produksinya tetap tercatat. Pesanan yang belum dibuat tidak menambah stok.</p>
     {kind === 'RETURN' && sale.items.map(item => <div key={item.id} className="space-y-2 rounded border p-2">
      <label className="grid gap-1">{item.productName} · maksimal {item.quantity - (item.returnedQuantity || 0)} {item.unit}
-      <Input disabled={busy} aria-label={`Jumlah retur ${item.productName}`} type="number" min="0" max={item.quantity - (item.returnedQuantity || 0)} step="0.0001" value={lines[item.id]?.quantity || ''} onChange={e => setLines({ ...lines, [item.id]: { quantity: Number(e.target.value), restock: lines[item.id]?.restock ?? true } })} />
+      <Input disabled={busy} aria-label={`Jumlah retur ${item.productName}`} type="number" min="0" max={item.quantity - (item.returnedQuantity || 0)} step="0.0001" value={lines[item.id]?.quantity || ''} onChange={e => setLines({ ...lines, [item.id]: { quantity: Number(e.target.value), restock: item.productionLogId ? false : (lines[item.id]?.restock ?? true) } })} />
      </label>
-     <label className="flex items-center gap-2 text-xs"><input type="checkbox" disabled={busy} checked={lines[item.id]?.restock ?? true} onChange={e => setLines({ ...lines, [item.id]: { quantity: lines[item.id]?.quantity || 0, restock: e.target.checked } })} />Barang layak jual, kembali ke stok</label>
+     <label className="flex items-center gap-2 text-xs"><input type="checkbox" disabled={busy || Boolean(item.productionLogId)} checked={item.productionLogId ? false : (lines[item.id]?.restock ?? true)} onChange={e => setLines({ ...lines, [item.id]: { quantity: lines[item.id]?.quantity || 0, restock: e.target.checked } })} />Barang layak jual, kembali ke stok</label>
     </div>)}
     <label className="grid gap-1">Alasan koreksi<Input disabled={busy} maxLength={1000} value={reason} onChange={e => setReason(e.target.value)} placeholder="Contoh: salah jumlah atau barang rusak" /></label>
     <label className="grid gap-1">Metode pengembalian uang<select disabled={busy} className="h-10 rounded-md border bg-background px-2" value={method} onChange={e => setMethod(e.target.value)}>{['CASH', 'QRIS', 'TRANSFER', 'DEBIT'].map(m => <option key={m}>{m}</option>)}</select></label>

@@ -1,3 +1,5 @@
+import {usePermission} from '@/hooks/use-permission';
+import {useQueryClient} from '@tanstack/react-query';
 import * as React from "react"
 import { ProductionStatusBadge } from "@/features/production/components/production-status"
 import { useInitialLoading } from "@/hooks/use-initial-loading"
@@ -57,6 +59,9 @@ function calculateGrossMargin(sellingPrice: number, cost: number): number {
 }
 
 export default function BatchDetailPage() {
+  const queryClient=useQueryClient();
+  const {can}=usePermission();
+  const [actionError,setActionError]=React.useState('');
   const location = useLocation()
   const returnToValue: unknown = location.state?.returnTo
   const returnTo = typeof returnToValue === "string" && /^\/production\/batches(?:\?|$)/.test(returnToValue) ? returnToValue : "/production/batches"
@@ -156,12 +161,19 @@ export default function BatchDetailPage() {
     setIsCompleteOpen(true)
   }
 
+  async function handlePickup(){
+    if(!batch)return;setSubmitting(true);setActionError('');
+    try{setBatch(await productionService.pickupProduction(batch.id));void queryClient.invalidateQueries();}
+    catch(e){setActionError(e instanceof Error?e.message:'Gagal memulai proses');}
+    finally{setSubmitting(false);}
+  }
+
   async function handleCompleteSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!batch) return
     const goodQty = typeof completeData.goodQuantity === "number" ? completeData.goodQuantity : (Number(completeData.goodQuantity) || 0)
-    if (goodQty <= 0) {
-      setCompleteError("Jumlah unit bagus harus lebih dari 0")
+    if (goodQty <= 0 || (batch.saleId && goodQty !== batch.targetQuantity)) {
+      setCompleteError("Jumlah produk yang layak dijual harus lebih dari nol. Untuk produk yang dibuat saat dipesan, jumlahnya harus sama dengan jumlah pesanan.")
       return
     }
 
@@ -179,6 +191,7 @@ export default function BatchDetailPage() {
       }
       const updated = await productionService.completeProduction(batch.id, payload)
       setBatch(updated)
+      void queryClient.invalidateQueries()
       setIsCompleteOpen(false)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal menyelesaikan batch produksi"
@@ -197,6 +210,7 @@ export default function BatchDetailPage() {
     try {
       const updated = await productionService.cancelProduction(batch.id, cancelReason)
       setBatch(updated)
+      void queryClient.invalidateQueries()
       setIsCancelOpen(false)
     } catch (err: unknown) {
       const msg = (err as any)?.response?.data?.message || (err instanceof Error ? err.message : "Gagal membatalkan / void batch produksi")
@@ -264,6 +278,7 @@ export default function BatchDetailPage() {
           </span>
         </div>
 
+        {(batch.status==='QUEUED'||batch.status==='DRAFT')&&can('production:write')&&<Button disabled={submitting} onClick={()=>void handlePickup()}>{submitting?'Memulai…':'Mulai proses'}</Button>}
         {batch.status === "IN_PROGRESS" && (
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <Button
@@ -306,6 +321,7 @@ export default function BatchDetailPage() {
         )}
       </div>
 
+      {actionError&&<p role="alert" className="text-sm text-destructive">{actionError}</p>}
       {/* Hero Header Card */}
       <Card className="rounded-3xl border-slate-200/80 shadow-sm overflow-hidden bg-card w-full">
         <div className="p-4 sm:p-6 pb-4">
@@ -330,6 +346,8 @@ export default function BatchDetailPage() {
                     <span>{batch.productName}</span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                   </Link>
+                  {!!batch.recipeSnapshot?.modifiers?.length && <ul className="mt-2 space-y-1 text-sm">{batch.recipeSnapshot.modifiers.map(m=><li key={m.id}>+ {m.name}{m.stock_id&&` · ${Number(m.ingredient_quantity)} ${m.unit} per unit`}</li>)}</ul>}
+
                   <span className="text-xs text-muted-foreground">• {batch.productCategory}</span>
                 </div>
 
@@ -458,7 +476,7 @@ export default function BatchDetailPage() {
             <div>
               <CardTitle className="text-lg font-bold">{batch.hasActualConsumptions ? "Audit Konsumsi Bahan Baku (BOM FIFO)" : "Estimasi Kebutuhan Bahan Baku"}</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                {batch.hasActualConsumptions ? "Rincian bahan yang diambil dari gudang untuk batch produksi ini." : "Kebutuhan berdasarkan resep saat produksi dimulai, termasuk yield dan waste."}
+                {batch.hasActualConsumptions ? "Rincian bahan yang diambil dari gudang untuk batch produksi ini." : "Kebutuhan berdasarkan resep per unit dan add-on saat order dibuat. Waste aktual dicatat saat penyelesaian."}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
@@ -576,10 +594,12 @@ export default function BatchDetailPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label className="text-xs font-semibold">Unit Bagus</Label>
+                <Label htmlFor="production-good-qty" className="text-xs font-semibold">Unit Bagus</Label>
                 <Input
                   type="number"
-                  min="1"
+                  id="production-good-qty"
+                  min="0.0001"
+                  step="0.0001"
                   placeholder="1"
                   value={completeData.goodQuantity}
                   onChange={(e) => {
@@ -587,7 +607,7 @@ export default function BatchDetailPage() {
                     if (val === "") {
                       setCompleteData((prev) => ({ ...prev, goodQuantity: "" }))
                     } else {
-                      const parsed = parseInt(val, 10)
+                      const parsed = Number(val)
                       setCompleteData((prev) => ({ ...prev, goodQuantity: isNaN(parsed) ? "" : parsed }))
                     }
                   }}
@@ -602,10 +622,12 @@ export default function BatchDetailPage() {
               </div>
 
               <div className="grid gap-1.5">
-                <Label className="text-xs font-semibold">Unit Rusak (Afkir)</Label>
+                <Label htmlFor="production-waste-qty" className="text-xs font-semibold">Unit Rusak (Afkir)</Label>
                 <Input
                   type="number"
+                  id="production-waste-qty"
                   min="0"
+                  step="0.0001"
                   placeholder="0"
                   value={completeData.wasteQuantity}
                   onChange={(e) => {
@@ -613,7 +635,7 @@ export default function BatchDetailPage() {
                     if (val === "") {
                       setCompleteData((prev) => ({ ...prev, wasteQuantity: "" }))
                     } else {
-                      const parsed = parseInt(val, 10)
+                      const parsed = Number(val)
                       setCompleteData((prev) => ({ ...prev, wasteQuantity: isNaN(parsed) ? "" : parsed }))
                     }
                   }}

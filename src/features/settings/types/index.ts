@@ -1,6 +1,24 @@
+export interface ReceiptConfig {
+  paper_size: '58mm' | '80mm';
+  header_text?: string;
+  footer_text?: string;
+  show_logo?: boolean;
+  show_cashier_name?: boolean;
+  show_customer_phone?: boolean;
+  show_notes?: boolean;
+}
+
 export interface StoreInfo {
   id: string;
   name: string;
+  staff_login_code?: string;
+  slug?: string;
+  isStorefrontActive?: boolean;
+  is_storefront_active?: boolean;
+  storefrontConfig?: unknown;
+  storefront_config?: unknown;
+  receipt_config?: ReceiptConfig;
+  receiptConfig?: ReceiptConfig;
   category: string;
   location: string;
   phone?: string;
@@ -52,6 +70,7 @@ export interface StaffMember {
   user_id?: string;
   name: string;
   email: string;
+  username?: string;
   role: StaffRole;
   joinedAt?: string;
   joined_at?: string;
@@ -59,7 +78,8 @@ export interface StaffMember {
 }
 
 export interface InviteStaffInput {
-  email: string;
+  username: string;
+  password: string;
   name: string;
   role_id: string;
 }

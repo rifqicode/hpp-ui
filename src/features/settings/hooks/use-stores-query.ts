@@ -6,7 +6,7 @@ import type { StoreInfo } from "@/features/settings/types";
 
 export const storeKeys = {
   all: ["stores"] as const,
-  permissions: (id: string) => ["store-permissions", id] as const,
+  permissions: (id: string, userId?: string) => ["store-permissions", id, userId] as const,
 };
 
 export function useStoresQuery() {
@@ -31,9 +31,19 @@ export function useStoresQuery() {
 }
 
 export function useStorePermissionsQuery(storeId?: string | null) {
-  return useQuery({
-    queryKey: storeKeys.permissions(storeId || ""),
+  const userId = useAuthStore((state) => state.user?.id);
+  const query = useQuery({
+    queryKey: storeKeys.permissions(storeId || "", userId),
     queryFn: () => settingsService.getStorePermissions(storeId!),
-    enabled: !!storeId,
+    enabled: !!storeId && !!userId,
   });
+
+  useEffect(() => {
+    const state = useAuthStore.getState();
+    if (query.isSuccess && state.activeStoreId === storeId && state.user?.id === userId) {
+      state.setPermissions(query.data.permissions);
+    }
+  }, [query.isSuccess, query.data, storeId, userId]);
+
+  return query;
 }

@@ -1,7 +1,9 @@
-import { SaleCorrectionPanel } from '@/features/sales/components/sale-correction-panel';
+// import { SaleCorrectionPanel } from '@/features/sales/components/sale-correction-panel';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Receipt, Printer, Calendar, RefreshCw, ChevronRight, AlertCircle, Wallet, ShoppingBag } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { settingsService } from '@/features/settings/services/settings-service';
 
 import {
   useSalesTransactionsQuery,
@@ -94,6 +96,13 @@ export default function TransactionHistoryPage() {
   // Selected sale for detail dialog
   const [selectedSale, setSelectedSale] = React.useState<Sale | null>(null);
   const [isDetailOpen, setIsDetailOpen] = React.useState(false);
+
+  const { data: storeProfile } = useQuery({
+    queryKey: ['store-profile'],
+    queryFn: () => settingsService.getStoreProfile(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const receiptConfig = storeProfile?.receipt_config || storeProfile?.receiptConfig;
 
   const query: SaleQuery = React.useMemo(() => {
     const q: SaleQuery = {
@@ -329,19 +338,26 @@ export default function TransactionHistoryPage() {
                 <DialogDescription className="sr-only">Rincian pembayaran, produk, dan koreksi untuk transaksi {selectedSale.invoiceNumber}.</DialogDescription>
               </DialogHeader>
 
-              <SaleCorrectionPanel key={selectedSale.id} sale={selectedSale} onCorrected={setSelectedSale} />
+              {/* <SaleCorrectionPanel key={selectedSale.id} sale={selectedSale} onCorrected={setSelectedSale} /> */}
               {/* Printable Thermal Receipt Style */}
               <div
                 id="receipt-print-area"
-                className="bg-card border border-border/80 rounded-xl p-4 text-xs font-mono space-y-3"
+                className="print-receipt-container bg-card border border-border/80 rounded-xl p-4 text-xs font-mono space-y-3"
+                data-paper-size={receiptConfig?.paper_size || '58mm'}
               >
                 <div className="text-center border-b border-border/80 pb-2">
                   <h3 className="font-bold text-sm tracking-tight font-sans">
-                    TOKO KASIR
+                    {storeProfile?.name || 'TOKO KASIR'}
                   </h3>
-                  <p className="text-[10px] text-muted-foreground font-sans">
-                    STRUK PEMBELIAN RESMI
-                  </p>
+                  {receiptConfig?.header_text ? (
+                    <p className="text-[10px] text-muted-foreground font-sans whitespace-pre-wrap">
+                      {receiptConfig.header_text}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground font-sans">
+                      STRUK PEMBELIAN RESMI
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1 text-[11px] border-b border-border/80 pb-2">
@@ -358,18 +374,26 @@ export default function TransactionHistoryPage() {
                       })}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Kasir:</span>
-                    <span>{selectedSale.cashierName || 'Kasir'}</span>
-                  </div>
+                  {receiptConfig?.show_cashier_name !== false && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Kasir:</span>
+                      <span>{selectedSale.cashierName || 'Kasir'}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Pelanggan:</span>
                     <span className="font-semibold">{selectedSale.customerName || 'Guest'}</span>
                   </div>
-                  {selectedSale.customer?.phone && (
+                  {receiptConfig?.show_customer_phone !== false && selectedSale.customer?.phone && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">No. HP:</span>
                       <span>{selectedSale.customer.phone}</span>
+                    </div>
+                  )}
+                  {receiptConfig?.show_notes !== false && selectedSale.notes && (
+                    <div className="flex justify-between text-[10px] text-muted-foreground italic">
+                      <span>Catatan:</span>
+                      <span>{selectedSale.notes}</span>
                     </div>
                   )}
                   <div className="flex flex-wrap gap-1.5 justify-between items-center pt-0.5">
@@ -386,7 +410,7 @@ export default function TransactionHistoryPage() {
                   </div>
                   {selectedSale.productionLogId && (
                     <div className="flex flex-wrap gap-1.5 justify-between items-center text-[10px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
-                      <span>Pesanan MTO (Make to Order):</span>
+                      <span>Cara menyiapkan: Buat saat dipesan</span>
                       <span className="font-semibold">Terhubung ke Antrean Dapur</span>
                     </div>
                   )}
@@ -398,8 +422,10 @@ export default function TransactionHistoryPage() {
                     <div key={it.id} className="flex justify-between items-baseline text-[11px]">
                       <div className="truncate flex-1 pr-2">
                         <p className="font-medium truncate">{it.productName}</p>
+ {it.modifiers.map(m=><p key={m.id} className="text-xs text-muted-foreground">+ {m.name} · <CurrencyText value={m.price}/></p>)}
+ {it.costStatus==='ESTIMATED'&&<p className="text-xs text-muted-foreground">HPP masih estimasi; produksi belum selesai.</p>}
                         <p className="text-[10px] text-muted-foreground">
-                          {it.quantity} x <CurrencyText value={it.priceAtSale} />
+                          {it.quantity} x <CurrencyText value={it.priceAtSale-it.modifiers.reduce((sum,m)=>sum+m.price,0)} />
                           {!!it.returnedQuantity && <span className="block">Diretur: {it.returnedQuantity} {it.unit}</span>}
                         </p>
                       </div>
@@ -452,8 +478,8 @@ export default function TransactionHistoryPage() {
                   )}
                 </div>
 
-                <div className="text-center pt-1 text-[10px] text-muted-foreground font-sans">
-                  Terima kasih atas kunjungan Anda!
+                <div className="text-center pt-1 text-[10px] text-muted-foreground font-sans whitespace-pre-wrap">
+                  {receiptConfig?.footer_text || 'Terima kasih atas kunjungan Anda!'}
                 </div>
               </div>
             </div>

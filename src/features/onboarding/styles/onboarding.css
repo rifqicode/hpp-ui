@@ -1,0 +1,20 @@
+.onboarding-surface :is(input, select) {
+  border-color: #64748b;
+}
+
+.onboarding-surface :is(a, button, input, select, summary):focus-visible {
+  outline: 2px solid #5048e5;
+  outline-offset: 3px;
+}
+
+.dark .onboarding-surface :is(input, select) {
+  border-color: #94a3b8;
+}
+
+.dark .onboarding-surface .text-primary {
+  color: #a5b4fc;
+}
+
+.dark .onboarding-surface :is(a, button, input, select, summary):focus-visible {
+  outline-color: #a5b4fc;
+}

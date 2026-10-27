@@ -14,7 +14,7 @@ async function expectContentFits(page: Page) {
 test.beforeEach(async ({ page }) => {
   await page.route('**/config/landing', (route) => route.fulfill({ json: { success: true, data: { whatsapp: null } } }));
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tahu Modalnya. Atur Harganya. Jaga Untungnya.');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Tahu Modalnya[\s\S]*Atur Harganya[\s\S]*Jaga Untungnya/);
 });
 
 test('navigation, all feature previews, and FAQ remain usable at this viewport', async ({ page }, testInfo) => {
@@ -175,7 +175,7 @@ test('WhatsApp CTA stays hidden when disabled or configuration is unavailable', 
   await expect(page.locator('a[href^="https://wa.me/"]')).toHaveCount(0);
   await page.route('**/config/landing', (route) => route.fulfill({ status: 500, json: { success: false } }));
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tahu Modalnya. Atur Harganya. Jaga Untungnya.');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/Tahu Modalnya[\s\S]*Atur Harganya[\s\S]*Jaga Untungnya/);
   await expect(page.locator('a[href^="https://wa.me/"]')).toHaveCount(0);
   await expect(page).toHaveURL(/\/$/);
 });

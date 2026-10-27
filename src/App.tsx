@@ -6,7 +6,10 @@ import { Loader2 } from "lucide-react"
 import { DashboardLayout } from "./components/layout/dashboard-layout"
 
 // Lazy-loaded App Pages (Code Splitting)
+const ProductReportPage = React.lazy(() => import("./pages/reports/product-report-page"))
+const ReportsPage = React.lazy(() => import("./pages/reports/reports-page"))
 const DashboardPage = React.lazy(() => import("./pages/dashboard/dashboard-page"))
+const OnboardingPage = React.lazy(() => import("./pages/onboarding/onboarding-page"))
 const StockListPage = React.lazy(() => import("./pages/inventory/stock-list-page"))
 const StockDetailPage = React.lazy(() => import("./pages/inventory/stock-detail-page"))
 const PurchaseStockPage = React.lazy(() => import("./pages/inventory/purchase-stock-page"))
@@ -26,6 +29,7 @@ const RecipeSimulationPage = React.lazy(() => import("./pages/production/recipe-
 const ProductionSimulationPage = React.lazy(() => import("./pages/production/production-simulation-page"))
 const OverheadListPage = React.lazy(() => import("./pages/production/overhead-list-page"))
 const StoreSettingsPage = React.lazy(() => import("./pages/settings/store-settings-page"))
+const StorefrontBuilderPage = React.lazy(() => import("./pages/settings/storefront-builder-page"))
 const RoleCreatePage = React.lazy(() => import("./pages/settings/role-create-page"))
 const AccountSettingPage = React.lazy(() => import("./pages/settings/account-setting-page"))
 const PosPage = React.lazy(() => import("./pages/sales/pos-page"))
@@ -40,6 +44,8 @@ const ForgotPasswordPage = React.lazy(() => import("./pages/auth/forgot-password
 const ResetPasswordPage = React.lazy(() => import("./pages/auth/reset-password-page"))
 const VerifyEmailPage = React.lazy(() => import("./pages/auth/verify-email-page"))
 const LandingPage = React.lazy(() => import("./pages/landing/landing-page"))
+const PublicStorefrontPage = React.lazy(() => import("./pages/storefront/public-storefront-page"))
+const PublicOrderTrackingPage = React.lazy(() => import("./pages/storefront/public-order-tracking-page"))
 
 function PageLoader() {
   return (
@@ -57,11 +63,14 @@ function App() {
     <BrowserRouter>
       <React.Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Public Landing & Auth Routes */}
+          {/* Public Landing, Storefront & Auth Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/s/:storeSlug" element={<PublicStorefrontPage />} />
+          <Route path="/s/:storeSlug/orders/:trackingToken" element={<PublicOrderTrackingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/setup-store" element={<RegisterPage initialStep={2} />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/accept-invite" element={<AcceptInvitePage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -70,6 +79,8 @@ function App() {
           {/* Protected Dashboard Routes */}
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/reports/products/:variantId" element={<ProductReportPage />} />
             <Route path="/inventory/stocks" element={<StockListPage />} />
             <Route path="/inventory/purchase/new" element={<PurchaseStockPage />} />
             <Route path="/inventory/movements/new" element={<MovementStockPage />} />
@@ -107,6 +118,7 @@ function App() {
             <Route path="/settings/profile" element={<Navigate to="/settings?tab=profile" replace />} />
             <Route path="/settings/account" element={<Navigate to="/settings?tab=security" replace />} />
             <Route path="/settings/store" element={<StoreSettingsPage />} />
+            <Route path="/settings/store/storefront-builder" element={<StorefrontBuilderPage />} />
             <Route path="/settings/role/new" element={<RoleCreatePage />} />
             <Route path="/settings/role/:id" element={<RoleCreatePage />} />
             <Route path="/settings" element={<AccountSettingPage />} />

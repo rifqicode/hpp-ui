@@ -10,6 +10,8 @@ import {
   SidebarMenuSubItem, SidebarMenuSubButton, SidebarRail, useSidebar,
 } from "@/components/ui/sidebar"
 import { StoreDropdown } from "./store-dropdown"
+import { OnboardingInvitation } from "@/features/onboarding/components/onboarding-entry"
+import type { OnboardingData } from "@/features/onboarding/types"
 import { useStoresQuery, useStorePermissionsQuery } from "@/features/settings/hooks/use-stores-query"
 import { NAVIGATION, filterNavigation, getActiveNavigationIds, type NavigationItem } from "./sidebar-navigation"
 
@@ -106,7 +108,7 @@ function NavigationBranch({
   )
 }
 
-export function SidebarMain() {
+export function SidebarMain({ onboardingData }: { onboardingData?: OnboardingData }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { isMobile, setOpenMobile } = useSidebar()
@@ -207,6 +209,7 @@ export function SidebarMain() {
             ))}
           </SidebarMenu>
         </nav>
+        <OnboardingInvitation data={onboardingData} />
       </SidebarContent>
 
       <SidebarRail />

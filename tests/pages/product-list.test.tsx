@@ -2,6 +2,8 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RecipeListPage from '@/pages/recipes/recipe-list-page'
+import RecipeDetailPage from '@/pages/recipes/recipe-detail-page'
+import { Route, Routes } from 'react-router-dom'
 import { recipeService } from '@/features/recipes/services/recipe-service'
 import { subscriptionService } from '@/features/subscription/services/subscriptionService'
 import { useAuthStore } from '@/store/use-auth-store'
@@ -16,6 +18,96 @@ beforeEach(() => {
 })
 
 describe('product list page', () => {
+  it('filters products needing price review and opens the affected variant without changing its price', async () => {
+    const item=product();
+    item.variants.push({...item.variants[0],id:'large',variantName:'Large',sellingPrice:12000,latestHpp:5000,estimatedHpp:7000,isDefault:false});
+    vi.mocked(recipeService.getProducts).mockResolvedValue([item,product({id:'other',name:'Donat'})]);
+    vi.mocked(recipeService.getProductById).mockResolvedValue(item);
+    const user=userEvent.setup();
+    renderPage(<Routes><Route path="/production/products" element={<RecipeListPage/>}/><Route path="/production/products/:productId" element={<RecipeDetailPage/>}/></Routes>,'/production/products');
+    await screen.findByRole('table');
+    await user.click(screen.getByRole('button',{name:/Periksa harga/}));
+    expect(screen.getByRole('combobox',{name:'Kondisi produk'})).toHaveValue('price-review');
+    const table=screen.getByRole('table');
+    expect(within(table).queryByText('Donat')).not.toBeInTheDocument();
+    await user.click(within(table).getByRole('button',{name:'Tinjau harga'}));
+    await screen.findByRole('heading',{name:'Tinjau harga Roti Coklat'});
+    expect(screen.getByLabelText('Nama varian')).toHaveValue('Large');
+    expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('12.000');
+    expect(screen.getByRole('button',{name:'Pakai hasil perhitungan'})).toBeVisible();
+    expect(screen.getByRole('button',{name:'Simpan harga baru'})).toBeVisible();
+  });
+  it('calculates and saves price in the focused price review dialog', async () => {
+    const item = product();
+    item.variants.push({
+      ...item.variants[0],
+      id: 'large',
+      variantName: 'Large',
+      sellingPrice: 6000,
+      latestHpp: 5000,
+      estimatedHpp: 7000,
+      isDefault: false,
+    });
+    vi.mocked(recipeService.getProducts).mockResolvedValue([item]);
+    const updateSpy = vi.spyOn(recipeService, 'updateProduct').mockResolvedValue(item);
+
+    const user = userEvent.setup();
+    renderPage(<RecipeListPage />, '/production/products');
+    const table = await screen.findByRole('table');
+    await user.click(within(table).getByRole('button', { name: 'Tinjau harga' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Tinjau harga Roti Coklat' })).toBeVisible();
+    expect(within(dialog).getByLabelText('Nama varian')).toHaveValue('Large');
+
+    expect(within(dialog).getByText(/Harga jual saat ini lebih rendah dari perkiraan biaya bahan/)).toBeVisible();
+
+    const marginInput = within(dialog).getByLabelText('Margin (%)');
+    await user.clear(marginInput);
+    await user.type(marginInput, '50');
+
+    const applyBtn = within(dialog).getByRole('button', { name: 'Pakai hasil perhitungan' });
+    expect(applyBtn).toBeEnabled();
+    await user.click(applyBtn);
+
+    expect(within(dialog).getByLabelText('Harga jual (Rp)')).toHaveValue('14.000');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Simpan harga baru' }));
+
+    await waitFor(() => {
+      expect(updateSpy).toHaveBeenCalledWith(
+        'product-1',
+        expect.objectContaining({
+          variants: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'large',
+              sellingPrice: 14000,
+              targetMargin: 0.5,
+            }),
+          ]),
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+  it('expands variants so price, HPP, margin and stock share the same context', async () => {
+    const item = product();
+    item.variants.push({ ...item.variants[0], id: 'large', variantName: 'Large', sku: 'LARGE', sellingPrice: 20000, latestHpp: 9000, currentStock: 3, isDefault: false });
+    vi.mocked(recipeService.getProducts).mockResolvedValue([item]);
+    const user = userEvent.setup(); renderPage(<RecipeListPage />, '/production/products');
+    const table = await screen.findByRole('table', { name: 'Tabel produk' });
+    await user.click(within(table).getByRole('button', { name: 'Lihat varian' }));
+    const large = within(table).getByText('Large').closest('li')!;
+    expect(within(large).getByText('Rp 20.000')).toBeVisible();
+    expect(within(large).getByText('Rp 9.000')).toBeVisible();
+    expect(within(large).getByText('55%')).toBeVisible();
+    expect(within(large).getByText('Menipis')).toBeVisible();
+    await user.click(within(table).getByRole('button', { name: 'Tutup varian' }));
+    expect(large).not.toBeVisible();
+  });
   it('shows initial loading and then renders product metrics', async () => {
     const pending = deferred<ReturnType<typeof product>[]>()
     vi.mocked(recipeService.getProducts).mockReturnValue(pending.promise)
@@ -45,12 +137,14 @@ describe('product list page', () => {
     expect(screen.getByRole('textbox', { name: 'Cari produk' })).toHaveValue('')
     expect(within(screen.getByRole('table')).getByText('Roti Coklat')).toBeVisible()
   })
-  it('uses the attention stat as a filter and resets from the total stat', async () => {
+  it('uses the low stock card as a filter and resets from the total card', async () => {
     const user = userEvent.setup()
     renderPage(<RecipeListPage />, '/production/products')
     await screen.findByRole('table')
-    await user.click(screen.getByRole('button', { name: /Perlu perhatian/ }))
-    expect(screen.getByRole('combobox', { name: 'Kondisi produk' })).toHaveValue('needs-attention')
+    const summary = screen.getByRole('region', { name: 'Ringkasan produk' })
+    expect(within(summary).getAllByRole('button')).toHaveLength(3)
+    await user.click(within(summary).getByRole('button', { name: /Stok menipis \/ habis/ }))
+    expect(screen.getByRole('combobox', { name: 'Kondisi produk' })).toHaveValue('low-stock')
     expect(within(screen.getByRole('table')).queryByText('Roti Coklat')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Total produk/ }))
     expect(within(screen.getByRole('table')).getByText('Roti Coklat')).toBeVisible()

@@ -2,7 +2,7 @@ import * as React from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "@/store/use-auth-store"
 import { settingsService } from "@/features/settings/services/settings-service"
-import type { StoreInfo, StaffMember, Role, Permission } from "@/features/settings/types"
+import type { StoreInfo, StaffMember, Role, Permission, InviteStaffInput } from "@/features/settings/types"
 
 type Resource = "stores" | "staff" | "roles" | "permissions"
 
@@ -45,17 +45,61 @@ export function useStoreSettings(activeTab: string = "profile") {
 
   // Invite Staff Modal State
   const [isInviteOpen, setIsInviteOpen] = React.useState<boolean>(false)
-  const [inviteData, setInviteData] = React.useState<{
-    name: string
-    email: string
-    role_id: string
-  }>({
+  const [inviteData, setInviteData] = React.useState<InviteStaffInput>({
     name: "",
-    email: "",
+    username: "",
+    password: "",
     role_id: "",
   })
   const [isInviting, setIsInviting] = React.useState<boolean>(false)
   const [inviteError, setInviteError] = React.useState<string>("")
+  const [staffMessage, setStaffMessage] = React.useState("")
+  const [resettingStaff, setResettingStaff] = React.useState<StaffMember | null>(null)
+  const [staffPassword, setStaffPassword] = React.useState("")
+  const [resetPasswordError, setResetPasswordError] = React.useState("")
+  const [isResettingPassword, setIsResettingPassword] = React.useState(false)
+
+  const closeInvite = () => {
+    if (isInviting) return
+    setIsInviteOpen(false)
+    setInviteData({ name: "", username: "", password: "", role_id: "" })
+    setInviteError("")
+  }
+
+  const openPasswordReset = (staff: StaffMember) => {
+    setResettingStaff(staff)
+    setStaffPassword("")
+    setResetPasswordError("")
+  }
+
+  const closePasswordReset = () => {
+    if (isResettingPassword) return
+    setResettingStaff(null)
+    setStaffPassword("")
+    setResetPasswordError("")
+  }
+
+  const handleResetStaffPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!resettingStaff || isResettingPassword) return
+    if (Array.from(staffPassword).length < 8 || new TextEncoder().encode(staffPassword).length > 72) {
+      setResetPasswordError("Kata sandi minimal 8 karakter dan maksimal 72 byte.")
+      return
+    }
+    setIsResettingPassword(true)
+    setResetPasswordError("")
+    setStaffMessage("")
+    try {
+      await settingsService.resetStaffPassword(resettingStaff.userId || resettingStaff.user_id || resettingStaff.id, staffPassword)
+      setStaffMessage(`Kata sandi ${resettingStaff.name} berhasil direset. Bagikan kata sandi baru kepada staf.`)
+      setResettingStaff(null)
+      setStaffPassword("")
+    } catch (err) {
+      setResetPasswordError(err instanceof Error ? err.message : "Gagal mereset kata sandi staf.")
+    } finally {
+      setIsResettingPassword(false)
+    }
+  }
 
   // Revoke Staff Modal State
   const [revokingStaff, setRevokingStaff] = React.useState<StaffMember | null>(null)
@@ -154,7 +198,6 @@ export function useStoreSettings(activeTab: string = "profile") {
       setProfileSuccessMsg("Informasi profil toko berhasil diperbarui!")
       const updatedList = await settingsService.getStoresList()
       setStoresList(updatedList)
-      setTimeout(() => setProfileSuccessMsg(""), 4000)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal memperbarui profil toko."
       setProfileErrorMsg(msg)
@@ -166,8 +209,21 @@ export function useStoreSettings(activeTab: string = "profile") {
   // Invite Staff
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inviteData.email.trim() || !inviteData.name.trim()) {
-      setInviteError("Nama dan alamat email staf wajib diisi.")
+    if (isInviting) return
+    if (!inviteData.username.trim() || !inviteData.name.trim() || !inviteData.password) {
+      setInviteError("Nama, username, dan kata sandi staf wajib diisi.")
+      return
+    }
+    if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(inviteData.username.trim().toLowerCase())) {
+      setInviteError("Username harus 3–32 karakter: huruf, angka, titik, garis bawah, atau tanda hubung.")
+      return
+    }
+    if (Array.from(inviteData.password).length < 8 || new TextEncoder().encode(inviteData.password).length > 72) {
+      setInviteError("Kata sandi minimal 8 karakter dan maksimal 72 byte.")
+      return
+    }
+    if (!store?.staff_login_code) {
+      setInviteError("Kode login toko belum tersedia. Muat ulang halaman atau hubungi pengelola aplikasi.")
       return
     }
     if (!inviteData.role_id) {
@@ -177,15 +233,20 @@ export function useStoreSettings(activeTab: string = "profile") {
 
     setIsInviting(true)
     setInviteError("")
+    setStaffMessage("")
     try {
-      await settingsService.inviteStaff(inviteData)
-      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] })
+      const created = await settingsService.inviteStaff({ ...inviteData, name: inviteData.name.trim(), username: inviteData.username.trim().toLowerCase() })
+      setStaffMessage(`Akun ${created.username || `${inviteData.username.trim().toLowerCase()}@${store.staff_login_code}`} sudah aktif. Bagikan username dan kata sandi kepada staf.`)
       setIsInviteOpen(false)
-      setInviteData({ name: "", email: "", role_id: "" })
-      const updated = await settingsService.getStaffList()
-      setStaffList(updated)
+      setInviteData({ name: "", username: "", password: "", role_id: "" })
+      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }).catch(() => undefined)
+      try {
+        setStaffList(await settingsService.getStaffList())
+      } catch {
+        setStaffMessage((message) => `${message} Daftar anggota belum berhasil dimuat ulang. Muat ulang halaman untuk melihat akun baru.`)
+      }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal mengundang staf."
+      const msg = err instanceof Error ? err.message : "Gagal menambahkan staf."
       setInviteError(msg)
     } finally {
       setIsInviting(false)
@@ -282,6 +343,8 @@ export function useStoreSettings(activeTab: string = "profile") {
   return {
     loading,
     store,
+    setStore,
+    loadProfile,
     storesList,
     staffList,
     rolesList,
@@ -293,7 +356,9 @@ export function useStoreSettings(activeTab: string = "profile") {
     setFormData,
     isSavingProfile,
     profileSuccessMsg,
+    setProfileSuccessMsg,
     profileErrorMsg,
+    setProfileErrorMsg,
     handleSaveProfile,
 
     // Staff Invite & Revoke
@@ -304,6 +369,16 @@ export function useStoreSettings(activeTab: string = "profile") {
     isInviting,
     inviteError,
     handleInviteSubmit,
+    closeInvite,
+    staffMessage,
+    resettingStaff,
+    staffPassword,
+    setStaffPassword,
+    resetPasswordError,
+    isResettingPassword,
+    openPasswordReset,
+    closePasswordReset,
+    handleResetStaffPassword,
     revokingStaff,
     setRevokingStaff,
     isRevoking,

@@ -186,6 +186,7 @@ it('reconciles status using DANA transaction_id from Snap callback', async () =>
     changed: true,
     provider_checked: true,
     provider_status: 'settlement',
+    checked_at: '2026-01-01T10:00:00Z',
   })
 
   act(() => callbacks.onSuccess?.({ transaction_id: danaTxId }))
@@ -200,6 +201,7 @@ it('reconciles status using order_id from URL search parameter when returning wi
     changed: true,
     provider_checked: true,
     provider_status: 'settlement',
+    checked_at: '2026-01-01T10:00:00Z',
   })
 
   window.history.pushState({}, '', `/subscription?order_id=${danaTxId}`)
@@ -228,6 +230,7 @@ it('runs 5-second interval timer when activePaymentModal is active', async () =>
       changed: false,
       provider_checked: true,
       provider_status: 'pending',
+      checked_at: '2026-01-01T10:00:00Z',
     })
 
     renderPage(<SubscriptionPage />, '/subscription')

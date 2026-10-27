@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ProductionCalendar } from "@/features/production/components/production-calendar"
+import { ProductionKanban } from "@/features/production/components/production-kanban"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import {
@@ -65,7 +65,7 @@ function isFinished(batch: ProductionBatch) {
 export default function BatchListPage() {
   const navigate = useNavigate()
   const [viewParams, setViewParams] = useSearchParams()
-  const activeView = viewParams.get("tab") === "list" ? "list" : "calendar"
+  const activeView = viewParams.get("tab") || "kanban"
   const queryClient = useQueryClient()
 
   const {
@@ -74,7 +74,7 @@ export default function BatchListPage() {
     isFetching,
     error: queryError,
     refetch: refetchBatches,
-  } = useBatchesQuery({ enabled: activeView === "list" })
+  } = useBatchesQuery({ enabled: activeView === "list" || activeView === "kanban" })
 
   const returnTo = `/production/batches?${viewParams.toString()}`
   const [pickingUp, setPickingUp] = React.useState<string | null>(null)
@@ -114,7 +114,7 @@ export default function BatchListPage() {
   const pageSize = 10
 
   React.useEffect(() => {
-    if (activeView !== "list") return
+    if (activeView !== "list" && activeView !== "kanban") return
     overheadService
       .getOverheads({ activeOnly: true, category: 'PRODUCTION' })
       .then((ohList) => setActiveOverheads(ohList))
@@ -304,7 +304,7 @@ export default function BatchListPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          {activeView === "list" && <Button
+          {(activeView === "list" || activeView === "kanban") && <Button
             variant="outline"
             size="sm"
             onClick={() => refetchBatches()}
@@ -329,10 +329,41 @@ export default function BatchListPage() {
         next.set("tab", value)
         return next
       })}>
-        <TabsList aria-label="Tampilan produksi" className="mb-4 grid w-full max-w-xs grid-flow-col auto-cols-fr">
-          {[{ value: "calendar", label: "Kalender" }, { value: "list", label: "Daftar" }].map((tab) => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
+        <TabsList aria-label="Tampilan produksi" className="mb-4 grid w-full max-w-md grid-flow-col auto-cols-fr">
+          {[
+            { value: "kanban", label: "Papan Kanban" },
+            { value: "list", label: "Daftar Tabel" },
+          ].map((tab) => <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>)}
         </TabsList>
-        <TabsContent value="calendar"><ProductionCalendar /></TabsContent>
+        <TabsContent value="kanban" className="space-y-4">
+          {actionError && !isCancelOpen && (
+            <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {actionError}
+            </div>
+          )}
+          {loading ? (
+            <div role="status" className="flex items-center justify-center gap-3 p-16 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Memuat papan kanban produksi…
+            </div>
+          ) : queryError ? (
+            <div role="alert" className="space-y-3 p-10 text-center">
+              <p>Data produksi belum berhasil dimuat.</p>
+              <Button variant="outline" onClick={() => void refetchBatches()}>Coba lagi</Button>
+            </div>
+          ) : (
+            <ProductionKanban
+              batches={filteredBatches}
+              onPickup={handlePickupBatch}
+              onComplete={(b) => {
+                openCompleteDialog(b);
+                setBatchToComplete(b);
+                setIsCompleteOpen(true);
+              }}
+              isPickingUp={pickingUp}
+            />
+          )}
+        </TabsContent>
         <TabsContent value="list" className="space-y-5">
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Ringkasan produksi">
             {[
@@ -370,7 +401,7 @@ export default function BatchListPage() {
                   className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusFilter === item.key ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{item.label}</button>)}
               </div>
             </div>
-            {actionError && <div role="alert" className="m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{actionError}</div>}
+            {actionError && !isCancelOpen && <div role="alert" className="m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{actionError}</div>}
             {loading ? <div role="status" className="flex items-center justify-center gap-3 p-16 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Memuat batch produksi…</div>
               : queryError ? <div role="alert" className="space-y-3 p-10 text-center"><p>Data produksi belum berhasil dimuat.</p><Button variant="outline" onClick={() => void refetchBatches()}>Coba lagi</Button></div>
               : filteredBatches.length === 0 ? <div className="flex flex-col items-center px-5 py-14 text-center">

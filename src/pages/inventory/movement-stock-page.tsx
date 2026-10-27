@@ -46,7 +46,7 @@ export default function MovementStockPage() {
   const [movementType, setMovementType] = React.useState<MovementType>("ADJUSTMENT_IN")
   const [userSelectedMaterialId, setUserSelectedMaterialId] = React.useState<string>("")
   const [quantity, setQuantity] = React.useState<string>("")
-  const [pricePerUnit, setPricePerUnit] = React.useState<string>("")
+  const [totalCost, setTotalCost] = React.useState<string>("")
   const [reason, setReason] = React.useState<string>("")
   const [submitError, setSubmitError] = React.useState<string>("")
 
@@ -59,7 +59,7 @@ export default function MovementStockPage() {
   const material = stocks.find((m) => m.id === materialId)
   const isIncoming = movementType === "ADJUSTMENT_IN"
   const qty = Number(quantity)
-  const price = Number(pricePerUnit)
+  const numTotalCost = Number(totalCost)
   const current = Number(material?.current_stock || 0)
   const insufficient = !isIncoming && qty > current
   const valid =
@@ -67,7 +67,7 @@ export default function MovementStockPage() {
     Number.isFinite(qty) &&
     qty > 0 &&
     !insufficient &&
-    (!isIncoming || (Number.isFinite(price) && price > 0))
+    (!isIncoming || (Number.isFinite(numTotalCost) && numTotalCost > 0))
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -87,13 +87,15 @@ export default function MovementStockPage() {
       return
     }
 
+    const calculatedPricePerUnit = (isIncoming && qty > 0 && numTotalCost > 0) ? (numTotalCost / qty) : undefined
+
     try {
       await handleRecordAdjustment({
         stock_id: material.id,
         type: movementType,
         quantity: qty,
         reason: reason.trim() || undefined,
-        price_per_unit: isIncoming ? price : undefined,
+        price_per_unit: calculatedPricePerUnit,
       })
       navigate("/inventory/stocks")
     } catch (err: unknown) {
@@ -131,7 +133,7 @@ export default function MovementStockPage() {
         </span>
         <div className="flex flex-col gap-0.5 min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            Catat Mutasi Stok
+            Stock Adjustment
           </h1>
           <p className="text-sm text-muted-foreground">
             Sesuaikan stok karena selisih opname fisik, kerusakan bahan, atau koreksi inventaris.
@@ -239,11 +241,7 @@ export default function MovementStockPage() {
                 </label>
               </div>
 
-              {isIncoming ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  💡 Untuk stok dari belanja/faktur pembelian supplier, gunakan form Catat Pembelian.
-                </p>
-              ) : (
+              {!isIncoming && (
                 <div className="mt-2 bg-primary/5 border border-primary/20 text-xs p-3 rounded-xl text-foreground">
                   <p className="leading-relaxed">
                     <span className="font-semibold text-primary">Strict FIFO: </span>
@@ -261,12 +259,12 @@ export default function MovementStockPage() {
               onChange={(val) => {
                 setUserSelectedMaterialId(val)
                 setQuantity("")
-                setPricePerUnit("")
+                setTotalCost("")
                 setSubmitError("")
               }}
             />
 
-            {/* Quantity and Price per unit */}
+            {/* Quantity and Total Cost */}
             <div className={cn("grid gap-4", isIncoming ? "sm:grid-cols-2" : "grid-cols-1")}>
               <div className="min-w-0 space-y-2">
                 <label htmlFor="page-movement-qty" className="text-sm font-medium text-foreground">
@@ -293,14 +291,14 @@ export default function MovementStockPage() {
 
               {isIncoming && (
                 <div className="min-w-0 space-y-2">
-                  <label htmlFor="page-movement-price" className="text-sm font-medium text-foreground">
-                    Harga per {material?.base_unit || "Satuan"}{" "}
+                  <label htmlFor="page-movement-total-cost" className="text-sm font-medium text-foreground">
+                    Total Harga Bahan{" "}
                     <span className="text-destructive">*</span>
                   </label>
                   <FormattedNumberInput
-                    id="page-movement-price"
-                    value={pricePerUnit}
-                    onChange={(val) => setPricePerUnit(String(val))}
+                    id="page-movement-total-cost"
+                    value={totalCost}
+                    onChange={(val) => setTotalCost(String(val))}
                     prefix="Rp"
                     allowDecimal
                     maxDecimals={4}
@@ -309,9 +307,15 @@ export default function MovementStockPage() {
                     disabled={!material}
                     className="h-11 rounded-xl"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Wajib untuk menghitung nilai aset stok dan HPP batch baru.
-                  </p>
+                  {qty > 0 && numTotalCost > 0 ? (
+                    <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Harga per {material?.base_unit || "satuan"}: <CurrencyText value={numTotalCost / qty} /> (dihitung otomatis)
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Sistem otomatis menghitung harga per {material?.base_unit || "satuan"} dari total harga dibagi jumlah.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -361,11 +365,11 @@ export default function MovementStockPage() {
                   unit={material.base_unit}
                   invalid={insufficient}
                 />
-                {isIncoming && price > 0 && (
+                {isIncoming && numTotalCost > 0 && (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground border border-border/50">
                     <span>Total nilai penyesuaian masuk:</span>
                     <strong className="text-sm font-semibold text-foreground">
-                      <CurrencyText value={qty * price} />
+                      <CurrencyText value={numTotalCost} />
                     </strong>
                   </div>
                 )}

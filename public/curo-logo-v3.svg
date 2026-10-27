@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1E1B4B" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#090D16" stop-opacity="1" />
+    </radialGradient>
+
+    <!-- Isometric Facet Gradients -->
+    <linearGradient id="topFacet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+
+    <linearGradient id="frontFacet" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#312E81" />
+    </linearGradient>
+
+    <linearGradient id="sideFacet" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4338CA" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Squircle App Icon Container -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGlow)" stroke="#312E81" stroke-width="4" />
+
+  <!-- Outer Isometric Tech 'C' Geometry -->
+  <g transform="translate(256, 256) scale(1.15)" filter="url(#neonGlow)">
+    <!-- Top Roof Arm of C -->
+    <polygon points="0,-130 90,-78 90,-40 0,-92" fill="url(#topFacet)" />
+    <polygon points="0,-92 90,-40 45,-14 -45,-66" fill="url(#frontFacet)" />
+    <polygon points="-90,-78 0,-130 -45,-66 -135,-14" fill="url(#sideFacet)" />
+
+    <!-- Spine of C (Left Pillar) -->
+    <polygon points="-135,-14 -45,-66 -45,66 -135,118" fill="url(#sideFacet)" />
+    <polygon points="-45,-66 0,-39 0,93 -45,66" fill="url(#frontFacet)" />
+
+    <!-- Bottom Base Arm of C -->
+    <polygon points="-135,118 -45,66 45,118 -45,170" fill="url(#sideFacet)" />
+    <polygon points="-45,66 0,93 90,41 45,14" fill="url(#topFacet)" />
+    <polygon points="0,93 90,41 90,79 0,131" fill="url(#frontFacet)" />
+
+    <!-- Floating Precision Core / Tech Crystal -->
+    <g transform="translate(25, 0)">
+      <polygon points="0,-24 22,-11 0,2 0,2" fill="#38BDF8" opacity="0.9" />
+      <polygon points="22,-11 22,15 0,28 0,2" fill="#0EA5E9" opacity="0.9" />
+      <polygon points="-22,-11 0,-24 0,2 -22,15" fill="#6366F1" opacity="0.9" />
+    </g>
+  </g>
+</svg>

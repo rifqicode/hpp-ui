@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGradV1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="50%" stop-color="#090D16" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Stroke Gradient for C -->
+    <linearGradient id="strokeGradV1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="40%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+
+    <!-- Cyan Node Glow -->
+    <radialGradient id="nodeGlowV1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="60%" stop-color="#0EA5E9" />
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0" />
+    </radialGradient>
+
+    <filter id="softGlowV1" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Base Container -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGradV1)" stroke="#1E293B" stroke-width="3" />
+
+  <!-- Precision Geometric Monogram 'C' -->
+  <g filter="url(#softGlowV1)">
+    <!-- Main Arc of C -->
+    <path
+      d="M 330 156 A 140 140 0 1 0 330 356"
+      fill="none"
+      stroke="url(#strokeGradV1)"
+      stroke-width="52"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- Internal Precision Chamfer Accents -->
+    <path
+      d="M 285 200 A 75 75 0 1 0 285 312"
+      fill="none"
+      stroke="#6366F1"
+      stroke-width="12"
+      stroke-linecap="round"
+      opacity="0.4"
+    />
+
+    <!-- Tech Precision Cursor / Node Point -->
+    <circle cx="340" cy="256" r="22" fill="#38BDF8" />
+    <circle cx="340" cy="256" r="38" fill="url(#nodeGlowV1)" opacity="0.6" />
+    <circle cx="340" cy="256" r="10" fill="#FFFFFF" />
+  </g>
+</svg>

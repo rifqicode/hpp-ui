@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuotaBadge } from '@/features/subscription/components/QuotaBadge'
@@ -62,6 +62,25 @@ describe('GracePeriodBanner', () => {
 })
 
 describe('PaymentNotice', () => {
+  it.each([true, false])('hides confirmed payment feedback when compact is %s', async compact => {
+    usePaymentState.setState({ scope: 'user-1:store-1', invoiceId: 'inv-123', phase: 'confirmed', pollUntil: 0, message: 'Pembayaran terverifikasi. Paket dan masa aktif sudah diperbarui.' })
+    const view = renderPage(<PaymentNotice compact={compact} />)
+    await waitFor(() => expect(view.client.isFetching()).toBe(0))
+    expect(screen.queryByText('Menunggu Konfirmasi Pembayaran')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Pembayaran terverifikasi/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cek status pembayaran' })).not.toBeInTheDocument()
+  })
+
+  it('removes the waiting notice immediately after payment becomes confirmed without clearing success state', async () => {
+    usePaymentState.setState({ scope: 'user-1:store-1', invoiceId: 'inv-123', phase: 'waiting', pollUntil: 0, message: 'Konfirmasi pembayaran belum diterima.' })
+    renderPage(<PaymentNotice compact />)
+    expect(screen.getByText('Menunggu Konfirmasi Pembayaran')).toBeVisible()
+    act(() => usePaymentState.getState().update({ scope: 'user-1:store-1', phase: 'confirmed', pollUntil: 0, message: 'Pembayaran terverifikasi. Paket dan masa aktif sudah diperbarui.' }))
+    expect(screen.queryByText('Menunggu Konfirmasi Pembayaran')).not.toBeInTheDocument()
+    expect(usePaymentState.getState().phase).toBe('confirmed')
+    expect(usePaymentState.getState().invoiceId).toBe('inv-123')
+  })
+
   it('renders high contrast payment notice with bold title and link in compact mode', async () => {
     usePaymentState.setState({
       scope: 'user-1:store-1',
@@ -74,6 +93,19 @@ describe('PaymentNotice', () => {
     expect(screen.getByText('Menunggu Konfirmasi Pembayaran')).toBeVisible()
     expect(screen.getByText('Konfirmasi pembayaran belum diterima.')).toBeVisible()
     expect(screen.getByRole('link', { name: /Lihat langganan dan tagihan/i })).toBeVisible()
+  })
+
+  it('hides the waiting notice when status synchronization verifies payment and refreshes billing data', async () => {
+    const user = userEvent.setup()
+    usePaymentState.setState({ scope: 'user-1:store-1', invoiceId: 'inv-default', phase: 'waiting', pollUntil: 0, message: 'Konfirmasi pembayaran belum diterima.' })
+    const view = renderPage(<PaymentNotice />)
+    await waitFor(() => expect(view.client.isFetching()).toBe(0))
+    await user.click(screen.getByRole('button', { name: 'Cek status pembayaran' }))
+    await waitFor(() => expect(usePaymentState.getState().phase).toBe('confirmed'))
+    expect(subscriptionService.syncStatus).toHaveBeenCalledWith('inv-default', undefined)
+    expect(vi.mocked(subscriptionService.getUsage).mock.calls.length).toBeGreaterThan(1)
+    expect(vi.mocked(subscriptionService.getInvoices).mock.calls.length).toBeGreaterThan(1)
+    expect(screen.queryByText('Menunggu Konfirmasi Pembayaran')).not.toBeInTheDocument()
   })
 
   it('renders error title and action button in non-compact mode', async () => {

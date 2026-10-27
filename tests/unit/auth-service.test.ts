@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import apiClient from '@/lib/api-client'
 import { authService } from '@/features/auth/services/auth-service'
 import { user } from '../support/fixtures'
+import { agreementDocument } from '../support/agreement-fixture'
+
+const consent = { accepted: true, document_version: agreementDocument.version }
 
 let originalAdapter: typeof apiClient.defaults.adapter
 let adapter: ReturnType<typeof vi.fn<AxiosAdapter>>
@@ -20,6 +23,16 @@ beforeEach(() => {
 afterEach(() => { apiClient.defaults.adapter = originalAdapter })
 
 describe('authentication service requests', () => {
+  it('fetches the current document and version from the public endpoint', async () => {
+    body = { success: true, data: agreementDocument }
+    expect(await authService.getServiceAgreement()).toEqual(agreementDocument)
+    expect(adapter.mock.calls[0][0]).toMatchObject({ url: '/auth/service-agreement', method: 'get', skipLoading: true })
+  })
+
+  it.each([null, {}, { ...agreementDocument, version: '' }, { ...agreementDocument, sections: [] }])('rejects an incomplete document: %j', async (document) => {
+    body = document
+    await expect(authService.getServiceAgreement()).rejects.toThrow('Dokumen ketentuan belum tersedia.')
+  })
   it('posts login credentials and returns the authentication response', async () => {
     const credentials = { email: user.email, password: 'Abcdef12!' }
     expect(await authService.login(credentials)).toEqual(body)
@@ -27,7 +40,7 @@ describe('authentication service requests', () => {
     expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual(credentials)
   })
   it('sends account and store details during registration', async () => {
-    const payload = { name: user.name, email: user.email, password: 'Abcdef12!', store: { name: 'Toko Rina' } }
+    const payload = { name: user.name, email: user.email, password: 'Abcdef12!', store: { name: 'Toko Rina' }, consent }
     await authService.register(payload)
     expect(adapter.mock.calls[0][0].url).toBe('/auth/register')
     expect(JSON.parse(adapter.mock.calls[0][0].data)).toEqual(payload)
@@ -68,14 +81,14 @@ describe('authentication service failures', () => {
   })
   it('normalizes rejected credentials', async () => {
     adapter.mockImplementation(async config => { throw new AxiosError('Unauthorized', 'ERR_BAD_RESPONSE', config, undefined, response(config, { message: 'unauthorized' }, 401)) })
-    await expect(authService.login({ email: user.email, password: 'invalid' })).rejects.toThrow('Email atau kata sandi salah. Silakan coba lagi.')
+    await expect(authService.login({ email: user.email, password: 'invalid' })).rejects.toThrow('Email, username, atau kata sandi salah. Silakan coba lagi.')
   })
   it('explains a network failure without an HTTP response', async () => {
     adapter.mockRejectedValue(new AxiosError('Network error'))
     await expect(authService.login({ email: user.email, password: 'invalid' })).rejects.toThrow('Tidak dapat terhubung ke server. Periksa koneksi Anda.')
   })
   it.each([
-    [() => authService.register({ name: user.name, email: user.email, password: 'Abcdef12!', store: { name: 'Toko' } }), 'Gagal mendaftar. Silakan coba lagi.'],
+    [() => authService.register({ name: user.name, email: user.email, password: 'Abcdef12!', store: { name: 'Toko' }, consent }), 'Gagal mendaftar. Silakan coba lagi.'],
     [() => authService.getCurrentUser(), 'Gagal memuat data pengguna.'],
     [() => authService.updateProfile({ name: user.name }), 'Gagal menyimpan profil.'],
     [() => authService.getInviteDetails('t1'), 'Tautan undangan tidak valid atau telah kadaluarsa.'],

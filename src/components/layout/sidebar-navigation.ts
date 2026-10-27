@@ -1,7 +1,7 @@
 import type { ComponentType } from "react"
 import {
   LayoutDashboard, Factory, Package, ShoppingCart, Settings, Users,
-  Calculator, History, Store, ClipboardList, Layers, CreditCard,
+  Calculator, History, Store, ClipboardList, Layers, CreditCard, ChartNoAxesCombined,
 } from "lucide-react"
 import type { SubscriptionFeatures } from "@/features/subscription"
 
@@ -17,12 +17,8 @@ export interface NavigationItem {
 }
 
 export const NAVIGATION: NavigationItem[] = [
-  {
-    id: "main", title: "Main", icon: LayoutDashboard,
-    children: [
-      { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, permission: "menu:dashboard" },
-    ],
-  },
+  { id: "dashboard", title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, permission: "menu:dashboard" },
+  { id: "reports", title: "Laporan", url: "/reports", icon: ChartNoAxesCombined, permission: "menu:reports" },
   {
     id: "inventory", title: "Inventory", icon: Package,
     children: [
@@ -49,7 +45,7 @@ export const NAVIGATION: NavigationItem[] = [
   {
     id: "order", title: "Order", icon: ShoppingCart,
     children: [
-      { id: "pos", title: "POS", url: "/sales/pos", icon: ShoppingCart, permission: "menu:pos" },
+      { id: "pos", title: "Point of Sale", url: "/sales/pos", icon: ShoppingCart, permission: "menu:pos" },
       { id: "transactions", title: "Transactions", url: "/sales/history", icon: History, permission: "orders:read" },
       { id: "customers", title: "Customers", url: "/sales/customers", icon: Users, permission: "orders:read" },
     ],

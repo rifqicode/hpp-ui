@@ -89,27 +89,27 @@ export function ImageUploadDropzone({
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        className="hidden"
+        hidden
         disabled={disabled || isUploading}
         onChange={handleInputChange}
       />
 
       {value ? (
-        <div className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center h-48 w-full">
+        <div className="relative group rounded-xl overflow-hidden border border-border bg-muted flex items-center justify-center h-48 w-full">
           <img
             src={value}
             alt="Product Preview"
             className="w-full h-full object-contain"
           />
           {!disabled && (
-            <div className="absolute inset-0 bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <div className="absolute inset-0 bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="h-8 rounded-lg text-xs"
+                className="h-11 rounded-lg text-xs"
               >
                 Ganti Foto
               </Button>
@@ -119,7 +119,7 @@ export function ImageUploadDropzone({
                 size="sm"
                 onClick={() => onChange(null)}
                 disabled={isUploading}
-                className="h-8 rounded-lg text-xs"
+                className="h-11 rounded-lg text-xs"
               >
                 <X className="h-4 w-4 mr-1" /> Hapus
               </Button>
@@ -127,7 +127,11 @@ export function ImageUploadDropzone({
           )}
         </div>
       ) : (
-        <div
+        <button
+          type="button"
+          aria-label="Unggah foto produk"
+          aria-busy={isUploading}
+          disabled={disabled || isUploading}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -136,33 +140,33 @@ export function ImageUploadDropzone({
               fileInputRef.current?.click()
             }
           }}
-          className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+          className={`w-full flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl bg-card text-foreground cursor-pointer transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground disabled:opacity-60 disabled:cursor-not-allowed ${
             isDragging
-              ? "border-primary bg-primary/5"
-              : "border-slate-300 hover:border-primary/60 hover:bg-slate-50/60"
-          } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
+              ? "border-primary bg-accent"
+              : "border-border enabled:hover:border-primary/60 enabled:hover:bg-accent"
+          }`}
         >
           {isUploading ? (
-            <div className="flex flex-col items-center gap-2 text-primary py-2">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <p className="text-xs font-semibold">Mengupload foto ke S3 storage...</p>
-            </div>
+            <span className="flex flex-col items-center gap-2 py-2">
+              <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
+              <span className="text-xs font-semibold">Mengunggah foto...</span>
+            </span>
           ) : (
-            <div className="flex flex-col items-center gap-2 text-center py-2">
-              <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1">
-                {isDragging ? <UploadCloud className="h-5 w-5" /> : <ImageIcon className="h-5 w-5" />}
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground">
-                  <span className="text-primary hover:underline">Klik untuk unggah</span> atau seret file gambar ke sini
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+            <span className="flex flex-col items-center gap-2 text-center py-2">
+              <span className="h-10 w-10 rounded-full bg-muted text-foreground flex items-center justify-center mb-1">
+                {isDragging ? <UploadCloud className="h-5 w-5" aria-hidden="true" /> : <ImageIcon className="h-5 w-5" aria-hidden="true" />}
+              </span>
+              <span>
+                <span className="block text-xs font-semibold text-foreground">
+                  <span className="underline underline-offset-2">Klik untuk unggah</span> atau seret file gambar ke sini
+                </span>
+                <span className="block text-[11px] text-foreground mt-0.5">
                   JPG, PNG, atau WebP (Maks. 5 MB)
-                </p>
-              </div>
-            </div>
+                </span>
+              </span>
+            </span>
           )}
-        </div>
+        </button>
       )}
 
       {error && <p className="text-xs font-medium text-destructive">{error}</p>}

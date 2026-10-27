@@ -2,6 +2,7 @@ export interface User {
   id: string;
   account_type?: "OWNER" | "STAFF";
   email: string;
+  username?: string;
   name: string;
   role: string;
   avatar?: string;
@@ -50,6 +51,21 @@ export interface RegisterCredentials {
   email: string;
   password: string;
   store: RegisterStoreCredentials;
+  consent: {
+    accepted: boolean;
+    document_version: string;
+  };
+}
+
+export interface ServiceAgreementDocument {
+  version: string;
+  title: string;
+  app_name: string;
+  sections: {
+    title: string;
+    paragraphs: string[];
+  }[];
+  closing_text: string;
 }
 
 export interface InviteDetailsResponse {

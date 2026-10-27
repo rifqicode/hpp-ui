@@ -10,6 +10,41 @@ function Example({ disabled = false }: { disabled?: boolean }) {
   return <ImageUploadDropzone value={value} onChange={setValue} disabled={disabled} />
 }
 describe('product image upload', () => {
+  it('opens the file picker with Enter and Space without submitting its form', async () => {
+    const user = userEvent.setup()
+    const submit = vi.fn(event => event.preventDefault())
+    const { container } = render(<form onSubmit={submit}><Example /></form>)
+    const input = container.querySelector<HTMLInputElement>('input[type=file]')!
+    const pickFile = vi.spyOn(input, 'click').mockImplementation(() => {})
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Unggah foto produk' })).toHaveFocus()
+    await user.keyboard('{Enter}')
+    await user.keyboard(' ')
+    expect(pickFile).toHaveBeenCalledTimes(2)
+    expect(submit).not.toHaveBeenCalled()
+  })
+
+  it('skips the disabled upload button during keyboard navigation', async () => {
+    const user = userEvent.setup()
+    render(<><Example disabled /><button type="button">Selanjutnya</button></>)
+    expect(screen.getByRole('button', { name: 'Unggah foto produk' })).toBeDisabled()
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Selanjutnya' })).toHaveFocus()
+  })
+
+  it('prevents another upload while a file is being uploaded', async () => {
+    vi.spyOn(recipeService, 'uploadProductImage').mockReturnValue(new Promise(() => {}))
+    const user = userEvent.setup()
+    const { container } = render(<Example />)
+    const file = new File(['x'], 'image.png', { type: 'image/png' })
+    await user.upload(container.querySelector('input[type=file]')!, file)
+    const zone = screen.getByRole('button', { name: 'Unggah foto produk' })
+    expect(zone).toBeDisabled()
+    expect(zone).toHaveAttribute('aria-busy', 'true')
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } })
+    expect(recipeService.uploadProductImage).toHaveBeenCalledOnce()
+  })
+
   it('uploads a valid image and allows removing the preview', async () => {
     vi.spyOn(recipeService, 'uploadProductImage').mockResolvedValue('https://example.com/image.png')
     const user = userEvent.setup()

@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/table"
 
 import { recipeService } from "@/features/recipes/services/recipe-service"
-import type { Product } from "@/features/recipes/types"
+import type { ProductVariantView as Product } from "@/features/recipes/types"
 import { productionService } from "@/features/production/services/production-service"
 import type { ProductionPreviewResponse } from "@/features/production/types"
 import { CurrencyText } from "@/components/ui/currency-text"
@@ -59,15 +59,12 @@ export default function ProductionSimulationPage() {
     let ignore = false
     setIsLoadingProducts(true)
     recipeService
-      .getProducts()
+      .getVariants()
       .then((data) => {
         if (!ignore) {
           setProducts(data)
           if (data.length > 0) {
             setSelectedProductId(data[0].id)
-            if (data[0].yieldQty && data[0].yieldQty > 0) {
-              setPlannedQuantity(data[0].yieldQty)
-            }
           }
         }
       })
@@ -91,10 +88,6 @@ export default function ProductionSimulationPage() {
   // When selected product changes, optionally update default batch size
   const handleSelectProduct = (productId: string) => {
     setSelectedProductId(productId)
-    const prod = products.find((p) => p.id === productId)
-    if (prod && prod.yieldQty && prod.yieldQty > 0) {
-      setPlannedQuantity(prod.yieldQty)
-    }
   }
 
   // Load preview calculation from productionService
@@ -104,7 +97,7 @@ export default function ProductionSimulationPage() {
     setPreviewError(null)
     try {
       const data = await productionService.previewProduction({
-        productId: selectedProductId,
+        variantId: selectedProductId,
         quantity: plannedQuantity,
       })
       setPreviewData(data)
@@ -232,7 +225,7 @@ export default function ProductionSimulationPage() {
                       </div>
                       <h4 className="font-bold text-xs text-foreground truncate">{p.name}</h4>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Standar Yield: <strong className="text-foreground">{p.yieldQty || 1} {p.unit}</strong>
+                        Basis resep: <strong className="text-foreground">{1} {p.unit}</strong>
                       </p>
                     </div>
 

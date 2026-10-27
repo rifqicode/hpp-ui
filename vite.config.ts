@@ -86,6 +86,7 @@ function seoFilesPlugin(rawSiteUrl: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
+  process.env.VITE_APP_NAME = env.VITE_APP_NAME || "Curo"
   const siteUrl = env.VITE_SITE_URL || "https://hpptracker.com"
 
   return {

@@ -129,7 +129,7 @@ export function useAccountSettings() {
   // Save Profile Handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !email.trim()) {
+    if (!name.trim() || (!currentUser?.username && !email.trim())) {
       setProfileError("Nama dan email wajib diisi.")
       return
     }

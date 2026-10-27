@@ -39,7 +39,7 @@ export function RecordMovementDialog({
   const [selectedMaterialId, setSelectedMaterialId] = React.useState("")
   const [movementType, setMovementType] = React.useState<MovementType>("ADJUSTMENT_IN")
   const [quantity, setQuantity] = React.useState("")
-  const [pricePerUnit, setPricePerUnit] = React.useState("")
+  const [totalCost, setTotalCost] = React.useState("")
   const [reason, setReason] = React.useState("")
   const [submitError, setSubmitError] = React.useState("")
   const submissionLock = React.useRef(false)
@@ -49,7 +49,7 @@ export function RecordMovementDialog({
   const isIncoming = movementType === "ADJUSTMENT_IN"
 
   const qty = Number(quantity)
-  const price = Number(pricePerUnit)
+  const numTotalCost = Number(totalCost)
   const current = Number(material?.current_stock || 0)
   const insufficient = !isIncoming && qty > current
   const valid =
@@ -57,13 +57,13 @@ export function RecordMovementDialog({
     Number.isFinite(qty) &&
     qty > 0 &&
     !insufficient &&
-    (!isIncoming || (Number.isFinite(price) && price > 0))
+    (!isIncoming || (Number.isFinite(numTotalCost) && numTotalCost > 0))
 
   function resetAndClose() {
     setSelectedMaterialId("")
     setMovementType("ADJUSTMENT_IN")
     setQuantity("")
-    setPricePerUnit("")
+    setTotalCost("")
     setReason("")
     setSubmitError("")
     onOpenChange(false)
@@ -94,13 +94,15 @@ export function RecordMovementDialog({
     submissionLock.current = true
     setSubmitError("")
 
+    const calculatedPricePerUnit = (isIncoming && qty > 0 && numTotalCost > 0) ? (numTotalCost / qty) : undefined
+
     try {
       await handleRecordAdjustment({
         stock_id: materialId,
         type: movementType,
         quantity: qty,
         reason: reason.trim() || undefined,
-        price_per_unit: isIncoming ? price : undefined,
+        price_per_unit: calculatedPricePerUnit,
       })
       resetAndClose()
       onSuccess?.()
@@ -124,7 +126,7 @@ export function RecordMovementDialog({
               <ArrowLeftRight className="size-5" />
             </span>
             <div>
-              <DialogTitle>Catat Mutasi Stok</DialogTitle>
+              <DialogTitle>Stock Adjustment</DialogTitle>
               <DialogDescription className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 Sesuaikan stok karena selisih hitungan opname fisik, kerusakan, atau kebutuhan koreksi.
               </DialogDescription>
@@ -237,11 +239,6 @@ export function RecordMovementDialog({
                       </span>
                     </label>
                   </div>
-                  {isIncoming && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      💡 Untuk stok dari belanja/faktur pembelian supplier, gunakan form Catat Pembelian.
-                    </p>
-                  )}
                 </fieldset>
 
                 {/* Material Selection */}
@@ -253,12 +250,12 @@ export function RecordMovementDialog({
                   onChange={(value) => {
                     setSelectedMaterialId(value)
                     setQuantity("")
-                    setPricePerUnit("")
+                    setTotalCost("")
                     setSubmitError("")
                   }}
                 />
 
-                {/* Quantity & Price per Unit */}
+                {/* Quantity & Total Cost */}
                 <div className={cn("grid gap-4", isIncoming ? "sm:grid-cols-2" : "grid-cols-1")}>
                   <div className="min-w-0 space-y-2">
                     <label htmlFor="movement-qty" className="text-sm font-medium text-foreground">
@@ -286,14 +283,13 @@ export function RecordMovementDialog({
 
                   {isIncoming && (
                     <div className="min-w-0 space-y-2">
-                      <label htmlFor="movement-price" className="text-sm font-medium text-foreground">
-                        Harga per {material?.base_unit || "Satuan"}{" "}
-                        <span className="text-destructive">*</span>
+                      <label htmlFor="movement-total-cost" className="text-sm font-medium text-foreground">
+                        Total Harga Bahan <span className="text-destructive">*</span>
                       </label>
                       <FormattedNumberInput
-                        id="movement-price"
-                        value={pricePerUnit}
-                        onChange={(value) => setPricePerUnit(String(value))}
+                        id="movement-total-cost"
+                        value={totalCost}
+                        onChange={(value) => setTotalCost(String(value))}
                         prefix="Rp"
                         allowDecimal
                         maxDecimals={4}
@@ -302,9 +298,15 @@ export function RecordMovementDialog({
                         disabled={!material}
                         className="h-11 rounded-xl"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Wajib untuk menghitung valuasi aset stok dan HPP batch baru.
-                      </p>
+                      {qty > 0 && numTotalCost > 0 ? (
+                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                          Harga per {material?.base_unit || "satuan"}: <CurrencyText value={numTotalCost / qty} /> (dihitung otomatis)
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Sistem otomatis menghitung harga per {material?.base_unit || "satuan"} dari total harga dibagi jumlah.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -354,11 +356,11 @@ export function RecordMovementDialog({
                       unit={material.base_unit}
                       invalid={insufficient}
                     />
-                    {isIncoming && price > 0 && (
+                    {isIncoming && numTotalCost > 0 && (
                       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground border border-border/50">
                         <span>Total nilai penyesuaian masuk:</span>
                         <strong className="text-sm font-semibold text-foreground">
-                          <CurrencyText value={qty * price} />
+                          <CurrencyText value={numTotalCost} />
                         </strong>
                       </div>
                     )}
