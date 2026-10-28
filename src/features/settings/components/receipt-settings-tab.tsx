@@ -98,7 +98,6 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
         <Card className="rounded-2xl border-border shadow-xs">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
-              <Printer className="size-5 text-primary" />
               <CardTitle className="text-base font-semibold">Pengaturan Format Struk & Printer</CardTitle>
             </div>
             <CardDescription className="text-xs">

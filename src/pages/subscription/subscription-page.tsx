@@ -90,7 +90,7 @@ interface QuotaResourceMeta {
 
 const QUOTA_RESOURCES: QuotaResourceMeta[] = [
   { key: "stocks", label: "Bahan Baku", sublabel: "Total bahan & stok", icon: Package },
-  { key: "products", label: "Produk", sublabel: "Resep menu aktif", icon: Factory },
+  { key: "products", label: "Produk", sublabel: "Menu & bahan baku aktif", icon: Factory },
   { key: "batches", label: "Produksi Bulanan", sublabel: "Batch produksi berjalan", icon: History },
   { key: "staff", label: "Staf Toko", sublabel: "Kapasitas anggota tim", icon: Users },
   { key: "stores", label: "Jumlah Cabang", sublabel: "Outlet & toko aktif", icon: Store },

@@ -174,7 +174,7 @@ export default function ProductionSimulationPage() {
             1. Pilih Produk & Tentukan Jumlah Produksi
           </CardTitle>
           <CardDescription className="text-xs">
-            Pilih produk yang sudah memiliki resep terdaftar, lalu atur target jumlah unit yang akan diproduksi.
+            Pilih produk yang sudah memiliki bahan baku terdaftar, lalu atur target jumlah unit yang akan diproduksi.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -188,7 +188,7 @@ export default function ProductionSimulationPage() {
               <Package className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
               <p className="text-sm font-semibold text-foreground">Belum ada produk terdaftar</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Silakan buat produk beserta resep bahan bakunya terlebih dahulu.
+                Silakan buat produk beserta takaran bahan bakunya terlebih dahulu.
               </p>
               <Button asChild size="sm" className="mt-3 rounded-xl text-xs font-semibold">
                 <Link to="/production/products/new">Tambah Produk Baru</Link>
@@ -219,13 +219,13 @@ export default function ProductionSimulationPage() {
                           </span>
                         ) : (
                           <span className="text-[10px] text-amber-600 font-medium">
-                            Tanpa Resep
+                            Tanpa Bahan Baku
                           </span>
                         )}
                       </div>
                       <h4 className="font-bold text-xs text-foreground truncate">{p.name}</h4>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Basis resep: <strong className="text-foreground">{1} {p.unit}</strong>
+                        Basis takaran: <strong className="text-foreground">{1} {p.unit}</strong>
                       </p>
                     </div>
 
@@ -515,7 +515,7 @@ export default function ProductionSimulationPage() {
                 Daftar Lengkap Kebutuhan Bahan Produksi ({previewData.items?.length || 0} Bahan)
               </CardTitle>
               <CardDescription className="text-xs">
-                Perbandingan komprehensif antara jumlah kebutuhan produksi dan ketersediaan stok aktual di gudang untuk setiap komponen resep.
+                Perbandingan komprehensif antara jumlah kebutuhan produksi dan ketersediaan stok aktual di gudang untuk setiap komponen bahan baku.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">

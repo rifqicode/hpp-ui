@@ -11,7 +11,7 @@ describe('page titles', () => {
     ['/inventory/purchase-orders', 'Purchase'], ['/inventory/purchase-orders/new', 'Buat PO Baru'], ['/inventory/purchase-orders/p1', 'Detail Purchase Order'],
     ['/production/products', 'Produk'], ['/production/products/new', 'Tambah Produk'], ['/production/products/p1', 'Detail Produk'],
     ['/production/batches', 'Production'], ['/production/batches/new', 'Mulai Batch'], ['/production/batches/b1', 'Detail Batch'],
-    ['/production/hpp', 'Simulasi Resep Baru'], ['/hpp', 'Simulasi Resep Baru'], ['/production/hpp/recipe-simulation', 'Simulasi Resep Baru'],
+    ['/production/hpp', 'Simulasi Produk Baru'], ['/hpp', 'Simulasi Produk Baru'], ['/production/hpp/recipe-simulation', 'Simulasi Produk Baru'],
     ['/production/hpp/production-simulation', 'Simulasi Produksi & Restock'], ['/production/overheads', 'Biaya Overhead'],
     ['/sales/pos', 'Point of Sale'], ['/sales/history', 'Riwayat Transaksi'], ['/sales/customers', 'Pelanggan'],
     ['/settings/store', 'Pengaturan Toko'], ['/settings/role', 'Manajemen Role'], ['/settings', 'Pengaturan Akun'],

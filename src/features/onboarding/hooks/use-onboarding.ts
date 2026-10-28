@@ -135,7 +135,7 @@ export function useOnboarding(storeId: string) {
       } else if (step === 2) {
         const current: OnboardingDraft = { ...draft, materials: draft.materials.map(m => ({ ...m })) };
         const pending = current.materials.filter(m => m.savedKey !== m.key && (m.name.trim() || m.price || m.packageQuantity));
-        if (!pending.length && !materials.length) throw new Error('Tambahkan setidaknya satu bahan untuk resep Anda.');
+        if (!pending.length && !materials.length) throw new Error('Tambahkan setidaknya satu bahan baku untuk produk Anda.');
         if (pending.some(m => !m.name.trim() || Number(m.price) <= 0 || Number(m.packageQuantity) <= 0)) throw new Error('Lengkapi nama, harga total, dan jumlah setiap bahan.');
         // Persist operation keys before mutations so retrying a lost response stays idempotent.
         await save(current, 2);

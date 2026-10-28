@@ -4,6 +4,7 @@ import {beforeEach,describe,expect,it,vi} from 'vitest';
 import RecipeCreatePage from '@/pages/recipes/recipe-create-page';
 import RecipeDetailPage from '@/pages/recipes/recipe-detail-page';
 import {recipeService} from '@/features/recipes/services/recipe-service';
+import {modifierService} from '@/features/recipes/services/modifier-service';
 import {mockPageServices,resetSession} from '../support/page-services';
 import {mockPopulatedPages,populatedProduct} from '../support/populated-pages';
 import {renderPage} from '../support/render';
@@ -15,7 +16,7 @@ async function start(mode='MAKE_TO_STOCK', calculator=true){
  await screen.findByRole('button',{name:'Lanjut'});change(screen.getByLabelText('Nama produk'),'Latte Baru');
  await user.selectOptions(screen.getByLabelText('Cara menyiapkan produk'),mode);await user.click(screen.getByRole('button',{name:'Lanjut'}));
  await screen.findByRole('button',{name:'Tambah bahan'});
- if(calculator) await user.click(screen.getByRole('button',{name:'Bantu hitung harga'}));
+ if(calculator) await user.click(screen.getByRole('button',{name:'Bantu tentukan harga'}));
  return user;
 }
 async function addIngredient(user:ReturnType<typeof userEvent.setup>,quantity='15'){
@@ -24,14 +25,40 @@ async function addIngredient(user:ReturnType<typeof userEvent.setup>,quantity='1
 describe('guided variant builder',()=>{
  it('requires identity and recipe before persistence',async()=>{const user=userEvent.setup();renderPage(<RecipeCreatePage/>,'/production/products/new');await user.click(screen.getByRole('button',{name:'Lanjut'}));expect(screen.getByRole('alert')).toHaveTextContent('Nama produk wajib');change(screen.getByLabelText('Nama produk'),'Latte');await user.click(screen.getByRole('button',{name:'Lanjut'}));await screen.findByRole('button',{name:'Tambah bahan'});await user.click(screen.getByRole('button',{name:'Simpan produk'}));expect(screen.getByRole('alert')).toHaveTextContent('minimal satu bahan');expect(recipeService.createProduct).not.toHaveBeenCalled();});
  it('saves a single per-unit variant and skips addons for MTS',async()=>{const user=await start();await addIngredient(user);change(screen.getByLabelText('Margin (%)'),'20');await user.click(screen.getByRole('button',{name:'Pakai hasil perhitungan'}));expect(screen.getByLabelText('Harga jual (Rp)')).not.toHaveAttribute('readonly');expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('187,5');expect(screen.queryByText('3. Add-on & topping')).not.toBeInTheDocument();await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.createProduct).toHaveBeenCalledWith(expect.objectContaining({name:'Latte Baru',mode:'MAKE_TO_STOCK',modifierGroupIds:[],variants:[expect.objectContaining({variantName:'Regular',sellingPrice:187.5,targetMargin:0.2,ingredients:[{stockId:'stock-1',quantity:15,unit:'g'}]})]})));});
- it('copies a recipe into another variant without mutating the source',async()=>{const user=await start();await addIngredient(user);await user.click(screen.getByRole('button',{name:'Tambah varian'}));change(screen.getByLabelText('Nama varian'),'Large');await user.selectOptions(screen.getByLabelText('Salin resep dari varian lain'),'0');change(screen.getByLabelText('Takaran (g)'),'20');await user.click(screen.getByRole('button',{name:'Regular'}));expect(screen.getByLabelText('Takaran (g)')).toHaveValue('15');await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.createProduct).toHaveBeenCalled());const payload=vi.mocked(recipeService.createProduct).mock.calls[0][0];expect(payload.variants.map(v=>v.ingredients[0].quantity)).toEqual([15,20]);});
+ it('copies a recipe into another variant without mutating the source',async()=>{const user=await start();await addIngredient(user);await user.click(screen.getByRole('button',{name:'Tambah varian'}));change(screen.getByLabelText('Nama varian'),'Large');await user.selectOptions(screen.getByLabelText('Salin bahan baku dari varian lain'),'0');change(screen.getByLabelText('Takaran (g)'),'20');await user.click(screen.getByRole('button',{name:'Regular'}));expect(screen.getByLabelText('Takaran (g)')).toHaveValue('15');await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.createProduct).toHaveBeenCalled());const payload=vi.mocked(recipeService.createProduct).mock.calls[0][0];expect(payload.variants.map(v=>v.ingredients[0].quantity)).toEqual([15,20]);});
  it('shows the optional assignment step only for MTO',async()=>{const user=await start('MAKE_TO_ORDER');await addIngredient(user);await user.click(screen.getByRole('button',{name:'Lanjut'}));expect(await screen.findByRole('heading',{name:'Add-on & Topping'})).toBeVisible();await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.createProduct).toHaveBeenCalledWith(expect.objectContaining({mode:'MAKE_TO_ORDER',modifierGroupIds:[]})));});
+ it('allows editing modifier groups in step 2 and navigating from review actions',async()=>{
+  const testGroup={id:'g1',name:'Extra Topping',minSelection:0,maxSelection:1,isActive:true,productCount:1,options:[{id:'o1',name:'Boba',price:4000,stockId:'stock-1',quantity:50,unit:'g',isActive:true}]};
+  vi.mocked(modifierService.list).mockResolvedValue([testGroup]);
+  const user=await start('MAKE_TO_ORDER');
+  await addIngredient(user);
+  await user.click(screen.getByRole('button',{name:'Lanjut'}));
+  expect(await screen.findByRole('heading',{name:'Add-on & Topping'})).toBeVisible();
+
+  const editBtn=screen.getByRole('button',{name:'Edit Extra Topping'});
+  expect(editBtn).toBeVisible();
+  await user.click(editBtn);
+  const dialog=screen.getByRole('dialog');
+  expect(within(dialog).getByRole('heading',{name:'Edit grup add-on'})).toBeVisible();
+  await user.click(within(dialog).getByRole('button',{name:'Batal'}));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+  const changeAddonBtn=screen.getByRole('button',{name:'Ubah add-on'});
+  expect(changeAddonBtn).toBeVisible();
+  await user.click(changeAddonBtn);
+  expect(screen.getByRole('heading',{name:'Add-on & Topping'})).toBeVisible();
+
+  const changeBasicBtn=screen.getByRole('button',{name:'Ubah info dasar'});
+  expect(changeBasicBtn).toBeVisible();
+  await user.click(changeBasicBtn);
+  expect(screen.getByLabelText('Nama produk')).toHaveValue('Latte Baru');
+ });
  it('keeps form state visible after a server error',async()=>{vi.mocked(recipeService.createProduct).mockRejectedValueOnce(new Error('Server sibuk'));const user=await start();await addIngredient(user);await user.click(screen.getByRole('button',{name:'Simpan produk'}));expect(await screen.findByRole('alert')).toHaveTextContent('Server sibuk');expect(screen.getByLabelText('Takaran (g)')).toHaveValue('15');await user.click(screen.getByRole('button',{name:'Kembali'}));expect(screen.getByLabelText('Nama produk')).toHaveValue('Latte Baru');});
 });
 describe('variant detail and editing',()=>{
  async function setup(){const user=userEvent.setup();renderPage(<RecipeDetailPage/>,'/production/products/product-1','/production/products/:productId');await screen.findByRole('heading',{name:'Roti Coklat',level:1});return user;}
- it('shows the selected variant recipe and batch history',async()=>{await setup();expect(screen.getByRole('heading',{name:'Resep Regular'})).toBeVisible();expect(screen.getByText(/LOT-TEST-001/)).toBeVisible();expect(within(screen.getByRole('table')).getByText('Tepung Terigu')).toBeVisible();});
- it('saves master and variant changes together',async()=>{const user=await setup();await user.click(screen.getByRole('button',{name:'Edit produk'}));change(screen.getByLabelText('Nama produk'),'Roti Baru');await user.click(screen.getByRole('button',{name:'Lanjut'}));await screen.findByRole('button',{name:'Tambah bahan'});await user.click(screen.getByRole('button',{name:'Bantu hitung harga'}));change(screen.getByLabelText('Margin (%)'),'50');expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('10.000');change(screen.getByLabelText('Harga jual (Rp)'),'12000');await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.updateProduct).toHaveBeenCalledWith('product-1',expect.objectContaining({name:'Roti Baru',variants:[expect.objectContaining({id:'variant-product-1',sellingPrice:12000})]})));});
+ it('shows the selected variant recipe and batch history',async()=>{await setup();expect(screen.getByRole('heading',{name:'Bahan Baku Regular'})).toBeVisible();expect(screen.getByText(/LOT-TEST-001/)).toBeVisible();expect(within(screen.getByRole('table')).getByText('Tepung Terigu')).toBeVisible();});
+ it('saves master and variant changes together',async()=>{const user=await setup();await user.click(screen.getByRole('button',{name:'Edit produk'}));change(screen.getByLabelText('Nama produk'),'Roti Baru');await user.click(screen.getByRole('button',{name:'Lanjut'}));await screen.findByRole('button',{name:'Tambah bahan'});await user.click(screen.getByRole('button',{name:'Bantu tentukan harga'}));change(screen.getByLabelText('Margin (%)'),'50');expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('10.000');change(screen.getByLabelText('Harga jual (Rp)'),'12000');await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.updateProduct).toHaveBeenCalledWith('product-1',expect.objectContaining({name:'Roti Baru',variants:[expect.objectContaining({id:'variant-product-1',sellingPrice:12000})]})));});
  it('opens a new variant directly and preserves the existing recipe when saving',async()=>{
   const original=populatedProduct();
   const saved={...original,variants:[...original.variants,{...original.variants[0],id:'variant-large',variantName:'Large',isDefault:false}]};
@@ -44,14 +71,14 @@ describe('variant detail and editing',()=>{
   expect(name).toHaveFocus();
   expect(recipeService.updateProduct).not.toHaveBeenCalled();
   change(name,'Large');
-  await user.selectOptions(screen.getByLabelText('Salin resep dari varian lain'),'0');
+  await user.selectOptions(screen.getByLabelText('Salin bahan baku dari varian lain'),'0');
   change(screen.getByLabelText('Takaran (g)'),'150');
   await user.click(screen.getByRole('button',{name:'Simpan produk'}));
   await waitFor(()=>expect(recipeService.updateProduct).toHaveBeenCalledWith(original.id,expect.objectContaining({variants:[
    expect.objectContaining({id:original.variants[0].id,ingredients:[expect.objectContaining({quantity:100})]}),
    expect.objectContaining({variantName:'Large',isDefault:false,ingredients:[expect.objectContaining({quantity:150})]}),
   ]})));
-  expect(await screen.findByRole('heading',{name:'Resep Large'})).toBeVisible();
+  expect(await screen.findByRole('heading',{name:'Bahan Baku Large'})).toBeVisible();
  });
  it('allows changing variants and uses plain labels for costs and production',async()=>{
   const item=populatedProduct();
@@ -63,8 +90,8 @@ describe('variant detail and editing',()=>{
   expect(screen.queryByText('HPP aktual terakhir')).not.toBeInTheDocument();
   await user.click(within(screen.getByRole('group',{name:'Varian produk'})).getByRole('button',{name:'Large'}));
   expect(screen.getByText(/Kode produk: ROTI-LARGE/)).toBeVisible();
-  expect(screen.getByRole('heading',{name:'Resep Large'})).toBeVisible();
-  expect(screen.getByText('Resep belum ditambahkan')).toBeVisible();
+  expect(screen.getByRole('heading',{name:'Bahan Baku Large'})).toBeVisible();
+  expect(screen.getByText('Bahan baku belum ditambahkan')).toBeVisible();
   expect(screen.queryByText(/LOT-TEST-001/)).not.toBeInTheDocument();
  });
  it('hides product and variant editing from users with read access only',async()=>{
@@ -72,7 +99,7 @@ describe('variant detail and editing',()=>{
   await setup();
   expect(screen.queryByRole('button',{name:'Tambah varian'})).not.toBeInTheDocument();
   expect(screen.queryByRole('button',{name:'Edit produk'})).not.toBeInTheDocument();
-  expect(screen.queryByRole('button',{name:'Edit harga & resep'})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'Edit harga & bahan baku'})).not.toBeInTheDocument();
  });
  it('can cancel a new variant without changing the product',async()=>{
   const user=await setup();
@@ -81,7 +108,7 @@ describe('variant detail and editing',()=>{
   await user.click(screen.getByRole('button',{name:'Batal'}));
   const dialog=screen.getByRole('dialog',{name:'Keluar dari form produk?'});
   await user.click(within(dialog).getByRole('button',{name:'Keluar dari form'}));
-  expect(await screen.findByRole('heading',{name:'Resep Regular'})).toBeVisible();
+  expect(await screen.findByRole('heading',{name:'Bahan Baku Regular'})).toBeVisible();
   expect(screen.queryByRole('button',{name:/Belum disimpan/})).not.toBeInTheDocument();
   expect(recipeService.updateProduct).not.toHaveBeenCalled();
  });
@@ -102,7 +129,7 @@ describe('product form usability', () => {
  it('saves a manually entered price without opening the calculator', async () => {
   const user=await start('MAKE_TO_STOCK',false);
   await addIngredient(user,'100');
-  expect(screen.getByRole('button',{name:'Bantu hitung harga'})).toHaveAttribute('aria-expanded','false');
+  expect(screen.getByRole('button',{name:'Bantu tentukan harga'})).toHaveAttribute('aria-expanded','false');
   change(screen.getByLabelText('Harga jual (Rp)'),'4500');
   change(screen.getByLabelText('Takaran (g)'),'200');
   expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('4.500');
@@ -113,10 +140,10 @@ describe('product form usability', () => {
   const user=userEvent.setup();
   const {client}=renderPage(<RecipeDetailPage/>,'/production/products/product-1','/production/products/:productId');
   await screen.findByRole('heading',{name:'Roti Coklat',level:1});
-  await user.click(screen.getByRole('button',{name:'Edit harga & resep'}));
+  await user.click(screen.getByRole('button',{name:'Edit harga & bahan baku'}));
   await screen.findByRole('button',{name:'Tambah bahan'});
   expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('10.000');
-  await user.click(screen.getByRole('button',{name:'Bantu hitung harga'}));
+  await user.click(screen.getByRole('button',{name:'Bantu tentukan harga'}));
   act(()=>client.setQueryData(['recipe-materials','store-1'],[{id:'stock-1',name:'Tepung Terigu',baseUnit:'g',currentStock:5000,avgCostPerUnit:200}]));
   await waitFor(()=>expect(screen.getByText('Saran harga jual').nextElementSibling).toHaveTextContent('Rp 40.000'));
   expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('10.000');
@@ -182,7 +209,7 @@ describe('product form usability', () => {
   expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('2.000');
   await user.click(screen.getByRole('button', { name: 'Tambah varian' }));
   change(screen.getByLabelText('Nama varian'), 'Large');
-  await user.selectOptions(screen.getByLabelText('Salin resep dari varian lain'), '0');
+  await user.selectOptions(screen.getByLabelText('Salin bahan baku dari varian lain'), '0');
   change(screen.getByLabelText('Margin (%)'), '75');
   await user.click(screen.getByRole('button', { name: 'Pakai hasil perhitungan' }));
   expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('6.000');
@@ -236,19 +263,19 @@ describe('product form usability', () => {
   const user = await start(); await addIngredient(user);
   expect(screen.getByRole('heading', { name: 'Periksa sebelum menyimpan' })).toBeVisible();
   await user.click(screen.getByRole('button', { name: 'Kembali' }));
-  await user.click(screen.getByRole('button', { name: /Varian & resep/ }));
+  await user.click(screen.getByRole('button', { name: /Varian & bahan baku/ }));
   expect(screen.getByLabelText('Takaran (g)')).toHaveValue('15');
  });
  it('requires confirmation before replacing an existing variant recipe', async () => {
   const user = await start(); await addIngredient(user, '15');
   await user.click(screen.getByRole('button', { name: 'Tambah varian' }));
   change(screen.getByLabelText('Nama varian'), 'Large'); await addIngredient(user, '20');
-  await user.selectOptions(screen.getByLabelText('Salin resep dari varian lain'), '0');
-  const dialog = screen.getByRole('dialog', { name: 'Ganti resep Large?' });
+  await user.selectOptions(screen.getByLabelText('Salin bahan baku dari varian lain'), '0');
+  const dialog = screen.getByRole('dialog', { name: 'Ganti bahan baku Large?' });
   await user.click(within(dialog).getByRole('button', { name: 'Batal' }));
   expect(screen.getByLabelText('Takaran (g)')).toHaveValue('20');
-  await user.selectOptions(screen.getByLabelText('Salin resep dari varian lain'), '0');
-  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Ganti resep' }));
+  await user.selectOptions(screen.getByLabelText('Salin bahan baku dari varian lain'), '0');
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Ganti bahan baku' }));
   expect(screen.getByLabelText('Takaran (g)')).toHaveValue('15');
  });
  it('routes early form submission to the next step without saving an MTO product', async () => {

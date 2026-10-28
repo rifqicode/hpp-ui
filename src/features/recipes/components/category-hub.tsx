@@ -71,7 +71,7 @@ export function CategoryHub() {
       <div>
         <h2 className="text-lg font-semibold text-foreground">Kategori Produk</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Kelompokkan produk agar lebih mudah dicari di katalog resep dan kasir POS.
+          Kelompokkan produk agar lebih mudah dicari di katalog produk dan kasir POS.
         </p>
       </div>
 

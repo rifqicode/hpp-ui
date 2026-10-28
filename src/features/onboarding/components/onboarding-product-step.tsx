@@ -12,7 +12,7 @@ export function OnboardingProductStep({ controller: w }: { controller: Controlle
     {w.products.length > 0 && <ProductField id="existing-product" label="Gunakan produk yang sudah ada"><ProductSelect id="existing-product" disabled={w.busy} value={w.draft.product.existingProductId} onChange={event => w.selectProduct(event.target.value)}><option value="">Buat produk di panduan ini</option>{w.products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}</ProductSelect></ProductField>}
     {selected ? <section className="space-y-4 rounded-xl border p-4 sm:p-5">
       <h2 className="text-lg font-semibold">{selected.name}</h2>
-      <p className="text-sm text-muted-foreground">Gunakan produk beserta varian dan resep yang sudah tersimpan.</p>
+      <p className="text-sm text-muted-foreground">Gunakan produk beserta varian dan bahan baku yang sudah tersimpan.</p>
       <ul className="divide-y">{selected.variants.filter(variant => variant.isActive).map(variant => <li key={variant.id} className="flex flex-wrap justify-between gap-3 py-3 text-sm"><span>{variant.variantName} · {variant.ingredients.length} bahan</span><span><CurrencyText value={variant.sellingPrice} /> / {variant.unit}</span></li>)}</ul>
       <div className="flex flex-wrap gap-2"><Button type="button" className="h-11" disabled={w.busy} onClick={() => void w.useExistingProduct()}>Gunakan produk & lihat HPP</Button><Button type="button" variant="outline" className="h-11" disabled={w.busy} onClick={() => void w.goBack(2)}>Kembali ke bahan baku</Button></div>
     </section> : <ProductBuilder

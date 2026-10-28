@@ -1,10 +1,10 @@
-# Persetujuan registrasi Curo
+# Persetujuan registrasi Ekatra POS
 
 Isi dan versi dokumen disimpan pada tabel PostgreSQL `legal_documents`. Frontend mengambil versi aktif melalui endpoint publik `GET /api/auth/service-agreement`; `src/features/auth/components/service-agreement.tsx` hanya merender respons API sebagai teks. Kode backend tidak lagi menjadi sumber naskah atau versi aktif, dan tidak ada fallback ke dokumen lokal.
 
 ## Referensi penulisan
 
-Diakses 27 Oktober 2026. Naskah ditulis ulang untuk fitur Curo; ketentuan komersial, identitas badan usaha, kontak, dan klaim keamanan perusahaan referensi tidak disalin.
+Diakses 27 Oktober 2026. Naskah ditulis ulang untuk fitur Ekatra POS; ketentuan komersial, identitas badan usaha, kontak, dan klaim keamanan perusahaan referensi tidak disalin.
 
 - [Syarat dan Ketentuan Majoo](https://majoo.id/syarat-dan-ketentuan): struktur persetujuan, kewenangan pengguna, penggunaan layanan, dan penghentian.
 - [Privasi dan Kebijakan Majoo](https://majoo.id/privasi-dan-kebijakan): tujuan pemrosesan, penyimpanan, dan pengungkapan data.

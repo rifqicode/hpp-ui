@@ -109,7 +109,7 @@ async (page) => {
   const deleteIngredient = page.getByRole('button', { name: 'Hapus bahan 2', exact: true });
   assert((await deleteIngredient.textContent()).trim() === '', 'Delete ingredient still renders text');
   await deleteIngredient.click();
-  await page.getByRole('button', { name: 'Bantu hitung harga', exact: true }).click();
+  await page.getByRole('button', { name: 'Bantu tentukan harga', exact: true }).click();
   await page.getByLabel('Tambahan harga (%)', { exact: true }).click();
   await page.getByLabel('Tambahan harga (%)', { exact: true }).pressSequentially('100');
   assert(await page.getByLabel('Tambahan harga (%)', { exact: true }).inputValue() === '100', 'Typed margin gained extra digits: ' + await page.getByLabel('Tambahan harga (%)', { exact: true }).inputValue());
@@ -138,7 +138,7 @@ async (page) => {
   assert(await page.getByLabel('Nama varian', { exact: true }).inputValue() === 'Large', 'Selected variant was lost when adding material');
   assert(await page.getByLabel('Takaran (g)', { exact: true }).inputValue() === '150', 'Variant recipe draft was lost');
   assert(await page.getByLabel('Harga jual (Rp)', { exact: true }).inputValue() === '6.000', 'Updating material cost overwrote the accepted price');
-  await page.getByRole('button', { name: 'Bantu hitung harga', exact: true }).click();
+  await page.getByRole('button', { name: 'Bantu tentukan harga', exact: true }).click();
   await page.getByRole('button', { name: 'Pakai hasil perhitungan', exact: true }).click();
   assert(await page.getByLabel('Harga jual (Rp)', { exact: true }).inputValue() === '7.500', 'Accepted suggestion was not applied');
   await checkWidth();

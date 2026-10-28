@@ -282,7 +282,7 @@ export default function SupplierDetailPage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Katalog Bahan Baku Terkait</CardTitle>
               <CardDescription>
-                Bahan baku yang rutin dipasok oleh vendor ini untuk kebutuhan resep produksi.
+                Bahan baku yang rutin dipasok oleh vendor ini untuk kebutuhan produksi.
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -1,3 +1,4 @@
+import { APP_NAME } from "@/lib/utils"
 import * as React from "react"
 import {
   Calculator,
@@ -592,7 +593,7 @@ function AdditionalFeatureMockup({ feature }: { feature: AdditionalFeature }) {
           <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-rose-400" />
           <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-amber-400" />
           <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-emerald-400" />
-          <span className="ml-2 min-w-0 truncate rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 font-mono text-[11px] text-slate-600">app.hpptracker.id/{feature.preview.path}</span>
+          <span className="ml-2 min-w-0 truncate rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 font-mono text-[11px] text-slate-600">{APP_NAME}/{feature.preview.path}</span>
         </div>
         <div className="mb-5 flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-primary"><Icon aria-hidden="true" className="size-5" /></span>
@@ -635,7 +636,7 @@ function HppRecipeMockup() {
             <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
             <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
             <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
-              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="text-slate-400 shrink-0">{APP_NAME}/</span>
               <span className="font-semibold text-slate-800 truncate">production/recipes/simulation</span>
             </div>
           </div>
@@ -803,7 +804,7 @@ function FifoInventoryMockup() {
             <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
             <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
             <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
-              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="text-slate-400 shrink-0">{APP_NAME}/</span>
               <span className="font-semibold text-slate-800 truncate">inventory/stocks</span>
             </div>
           </div>
@@ -980,7 +981,7 @@ function ProductionBatchMockup() {
             <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
             <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
             <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
-              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="text-slate-400 shrink-0">{APP_NAME}/</span>
               <span className="font-semibold text-slate-800 truncate">production/batches/42</span>
             </div>
           </div>
@@ -1133,7 +1134,7 @@ function PosCashierMockup() {
             <span className="size-2.5 rounded-full bg-amber-400 shrink-0" />
             <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
             <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
-              <span className="text-slate-400 shrink-0">app.hpptracker.id/</span>
+              <span className="text-slate-400 shrink-0">{APP_NAME}/</span>
               <span className="font-semibold text-slate-800 truncate">sales/pos/checkout</span>
             </div>
           </div>

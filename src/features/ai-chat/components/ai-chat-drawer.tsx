@@ -237,7 +237,7 @@ export function AIChatFloatingDrawer() {
                 <div className="w-full max-w-xs space-y-2.5 text-left mb-6 bg-card/60 border border-border/70 rounded-2xl p-4 text-xs">
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="text-foreground">Analisis HPP resep dan rekomendasi margin menu</span>
+                    <span className="text-foreground">Analisis HPP produk dan rekomendasi margin menu</span>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
@@ -375,7 +375,7 @@ export function AIChatFloatingDrawer() {
                       Halo! Ada yang bisa saya bantu?
                     </h3>
                     <p className="text-xs text-muted-foreground max-w-xs mt-1 leading-relaxed">
-                      Saya dapat menganalisis stok bahan, menghitung HPP resep, meninjau penjualan, dan memberi saran bisnis berdasarkan data toko Anda.
+                      Saya dapat menganalisis stok bahan, menghitung HPP produk, meninjau penjualan, dan memberi saran bisnis berdasarkan data toko Anda.
                     </p>
 
                     {/* Starter Prompt Chips */}

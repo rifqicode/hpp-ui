@@ -1,7 +1,8 @@
 import { Link, Navigate } from 'react-router-dom';
 import { Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CuroWordmark } from '@/components/brand/curo-logo';
+import { EkatraBrand } from '@/components/brand/ekatra-logo';
+import { APP_NAME } from '@/lib/utils';
 import { ProductField, ProductInput, ProductNumberInput, ProductSelect } from '@/features/recipes/components/product-form-layout';
 import { useOnboarding } from '@/features/onboarding/hooks/use-onboarding';
 import { OnboardingProductStep } from '@/features/onboarding/components/onboarding-product-step';
@@ -10,14 +11,14 @@ import { cn } from '@/lib/utils';
 import '@/features/onboarding/styles/onboarding.css';
 
 const STEPS = [
-  { title: 'Kenali HPP', detail: 'Pahami hubungan bahan, resep, dan biaya.' },
+  { title: 'Kenali HPP', detail: 'Pahami hubungan bahan baku, produk, dan biaya.' },
   { title: 'Bahan baku', detail: 'Mulai dari bahan untuk satu produk.' },
-  { title: 'Produk & resep', detail: 'Lengkapi varian, harga, dan resep per varian.' },
+  { title: 'Produk & bahan baku', detail: 'Lengkapi varian, harga, dan bahan baku per varian.' },
   { title: 'Hasil HPP', detail: 'Lihat biaya dan coba harga jual.' },
 ];
 const FLOW = [
   { title: 'Bahan baku', detail: 'Harga dan satuan bahan menjadi dasar biaya.' },
-  { title: 'Produk & resep', detail: 'Setiap varian memiliki harga dan resep per satu unit.' },
+  { title: 'Produk & bahan baku', detail: 'Setiap varian memiliki harga dan bahan baku per satu unit.' },
   { title: 'HPP produk', detail: 'Biaya per produk membantu menentukan harga jual.' },
   { title: 'Produksi', detail: 'Catat bahan yang dipakai dan hasil yang dibuat.' },
   { title: 'Penjualan', detail: 'Pantau penjualan dan laba kotor dari catatan usaha.' },
@@ -33,13 +34,13 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
   return <div className="onboarding-surface min-h-dvh bg-background text-foreground">
     <a href="#onboarding-content" className="sr-only focus:not-sr-only focus:block focus:p-3">Lewati ke langkah setup</a>
     <header className="border-b"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8">
-      <Link to="/dashboard" aria-label="Curo, buka dashboard" className="inline-flex min-h-11 items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"><CuroWordmark className="text-2xl text-primary" /></Link>
+      <Link to="/dashboard" aria-label={`${APP_NAME}, buka dashboard`} className="inline-flex min-h-11 items-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"><EkatraBrand className="text-xl" /></Link>
       <Button variant="ghost" className={controlClass} disabled={w.busy} onClick={() => void w.skipOnboarding()}>Lewati</Button>
     </div></header>
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-8 sm:py-10 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-12">
       <aside aria-label="Progres setup toko" className="min-w-0">
         <p className="text-sm font-medium text-primary">Siapkan produk pertama</p>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">Satu resep dulu. Lengkapi usaha Anda sambil berjalan.</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">Satu produk dulu. Lengkapi usaha Anda sambil berjalan.</p>
         <ol className="mt-5 flex flex-wrap gap-2 lg:block lg:space-y-6">
           {STEPS.map((s, i) => <li key={s.title} aria-current={w.step === i + 1 ? 'step' : undefined} className="min-w-0">
             <div className="flex items-start gap-3"><span role={w.completedSteps.includes(i + 1) ? 'img' : undefined} aria-label={w.completedSteps.includes(i + 1) ? `${s.title}, selesai` : undefined} className={cn('flex size-9 shrink-0 items-center justify-center rounded-md border text-sm font-semibold', w.step === i + 1 ? 'border-primary bg-primary text-primary-foreground' : w.completedSteps.includes(i + 1) ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground')}>{w.completedSteps.includes(i + 1) ? <Check className="size-4" aria-hidden="true" /> : i + 1}</span><div className={cn('min-w-0', w.step !== i + 1 && 'hidden lg:block')}><p className="text-sm font-medium leading-9">{s.title}</p><p className="hidden text-xs leading-5 text-muted-foreground lg:block">{s.detail}</p></div></div>
@@ -57,12 +58,12 @@ function OnboardingWizard({ storeId }: { storeId: string }) {
             </>}
             {w.step === 2 && <>
               <p className="text-sm leading-6 text-muted-foreground">Masukkan jumlah bahan dan harga totalnya. Harga satuan dihitung otomatis untuk acuan HPP. Bahan disimpan tanpa menambah stok atau membuat transaksi pembelian.</p>
-              {w.materials.length > 0 && <p role="status" className="rounded-lg border p-4 text-sm">{w.materials.length} bahan sudah tersedia. Anda bisa langsung lanjut dan memilihnya saat membuat resep.</p>}
+              {w.materials.length > 0 && <p role="status" className="rounded-lg border p-4 text-sm">{w.materials.length} bahan sudah tersedia. Anda bisa langsung lanjut dan memilihnya saat membuat produk.</p>}
               {w.draft.materials.map((m, i) => <section key={m.stockId || i} aria-label={`Bahan baku ${i + 1}`} className="space-y-4 rounded-xl border bg-card p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3"><h2 className="font-medium">Bahan {i + 1}{m.stockId && <span className="ml-2 text-sm text-primary">{m.savedKey === m.key ? 'Tersimpan' : 'Perubahan belum disimpan'}</span>}</h2>{!m.stockId && <Button type="button" size="icon" variant="ghost" className="size-11 shrink-0 bg-red-600 text-white hover:bg-red-700 hover:text-white" aria-label={`Hapus bahan ${i + 1}`} title={`Hapus bahan ${i + 1}`} onClick={() => w.removeMaterial(i)}><Trash2 className="size-4" aria-hidden="true" /></Button>}</div>
                 <fieldset className="grid min-w-0 gap-4 sm:grid-cols-2">
                   <ProductField id={`material-name-${i}`} label="Nama bahan"><ProductInput id={`material-name-${i}`} maxLength={150} value={m.name} onChange={e => w.updateMaterial(i, { name: e.target.value })} placeholder="Contoh: tepung terigu" /></ProductField>
-                  <ProductField id={`material-unit-${i}`} label="Satuan dasar resep"><ProductSelect id={`material-unit-${i}`} disabled={Boolean(m.stockId)} value={m.baseUnit} onChange={e => w.updateMaterial(i, { baseUnit: e.target.value as 'g' | 'ml' | 'pcs' })}><option value="g">Gram (g)</option><option value="ml">Mililiter (ml)</option><option value="pcs">Buah (pcs)</option></ProductSelect></ProductField>
+                  <ProductField id={`material-unit-${i}`} label="Satuan dasar bahan baku"><ProductSelect id={`material-unit-${i}`} disabled={Boolean(m.stockId)} value={m.baseUnit} onChange={e => w.updateMaterial(i, { baseUnit: e.target.value as 'g' | 'ml' | 'pcs' })}><option value="g">Gram (g)</option><option value="ml">Mililiter (ml)</option><option value="pcs">Buah (pcs)</option></ProductSelect></ProductField>
                   <ProductField id={`material-size-${i}`} label={`Jumlah bahan (${m.baseUnit})`}><ProductNumberInput id={`material-size-${i}`} value={m.packageQuantity} valueType="string" allowDecimal maxDecimals={6} onChange={(v: string) => w.updateMaterial(i, { packageQuantity: v })} /></ProductField>
                   <ProductField id={`material-price-${i}`} label="Harga total (Rp)" hint={w.materialUnitCosts[i] ? <span aria-live="polite" aria-atomic="true">Harga satuan: {w.materialUnitCosts[i]}</span> : undefined}><ProductNumberInput id={`material-price-${i}`} aria-describedby={w.materialUnitCosts[i] ? `material-price-${i}-hint` : undefined} value={m.price} valueType="string" allowDecimal onChange={(v: string) => w.updateMaterial(i, { price: v })} /></ProductField>
                 </fieldset>

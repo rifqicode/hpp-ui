@@ -7,7 +7,7 @@ import {
   Check,
   ChevronDown,
 } from "lucide-react"
-import "./landing-page.css"
+import { HeroVisual } from "./components/hero-visual"
 import { FeatureScrollShowcase } from "./components/feature-scroll-showcase"
 import { ProductionWorkflow } from "./components/production-workflow"
 import { Button } from "@/components/ui/button"
@@ -18,9 +18,9 @@ import type { SubscriptionTier } from "@/features/subscription/types/subscriptio
 
 import { WhatsAppCTA, type WhatsAppCTAConfig } from "./components/whatsapp-cta"
 import {
-  CuroLogo,
-  CuroWordmark,
-} from "@/components/brand/curo-logo"
+  EkatraLogo,
+  EkatraWordmark,
+} from "@/components/brand/ekatra-logo"
 
 const FAQ_ITEMS = [
   {
@@ -129,18 +129,17 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans selection:bg-primary selection:text-white antialiased overflow-x-clip">
+    <div className="brand-light-surface min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans selection:bg-primary selection:text-white antialiased overflow-x-clip">
         <a href="#konten-utama" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-primary focus:shadow-lg">Lewati navigasi</a>
         {/* Integrated Navigation Header */}
         <header className="w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 sm:h-16 flex items-center justify-between gap-2">
             {/* Brand Logo */}
             <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group">
-              <CuroLogo
-                variant="badge"
-                className="size-6 sm:size-7 transition-transform group-hover:scale-105"
+              <EkatraLogo
+                className="h-6 w-8 sm:h-8 sm:w-12 transition-transform group-hover:scale-105"
               />
-              <CuroWordmark className="text-xl sm:text-2xl text-[#2E1065]" />
+              <EkatraWordmark className="text-base sm:text-2xl" />
             </Link>
 
             {/* Desktop Navigation Links */}
@@ -217,18 +216,19 @@ export default function LandingPage() {
       {/* ======================================================== */}
       {/* 1. HERO SECTION       */}
       {/* ======================================================== */}
-      <section id="hero" aria-labelledby="hero-heading" className="relative min-h-[calc(100svh-80px)] lg:min-h-[calc(100svh-65px)] flex flex-col justify-between overflow-hidden bg-white border-b border-slate-200">
-        {/* Subtle Ambient Background Gradients */}
-        <div className="absolute top-0 right-0 -translate-y-20 translate-x-20 w-[550px] h-[550px] bg-gradient-to-bl from-indigo-100/70 via-indigo-50/40 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 translate-y-20 -translate-x-20 w-[600px] h-[600px] bg-gradient-to-tr from-violet-100/60 via-slate-100/40 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(#e0e7ff_1px,transparent_1px)] [background-size:24px_24px] opacity-40 -z-10 pointer-events-none" />
+      <section
+        id="hero"
+        aria-labelledby="hero-heading"
+        className="relative min-h-[calc(100svh-80px)] lg:min-h-[calc(100svh-65px)] flex flex-col justify-between overflow-hidden border-b border-slate-200"
+        style={{ background: "radial-gradient(ellipse 36% 44% at 84% 43%, rgba(96, 165, 250, 0.22), transparent 100%), radial-gradient(ellipse 36% 42% at 66% 60%, rgba(var(--brand-indigo-rgb), 0.2), transparent 100%), #FFFFFF" }}
+      >
 
         {/* Hero Main Body */}
         <div className="flex-1 flex items-center py-4 sm:py-8 lg:py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center">
               {/* Left Column: Heading, Typing Text, Call to Action */}
-              <div className="lg:col-span-7 flex flex-col text-left">
+              <div className="lg:col-span-6 flex flex-col text-left">
                 <p className="mb-2 sm:mb-4 text-xs sm:text-sm font-semibold text-primary">Untuk pemilik usaha kuliner</p>
 
                 {/* Main Heading */}
@@ -286,16 +286,8 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="relative lg:col-span-5 flex items-center justify-center">
-                <img
-                  src="/images/fnb-hero-cartoon.webp"
-                  alt="Ilustrasi kopi susu, matcha, croissant, donat, dan semangkuk ramen untuk usaha kuliner"
-                  width={1024}
-                  height={1024}
-                  fetchPriority="high"
-                  decoding="async"
-                  className="hero-food-illustration h-auto w-[min(48vw,200px)] sm:w-[min(40vw,300px)] lg:w-full lg:max-h-[60svh] object-contain"
-                />
+              <div className="relative lg:col-span-6 flex items-center justify-center">
+                <HeroVisual />
               </div>
             </div>
           </div>
@@ -594,12 +586,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-800">
             <div className="flex items-center gap-2.5">
-              <CuroLogo
-                variant="badge"
+              <EkatraLogo
                 darkMode
-                className="size-7 sm:size-8"
+                className="h-8 w-12 sm:h-9 sm:w-14"
               />
-              <CuroWordmark darkMode className="text-2xl text-white" />
+              <EkatraWordmark darkMode className="text-2xl text-white" />
             </div>
             <p className="text-xs text-slate-400 text-center md:text-right max-w-md">
               Bantu hitung biaya menu, atur harga jual, catat stok bahan, dan lihat hasil penjualan usaha kuliner Anda.

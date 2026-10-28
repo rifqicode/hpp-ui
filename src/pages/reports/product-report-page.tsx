@@ -395,7 +395,7 @@ export default function ProductReportPage() {
               <p className="mt-0.5 text-xs text-muted-foreground">Komposisi biaya per 1 {report.unit}</p>
             </div>
             <Badge variant={report.unit_cost_breakdown.cost_source === 'REALIZED_BATCH' ? 'default' : 'secondary'} className="text-[10px]">
-              {report.unit_cost_breakdown.cost_source === 'REALIZED_BATCH' ? 'Batch Realisasi' : 'Estimasi Resep'}
+              {report.unit_cost_breakdown.cost_source === 'REALIZED_BATCH' ? 'Batch Realisasi' : 'Estimasi Standar'}
             </Badge>
           </div>
           <div className="mt-4 space-y-2 text-xs sm:text-sm">

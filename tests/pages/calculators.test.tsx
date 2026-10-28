@@ -88,7 +88,7 @@ describe('legacy HPP calculator', () => {
   })
   it('simulates saved products under material and yield price changes', async () => {
     const user = userEvent.setup(); renderPage(<HppCalculatorPage />)
-    await user.click(screen.getByRole('tab', { name: /Simulasi What-If Resep Tersimpan/ }))
+    await user.click(screen.getByRole('tab', { name: /Simulasi What-If Produk Tersimpan/ }))
     await screen.findByText('Roti Coklat - Regular')
     await user.click(screen.getByText('Donat - Regular'))
     const sliders = screen.getAllByRole('slider')

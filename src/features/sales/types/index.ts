@@ -187,6 +187,10 @@ export interface CreateSaleInput {
   customer_phone?: string;
   customerName?: string;
   customer_name?: string;
+  fulfillmentType?: 'DINE_IN' | 'TAKE_AWAY' | string;
+  fulfillment_type?: 'DINE_IN' | 'TAKE_AWAY' | string;
+  tableNumber?: string;
+  table_number?: string;
   items: {
     variantId: string;
     modifierOptionIds?: string[];

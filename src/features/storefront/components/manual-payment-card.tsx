@@ -185,7 +185,7 @@ export function ManualPaymentCard({
           >
             {copiedKey === 'amount' ? (
               <>
-                <Check className="size-3.5 text-success" />
+                <Check className="size-3.5 text-success-text" />
                 Nominal Tersalin
               </>
             ) : (
@@ -306,7 +306,7 @@ export function ManualPaymentCard({
                   >
                     {copiedKey === `bank-${acc.id}` ? (
                       <>
-                        <Check className="size-3.5 text-success" />
+                        <Check className="size-3.5 text-success-text" />
                         Tersalin
                       </>
                     ) : (

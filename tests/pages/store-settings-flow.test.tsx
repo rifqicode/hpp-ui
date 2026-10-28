@@ -116,4 +116,15 @@ describe('store settings forms and tabs', () => {
     await user.click(screen.getByRole('button', { name: 'Tambah Peran Baru' }))
     expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/settings/role/new')
   })
+  it('navigates to payment tab and updates payment settings', async () => {
+    const user = await setup('payment')
+    expect(await screen.findByText('Pengaturan Metode Pembayaran')).toBeVisible()
+    const qrisSwitch = screen.getByRole('switch', { name: /QRIS/ })
+    await user.click(qrisSwitch)
+    const saveBtn = screen.getByRole('button', { name: /Simpan Pengaturan Pembayaran/ })
+    await user.click(saveBtn)
+    await waitFor(() => expect(settingsService.updateStoreProfile).toHaveBeenCalledWith(expect.objectContaining({
+      payment_config: expect.objectContaining({ enable_cash: true, enable_qris: true }),
+    })))
+  })
 })

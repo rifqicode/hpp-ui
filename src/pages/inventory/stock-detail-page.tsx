@@ -224,7 +224,7 @@ export default function StockDetailPage() {
         </Card>
         <Card className="border-l-4 border-l-success bg-success/10">
           <CardHeader className="pb-2">
-            <CardDescription className="text-success flex items-center gap-2">
+            <CardDescription className="text-success-text flex items-center gap-2">
               <Layers className="h-4 w-4" />
               Active Batches
             </CardDescription>

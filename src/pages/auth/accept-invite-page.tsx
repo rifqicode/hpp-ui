@@ -1,7 +1,7 @@
+import { EkatraBrand } from "@/components/brand/ekatra-logo"
 import * as React from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import {
-  Factory,
   Lock,
   Eye,
   EyeOff,
@@ -33,7 +33,6 @@ import {
 
 import { authService } from "@/features/auth/services/auth-service"
 import type { InviteDetailsResponse } from "@/features/auth/types"
-import { APP_NAME } from "@/lib/utils"
 import { useAuthStore } from "@/store/use-auth-store"
 
 export default function AcceptInvitePage() {
@@ -120,16 +119,11 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-4">
+    <div className="brand-light-surface min-h-screen bg-muted/30 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="flex items-center justify-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
-            <Factory className="h-5 w-5" />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-foreground">
-            {APP_NAME}
-          </span>
+          <EkatraBrand className="text-base sm:text-lg" />
         </div>
 
         {/* Loading State */}

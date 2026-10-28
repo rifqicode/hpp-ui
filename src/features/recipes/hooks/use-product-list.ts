@@ -49,7 +49,7 @@ export function useProductList() {
   }
 
   function requestUpgrade() {
-    window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { message: 'Tingkatkan paket Anda untuk menambah kapasitas produk dan resep.' } }));
+    window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { message: 'Tingkatkan paket Anda untuk menambah kapasitas produk dan bahan baku.' } }));
   }
 
   function createProduct() {

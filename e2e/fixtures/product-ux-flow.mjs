@@ -65,7 +65,7 @@ export default async function verifyProductUx(page, baseUrl = 'http://localhost:
   await page.getByLabel('Bahan 1', { exact: true }).selectOption('coffee');
   await page.getByLabel('Takaran (g)', { exact: true }).fill('15');
   await page.getByLabel('Harga jual (Rp)', { exact: true }).fill('18000');
-  await page.getByRole('button', { name: 'Bantu hitung harga', exact: true }).click();
+  await page.getByRole('button', { name: 'Bantu tentukan harga', exact: true }).click();
   await page.getByLabel('Tambahan harga (%)', { exact: true }).fill('60');
   await page.getByRole('complementary', { name: 'Estimasi varian' }).getByText(/Tercapai berdasarkan biaya bahan/).waitFor();
   await page.getByRole('button', { name: 'Tambah varian', exact: true }).click();

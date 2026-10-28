@@ -476,7 +476,7 @@ export default function BatchDetailPage() {
             <div>
               <CardTitle className="text-lg font-bold">{batch.hasActualConsumptions ? "Audit Konsumsi Bahan Baku (BOM FIFO)" : "Estimasi Kebutuhan Bahan Baku"}</CardTitle>
               <CardDescription className="text-xs text-muted-foreground">
-                {batch.hasActualConsumptions ? "Rincian bahan yang diambil dari gudang untuk batch produksi ini." : "Kebutuhan berdasarkan resep per unit dan add-on saat order dibuat. Waste aktual dicatat saat penyelesaian."}
+                {batch.hasActualConsumptions ? "Rincian bahan yang diambil dari gudang untuk batch produksi ini." : "Kebutuhan berdasarkan takaran bahan baku per unit dan add-on saat order dibuat. Waste aktual dicatat saat penyelesaian."}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">

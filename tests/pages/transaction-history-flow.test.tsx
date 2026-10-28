@@ -105,4 +105,17 @@ describe('transaction history filters', () => {
     await user.click(within(alert).getByRole('button', { name: 'Coba lagi' }))
     expect(await screen.findByRole('button', { name: `Struk ${sale.invoiceNumber}` })).toBeVisible()
   })
+
+  it('displays the 5s auto-refresh indicator badge in the header', async () => {
+    await setup()
+    expect(screen.getByText('Auto 5s')).toBeInTheDocument()
+  })
+
+  it('automatically refetches data after 5 seconds', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    await setup()
+    const initialCalls = vi.mocked(salesService.getPaginatedSales).mock.calls.length
+    await vi.advanceTimersByTimeAsync(5100)
+    expect(vi.mocked(salesService.getPaginatedSales).mock.calls.length).toBeGreaterThan(initialCalls)
+  })
 })

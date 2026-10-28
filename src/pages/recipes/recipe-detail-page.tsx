@@ -118,7 +118,7 @@ export default function RecipeDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 id="product-variants-title" className="text-base font-semibold">Pilihan varian</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Pilih varian untuk melihat harga, resep, dan stoknya.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Pilih varian untuk melihat harga, bahan baku, dan stoknya.</p>
           </div>
           {canEdit && (
             <Button className="min-h-11 gap-2 px-4" onClick={() => setEditor({ step: 1, addVariant: true })}>
@@ -190,15 +190,15 @@ export default function RecipeDetailPage() {
           </div>
 
           <div className={cn('grid min-w-0 items-start gap-4', !madeToOrder && 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]')}>
-            <ProductFormPanel title={`Resep ${variant.variantName}`} description={`Takaran bahan untuk membuat 1 ${variant.unit} produk.`}>
+            <ProductFormPanel title={`Bahan Baku ${variant.variantName}`} description={`Takaran bahan baku untuk membuat 1 ${variant.unit} produk.`}>
               {variant.ingredients.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-5">
                   <ClipboardList className="mb-2 size-5 text-muted-foreground" aria-hidden="true" />
-                  <p className="text-sm font-medium">Resep belum ditambahkan</p>
+                  <p className="text-sm font-medium">Bahan baku belum ditambahkan</p>
                   <p className="mt-1 text-sm text-muted-foreground">Isi bahan dan takarannya untuk menghitung biaya produk.</p>
                 </div>
               ) : (
-                <table className="w-full table-fixed text-left text-sm" aria-label={`Bahan resep ${variant.variantName}`}>
+                <table className="w-full table-fixed text-left text-sm" aria-label={`Bahan baku ${variant.variantName}`}>
                   <thead className="border-b text-xs text-muted-foreground">
                     <tr>
                       <th className="w-[40%] pb-3 pr-3 font-medium" scope="col">Bahan</th>
@@ -218,7 +218,7 @@ export default function RecipeDetailPage() {
                 </table>
               )}
               <p className="text-xs leading-5 text-muted-foreground">Perkiraan biaya bahan belum termasuk bahan terbuang, upah, listrik, dan biaya operasional lainnya.</p>
-              {canEdit && <Button variant="outline" className="min-h-11 gap-2 px-4" onClick={() => setEditor({ step: 1, addVariant: false })}><Pencil className="size-4" aria-hidden="true" />Edit harga & resep</Button>}
+              {canEdit && <Button variant="outline" className="min-h-11 gap-2 px-4" onClick={() => setEditor({ step: 1, addVariant: false })}><Pencil className="size-4" aria-hidden="true" />Edit harga & bahan baku</Button>}
             </ProductFormPanel>
 
             {!madeToOrder && (

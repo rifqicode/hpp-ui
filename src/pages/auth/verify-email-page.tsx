@@ -1,7 +1,8 @@
+import { AuthBrandPanel } from "@/features/auth/components/auth-brand-panel"
+import { EkatraBrand } from "@/components/brand/ekatra-logo"
 import * as React from "react"
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom"
 import {
-  Factory,
   Mail,
   ArrowRight,
   ArrowLeft,
@@ -220,46 +221,17 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="min-h-screen w-full min-w-0 bg-slate-50 lg:bg-white grid lg:grid-cols-12">
-      {/* Desktop brand panel */}
-      <aside className="relative hidden overflow-hidden border-r border-slate-800 bg-slate-950 p-10 text-white lg:col-span-4 lg:flex lg:flex-col xl:p-12">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-20 size-96 rounded-full bg-primary/20 blur-3xl" />
-        <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 -left-20 size-96 rounded-full bg-violet-600/15 blur-3xl" />
-
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center py-12 text-center">
-          <Link
-            to="/"
-            aria-label={`${APP_NAME} — Beranda`}
-            className="mb-6 flex size-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-4 focus-visible:ring-offset-slate-950"
-          >
-            <Factory aria-hidden="true" className="size-6" />
-          </Link>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white xl:text-4xl">
-            {APP_NAME.toUpperCase()}
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-slate-400">
-            Biaya lebih jelas.<br />Usaha lebih terarah.
-          </p>
-        </div>
-
-        <p className="relative z-10 text-center text-xs text-slate-500">
-          &copy; {new Date().getFullYear()} {APP_NAME}
-        </p>
-      </aside>
+    <div className="brand-light-surface min-h-screen w-full min-w-0 bg-slate-50 lg:bg-white grid lg:grid-cols-12">
+      <AuthBrandPanel page="verification" />
 
       {/* Right Canvas */}
       <div className="col-span-12 lg:col-span-8 flex flex-col justify-between w-full min-w-0 p-4 sm:p-10 lg:p-14 bg-white min-h-screen">
         {/* Top Bar: Back to Login & Mobile Logo */}
-        <div className="flex items-center justify-between pb-6 sm:pb-8">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-4 pb-6 sm:pb-8">
           {/* Mobile Header Logo */}
           <div className="lg:hidden flex items-center gap-2.5">
             <Link to="/" className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
-                <Factory className="size-5" />
-              </div>
-              <span className="font-black text-lg tracking-tight text-slate-900">
-                {APP_NAME.toUpperCase()}
-              </span>
+              <EkatraBrand className="gap-3 text-xl sm:text-2xl" logoClassName="h-10 w-14 sm:h-12 sm:w-[4.25rem]" />
             </Link>
           </div>
 

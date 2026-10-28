@@ -8,6 +8,23 @@ export interface ReceiptConfig {
   show_notes?: boolean;
 }
 
+export interface StoreBankAccount {
+  id: string;
+  bank_name: string;
+  account_number: string;
+  account_holder_name: string;
+}
+
+export interface StorePaymentConfig {
+  enable_cash: boolean;
+  enable_qris: boolean;
+  qris_image_url?: string;
+  qris_merchant_name?: string;
+  enable_bank_transfer: boolean;
+  bank_accounts: StoreBankAccount[];
+  payment_instruction?: string;
+}
+
 export interface StoreInfo {
   id: string;
   name: string;
@@ -19,6 +36,8 @@ export interface StoreInfo {
   storefront_config?: unknown;
   receipt_config?: ReceiptConfig;
   receiptConfig?: ReceiptConfig;
+  payment_config?: StorePaymentConfig;
+  paymentConfig?: StorePaymentConfig;
   category: string;
   location: string;
   phone?: string;

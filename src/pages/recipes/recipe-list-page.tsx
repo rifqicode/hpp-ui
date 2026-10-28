@@ -64,7 +64,7 @@ function MenuCatalog({ list }: { list: ReturnType<typeof useProductList> }) {
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
             {list.hasFilters
               ? "Ubah kata kunci atau reset filter untuk melihat produk lainnya."
-              : "Tambahkan produk pertama untuk mulai mengelola resep dan harga jual."}
+              : "Tambahkan produk pertama untuk mulai mengelola bahan baku dan harga jual."}
           </p>
           {list.hasFilters ? (
             <Button

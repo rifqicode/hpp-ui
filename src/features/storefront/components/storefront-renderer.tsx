@@ -440,7 +440,7 @@ export function StorefrontRenderer({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <MessageCircle className="size-3.5 text-success" />
+                    <MessageCircle className="size-3.5 text-success-text" />
                     <span>{secondaryCtaText}</span>
                   </a>
                 </Button>
@@ -510,7 +510,7 @@ export function StorefrontRenderer({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <MessageCircle className="size-3.5 text-success" />
+                    <MessageCircle className="size-3.5 text-success-text" />
                     Tanya via WhatsApp
                   </a>
                 </Button>

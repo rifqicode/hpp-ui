@@ -22,7 +22,7 @@ export const pageCases = [
   { file: 'production/hpp-calculator-page.tsx', entry: '/hpp', text: 'HPP Calculator & Pricing Simulator' },
   { file: 'production/overhead-list-page.tsx', entry: '/production/overheads', text: 'Biaya Overhead & Operasional' },
   { file: 'production/production-simulation-page.tsx', entry: '/production/hpp/production-simulation', text: 'Simulasi Produksi & Estimasi Restock' },
-  { file: 'production/recipe-simulation-page.tsx', entry: '/production/hpp/recipe-simulation', text: 'Simulasi Resep Baru' },
+  { file: 'production/recipe-simulation-page.tsx', entry: '/production/hpp/recipe-simulation', text: 'Simulasi Produk Baru' },
   { file: 'recipes/recipe-create-page.tsx', entry: '/production/products/new', text: 'Tambah Produk' },
   { file: 'recipes/recipe-detail-page.tsx', entry: '/production/products/product-1', path: '/production/products/:productId', text: 'Roti Coklat' },
   { file: 'recipes/recipe-list-page.tsx', entry: '/production/products', text: 'Produk' },

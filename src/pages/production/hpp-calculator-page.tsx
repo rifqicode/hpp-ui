@@ -399,14 +399,14 @@ Dihitung otomatis dengan HPP Manager.
             className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center justify-center gap-2 h-9"
           >
             <Sparkles className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Simulasi Bebas & Resep Baru</span>
+            <span className="truncate">Simulasi Bebas & Produk Baru</span>
           </TabsTrigger>
           <TabsTrigger
             value="saved"
             className="rounded-lg text-xs font-semibold data-[state=active]:bg-card data-[state=active]:shadow-sm flex items-center justify-center gap-2 h-9"
           >
             <Boxes className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Simulasi What-If Resep Tersimpan</span>
+            <span className="truncate">Simulasi What-If Produk Tersimpan</span>
           </TabsTrigger>
         </TabsList>
 
@@ -445,7 +445,7 @@ Dihitung otomatis dengan HPP Manager.
                     1. Identitas Produk & Hasil Batch (Yield)
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Tentukan nama produk dan berapa banyak porsi/unit jadi yang dihasilkan dari 1 kali memasak resep ini.
+                    Tentukan nama produk dan berapa banyak porsi/unit jadi yang dihasilkan dari 1 kali produksi produk ini.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1062,14 +1062,14 @@ Dihitung otomatis dengan HPP Manager.
         </TabsContent>
 
         {/* ========================================================= */}
-        {/* TAB 2: SIMULASI WHAT-IF DARI RESEP TERSIMPAN             */}
+        {/* TAB 2: SIMULASI WHAT-IF DARI PRODUK TERSIMPAN             */}
         {/* ========================================================= */}
         <TabsContent value="saved" className="mt-5 space-y-6">
           <Card className="rounded-2xl border-border shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Boxes className="h-4 w-4 text-primary" />
-                Pilih Resep Aktif untuk Simulasi Kenaikan Harga
+                Pilih Produk Aktif untuk Simulasi Kenaikan Harga
               </CardTitle>
               <CardDescription className="text-xs">
                 Uji sensitivitas bisnis Anda jika harga bahan baku pokok naik atau jika hasil panen dapur berkurang karena kegagalan proses.
@@ -1179,7 +1179,7 @@ Dihitung otomatis dengan HPP Manager.
                       />
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                         <span>-30% (Banyak Gosong / Afkir)</span>
-                        <span>0% (Sesuai Resep)</span>
+                        <span>0% (Sesuai Standar)</span>
                         <span>+20% (Hasil Lebih Banyak)</span>
                       </div>
                     </div>
@@ -1204,7 +1204,7 @@ Dihitung otomatis dengan HPP Manager.
                           Dampak Terhadap Margin & HPP
                         </CardTitle>
                         <CardDescription className="text-xs text-slate-600">
-                          Resep: {selectedSavedProduct.name}
+                          Produk: {selectedSavedProduct.name}
                         </CardDescription>
                       </CardHeader>
 

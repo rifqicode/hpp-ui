@@ -330,7 +330,7 @@ export default function PublicOrderTrackingPage() {
                           >
                             {copiedTracking ? (
                               <>
-                                <Check className="size-3.5 text-success" />
+                                <Check className="size-3.5 text-success-text" />
                                 Tersalin
                               </>
                             ) : (

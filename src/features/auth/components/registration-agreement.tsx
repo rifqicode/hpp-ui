@@ -1,8 +1,8 @@
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader,
-  DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import { APP_NAME } from "@/lib/utils"
 import { ServiceAgreement } from "./service-agreement"
@@ -20,20 +20,13 @@ interface RegistrationAgreementProps {
 }
 
 export function RegistrationAgreement({ document, loading, error, onRetry, hasRead, agreed, onReadComplete, onAgreeChange }: RegistrationAgreementProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const documentRef = useRef<HTMLDivElement>(null)
   const canAgree = Boolean(document && !loading && !error && hasRead)
 
   return (
     <div className="space-y-3 pt-1">
-      <Dialog>
-        <DialogTrigger asChild>
-          <button
-            type="button"
-            className="min-h-11 text-left text-sm font-semibold text-primary underline underline-offset-4 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            Baca Ketentuan Layanan &amp; Kebijakan Privasi
-          </button>
-        </DialogTrigger>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
           className="flex h-[85dvh] max-w-2xl flex-col gap-0 overflow-hidden bg-white p-0 text-slate-900 sm:p-0"
           onOpenAutoFocus={(event) => {
@@ -79,33 +72,68 @@ export function RegistrationAgreement({ document, loading, error, onRetry, hasRe
                 ? "Anda sudah mencapai akhir dokumen. Klik tombol di bawah jika Anda setuju."
                 : "Scroll ke bawah sampai akhir dokumen. Anda juga dapat menggunakan tombol Page Down atau End pada keyboard."}
             </p>
-            <DialogClose asChild>
-              <Button
-                type="button"
-                disabled={!canAgree}
-                onClick={() => { if (canAgree) onAgreeChange(true) }}
-                className="min-h-11 w-full sm:w-auto"
-              >
-                Selesai membaca dan setuju
-              </Button>
-            </DialogClose>
+            <Button
+              type="button"
+              disabled={!canAgree}
+              onClick={() => {
+                if (canAgree) {
+                  onAgreeChange(true)
+                  setIsOpen(false)
+                }
+              }}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Selesai membaca dan setuju
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <label className="flex min-h-11 items-start gap-2.5 text-xs leading-relaxed text-slate-700">
+      <div className="flex min-h-11 items-start gap-2.5 text-xs leading-relaxed text-slate-700">
         <input
           id="agreeTerms"
           type="checkbox"
           required
-          disabled={!canAgree}
           checked={agreed}
           aria-describedby={!hasRead ? "agreement-help" : undefined}
-          onChange={(event) => onAgreeChange(canAgree && event.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-400 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed"
+          onChange={() => {
+            if (agreed) {
+              onAgreeChange(false)
+            }
+          }}
+          onClick={(event) => {
+            if (!agreed) {
+              event.preventDefault()
+              setIsOpen(true)
+            }
+          }}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-400 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         />
-        <span>Saya telah membaca dan menyetujui {document?.title ?? "Ketentuan Layanan & Kebijakan Privasi"} {document?.app_name ?? APP_NAME}.</span>
-      </label>
+        <label
+          htmlFor="agreeTerms"
+          onClick={(event) => {
+            if (!agreed) {
+              event.preventDefault()
+              setIsOpen(true)
+            }
+          }}
+          className="cursor-pointer select-none"
+        >
+          <span>Saya telah membaca dan menyetujui </span>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              setIsOpen(true)
+            }}
+            className="font-semibold text-primary underline underline-offset-4 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            {document?.title ?? "Ketentuan Layanan & Kebijakan Privasi"}
+          </button>
+          <span> {document?.app_name ?? APP_NAME}.</span>
+        </label>
+      </div>
     </div>
   )
 }

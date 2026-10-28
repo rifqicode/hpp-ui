@@ -30,13 +30,13 @@ export const NAVIGATION: NavigationItem[] = [
   {
     id: "production", title: "Production", icon: Factory,
     children: [
+      { id: "products", title: "Produk", url: "/production/products", activePaths: ["/production/recipes"], icon: Factory, permission: "menu:recipes" },
       { id: "batches", title: "Production", url: "/production/batches", icon: History, permission: "menu:recipes" },
       { id: "overheads", title: "Biaya Overhead", url: "/production/overheads", icon: Layers, permission: "menu:recipes" },
-      { id: "products", title: "Produk", url: "/production/products", activePaths: ["/production/recipes"], icon: Factory, permission: "menu:recipes" },
       {
         id: "hpp", title: "HPP Calculator", icon: Calculator, permission: "menu:recipes", requiredFeature: "production_analytics",
         children: [
-          { id: "recipe-simulation", title: "Simulasi Resep Baru", url: "/production/hpp/recipe-simulation", requiredFeature: "production_analytics" },
+          { id: "recipe-simulation", title: "Simulasi Produk Baru", url: "/production/hpp/recipe-simulation", requiredFeature: "production_analytics" },
           { id: "production-simulation", title: "Simulasi Produksi & Restock", url: "/production/hpp/production-simulation", requiredFeature: "production_analytics" },
         ],
       },

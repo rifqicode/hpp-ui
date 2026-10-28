@@ -117,9 +117,8 @@ describe('login page', () => {
     expect(screen.getByText(/ri\*\*\*@example.com/)).toBeVisible()
     expect(screen.getByText(/Chrome on macOS/)).toBeVisible()
 
-    for (let i = 1; i <= 6; i++) {
-      await user.type(screen.getByLabelText(`Digit ${i}`), `${i}`)
-    }
+    await user.click(screen.getByLabelText('Digit 1'))
+    await user.paste('123456')
 
     await user.click(screen.getByRole('button', { name: 'Verifikasi & Masuk' }))
     expect(verifyDevice).toHaveBeenCalledWith('challenge-xyz', '123456')
@@ -168,7 +167,7 @@ describe('registration page', () => {
     vi.mocked(authService.getServiceAgreement).mockReturnValue(pending.promise)
     const user = userEvent.setup()
     renderPage(<RegisterPage />, '/register')
-    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    await user.click(screen.getByRole('checkbox'))
     expect(screen.getByText('Memuat dokumen ketentuan...')).toBeVisible()
     const document = screen.getByRole('region', { name: 'Dokumen Ketentuan Layanan dan Kebijakan Privasi' })
     Object.defineProperties(document, {
@@ -191,20 +190,20 @@ describe('registration page', () => {
       .mockResolvedValueOnce({ ...agreementDocument, version: 'server-document-v8', title: 'Dokumen terbaru dari backend' })
     const user = userEvent.setup()
     renderPage(<RegisterPage />, '/register')
-    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    await user.click(screen.getByRole('checkbox'))
     expect(await screen.findByRole('alert')).toHaveTextContent('Dokumen tidak dapat dimuat')
     expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
     await user.click(screen.getByRole('button', { name: 'Coba lagi' }))
     expect(await screen.findByRole('heading', { name: 'Dokumen terbaru dari backend' })).toBeVisible()
-    expect(screen.getByText('Versi server-document-v8 · Curo')).toBeVisible()
+    expect(screen.getByText('Versi server-document-v8 · Ekatra POS')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
     await user.keyboard('{Escape}')
-    expect(screen.getByRole('checkbox')).toBeDisabled()
+    expect(screen.getByRole('checkbox')).not.toBeChecked()
     expect(screen.getByRole('button', { name: /Lanjut/ })).toBeDisabled()
   })
 
   async function readAgreement(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: 'Baca Ketentuan Layanan & Kebijakan Privasi' }))
+    await user.click(screen.getByRole('checkbox'))
     const document = screen.getByRole('region', { name: 'Dokumen Ketentuan Layanan dan Kebijakan Privasi' })
     Object.defineProperties(document, {
       scrollHeight: { configurable: true, value: 2000 },
@@ -237,7 +236,7 @@ describe('registration page', () => {
     await user.type(screen.getByLabelText(/Konfirmasi Kata Sandi/), 'Abcdef12!')
     fireEvent.submit(next.closest('form')!)
     expect(screen.getByText('Anda harus menyetujui Ketentuan Layanan & Kebijakan Privasi.')).toBeVisible()
-    expect(screen.getByRole('checkbox')).toBeDisabled()
+    expect(screen.getByRole('checkbox')).not.toBeChecked()
     await readAgreement(user)
     expect(screen.getByRole('checkbox')).toBeChecked()
     expect(screen.queryByText('Dokumen sudah dibaca sampai akhir. Centang persetujuan untuk melanjutkan pendaftaran.')).not.toBeInTheDocument()
@@ -249,7 +248,7 @@ describe('registration page', () => {
   it('keeps consent locked after opening, partially scrolling, closing, and reopening the document', async () => {
     const user = userEvent.setup()
     renderPage(<RegisterPage />, '/register')
-    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    await user.click(screen.getByRole('checkbox'))
     const document = screen.getByRole('region', { name: 'Dokumen Ketentuan Layanan dan Kebijakan Privasi' })
     expect(document).toHaveFocus()
     Object.defineProperties(document, {
@@ -259,8 +258,8 @@ describe('registration page', () => {
     fireEvent.scroll(document, { target: { scrollTop: 800 } })
     expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
     await user.keyboard('{Escape}')
-    expect(screen.getByRole('checkbox')).toBeDisabled()
-    await user.click(screen.getByRole('button', { name: /Baca Ketentuan/ }))
+    expect(screen.getByRole('checkbox')).not.toBeChecked()
+    await user.click(screen.getByRole('checkbox'))
     expect(screen.getByRole('button', { name: 'Selesai membaca dan setuju' })).toBeDisabled()
     await user.keyboard('{Escape}')
     await readAgreement(user)
@@ -268,6 +267,15 @@ describe('registration page', () => {
     expect(consent).toBeEnabled()
     expect(consent).toBeChecked()
     expect(screen.getByRole('button', { name: /Lanjut/ })).toBeDisabled()
+  })
+
+  it('opens agreement modal when clicking the document title link', async () => {
+    const user = userEvent.setup()
+    renderPage(<RegisterPage />, '/register')
+    await user.click(screen.getByRole('button', { name: /Ketentuan Layanan & Kebijakan Privasi/ }))
+    expect(screen.getByRole('region', { name: 'Dokumen Ketentuan Layanan dan Kebijakan Privasi' })).toBeVisible()
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('checkbox')).not.toBeChecked()
   })
 
   it('requires a valid email and disables continuation when consent is withdrawn', async () => {
@@ -312,6 +320,9 @@ describe('registration page', () => {
     await user.click(screen.getByRole('button', { name: 'Selesaikan Pendaftaran' }))
     expect(screen.getByText(/Nomor WhatsApp harus diawali 8/)).toBeVisible()
     expect(register).not.toHaveBeenCalled()
+    await user.clear(phone)
+    await user.type(phone, '8123456789012345')
+    expect(phone).toHaveValue('812345678901')
     await user.clear(phone)
     await user.click(phone)
     await user.paste('+62 812-3456-7890')

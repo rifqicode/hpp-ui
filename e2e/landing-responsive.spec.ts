@@ -57,10 +57,10 @@ test('workflow replaces the simulator directly after the hero', async ({ page })
   expect(sections.indexOf('alur-kerja')).toBeLessThan(sections.indexOf('fitur'));
   await page.getByRole('link', { name: 'Lihat cara kerja', exact: true }).click();
   await expect(page).toHaveURL(/#alur-kerja$/);
-  await expect(page.getByRole('heading', { name: 'Cara kerja HPP Tracker' })).toBeInViewport();
+  await expect(page.getByRole('heading', { name: 'Ikuti satu pesanan, dari kasir sampai laporan.' })).toBeInViewport();
 });
 
-test('hero fills the opening viewport and illustration loops without pause controls', async ({ page }) => {
+test('hero artwork loops automatically and respects reduced motion', async ({ page }) => {
   const opening = await page.evaluate(() => ({
     viewportHeight: window.innerHeight,
     heroBottom: document.querySelector('#hero')!.getBoundingClientRect().bottom,
@@ -68,12 +68,30 @@ test('hero fills the opening viewport and illustration loops without pause contr
   }));
   expect(opening.heroBottom).toBeGreaterThanOrEqual(opening.viewportHeight - 1);
   expect(opening.workflowTop).toBeGreaterThanOrEqual(opening.viewportHeight - 1);
-  const illustration = page.locator('#hero img');
-  await expect(illustration).toHaveCSS('animation-name', 'none');
-  await expect(page.getByRole('button', { name: /animasi ilustrasi/i })).toHaveCount(0);
+  const illustration = page.locator('#hero .hero-slide-cashier');
+  const kitchen = page.locator('#hero .hero-slide-kitchen');
+  await expect.poll(() => illustration.evaluate((element: HTMLImageElement) => element.currentSrc)).toMatch(/ekatra-hero-cashier(?:-mobile)?\.webp$/);
+  await expect(illustration).toHaveCSS('opacity', '1');
+  await expect(kitchen).toHaveCSS('opacity', '0');
+  await expect(page.locator('#hero button')).toHaveCount(0);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await expect(illustration).toHaveCSS('animation-name', 'hero-food-float');
-  await expect(illustration).toHaveCSS('animation-play-state', 'running');
+  await expect(illustration).toHaveCSS('animation-iteration-count', 'infinite');
+  for (const [time, cashierOpacity, kitchenOpacity] of [[0, '1', '0'], [3000, '0', '1'], [6000, '1', '0']] as const) {
+    await page.locator('#hero img').evaluateAll((images, currentTime) => {
+      for (const image of images) {
+        for (const animation of image.getAnimations()) {
+          animation.pause();
+          animation.currentTime = currentTime;
+        }
+      }
+    }, time);
+    await expect(illustration).toHaveCSS('opacity', cashierOpacity);
+    await expect(kitchen).toHaveCSS('opacity', kitchenOpacity);
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(illustration).toHaveCSS('animation-name', 'none');
+  await expect(illustration).toHaveCSS('opacity', '1');
+  await expect(kitchen).toHaveCSS('opacity', '0');
   await expectContentFits(page);
 });
 
@@ -87,23 +105,28 @@ test('free and paid plans preserve their registration destinations', async ({ pa
 });
 
 
-test('workflow connects production costs to stock and gross profit', async ({ page }) => {
-  await page.getByRole('button', { name: '3. Mulai produksi', exact: true }).click();
+test('workflow tour connects the POS order to production and gross profit', async ({ page }) => {
+  await expect(page.locator('#workflow-example')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Putar alur', exact: true }).click();
+  await page.getByRole('button', { name: 'Jeda alur', exact: true }).click();
   const example = page.locator('#workflow-example');
-  await expect(example).toContainText('Rp 80.000');
-  await expect(example).toContainText('Rp 15.000 + Rp 5.000');
-  await expect(example).toContainText('20 potong brownies');
-  await expect(example).toContainText('Biaya membuat satu potong (HPP)');
-  await expect(example).toContainText('Rp 5.000');
-  await example.getByRole('button', { name: 'Berikutnya' }).click();
-  await expect(page.getByRole('button', { name: '4. Lihat penjualan & laba', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(example).toContainText('8 potong brownies');
-  await expect(example).toContainText('Rp 60.000');
-  await expect(example.getByRole('button', { name: 'Berikutnya' })).toBeDisabled();
-  await example.getByRole('button', { name: 'Sebelumnya' }).click();
-  await expect(example.getByRole('heading', { level: 3 })).toHaveText('Selesai memasak, tahu biaya per potongnya.');
+  await expect(example).toContainText('Rp 50.000');
+  await page.getByRole('button', { name: '3. Bahan & biaya', exact: true }).click();
+  await expect(example).toContainText('Rp 12.000');
+  await expect(example).toContainText('Rp 24.000');
+  await page.getByRole('button', { name: 'Berikutnya', exact: true }).click();
+  await expect(example).toContainText('Makanan siap untuk pelanggan.');
+  await page.getByRole('button', { name: 'Berikutnya', exact: true }).click();
+  await expect(page.getByRole('button', { name: '5. Laporan', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(example).toContainText('Rp 26.000');
+  await page.getByRole('button', { name: 'Selesai', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Putar ulang', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Putar ulang', exact: true }).click();
+  await expect(example).toContainText('Pesanan masuk lewat kasir.');
+  await example.getByRole('button', { name: 'Tutup penjelasan' }).click();
+  await expect(example).toHaveCount(0);
   await expectContentFits(page);
-  await page.getByRole('link', { name: 'Hitung resep pertama', exact: true }).last().click();
+  await page.getByRole('link', { name: 'Mulai dari usaha Anda', exact: true }).click();
   await expect(page).toHaveURL(/\/register$/);
 });
 
@@ -120,7 +143,7 @@ test('mobile shortcuts clear the sticky header and workflow choices keep their c
   const pricingTop = await page.locator('#pricing').evaluate((element) => element.getBoundingClientRect().top);
   expect(pricingTop).toBeGreaterThanOrEqual(headerBottom);
   await mobileNav.getByRole('link', { name: 'Cara kerja', exact: true }).click();
-  const step = page.getByRole('button', { name: '3. Mulai produksi', exact: true });
+  const step = page.getByRole('button', { name: '3. Bahan & biaya', exact: true });
   await step.scrollIntoViewIfNeeded();
   const scrollBefore = await page.evaluate(() => window.scrollY);
   await step.click();
@@ -130,7 +153,7 @@ test('mobile shortcuts clear the sticky header and workflow choices keep their c
 });
 
 test('recipe example uses the same HPP and gross profit across screen sizes', async ({ page }) => {
-  await expect(page).toHaveTitle(/HPP Tracker/);
+  await expect(page).toHaveTitle(/Ekatra POS/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'id');
   await expect(page.locator('main')).toHaveCount(1);
   await page.locator('#fitur').scrollIntoViewIfNeeded();

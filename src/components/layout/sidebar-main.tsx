@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/use-auth-store"
 import { useSubscriptionGuards } from "@/features/subscription"
 import { ChevronRight, Lock, Crown, Sprout, TrendingUp } from "lucide-react"
 import {
-  Sidebar, SidebarContent, SidebarHeader,
+  Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub,
   SidebarMenuSubItem, SidebarMenuSubButton, SidebarRail, useSidebar,
 } from "@/components/ui/sidebar"
@@ -211,6 +211,12 @@ export function SidebarMain({ onboardingData }: { onboardingData?: OnboardingDat
         </nav>
         <OnboardingInvitation data={onboardingData} />
       </SidebarContent>
+
+      <SidebarFooter className="p-3 pt-1 text-center group-data-[collapsible=icon]:hidden">
+        <p className="text-[11px] text-muted-foreground select-none">
+          © {new Date().getFullYear()} Ekatra
+        </p>
+      </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>

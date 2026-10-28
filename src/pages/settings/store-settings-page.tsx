@@ -21,6 +21,7 @@ import {
   Pencil,
   Globe,
   Printer,
+  CreditCard,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -67,6 +68,7 @@ import { RolePermissionsDialog } from "@/features/settings/components/role-permi
 import { permissionGroupInfo } from "@/features/settings/constants"
 import { StorefrontSettingsTab } from "@/features/storefront/components/storefront-settings-tab"
 import { ReceiptSettingsTab } from "@/features/settings/components/receipt-settings-tab"
+import { PaymentSettingsTab } from "@/features/settings/components/payment-settings-tab"
 import { StaffPasswordField } from "@/features/settings/components/staff-password-field"
 import { useAuthStore } from "@/store/use-auth-store"
 
@@ -90,7 +92,7 @@ export default function StoreSettingsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTab = searchParams.get("tab")
-  const activeTab = requestedTab && ["profile", "storefront", "receipt", "staff", "roles", "stores"].includes(requestedTab) ? requestedTab : "profile"
+  const activeTab = requestedTab && ["profile", "storefront", "payment", "receipt", "staff", "roles", "stores"].includes(requestedTab) ? requestedTab : "profile"
   const isCompactLayout = useIsMobile(1280)
 
   const handleTabChange = (val: string) => {
@@ -187,6 +189,7 @@ export default function StoreSettingsPage() {
     { id: "storefront", label: "Toko Online", description: "Katalog & checkout", icon: Globe },
     { id: "staff", label: "Anggota Tim", description: "Akun & akses staf", icon: Users },
     { id: "roles", label: "Peran & Hak Akses", description: "Izin operasional", icon: ShieldCheck },
+    { id: "payment", label: "Pembayaran", description: "QRIS & rekening bank", icon: CreditCard },
     { id: "receipt", label: "Struk & Printer", description: "Format & ukuran kertas", icon: Printer },
     { id: "stores", label: "Daftar Toko", description: "Toko & cabang", icon: Store },
   ] as const
@@ -408,7 +411,6 @@ export default function StoreSettingsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
                     <span>Peran & Hak Akses</span><Badge variant="secondary" className="text-[10px]">{rolesList.length}</Badge>
                   </CardTitle>
                   <CardDescription>
@@ -607,6 +609,19 @@ export default function StoreSettingsPage() {
            ============================================================ */}
         <TabsContent value="storefront" className="m-0">
           <StorefrontSettingsTab store={store} />
+        </TabsContent>
+
+        {/* ============================================================
+            TAB: PEMBAYARAN (QRIS, TRANSFER BANK, TUNAI)
+           ============================================================ */}
+        <TabsContent value="payment" className="m-0">
+          <PaymentSettingsTab
+            store={store}
+            onUpdated={(updated) => {
+              setStore(updated);
+              void loadProfile();
+            }}
+          />
         </TabsContent>
 
         {/* ============================================================

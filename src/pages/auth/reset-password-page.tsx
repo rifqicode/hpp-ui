@@ -1,6 +1,6 @@
+import { EkatraBrand } from "@/components/brand/ekatra-logo"
 import { Link } from "react-router-dom"
 import {
-  Factory,
   Lock,
   Eye,
   EyeOff,
@@ -45,7 +45,7 @@ export default function ResetPasswordPage() {
   } = useResetPassword()
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-slate-50/50 p-4 sm:p-6 lg:p-8">
+    <div className="brand-light-surface min-h-screen w-full flex items-center justify-center bg-slate-50/50 p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-4xl grid lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl border border-border bg-card">
         {/* Left Side: Branding */}
         <div className="hidden lg:flex flex-col justify-between p-10 bg-slate-900 text-slate-100 relative overflow-hidden">
@@ -54,13 +54,7 @@ export default function ResetPasswordPage() {
 
           {/* Logo */}
           <div className="flex items-center gap-3 relative z-10">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/30">
-              <Factory className="h-6 w-6" />
-            </div>
-            <div>
-              <span className="font-black text-xl tracking-tight text-white block leading-none">{APP_NAME.toUpperCase()}</span>
-              <span className="text-[11px] text-slate-400 font-medium tracking-wide uppercase">SaaS Biaya & Inventaris UMKM</span>
-            </div>
+            <EkatraBrand darkMode tagline className="text-xl" />
           </div>
 
           {/* Value Prop */}
@@ -73,7 +67,7 @@ export default function ResetPasswordPage() {
                 </span>
               </h2>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Buat kata sandi baru yang kuat untuk melindungi data resep, harga pokok penjualan, dan operasional toko Anda.
+                Buat kata sandi baru yang kuat untuk melindungi data produk, harga pokok penjualan, dan operasional toko Anda.
               </p>
             </div>
 
@@ -96,6 +90,9 @@ export default function ResetPasswordPage() {
 
         {/* Right Side: Form / State Display */}
         <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
+          <Link to="/" aria-label={`${APP_NAME}, beranda`} className="mb-6 inline-flex min-h-11 items-center self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
+            <EkatraBrand className="text-base sm:text-lg" />
+          </Link>
           {isValidating ? (
             <div className="py-12 flex flex-col items-center justify-center space-y-4 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -171,13 +168,6 @@ export default function ResetPasswordPage() {
           ) : (
             <>
               <CardHeader className="p-0 mb-6">
-                <div className="flex lg:hidden items-center gap-2 mb-6">
-                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
-                    <Factory className="h-5 w-5" />
-                  </div>
-                  <span className="font-extrabold text-lg tracking-tight text-foreground">{APP_NAME.toUpperCase()}</span>
-                </div>
-
                 <CardTitle className="text-2xl font-bold tracking-tight">Atur Kata Sandi Baru</CardTitle>
                 <CardDescription className="text-xs text-muted-foreground mt-1.5">
                   {userEmail

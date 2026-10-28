@@ -136,9 +136,38 @@ export default function TransactionHistoryPage() {
 
   const loading = isSalesLoading || isSummaryLoading;
 
-  const fetchSalesData = async () => {
+  const fetchSalesData = React.useCallback(async () => {
     await Promise.all([refetchSales(), refetchSummary()]);
-  };
+  }, [refetchSales, refetchSummary]);
+
+  React.useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let isCancelled = false;
+
+    const scheduleNext = () => {
+      if (isCancelled) return;
+      timeoutId = setTimeout(async () => {
+        try {
+          await fetchSalesData();
+        } catch {
+          // Keep retry loop resilient on network failure
+        } finally {
+          if (!isCancelled) {
+            scheduleNext();
+          }
+        }
+      }, 5000);
+    };
+
+    scheduleNext();
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [fetchSalesData]);
 
   const handlePresetChange = (preset: DatePreset) => {
     setPage(1);
@@ -204,6 +233,10 @@ export default function TransactionHistoryPage() {
           <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Pantau penjualan, cek pembayaran, dan buka detail transaksi.</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] items-center gap-1.5 font-normal">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Auto 5s
+          </Badge>
           <Button variant="outline" onClick={fetchSalesData} disabled={isSalesFetching || isSummaryFetching} className="h-10 gap-2 text-xs">
             <RefreshCw className={`size-3.5 ${isSalesFetching || isSummaryFetching ? 'animate-spin motion-reduce:animate-none' : ''}`} />Refresh
           </Button>
@@ -384,10 +417,22 @@ export default function TransactionHistoryPage() {
                     <span className="text-muted-foreground">Pelanggan:</span>
                     <span className="font-semibold">{selectedSale.customerName || 'Guest'}</span>
                   </div>
-                  {receiptConfig?.show_customer_phone !== false && selectedSale.customer?.phone && (
+                  {receiptConfig?.show_customer_phone !== false && (selectedSale.customerPhone || selectedSale.customer?.phone) && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">No. HP:</span>
-                      <span>{selectedSale.customer.phone}</span>
+                      <span>{selectedSale.customerPhone || selectedSale.customer?.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tipe:</span>
+                    <span className="font-semibold">
+                      {(selectedSale.fulfillmentType || selectedSale.fulfillment_type) === 'TAKE_AWAY' ? 'Take Away' : 'Dine In'}
+                    </span>
+                  </div>
+                  {Boolean(selectedSale.tableNumber || selectedSale.table_number) && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">No. Meja:</span>
+                      <span className="font-semibold">{selectedSale.tableNumber || selectedSale.table_number}</span>
                     </div>
                   )}
                   {receiptConfig?.show_notes !== false && selectedSale.notes && (

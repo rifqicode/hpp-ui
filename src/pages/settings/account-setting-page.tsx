@@ -242,7 +242,7 @@ export default function GeneralSettingsPage() {
           <TabsContent value="danger" className="m-0 min-w-0 space-y-4">
             <Card className="min-w-0 gap-0 border border-destructive/30 py-0 shadow-none ring-0">
               <CardHeader className="gap-1 border-b border-destructive/20 px-4 py-4 sm:px-5"><CardTitle className="flex items-center gap-2 text-base text-destructive"><AlertOctagon className="size-5" />Zona Bahaya</CardTitle><CardDescription className="text-xs leading-5">Penghapusan akun bersifat permanen dan tidak dapat dibatalkan.</CardDescription></CardHeader>
-              <CardContent className="p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div className="min-w-0 flex-1 basis-60"><h2 className="text-sm font-semibold">Hapus Akun & Seluruh Data Toko</h2><p className="mt-2 max-w-lg text-xs leading-5 text-muted-foreground">Data stok, resep produksi, riwayat pembelian, dan laporan penjualan akan dihapus secara permanen.</p></div><Button variant="destructive" onClick={() => setIsDeleteAccountOpen(true)} className="h-11 w-full shrink-0 gap-1.5 text-xs sm:w-auto"><Trash2 className="size-3.5" />Hapus Akun Permanen</Button></div></CardContent>
+              <CardContent className="p-4 sm:p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div className="min-w-0 flex-1 basis-60"><h2 className="text-sm font-semibold">Hapus Akun & Seluruh Data Toko</h2><p className="mt-2 max-w-lg text-xs leading-5 text-muted-foreground">Data stok, bahan baku produksi, riwayat pembelian, dan laporan penjualan akan dihapus secara permanen.</p></div><Button variant="destructive" onClick={() => setIsDeleteAccountOpen(true)} className="h-11 w-full shrink-0 gap-1.5 text-xs sm:w-auto"><Trash2 className="size-3.5" />Hapus Akun Permanen</Button></div></CardContent>
             </Card>
           </TabsContent>
         </div>
@@ -261,7 +261,7 @@ export default function GeneralSettingsPage() {
               Konfirmasi Penghapusan Akun
             </DialogTitle>
             <DialogDescription className="text-xs">
-              Tindakan ini tidak dapat dibatalkan. Seluruh data transaksi, resep, dan inventaris toko Anda akan dihapus permanen.
+              Tindakan ini tidak dapat dibatalkan. Seluruh data transaksi, bahan baku, dan inventaris toko Anda akan dihapus permanen.
             </DialogDescription>
           </DialogHeader>
 

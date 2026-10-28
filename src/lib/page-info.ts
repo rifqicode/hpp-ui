@@ -61,7 +61,7 @@ export function getActiveMenuTitle(pathname: string): string {
     return 'Detail Batch';
   }
   if (path === '/production/hpp' || path === '/production/hpp/recipe-simulation' || path === '/hpp') {
-    return 'Simulasi Resep Baru';
+    return 'Simulasi Produk Baru';
   }
   if (path === '/production/hpp/production-simulation') {
     return 'Simulasi Produksi & Restock';

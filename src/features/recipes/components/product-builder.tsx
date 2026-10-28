@@ -16,7 +16,7 @@ import { getRecipeEstimate, getSuggestedSellingPrice, isTargetMarginValid, newPr
 import { modifierService } from '../services/modifier-service';
 import { useAuthStore } from '@/store/use-auth-store';
 import { cn } from '@/lib/utils';
-import type { Product, VariantInput, CreateProductInput } from '../types';
+import type { Product, VariantInput, CreateProductInput, ModifierGroup } from '../types';
 
 const TARGET_MARGIN_ERROR = 'Margin harus antara 0% dan kurang dari 100%.';
 
@@ -82,7 +82,7 @@ export function ProductBuilder({ product, onSaved, onCancel, initialStep = 0, in
   const [showCategory, setShowCategory] = useState(false);
   const [categoryBusy, setCategoryBusy] = useState(false);
   const [categoryError, setCategoryError] = useState('');
-  const [newGroup, setNewGroup] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<ModifierGroup | 'new' | null>(null);
   const [copySource, setCopySource] = useState<number | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const savedRef = useRef(false);
@@ -93,7 +93,7 @@ export function ProductBuilder({ product, onSaved, onCancel, initialStep = 0, in
   const marginError = errors[`variant-margin-${selected}`] || (!validMargin ? TARGET_MARGIN_ERROR : undefined);
   const marginText = marginInput?.variant === selected && marginInput.targetMargin === variant.targetMargin
     ? marginInput.text : variant.targetMargin === 0 ? '' : String(Number((variant.targetMargin * 100).toFixed(2)));
-  const steps = form.mode === 'MAKE_TO_ORDER' && !initialPricingOpen ? ['Info dasar', 'Varian & resep', 'Add-on & topping'] : ['Info dasar', 'Varian & resep'];
+  const steps = form.mode === 'MAKE_TO_ORDER' && !initialPricingOpen ? ['Info dasar', 'Varian & bahan baku', 'Add-on & topping'] : ['Info dasar', 'Varian & bahan baku'];
   const finalStep = step === steps.length - 1;
   const estimate = getRecipeEstimate(variant, materials.data);
   const suggestedPrice = getSuggestedSellingPrice(variant, materials.data);
@@ -224,7 +224,7 @@ export function ProductBuilder({ product, onSaved, onCancel, initialStep = 0, in
   </>;
 
   return <div ref={topRef} className="w-full min-w-0 space-y-5 pb-8">
-    {!embedded && <ProductPageHeader title={product ? `${initialPricingOpen ? 'Tinjau harga' : startWithNewVariant ? 'Tambah varian' : 'Edit'} ${product.name}` : 'Tambah Produk'} description={initialPricingOpen ? 'Bandingkan biaya bahan terbaru dengan harga tersimpan. Harga baru dipakai setelah kamu menyimpannya.' : startWithNewVariant ? 'Isi nama varian, lalu tambahkan bahan dan takaran untuk menghitung harga jualnya.' : 'Atur informasi produk, lalu lengkapi varian dan resep per satu unit.'} backTo="/production/products" onBack={cancel} />}
+    {!embedded && <ProductPageHeader title={product ? `${initialPricingOpen ? 'Tinjau harga' : startWithNewVariant ? 'Tambah varian' : 'Edit'} ${product.name}` : 'Tambah Produk'} description={initialPricingOpen ? 'Bandingkan biaya bahan terbaru dengan harga tersimpan. Harga baru dipakai setelah kamu menyimpannya.' : startWithNewVariant ? 'Isi nama varian, lalu tambahkan bahan dan takaran untuk menghitung harga jualnya.' : 'Atur informasi produk, lalu lengkapi varian dan bahan baku per satu unit.'} backTo="/production/products" onBack={cancel} />}
     {restored && <p role="status" className="rounded-lg border bg-muted/40 p-3 text-sm">Draft produk dipulihkan. Isian baru disimpan ke katalog setelah Anda memilih Simpan produk.</p>}
     <form onSubmit={save} noValidate className="space-y-4">
       <ol aria-label="Tahapan produk" className="flex flex-wrap gap-x-4 gap-y-2 border-b pb-4">
@@ -251,11 +251,11 @@ export function ProductBuilder({ product, onSaved, onCancel, initialStep = 0, in
           <ProductFormPanel title="Foto produk" description="Opsional. Membantu tim mengenali produk di katalog dan kasir."><ImageUploadDropzone value={form.imageUrl} onChange={imageUrl => setForm(f => ({ ...f, imageUrl }))} disabled={saving} /></ProductFormPanel>
         </div>}
 
-        {step === 1 && <section aria-label="Varian dan resep" className="space-y-4">
+        {step === 1 && <section aria-label="Varian dan bahan baku" className="space-y-4">
           <div className="flex flex-wrap items-center gap-2" aria-label="Pilih varian">{form.variants.map((v, i) => <Button key={v.id ?? i} type="button" className="h-11" aria-pressed={selected === i} variant={selected === i ? 'secondary' : 'outline'} onClick={() => { setSelected(i); setErrors({}); setError(''); }}>{v.variantName || `Varian ${i + 1}`}{!v.isActive && ' (Arsip)'}</Button>)}<Button type="button" variant={embedded ? 'default' : 'outline'} className="h-11" onClick={() => { setForm(f => ({ ...f, variants: [...f.variants, newVariant(`Varian ${f.variants.length + 1}`)] })); setSelected(form.variants.length); setErrors({}); setError(''); }}><Plus className="size-4" aria-hidden />Tambah varian</Button></div>
           <div className={cn('grid items-start gap-4', embedded ? 'xl:grid-cols-[minmax(0,1fr)_16rem]' : 'lg:grid-cols-[minmax(0,1fr)_19rem]')}>
             <div className="min-w-0 space-y-4">
-              <ProductFormPanel title="Identitas varian" description="Setiap varian mempunyai harga, resep dan stok sendiri.">
+              <ProductFormPanel title="Identitas varian" description="Setiap varian mempunyai harga, bahan baku dan stok sendiri.">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <ProductField id={`variant-name-${selected}`} label="Nama varian" required error={errors[`variant-name-${selected}`]}><ProductInput id={`variant-name-${selected}`} value={variant.variantName} onChange={e => updateVariant({ variantName: e.target.value })} {...fieldState(`variant-name-${selected}`)} /></ProductField>
                   <ProductField id={`variant-unit-${selected}`} label="Satuan hasil" required error={errors[`variant-unit-${selected}`]} hint={embedded ? 'Satuan untuk satu produk varian ini, misalnya pcs, cup, atau botol.' : undefined}><ProductInput id={`variant-unit-${selected}`} value={variant.unit} placeholder="Contoh: pcs, cup, botol" onChange={e => updateVariant({ unit: e.target.value })} {...fieldState(`variant-unit-${selected}`)} /></ProductField>
@@ -266,8 +266,8 @@ export function ProductBuilder({ product, onSaved, onCancel, initialStep = 0, in
                   {!variant.id && form.variants.length > 1 && <Button type="button" variant="outline" className="h-11" onClick={() => { setForm(f => ({ ...f, variants: f.variants.filter((_, i) => i !== selected) })); setSelected(0); }}>Hapus varian baru</Button>}
                 </div></details>
               </ProductFormPanel>
-              <ProductFormPanel title={`Resep per satu ${variant.unit || 'unit'}`} description="Isi takaran untuk satu unit hasil. Hasil aktual dan produk rusak dicatat saat produksi.">
-                {form.variants.length > 1 && <ProductField id="copy-recipe" label="Salin resep dari varian lain"><ProductSelect id="copy-recipe" value="" onChange={e => { const source = Number(e.target.value); if (variant.ingredients.length) setCopySource(source); else copyRecipe(source); }}><option value="" disabled>Pilih sumber resep</option>{form.variants.map((v, i) => i !== selected && <option key={v.id ?? i} value={i}>{v.variantName}</option>)}</ProductSelect></ProductField>}
+              <ProductFormPanel title={`Bahan baku per satu ${variant.unit || 'unit'}`} description="Isi takaran untuk satu unit hasil. Hasil aktual dan produk rusak dicatat saat produksi.">
+                {form.variants.length > 1 && <ProductField id="copy-recipe" label="Salin bahan baku dari varian lain"><ProductSelect id="copy-recipe" value="" onChange={e => { const source = Number(e.target.value); if (variant.ingredients.length) setCopySource(source); else copyRecipe(source); }}><option value="" disabled>Pilih sumber bahan baku</option>{form.variants.map((v, i) => i !== selected && <option key={v.id ?? i} value={i}>{v.variantName}</option>)}</ProductSelect></ProductField>}
                 {materials.isPending ? <p role="status">Memuat bahan...</p> : materials.isError ? <div role="alert"><p>Gagal memuat bahan baku.</p><Button type="button" variant="outline" className="mt-2 h-11" onClick={() => void materials.refetch()}>Muat ulang bahan</Button></div> : <>
                   {variant.ingredients.map((line, index) => <div key={index} className="grid items-start gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto]">
                     <ProductField id={`material-${selected}-${index}`} label={`Bahan ${index + 1}`} required error={errors[`material-${selected}-${index}`]}><ProductSelect id={`material-${selected}-${index}`} value={line.stockId} {...fieldState(`material-${selected}-${index}`)} onChange={e => { const stock = materials.data.find(s => s.id === e.target.value); updateVariant({ ingredients: variant.ingredients.map((i, n) => n === index ? { ...i, stockId: e.target.value, unit: stock?.baseUnit } : i) }); }}><option value="">Pilih bahan</option>{materials.data.map(s => <option key={s.id} value={s.id}>{s.name} ({s.baseUnit})</option>)}</ProductSelect></ProductField>
@@ -287,7 +287,7 @@ export function ProductBuilder({ product, onSaved, onCancel, initialStep = 0, in
                   {form.mode === 'MAKE_TO_STOCK' && <ProductField id={`variant-stock-${selected}`} label="Minimum stok" error={errors[`variant-stock-${selected}`]} hint="Produk ditandai menipis saat stok mencapai batas ini."><ProductNumberInput id={`variant-stock-${selected}`} allowDecimal value={variant.minStock} onChange={value => updateVariant({ minStock: Number(value) })} {...fieldState(`variant-stock-${selected}`)} /></ProductField>}
                 </div>
                 {estimate !== null && variant.sellingPrice < estimate && <FeedbackAlert>Harga jual saat ini lebih rendah dari perkiraan biaya bahan. Kamu bisa meninjau perhitungan di bawah sebelum menyimpan.</FeedbackAlert>}
-                <Button type="button" variant="outline" className="min-h-11 gap-2" aria-expanded={showCalculator} aria-controls="product-price-calculator" onClick={() => setShowCalculator(!showCalculator)}><Calculator className="size-4" aria-hidden="true" />Bantu hitung harga</Button>
+                <Button type="button" variant="outline" className="min-h-11 gap-2" aria-expanded={showCalculator} aria-controls="product-price-calculator" onClick={() => setShowCalculator(!showCalculator)}><Calculator className="size-4" aria-hidden="true" />Bantu tentukan harga</Button>
                 <div id="product-price-calculator" hidden={!showCalculator} className="space-y-4 rounded-lg border bg-muted p-4">
                   <ProductField id={`variant-margin-${selected}`} label="Margin (%)" error={marginError} hint="Dihitung dari harga jual: Modal ÷ (1 - Margin). Contoh: Margin 50% berarti modal adalah 50% dari harga jual."><ProductNumberInput id={`variant-margin-${selected}`} suffix="%" allowDecimal maxDecimals={2} valueType="string" value={marginText} placeholder="0" onChange={(text: string) => updateMargin(text)} aria-invalid={Boolean(marginError)} aria-describedby={`variant-margin-${selected}-${marginError ? 'error' : 'hint'}`} /></ProductField>
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -308,20 +308,52 @@ export function ProductBuilder({ product, onSaved, onCancel, initialStep = 0, in
         </section>}
 
         {step === 2 && form.mode === 'MAKE_TO_ORDER' && <ProductFormPanel title="Add-on & Topping" description="Opsional. Pilih grup tambahan yang dapat dipesan untuk produk ini.">
-          {groups.isPending ? <p role="status">Memuat grup...</p> : groups.isError ? <div role="alert"><p>Gagal memuat grup add-on.</p><Button type="button" variant="outline" className="mt-2 h-11" onClick={() => void groups.refetch()}>Coba lagi</Button></div> : <div className="grid gap-3 sm:grid-cols-2">{groups.data.filter(g => g.isActive).map(g => <Label key={g.id} className="flex min-h-11 items-start gap-3 rounded-lg border p-4"><input className="mt-1 size-4 shrink-0 accent-primary" type="checkbox" checked={form.modifierGroupIds?.includes(g.id) ?? false} onChange={e => setForm(f => ({ ...f, modifierGroupIds: e.target.checked ? [...(f.modifierGroupIds ?? []), g.id] : f.modifierGroupIds?.filter(id => id !== g.id) }))} /><span className="min-w-0 leading-5">{g.name}<span className="mt-1 block text-xs font-normal text-muted-foreground">Pilih {g.minSelection}–{g.maxSelection}: {g.options.filter(o => o.isActive).map(o => o.name).join(', ')}</span></span></Label>)}{groups.data.filter(g => g.isActive).length === 0 && <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground sm:col-span-2">Belum ada grup aktif. Produk dapat disimpan tanpa add-on.</p>}</div>}
-          <Button type="button" variant="outline" className="h-11" onClick={() => setNewGroup(true)}><Plus className="size-4" aria-hidden />Buat grup add-on baru</Button>
+          {groups.isPending ? <p role="status">Memuat grup...</p> : groups.isError ? <div role="alert"><p>Gagal memuat grup add-on.</p><Button type="button" variant="outline" className="mt-2 h-11" onClick={() => void groups.refetch()}>Coba lagi</Button></div> : <div className="grid gap-3 sm:grid-cols-2">{groups.data.filter(g => g.isActive).map(g => (
+            <div key={g.id} className="flex min-h-11 items-start justify-between gap-3 rounded-lg border p-4">
+              <Label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
+                <input className="mt-1 size-4 shrink-0 accent-primary" type="checkbox" checked={form.modifierGroupIds?.includes(g.id) ?? false} onChange={e => setForm(f => ({ ...f, modifierGroupIds: e.target.checked ? [...(f.modifierGroupIds ?? []), g.id] : f.modifierGroupIds?.filter(id => id !== g.id) }))} />
+                <span className="min-w-0 leading-5">{g.name}<span className="mt-1 block text-xs font-normal text-muted-foreground">Pilih {g.minSelection}–{g.maxSelection}: {g.options.filter(o => o.isActive).map(o => o.name).join(', ')}</span></span>
+              </Label>
+              <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground" aria-label={`Edit ${g.name}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingGroup(g); }}>Edit</Button>
+            </div>
+          ))}{groups.data.filter(g => g.isActive).length === 0 && <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground sm:col-span-2">Belum ada grup aktif. Produk dapat disimpan tanpa add-on.</p>}</div>}
+          <Button type="button" variant="outline" className="h-11" onClick={() => setEditingGroup('new')}><Plus className="size-4" aria-hidden />Buat grup add-on baru</Button>
         </ProductFormPanel>}
 
         {finalStep && <ProductFormPanel title="Periksa sebelum menyimpan" description={`${form.name || 'Produk tanpa nama'} · ${form.category || 'Tanpa kategori'} · ${form.mode === 'MAKE_TO_ORDER' ? 'Buat saat dipesan' : 'Siapkan stok dulu'}`}>
-          <ul className="divide-y">{form.variants.map((v, i) => <li key={v.id ?? i} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0"><div className="min-w-0"><p className="break-words text-sm font-medium">{v.variantName || `Varian ${i + 1}`}{v.isDefault && ' · Default'}{!v.isActive && ' · Arsip'}</p><p className="mt-1 text-xs text-muted-foreground">{isTargetMarginValid(v.targetMargin) ? <CurrencyText value={v.sellingPrice} /> : 'Tidak dapat dihitung'} / {v.unit || 'unit'} · {v.ingredients.length} bahan{v.isActive && !v.ingredients.length && ' · Resep belum lengkap'}</p></div><Button type="button" variant="ghost" className="h-11" aria-label={`Ubah varian ${v.variantName || i + 1}`} onClick={() => { setSelected(i); goTo(1); }}>Ubah</Button></li>)}</ul>
-          {form.mode === 'MAKE_TO_ORDER' && <p className="border-t pt-3 text-sm text-muted-foreground">Add-on: {form.modifierGroupIds?.length ? groups.data?.filter(g => form.modifierGroupIds?.includes(g.id)).map(g => g.name).join(', ') || `${form.modifierGroupIds.length} grup` : 'Tanpa add-on'}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3 text-sm">
+            <div className="min-w-0">
+              <p className="break-words font-medium">{form.name || 'Produk tanpa nama'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{form.category || 'Tanpa kategori'} · {form.mode === 'MAKE_TO_ORDER' ? 'Buat saat dipesan' : 'Siapkan stok dulu'}</p>
+            </div>
+            <Button type="button" variant="ghost" className="h-11" aria-label="Ubah info dasar" onClick={() => goTo(0)}>Ubah</Button>
+          </div>
+          <ul className="divide-y">{form.variants.map((v, i) => <li key={v.id ?? i} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0"><div className="min-w-0"><p className="break-words text-sm font-medium">{v.variantName || `Varian ${i + 1}`}{v.isDefault && ' · Default'}{!v.isActive && ' · Arsip'}</p><p className="mt-1 text-xs text-muted-foreground">{isTargetMarginValid(v.targetMargin) ? <CurrencyText value={v.sellingPrice} /> : 'Tidak dapat dihitung'} / {v.unit || 'unit'} · {v.ingredients.length} bahan{v.isActive && !v.ingredients.length && ' · Bahan baku belum lengkap'}</p></div><Button type="button" variant="ghost" className="h-11" aria-label={`Ubah varian ${v.variantName || i + 1}`} onClick={() => { setSelected(i); goTo(1); }}>Ubah</Button></li>)}</ul>
+          {form.mode === 'MAKE_TO_ORDER' && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
+              <p className="min-w-0 text-muted-foreground">Add-on: {form.modifierGroupIds?.length ? groups.data?.filter(g => form.modifierGroupIds?.includes(g.id)).map(g => g.name).join(', ') || `${form.modifierGroupIds.length} grup` : 'Tanpa add-on'}</p>
+              <Button type="button" variant="ghost" className="h-11" aria-label="Ubah add-on" onClick={() => goTo(2)}>Ubah</Button>
+            </div>
+          )}
         </ProductFormPanel>}
       </fieldset>
 
       <div className="z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3 sm:p-4 lg:sticky lg:bottom-0"><p className="text-xs text-muted-foreground">Langkah {step + 1} dari {steps.length}{dirty && ' · Belum disimpan ke katalog'}</p><div className="flex w-full flex-wrap gap-2 sm:w-auto"><Button type="button" variant="ghost" className="h-11 flex-1 sm:flex-none" disabled={saving || externalBusy} onClick={cancel}>{embedded ? 'Kembali ke bahan baku' : 'Batal'}</Button>{step > 0 && <Button type="button" variant="outline" className="h-11 flex-1 sm:flex-none" disabled={saving || externalBusy} onClick={() => goTo(step - 1)}>Kembali</Button>}{!finalStep ? <Button key="next-step" type="button" className="h-11 flex-1 sm:flex-none" disabled={saving || externalBusy} onClick={next}>Lanjut</Button> : <Button key="save-product" type="submit" className="h-11 flex-1 sm:flex-none" disabled={saving || externalBusy || materials.isPending || materials.isError || (!initialPricingOpen && form.mode === 'MAKE_TO_ORDER' && (groups.isPending || groups.isError))}>{saving ? 'Menyimpan...' : initialPricingOpen ? 'Simpan harga baru' : 'Simpan produk'}</Button>}</div></div>
     </form>
-    {newGroup && <ModifierEditor onClose={() => setNewGroup(false)} onSaved={id => { setNewGroup(false); setForm(f => ({ ...f, modifierGroupIds: [...(f.modifierGroupIds ?? []), id] })); void groups.refetch(); }} />}
-    <Dialog open={copySource !== null} onOpenChange={open => { if (!open) setCopySource(null); }}><DialogContent><DialogHeader><DialogTitle>Ganti resep {variant.variantName}?</DialogTitle><DialogDescription>Bahan yang sudah diisi akan diganti dengan salinan resep {copySource !== null ? form.variants[copySource]?.variantName : ''}. Resep sumber tetap tersimpan.</DialogDescription></DialogHeader><div className="flex justify-end gap-2"><Button type="button" variant="outline" className="h-11" onClick={() => setCopySource(null)}>Batal</Button><Button type="button" className="h-11" onClick={() => { if (copySource !== null) copyRecipe(copySource); }}>Ganti resep</Button></div></DialogContent></Dialog>
+    {editingGroup && (
+      <ModifierEditor
+        group={editingGroup === 'new' ? undefined : editingGroup}
+        onClose={() => setEditingGroup(null)}
+        onSaved={id => {
+          setEditingGroup(null);
+          if (editingGroup === 'new') {
+            setForm(f => ({ ...f, modifierGroupIds: [...(f.modifierGroupIds ?? []), id] }));
+          }
+          void groups.refetch();
+        }}
+      />
+    )}
+    <Dialog open={copySource !== null} onOpenChange={open => { if (!open) setCopySource(null); }}><DialogContent><DialogHeader><DialogTitle>Ganti bahan baku {variant.variantName}?</DialogTitle><DialogDescription>Bahan yang sudah diisi akan diganti dengan salinan bahan baku {copySource !== null ? form.variants[copySource]?.variantName : ''}. Bahan baku sumber tetap tersimpan.</DialogDescription></DialogHeader><div className="flex justify-end gap-2"><Button type="button" variant="outline" className="h-11" onClick={() => setCopySource(null)}>Batal</Button><Button type="button" className="h-11" onClick={() => { if (copySource !== null) copyRecipe(copySource); }}>Ganti bahan baku</Button></div></DialogContent></Dialog>
     <Dialog open={confirmLeave} onOpenChange={setConfirmLeave}><DialogContent><DialogHeader><DialogTitle>Keluar dari form produk?</DialogTitle><DialogDescription>{product ? 'Perubahan belum disimpan. Keluar akan membuang perubahan pada form ini.' : 'Produk belum masuk katalog. Draft disimpan otomatis di tab ini jika penyimpanan browser tersedia.'}</DialogDescription></DialogHeader><div className="flex flex-wrap justify-end gap-2">{!product && <Button type="button" variant="ghost" className="h-11" onClick={() => { try { sessionStorage.removeItem(draftKey); } catch { /* Leaving is still possible when storage is unavailable. */ } savedRef.current = true; leave(); }}>Buang draft & keluar</Button>}<Button type="button" variant="outline" className="h-11" onClick={() => setConfirmLeave(false)}>Lanjut mengisi</Button><Button type="button" className="h-11" onClick={leave}>Keluar dari form</Button></div></DialogContent></Dialog>
   </div>;
 }

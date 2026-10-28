@@ -289,7 +289,7 @@ export default function StockListPage() {
                         Tambah Bahan Baku Baru
                       </DialogTitle>
                       <DialogDescription>
-                        Bahan baku akan digunakan dalam resep produk dan pencatatan pembelian inventaris.
+                        Bahan baku akan digunakan dalam produk dan pencatatan pembelian inventaris.
                       </DialogDescription>
                     </DialogHeader>
 

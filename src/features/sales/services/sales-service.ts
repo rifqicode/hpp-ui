@@ -198,6 +198,8 @@ export const salesService = {
     const payload = {
       customer_phone: input.customerPhone || input.customer_phone || undefined,
       customer_name: input.customerName || input.customer_name || undefined,
+      fulfillment_type: input.fulfillmentType || input.fulfillment_type || 'DINE_IN',
+      table_number: input.tableNumber || input.table_number || undefined,
       items: input.items.map((it) => ({
         variant_id: it.variantId,
  modifier_option_ids:it.modifierOptionIds??[],

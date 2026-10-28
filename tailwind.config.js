@@ -24,6 +24,7 @@ export default {
         success: {
           DEFAULT: "var(--success)",
           foreground: "var(--success-foreground)",
+          text: "var(--success-text)",
         },
         info: {
           DEFAULT: "var(--info)",

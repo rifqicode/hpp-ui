@@ -20,8 +20,8 @@ export function SubscriptionConfetti() {
     context.scale(ratio, ratio)
     const theme = getComputedStyle(document.documentElement)
     const colors = [
-      theme.getPropertyValue('--primary').trim() || '#4f46e5',
-      theme.getPropertyValue('--success').trim() || '#16a34a',
+      theme.getPropertyValue('--brand-indigo').trim() || '#5048E5',
+      theme.getPropertyValue('--brand-emerald').trim() || '#10B981',
       theme.getPropertyValue('--warning').trim() || '#d97706',
     ]
     const particles = Array.from({ length: width < 640 ? 48 : 72 }, (_, index) => ({

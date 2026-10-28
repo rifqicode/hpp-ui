@@ -8,8 +8,8 @@ export const PERMISSION_GROUP_INFO: Record<string, { label: string; desc: string
     desc: "Melihat, menambah, mengubah, dan stock opname bahan baku",
   },
   RECIPES: {
-    label: "Formula Resep & Biaya HPP",
-    desc: "Menyusun resep produksi dan menentukan target margin laba",
+    label: "Formula Bahan Baku & Biaya HPP",
+    desc: "Menyusun takaran bahan baku dan menentukan target margin laba",
   },
   PRODUCTS: {
     label: "Katalog Produk Siap Jual",

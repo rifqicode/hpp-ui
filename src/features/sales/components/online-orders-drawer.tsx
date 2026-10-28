@@ -397,7 +397,7 @@ export function OnlineOrdersDrawer({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <MessageCircle className="size-3.5 text-success" />
+                    <MessageCircle className="size-3.5 text-success-text" />
                     Hubungi WA
                   </a>
                 </Button>

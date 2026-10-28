@@ -132,7 +132,7 @@ describe('main dashboard navigation', () => {
     const user = userEvent.setup(); renderPage(<SidebarProvider><SidebarMain /></SidebarProvider>, '/production/products')
     await screen.findByRole('button', { name: 'Production' })
     for (const button of screen.getAllByRole('button')) if (button.hasAttribute('aria-controls') && button.getAttribute('aria-expanded') === 'false') await user.click(button)
-    await user.click(screen.getByRole('button', { name: /Simulasi Resep Baru/ }))
+    await user.click(screen.getByRole('button', { name: /Simulasi Produk Baru/ }))
     expect(event).toHaveBeenCalled()
     await user.click(screen.getByRole('link', { name: 'Produk' }))
     expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('/production/products')

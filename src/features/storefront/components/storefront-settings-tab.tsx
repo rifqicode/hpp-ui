@@ -73,7 +73,7 @@ function generatePrintableQrSvg(storeName: string, url: string): string {
     <text x="145" y="36" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#0f172a">${safeName}</text>
     ${cells.join('\n')}
     <text x="145" y="295" text-anchor="middle" font-family="sans-serif" font-size="10" font-weight="600" fill="#334155">Pesan Online Tanpa Antre:</text>
-    <text x="145" y="314" text-anchor="middle" font-family="monospace" font-size="9" fill="#4f46e5">${safeUrl}</text>
+    <text x="145" y="314" text-anchor="middle" font-family="monospace" font-size="9" fill="#5048E5">${safeUrl}</text>
   </svg>`;
 }
 

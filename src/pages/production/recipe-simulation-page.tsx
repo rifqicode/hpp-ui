@@ -231,10 +231,10 @@ Dihitung otomatis dengan HPP Manager.
             <Calculator className="h-5 w-5" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            Simulasi Resep Baru
+            Simulasi Produk Baru
           </h1>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
-            Kalkulator Resep
+            Kalkulator HPP Produk
           </Badge>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -253,7 +253,7 @@ Dihitung otomatis dengan HPP Manager.
                     1. Identitas Produk & Hasil Batch (Yield)
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Tentukan nama produk dan berapa banyak porsi/unit jadi yang dihasilkan dari 1 kali memasak resep ini.
+                    Tentukan nama produk dan berapa banyak porsi/unit jadi yang dihasilkan dari 1 kali produksi produk ini.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
