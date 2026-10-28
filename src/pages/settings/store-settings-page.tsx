@@ -26,6 +26,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { QuotaBadge } from "@/features/subscription"
 import { FeedbackAlert } from "@/components/ui/feedback-alert"
 import {
   Card,
@@ -301,10 +302,13 @@ export default function StoreSettingsPage() {
                     Buat akun staf dan atur akses mereka ke toko ini.
                   </CardDescription>
                 </div>
-                <Button onClick={(event) => { staffCreateTrigger.current = event.currentTarget; setIsInviteOpen(true) }} className="min-h-11 w-full gap-1.5 text-xs sm:w-auto" size="sm">
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Tambah Staf Baru
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <QuotaBadge resource="staff" label="Kuota Staf" />
+                  <Button onClick={(event) => { staffCreateTrigger.current = event.currentTarget; setIsInviteOpen(true) }} className="min-h-11 w-full gap-1.5 text-xs sm:w-auto" size="sm">
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    Tambah Staf Baru
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-5">
@@ -512,10 +516,13 @@ export default function StoreSettingsPage() {
                 Pilih toko yang ingin dikelola atau tambahkan cabang baru.
               </p>
             </div>
-            <Button onClick={() => setIsNewStoreOpen(true)} className="h-10 w-full gap-1.5 text-xs sm:w-auto" size="sm">
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-              Tambah Toko Baru
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <QuotaBadge resource="stores" label="Kuota Toko" />
+              <Button onClick={() => setIsNewStoreOpen(true)} className="h-10 w-full gap-1.5 text-xs sm:w-auto" size="sm">
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Tambah Toko Baru
+              </Button>
+            </div>
           </div>
 
           <div className="grid min-w-0 gap-3 sm:grid-cols-2">

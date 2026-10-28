@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { QuotaBadge } from "@/features/subscription"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -324,6 +325,7 @@ export default function BatchListPage() {
             <Plus className="h-4 w-4" />
             Mulai Batch Baru
           </Button>
+          <QuotaBadge resource="batches" label="Kuota" className="ml-auto sm:ml-0" />
         </div>
       </div>
 

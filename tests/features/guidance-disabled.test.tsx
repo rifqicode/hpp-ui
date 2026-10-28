@@ -87,6 +87,12 @@ describe('Guidance UI Disabled Mode (GUIDANCE_UI_ENABLED = false)', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it('does not elevate a hidden tour target above POS dialogs', () => {
+    renderWithProviders(<><section data-guidance="pos-catalog">Catalog</section><FeatureGuidanceTour feature="pos" forceOpen /></>);
+    expect(screen.getByText('Catalog')).not.toHaveClass('data-guidance-active-target');
+    expect(screen.getByText('Catalog').style.zIndex).toBe('');
+  });
+
   it('redirects /guidance to /dashboard when disabled', () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },

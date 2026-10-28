@@ -25,6 +25,7 @@ export interface SubscriptionQuotas {
 }
 
 export interface SubscriptionFeatures {
+  promotions_discounts?: boolean;
   export_reports: boolean;
   multi_role_customization: boolean;
   production_analytics: boolean;
@@ -33,6 +34,7 @@ export interface SubscriptionFeatures {
 }
 
 export interface PlanLimits {
+  max_active_promotions?: number;
   max_stores: number;
   max_stocks: number;
   max_products: number;

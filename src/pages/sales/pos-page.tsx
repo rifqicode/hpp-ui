@@ -1,5 +1,9 @@
 import { variantViews } from '@/features/recipes/services/recipe-service';
 import { cartKey } from '@/features/sales/lib/cart';
+import { usePOSPromotions } from '@/features/promotions/hooks/use-pos-promotions';
+import { POSPromotionDialog } from '@/features/promotions/components/pos-promotion-dialog';
+import { POSRewardItems, POSPromotionControls } from '@/features/promotions/components/pos-promotion-cart';
+import { rewardBadge } from '@/features/promotions/lib/receipt-promotion';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -53,7 +57,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../../components/ui/dialog';
-import { CurrencyText } from '@/components/ui/currency-text';
+import { PromotionCurrencyText as CurrencyText } from '@/features/promotions/components/promotion-currency';
 import { OnlineOrdersDrawer } from '../../features/sales/components/online-orders-drawer';
 
 function PosSession() {
@@ -90,6 +94,7 @@ function PosSession() {
   const [isSearchingCustomer, setIsSearchingCustomer] = React.useState(false);
   const [orderNotes, setOrderNotes] = React.useState('');
   const [internalNotes, setInternalNotes] = React.useState('');
+  const promotion = usePOSPromotions(cart, customerPhone);
 
   const handleCustomerPhoneChange = async (val: string) => {
     setCustomerPhone(val);
@@ -209,8 +214,8 @@ function PosSession() {
 
   // Cart Calculations
   const totalItemsCount = React.useMemo(() => {
-    return cart.reduce((acc, curr) => acc + curr.quantity, 0);
-  }, [cart]);
+    return cart.reduce((acc, curr) => acc + curr.quantity, 0) + promotion.rewards.reduce((count, line) => count + Number(line.quantity), 0);
+  }, [cart, promotion.rewards]);
 
   const subtotal = React.useMemo(() => {
     return cart.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
@@ -220,7 +225,7 @@ function PosSession() {
     return cart.reduce((acc, curr) => acc + curr.cost * curr.quantity, 0);
   }, [cart]);
 
-  const totalBill = subtotal;
+  const totalBill = promotion.applied ? Number(promotion.applied.net_sales) : subtotal;
 
   const estimatedGrossProfit = React.useMemo(() => {
     return totalBill - totalCost;
@@ -231,7 +236,7 @@ function PosSession() {
   }, [totalBill, estimatedGrossProfit]);
 
   // Quick cash buttons
-  const cashReceivedNum = Number(cashReceived.replace(/\D/g, '')) || 0;
+  const cashReceivedNum = Number(cashReceived) || 0;
   const cashChange = Math.max(0, cashReceivedNum - totalBill);
   const isCashSufficient = paymentMethod !== 'CASH' || cashReceivedNum >= totalBill;
 
@@ -347,11 +352,12 @@ function PosSession() {
     }
   };
   const handleUpdateQty=(key:string,newQty:number)=>{if(newQty<=0){handleRemoveItem(key);return;}setCart(prev=>prev.map(item=>item.key===key?{...item,quantity:Math.min(newQty,item.product.mode==='MAKE_TO_ORDER'?Infinity:item.product.currentStock)}:item));};
-  const handleRemoveItem=(key:string)=>setCart(prev=>prev.filter(item=>item.key!==key));
+  const handleRemoveItem=(key:string)=>{if(cart.length===1)promotion.clear();setCart(prev=>prev.filter(item=>item.key!==key));};
 
   const handleClearCart = () => {
     if (cart.length === 0) return;
     setCart([]);
+    promotion.clear();
     setCustomerPhone('');
     setCustomerName('');
     setMatchedCustomer(null);
@@ -363,18 +369,18 @@ function PosSession() {
 
   // Payment Handler
   const handleOpenPayment = () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !promotion.ready) return;
     setCashReceived(String(totalBill)); // default to exact amount
     setCheckoutError('');
     setIsPaymentOpen(true);
   };
 
   const handleExecutePayment = async () => {
-    if (!isCashSufficient) return;
+    if (!isCashSufficient || !promotion.ready || isProcessing) return;
 
     try {
       setIsProcessing(true);
-      const sale = await salesService.createSale({
+      const sale = await promotion.submit({
         customerPhone: customerPhone.trim() || undefined,
         customerName: customerName.trim() || undefined,
         fulfillmentType,
@@ -570,13 +576,14 @@ function PosSession() {
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto space-y-3 p-4">
+            <POSPromotionControls promotion={promotion} hasItems={cart.length > 0} />
             {cart.length === 0 ? (
               <div className="flex min-h-48 flex-col items-center justify-center px-4 text-center">
                 <span className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-muted"><ShoppingCart className="size-5 text-muted-foreground" /></span>
                 <p className="text-sm font-semibold">Keranjang Masih Kosong</p>
                 <p className="mt-1.5 max-w-52 text-xs leading-5 text-muted-foreground">Pilih produk dari katalog untuk mulai pesanan pertama.</p>
               </div>
-            ) : cart.map((item) => (
+            ) : cart.map((item, index) => (
               <div key={item.key} className="border-b border-border/70 pb-3 last:border-0 last:pb-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -600,10 +607,11 @@ function PosSession() {
                     <span className="min-w-7 text-center text-sm font-semibold tabular-nums">{item.quantity}</span>
                     <button type="button" aria-label={`Tambah ${item.product.name}`} onClick={() => handleUpdateQty(item.key, item.quantity + 1)} disabled={item.product.mode !== 'MAKE_TO_ORDER' && item.quantity >= item.product.currentStock} className="flex size-10 items-center justify-center rounded-r-lg hover:bg-muted disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Plus className="size-3.5" /></button>
                   </div>
-                  <span className="text-sm font-semibold tabular-nums"><CurrencyText value={item.price * item.quantity} /></span>
+                  <span className="text-sm font-semibold tabular-nums"><CurrencyText value={promotion.paidLines.get(index)?.subtotal ?? item.price * item.quantity} /></span>
                 </div>
               </div>
             ))}
+            <POSRewardItems promotion={promotion} />
           </div>
 
           <div className="space-y-3 rounded-b-2xl border-t bg-muted/20 p-4 shrink-0">
@@ -633,13 +641,15 @@ function PosSession() {
                 <span>Take Away</span>
               </button>
             </div>
-            <div className="flex justify-between gap-2 text-xs text-muted-foreground"><span>Subtotal ({totalItemsCount} item)</span><span className="font-medium text-foreground"><CurrencyText value={subtotal} /></span></div>
-            {cart.length > 0 && <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-muted-foreground"><span className="flex items-center gap-1.5"><TrendingUp className="size-3.5" />Estimasi laba kotor</span><span className={estimatedGrossProfit < 0 ? 'text-destructive' : 'font-medium text-foreground'}><CurrencyText value={estimatedGrossProfit} /> ({estimatedMarginPct.toFixed(1)}%)</span></div>}
+            <div className="flex justify-between gap-2 text-xs text-muted-foreground"><span>Subtotal ({totalItemsCount} item)</span><span className="font-medium text-foreground"><CurrencyText value={promotion.applied?.gross_sales ?? subtotal} /></span></div>
+            {promotion.applied && <div className="flex justify-between gap-2 text-xs"><span className="truncate">Promo: {promotion.selectedName}</span><span>-<CurrencyText value={promotion.applied.discount_amount} /></span></div>}
+            {promotion.selectedId && !promotion.ready && <p className="text-xs text-muted-foreground" aria-live="polite">Promosi belum valid. Periksa keranjang sebelum membayar.</p>}
+            {cart.length > 0 && !promotion.selectedId && <div className="flex flex-wrap items-center justify-between gap-1 text-[11px] text-muted-foreground"><span className="flex items-center gap-1.5"><TrendingUp className="size-3.5" />Estimasi laba kotor</span><span className={estimatedGrossProfit < 0 ? 'text-destructive' : 'font-medium text-foreground'}><CurrencyText value={estimatedGrossProfit} /> ({estimatedMarginPct.toFixed(1)}%)</span></div>}
             <Separator />
             <div className="flex items-center justify-between gap-2"><span className="text-sm font-medium">Total Tagihan</span><span className="text-xl font-bold tracking-tight tabular-nums"><CurrencyText value={totalBill} /></span></div>
             <Button
               data-guidance="pos-checkout"
-              disabled={cart.length === 0}
+              disabled={cart.length === 0 || !promotion.ready}
               onClick={handleOpenPayment}
               aria-label="Proses Pesanan"
               className="h-12 w-full justify-center gap-2 rounded-xl px-4 text-sm font-semibold shadow-none"
@@ -699,6 +709,7 @@ function PosSession() {
                         </div>
                       </div>
                     ))}
+                    <POSRewardItems promotion={promotion} />
                   </div>
                 </div>
 
@@ -808,6 +819,7 @@ function PosSession() {
                     <CurrencyText value={totalBill} />
                   </span>
                 </div>
+                {promotion.selectedId && <div className="space-y-1 rounded-lg border p-3 text-xs"><p className="font-semibold">Promo: {promotion.selectedName}</p>{promotion.applied && <p>Potongan <CurrencyText value={promotion.applied.discount_amount} /></p>}{promotion.validating && <p role="status">Memvalidasi promosi…</p>}{promotion.error && <p role="alert" className="text-destructive">{promotion.error}</p>}{promotion.candidate?.needs_configuration && <p>Lengkapi topping wajib hadiah sebelum membayar.</p>}</div>}
 
                 {/* Payment Method Selector */}
                 <div className="space-y-1.5">
@@ -866,6 +878,9 @@ function PosSession() {
                     <label className="text-xs font-semibold text-foreground">Uang Diterima (Rp)</label>
                     <FormattedNumberInput
                       value={cashReceived}
+                      aria-label="Uang diterima"
+                      allowDecimal
+                      maxDecimals={4}
                       onChange={(val) => setCashReceived(String(val))}
                       placeholder="0"
                       className="h-10 text-base font-bold text-center bg-background"
@@ -1031,7 +1046,7 @@ function PosSession() {
                   </Button>
                   <Button
                     onClick={handleExecutePayment}
-                    disabled={isProcessing || !isCashSufficient}
+                    disabled={isProcessing || !isCashSufficient || !promotion.ready}
                     className="flex-1 text-xs font-bold gap-1.5"
                   >
                     {isProcessing ? (
@@ -1208,8 +1223,8 @@ function PosSession() {
                 <div className="space-y-1.5 border-b border-border/80 pb-2">
                   {completedSale.items.map((it) => (
                     <div key={it.id} className="flex justify-between items-baseline text-[11px]">
-                      <div className="truncate flex-1 pr-2">
-                        <p className="font-medium truncate">{it.productName}</p>
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="font-medium whitespace-normal break-words">{it.productName} {rewardBadge(it)}</p>
  {it.modifiers.map(m=><p key={m.id} className="text-[10px] text-muted-foreground">+ {m.name} · <CurrencyText value={m.price}/></p>)}
                         <p className="text-[10px] text-muted-foreground">
                           {it.quantity} x <CurrencyText value={it.priceAtSale-it.modifiers.reduce((sum,m)=>sum+m.price,0)} />
@@ -1222,14 +1237,16 @@ function PosSession() {
 
                 {/* Financial Summary */}
                 <div className="space-y-1 text-[11px] border-b border-border/80 pb-2">
+                  {Boolean(completedSale.promotions?.length) && <div className="flex justify-between"><span>Subtotal:</span><CurrencyText value={completedSale.promotions![0].gross_sales} /></div>}
                   {completedSale.discountAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Diskon:</span>
+                      <span>{completedSale.promotions?.[0] ? `Promo: ${completedSale.promotions[0].promo_name}` : 'Diskon:'}</span>
                       <span className="text-red-500">
                         -<CurrencyText value={completedSale.discountAmount} />
                       </span>
                     </div>
                   )}
+                  {completedSale.taxAmount > 0 && <div className="flex justify-between"><span>Pajak:</span><span>+<CurrencyText value={completedSale.taxAmount} /></span></div>}
                   <div className="flex justify-between text-sm font-bold pt-1">
                     <span>TOTAL:</span>
                     <span><CurrencyText value={completedSale.totalAmount} /></span>
@@ -1294,6 +1311,7 @@ function PosSession() {
           void queryClient.invalidateQueries();
         }}
       />
+      <POSPromotionDialog promotion={promotion} products={products} />
 
       <FeatureGuidanceTour feature="pos" />
     </div>

@@ -1,4 +1,6 @@
 import { vi } from 'vitest'
+import { promotionService } from '@/features/promotions/services/promotion-service';
+import { promotionFixture } from './promotion-fixtures';
 import { stockService } from '@/features/inventory/services/stock-service'
 import { recipeService } from '@/features/recipes/services/recipe-service'
 import { supplierService } from '@/features/suppliers/services/supplier-service'
@@ -29,7 +31,8 @@ export function populatedProduct(edge = false): Product {
   })
 }
 export function mockPopulatedPages(edge = false) {
-  useAuthStore.setState({ permissions: allPermissions })
+  useAuthStore.setState({ permissions: [...allPermissions, 'menu:promotions', 'promotions:read'] })
+  vi.mocked(promotionService.list).mockResolvedValue({ data: [promotionFixture({ store_id: store.id })], total: 1, page: 1, per_page: 12, active_count: 0, max_active_promotions: 5 });
   const first = populatedProduct(edge)
   const products = [first, product({ id: 'product-2', name: 'Donat', currentStock: 0, sellingPrice: 5000, latestHpp: 6000, category: '', minStock: 1 }), product({ id: 'product-3', name: 'Kopi Susu', mode: 'MAKE_TO_ORDER', currentStock: 0, latestHpp: 0, estimatedHpp: 2500, sellingPrice: 12000 })]
   vi.mocked(recipeService.getProducts).mockResolvedValue(products)

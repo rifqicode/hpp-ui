@@ -65,7 +65,7 @@ export function FeatureGuidanceTour({
 
   // Auto-start tour immediately when loaded and uncompleted
   React.useEffect(() => {
-    if (!isLoading && !isCompleted && !hasDismissed && !forceOpen && config && config.steps.length > 0) {
+    if (GUIDANCE_UI_ENABLED && !isLoading && !isCompleted && !hasDismissed && !forceOpen && config && config.steps.length > 0) {
       setIsTourActive(true);
       setCurrentStepIndex(0);
     }
@@ -188,7 +188,7 @@ export function FeatureGuidanceTour({
 
   // Elevated stacking context for active target & advanceOn event handling
   React.useEffect(() => {
-    if (!isTourActive || !currentStep) {
+    if (!GUIDANCE_UI_ENABLED || !isTourActive || !currentStep) {
       return;
     }
 

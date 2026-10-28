@@ -2,17 +2,32 @@ import React from 'react';
 import { useSubscriptionGuards } from '../hooks/useSubscriptionGuards';
 import type { SubscriptionQuotas } from '../types/subscription';
 
-interface QuotaBadgeProps {
-  resource: keyof SubscriptionQuotas;
+export interface QuotaBadgeProps {
+  resource?: keyof SubscriptionQuotas;
   label: string;
+  current?: number;
+  limit?: number;
   onUpgradeClick?: () => void;
   className?: string;
 }
 
-export const QuotaBadge: React.FC<QuotaBadgeProps> = ({ resource, label, onUpgradeClick, className = '' }) => {
-  const { getQuotaStats } = useSubscriptionGuards();
-  const { current, limit, percentage } = getQuotaStats(resource);
+interface BadgeViewProps {
+  label: string;
+  current: number;
+  limit: number;
+  percentage: number;
+  onUpgradeClick?: () => void;
+  className?: string;
+}
 
+const BadgeView: React.FC<BadgeViewProps> = ({
+  label,
+  current,
+  limit,
+  percentage,
+  onUpgradeClick,
+  className = '',
+}) => {
   // If no quota or uninitialized, don't show
   if (limit === 0) return null;
 
@@ -43,7 +58,7 @@ export const QuotaBadge: React.FC<QuotaBadgeProps> = ({ resource, label, onUpgra
     <div className={`inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg border text-xs shadow-xs ${badgeColor} ${className}`}>
       <div>
         <span className="font-medium">{label}:</span>{' '}
-        <span className="font-mono font-bold text-foreground">{current}</span> / <span className="font-mono">{limit}</span>
+        <span className="font-mono font-bold text-foreground">{current} / {limit}</span>
       </div>
       <div className="w-14 sm:w-16 bg-muted rounded-full h-1.5 overflow-hidden">
         <div className={`h-1.5 rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.min(100, percentage)}%` }} />
@@ -59,4 +74,47 @@ export const QuotaBadge: React.FC<QuotaBadgeProps> = ({ resource, label, onUpgra
       )}
     </div>
   );
+};
+
+const ResourceQuotaBadge: React.FC<QuotaBadgeProps & { resource: keyof SubscriptionQuotas }> = ({
+  resource,
+  label,
+  onUpgradeClick,
+  className,
+}) => {
+  const { getQuotaStats } = useSubscriptionGuards();
+  const { current, limit, percentage } = getQuotaStats(resource);
+
+  return (
+    <BadgeView
+      label={label}
+      current={current}
+      limit={limit}
+      percentage={percentage}
+      onUpgradeClick={onUpgradeClick}
+      className={className}
+    />
+  );
+};
+
+export const QuotaBadge: React.FC<QuotaBadgeProps> = (props) => {
+  if (props.current !== undefined && props.limit !== undefined) {
+    const percentage = props.limit > 0 ? (props.current / props.limit) * 100 : 0;
+    return (
+      <BadgeView
+        label={props.label}
+        current={props.current}
+        limit={props.limit}
+        percentage={percentage}
+        onUpgradeClick={props.onUpgradeClick}
+        className={props.className}
+      />
+    );
+  }
+
+  if (props.resource) {
+    return <ResourceQuotaBadge {...props} resource={props.resource} />;
+  }
+
+  return null;
 };

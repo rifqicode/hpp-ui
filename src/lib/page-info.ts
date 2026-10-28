@@ -7,6 +7,7 @@ export function getActiveMenuTitle(pathname: string): string {
 
   if (path.startsWith('/reports/products/')) return 'Detail Keuntungan Produk';
   if (path === '/reports') return 'Laporan';
+  if (path === '/sales/promotions') return 'Promosi & Diskon';
 
   if (path === '/dashboard') {
     return 'Dashboard';

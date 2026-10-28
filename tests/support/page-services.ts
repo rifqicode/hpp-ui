@@ -2,6 +2,7 @@ import { modifierService } from '@/features/recipes/services/modifier-service';
 import { onboardingService } from '@/features/onboarding/services/onboarding-service';
 import { guidanceService } from '@/features/guidance/services/guidance-service';
 import { vi } from 'vitest'
+import { promotionService } from '@/features/promotions/services/promotion-service';
 import apiClient from '@/lib/api-client'
 import { authService } from '@/features/auth/services/auth-service'
 import { agreementDocument } from './agreement-fixture'
@@ -26,11 +27,13 @@ export function resetSession(authenticated = true) {
   useAuthStore.setState({
     user: authenticated ? user : null, token: authenticated ? 'test-token' : null,
     activeStoreId: authenticated ? store.id : null, activeStoreName: authenticated ? store.name : null,
-    permissions: [...permissions.map(p => p.code), 'menu:reports'],
+    permissions: [...permissions.map(p => p.code), 'menu:reports', 'menu:promotions', 'promotions:read'],
   })
 }
 
 export function mockPageServices() {
+  vi.spyOn(promotionService, 'list').mockResolvedValue({ data: [], total: 0, page: 1, per_page: 12, active_count: 0, max_active_promotions: 5 });
+  vi.spyOn(promotionService, 'options').mockResolvedValue({ data: [], total: 0, page: 1, per_page: 50 });
   vi.spyOn(onboardingService, 'get').mockResolvedValue({ state: { id: 'onboarding-1', store_id: 'store-1', status: 'IN_PROGRESS', step: 1, revision: 0, draft: {}, product_id: null }, should_start: false });
   vi.spyOn(onboardingService, 'materials').mockResolvedValue([]);
   vi.spyOn(onboardingService, 'products').mockResolvedValue([]);

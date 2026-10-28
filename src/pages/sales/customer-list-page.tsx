@@ -28,6 +28,7 @@ import type {
 } from '../../features/sales/types';
 
 import { Button } from '../../components/ui/button';
+import { QuotaBadge } from '@/features/subscription';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent } from '../../components/ui/card';
@@ -197,6 +198,7 @@ export default function CustomerListPage() {
             <RefreshCw className={`size-3.5 ${isFetching || isSummaryFetching ? 'animate-spin motion-reduce:animate-none' : ''}`} />Refresh
           </Button>
           <Button onClick={() => setIsAddOpen(true)} className="h-10 gap-2 text-xs"><Plus className="size-4" />Tambah Pelanggan</Button>
+          <QuotaBadge resource="customers" label="Kuota" className="ml-auto sm:ml-0" />
         </div>
       </header>
 

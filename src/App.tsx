@@ -34,6 +34,7 @@ const StorefrontBuilderPage = React.lazy(() => import("./pages/settings/storefro
 const RoleCreatePage = React.lazy(() => import("./pages/settings/role-create-page"))
 const AccountSettingPage = React.lazy(() => import("./pages/settings/account-setting-page"))
 const PosPage = React.lazy(() => import("./pages/sales/pos-page"))
+const PromotionsPage = React.lazy(() => import("./pages/sales/promotions-page"))
 const TransactionHistoryPage = React.lazy(() => import("./pages/sales/transaction-history-page"))
 const CustomerListPage = React.lazy(() => import("./pages/sales/customer-list-page"))
 const SubscriptionPage = React.lazy(() => import("./pages/subscription/subscription-page"))
@@ -115,6 +116,7 @@ function App() {
             <Route path="/production/overheads" element={<OverheadListPage />} />
             <Route path="/overheads" element={<Navigate to="/production/overheads" replace />} />
             <Route path="/sales/pos" element={<PosPage />} />
+            <Route path="/sales/promotions" element={<PromotionsPage />} />
             <Route path="/sales/history" element={<TransactionHistoryPage />} />
             <Route path="/sales/customers" element={<CustomerListPage />} />
             <Route path="/customers" element={<Navigate to="/sales/customers" replace />} />

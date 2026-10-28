@@ -1,5 +1,7 @@
 // import { SaleCorrectionPanel } from '@/features/sales/components/sale-correction-panel';
 import * as React from 'react';
+import { rewardBadge } from '@/features/promotions/lib/receipt-promotion';
+import { PromotionCurrencyText } from '@/features/promotions/components/promotion-currency';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Receipt, Printer, Calendar, RefreshCw, ChevronRight, AlertCircle, Wallet, ShoppingBag } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -471,8 +473,8 @@ export default function TransactionHistoryPage() {
                 <div className="space-y-1.5 border-b border-border/80 pb-2">
                   {selectedSale.items.map((it) => (
                     <div key={it.id} className="flex justify-between items-baseline text-[11px]">
-                      <div className="truncate flex-1 pr-2">
-                        <p className="font-medium truncate">{it.productName}</p>
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="font-medium whitespace-normal break-words">{it.productName} {rewardBadge(it)}</p>
  {it.modifiers.map(m=><p key={m.id} className="text-xs text-muted-foreground">+ {m.name} · <CurrencyText value={m.price}/></p>)}
  {it.costStatus==='ESTIMATED'&&<p className="text-xs text-muted-foreground">HPP masih estimasi; produksi belum selesai.</p>}
                         <p className="text-[10px] text-muted-foreground">
@@ -481,7 +483,7 @@ export default function TransactionHistoryPage() {
                         </p>
                       </div>
                       <span className="font-semibold shrink-0">
-                        <CurrencyText value={it.subtotal} />
+                        <PromotionCurrencyText value={it.subtotal} />
                       </span>
                     </div>
                   ))}
@@ -489,10 +491,11 @@ export default function TransactionHistoryPage() {
 
                 {/* Totals */}
                 <div className="space-y-1 text-[11px] border-b border-border/80 pb-2">
+                  {Boolean(selectedSale.promotions?.length) && <div className="flex justify-between"><span>Subtotal:</span><PromotionCurrencyText value={selectedSale.promotions![0].gross_sales} /></div>}
                   {selectedSale.discountAmount > 0 && (
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Diskon:</span>
-                      <span>-<CurrencyText value={selectedSale.discountAmount} /></span>
+                      <span>{selectedSale.promotions?.[0] ? `Promo: ${selectedSale.promotions[0].promo_name}` : 'Diskon:'}</span>
+                      <span>-<PromotionCurrencyText value={selectedSale.discountAmount} /></span>
                     </div>
                   )}
                   {selectedSale.taxAmount > 0 && (
@@ -508,7 +511,7 @@ export default function TransactionHistoryPage() {
                   <div className="flex justify-between font-bold text-xs pt-1">
                     <span>{selectedSale.refundedAmount ? 'Total Setelah Koreksi:' : 'Total Bayar:'}</span>
                     <span className="text-foreground">
-                      <CurrencyText value={selectedSale.totalAmount} />
+                      <PromotionCurrencyText value={selectedSale.totalAmount} />
                     </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">

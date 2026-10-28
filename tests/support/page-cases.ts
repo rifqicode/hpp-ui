@@ -31,6 +31,7 @@ export const pageCases = [
   { file: 'reports/reports-page.tsx', entry: '/reports', text: 'Keuntungan produk' },
   { file: 'sales/customer-list-page.tsx', entry: '/sales/customers', text: 'Manajemen Pelanggan' },
   { file: 'sales/pos-page.tsx', entry: '/sales/pos', text: /Kasir & Transaksi/ },
+  { file: 'sales/promotions-page.tsx', entry: '/sales/promotions', text: 'Promosi & Diskon' },
   { file: 'sales/transaction-history-page.tsx', entry: '/sales/history', text: 'Transaction List' },
   { file: 'settings/account-setting-page.tsx', entry: '/settings', text: 'Pengaturan & Profil Akun' },
   { file: 'settings/role-create-page.tsx', entry: '/settings/role/new', text: 'Tambah Peran & Hak Akses Baru' },

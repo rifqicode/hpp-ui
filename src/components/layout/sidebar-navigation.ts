@@ -2,7 +2,7 @@ import type { ComponentType } from "react"
 import {
   LayoutDashboard, Factory, Package, ShoppingCart, Settings, Users,
   Calculator, History, Store, ClipboardList, Layers, CreditCard, ChartNoAxesCombined,
-  Compass,
+  Tags,
 } from "lucide-react"
 import type { SubscriptionFeatures } from "@/features/subscription"
 
@@ -47,6 +47,7 @@ export const NAVIGATION: NavigationItem[] = [
     id: "order", title: "Order", icon: ShoppingCart,
     children: [
       { id: "pos", title: "Point of Sale", url: "/sales/pos", icon: ShoppingCart, permission: "menu:pos" },
+      { id: "promotions", title: "Promosi & Diskon", url: "/sales/promotions", icon: Tags, permission: "menu:promotions", requiredFeature: "promotions_discounts" },
       { id: "transactions", title: "Transactions", url: "/sales/history", icon: History, permission: "orders:read" },
       { id: "customers", title: "Customers", url: "/sales/customers", icon: Users, permission: "orders:read" },
     ],
@@ -54,7 +55,7 @@ export const NAVIGATION: NavigationItem[] = [
   {
     id: "administration", title: "Administration", icon: Settings,
     children: [
-      { id: "guidance", title: "Panduan Toko", url: "/guidance", icon: Compass },
+      // { id: "guidance", title: "Panduan Toko", url: "/guidance", icon: Compass },
       { id: "subscription", title: "Subscription", url: "/subscription", icon: CreditCard },
       { id: "store-settings", title: "Store Settings", url: "/settings/store", icon: Store, permission: "menu:settings" },
       { id: "account-settings", title: "Account Settings", url: "/settings", icon: Settings },

@@ -1,4 +1,5 @@
 import apiClient from '../../../lib/api-client';
+import { isFreeReward } from '@/features/promotions/lib/receipt-promotion';
 import { recipeService } from '../../recipes/services/recipe-service';
 import type { Product } from '../../recipes/types';
 import type {
@@ -17,6 +18,10 @@ export function normalizeSale(raw: any): Sale {
   const items = Array.isArray(raw.items)
     ? raw.items.map((it: any) => ({
         id: it.id,
+		isRewardItem: Boolean(it.is_reward_item),
+		isFreeReward: Boolean(it.is_reward_item) && isFreeReward(it.price_at_sale ?? it.priceAtSale ?? '0', it.modifiers ?? []),
+		discountAmount: Number(it.discount_amount ?? 0),
+		promotionId: it.promotion_id,
         returnedQuantity: Number(it.returned_quantity || 0),
         saleId: it.sale_id ?? it.saleId ?? raw.id,
         sale_id: it.sale_id ?? it.saleId ?? raw.id,
@@ -72,6 +77,8 @@ export function normalizeSale(raw: any): Sale {
       : undefined;
 
   return {
+	promotionId: raw.promotion_id,
+	promotions: raw.promotions ?? [],
     originalTotalAmount, refundedAmount, restoredCost, corrections: raw.corrections || [],
     id: raw.id,
     storeId: raw.store_id ?? raw.storeId ?? '',
@@ -198,6 +205,7 @@ export const salesService = {
 
   createSale: async (input: CreateSaleInput): Promise<Sale> => {
     const payload = {
+	  ...(input.promotionId ? { promotion_id: input.promotionId, reward_selections: input.rewardSelections ?? [] } : {}),
       customer_phone: input.customerPhone || input.customer_phone || undefined,
       customer_name: input.customerName || input.customer_name || undefined,
       fulfillment_type: input.fulfillmentType || input.fulfillment_type || 'DINE_IN',
@@ -222,7 +230,9 @@ export const salesService = {
       internal_notes: input.internalNotes || input.internal_notes || undefined,
     };
 
-    const res = await apiClient.post<any>('/sales', payload);
+    const res = input.storeId
+	  ? await apiClient.post<any>('/sales', payload, { headers: { 'X-Store-ID': input.storeId } })
+	  : await apiClient.post<any>('/sales', payload);
     return normalizeSale(res.data);
   },
 

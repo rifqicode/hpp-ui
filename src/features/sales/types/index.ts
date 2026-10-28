@@ -56,6 +56,10 @@ export interface CustomerDetail {
 }
 
 export interface SaleItem {
+	 isRewardItem?: boolean;
+	 isFreeReward?: boolean;
+	 discountAmount?: number;
+	 promotionId?: string;
  variantId: string;
  variantName: string;
  costStatus: 'ESTIMATED'|'ACTUAL';
@@ -91,6 +95,8 @@ export interface SaleItem {
 }
 
 export interface Sale {
+	 promotionId?: string;
+	 promotions?: { promo_name: string; promo_type: string; discount_amount: string; gross_sales: string; net_sales: string; total_cost: string; gross_profit: string; cost_status: string }[];
  originalTotalAmount?: number;
  refundedAmount?: number;
  restoredCost?: number;
@@ -184,6 +190,8 @@ export interface CartItem {
 }
 
 export interface CreateSaleInput {
+	 promotionId?: string;
+	 rewardSelections?: { variant_id: string; modifier_option_ids: string[] }[];
   storeId?: string;
   customerPhone?: string;
   customer_phone?: string;

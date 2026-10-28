@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { QuotaBadge } from "@/features/subscription"
 import {
   Card,
   CardContent,
@@ -119,6 +120,7 @@ export default function SupplierListPage() {
             <Plus className="h-4 w-4" />
             Tambah Supplier
           </Button>
+          <QuotaBadge resource="suppliers" label="Kuota" className="ml-auto sm:ml-0" />
         </div>
       </div>
 

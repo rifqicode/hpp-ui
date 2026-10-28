@@ -27,6 +27,7 @@ vi.mock('@/pages/settings/store-settings-page', () => ({ default: () => <h1>Stor
 vi.mock('@/pages/settings/role-create-page', () => ({ default: () => <h1>RoleCreatePage</h1> }))
 vi.mock('@/pages/settings/account-setting-page', () => ({ default: () => <h1>AccountSettingPage</h1> }))
 vi.mock('@/pages/sales/pos-page', () => ({ default: () => <h1>PosPage</h1> }))
+vi.mock('@/pages/sales/promotions-page', () => ({ default: () => <h1>PromotionsPage</h1> }))
 vi.mock('@/pages/sales/transaction-history-page', () => ({ default: () => <h1>TransactionHistoryPage</h1> }))
 vi.mock('@/pages/sales/customer-list-page', () => ({ default: () => <h1>CustomerListPage</h1> }))
 vi.mock('@/pages/subscription/subscription-page', () => ({ default: () => <h1>SubscriptionPage</h1> }))
@@ -52,7 +53,7 @@ const routes = [
   ['/production/products', 'RecipeListPage'], ['/production/products/new', 'RecipeCreatePage'], ['/production/products/p1', 'RecipeDetailPage'],
   ['/production/batches', 'BatchListPage'], ['/production/batches/new', 'BatchCreatePage'], ['/production/batches/b1', 'BatchDetailPage'],
   ['/production/hpp/recipe-simulation', 'RecipeSimulationPage'], ['/production/hpp/production-simulation', 'ProductionSimulationPage'],
-  ['/production/overheads', 'OverheadListPage'], ['/sales/pos', 'PosPage'], ['/sales/history', 'TransactionHistoryPage'],
+  ['/production/overheads', 'OverheadListPage'], ['/sales/pos', 'PosPage'], ['/sales/promotions', 'PromotionsPage'], ['/sales/history', 'TransactionHistoryPage'],
   ['/sales/customers', 'CustomerListPage'], ['/settings', 'AccountSettingPage'], ['/settings/store', 'StoreSettingsPage'],
   ['/settings/role/new', 'RoleCreatePage'], ['/settings/role/role-1', 'RoleCreatePage'], ['/subscription', 'SubscriptionPage'],
   ['/notifications', 'NotificationListPage'], ['/guidance', 'StoreGuidancePage'],
