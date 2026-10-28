@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { FeedbackAlert } from '@/components/ui/feedback-alert';
 import { CurrencyText } from '@/components/ui/currency-text';
+import { FeatureGuidanceTour, GuidanceTourTrigger } from '@/features/guidance';
 import { settingsService } from '../services/settings-service';
 import type { StoreInfo, ReceiptConfig } from '../types';
 
@@ -80,6 +81,9 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
       });
       setSuccessMsg('Pengaturan struk berhasil disimpan.');
       onUpdated?.(updated);
+      window.dispatchEvent(
+        new CustomEvent('guidance-task-success', { detail: { feature: 'receipt_config' } })
+      );
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal menyimpan pengaturan struk.');
     } finally {
@@ -97,8 +101,9 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
       <div className="lg:col-span-7 space-y-6">
         <Card className="rounded-2xl border-border shadow-xs">
           <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-base font-semibold">Pengaturan Format Struk & Printer</CardTitle>
+              <GuidanceTourTrigger feature="receipt_config" />
             </div>
             <CardDescription className="text-xs">
               Sesuaikan ukuran kertas printer thermal dan informasi yang tercetak pada struk transaksi.
@@ -124,7 +129,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
               {/* Ukuran Kertas */}
               <div className="space-y-2">
                 <Label className="text-xs font-semibold">Ukuran Kertas Thermal</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div data-guidance="paper-size" className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setConfig((prev) => ({ ...prev, paper_size: '58mm' }))}
@@ -192,6 +197,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
                   Teks Footer / Ucapan Terima Kasih
                 </Label>
                 <Textarea
+                  data-guidance="footer-text"
                   id="footer-text"
                   value={config.footer_text || ''}
                   onChange={(e) => setConfig((prev) => ({ ...prev, footer_text: e.target.value }))}
@@ -256,7 +262,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
 
               {/* Tombol Simpan */}
               <div className="pt-2">
-                <Button type="submit" disabled={isSaving} className="w-full sm:w-auto text-xs font-semibold gap-1.5 h-10">
+                <Button data-guidance="save-receipt-btn" type="submit" disabled={isSaving} className="w-full sm:w-auto text-xs font-semibold gap-1.5 h-10">
                   {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                   <span>{isSaving ? 'Menyimpan...' : 'Simpan Pengaturan Struk'}</span>
                 </Button>
@@ -429,6 +435,9 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
           </CardContent>
         </Card>
       </div>
+
+      {/* Feature Guidance Tour */}
+      <FeatureGuidanceTour feature="receipt_config" />
     </div>
   );
 }

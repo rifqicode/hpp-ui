@@ -1,5 +1,15 @@
 import { test, expect, type Page } from '@playwright/test';
 
+async function scrollWorkflow(page: Page, progress: number) {
+  await page.locator('.tour-scroll-track').evaluate((track: HTMLDivElement, progress) => {
+    const top = window.scrollY + track.getBoundingClientRect().top;
+    const stickyTop = Number.parseFloat(track.style.getPropertyValue('--tour-sticky-top'));
+    const frameHeight = Number.parseFloat(track.style.getPropertyValue('--tour-sticky-height'));
+    window.scrollTo({ top: top - stickyTop + (track.offsetHeight - frameHeight) * progress, behavior: 'instant' });
+  }, progress);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+}
+
 async function expectContentFits(page: Page) {
   // Check actual content bounds too: overflow clipping can hide a broken layout.
   const outside = await page.locator('header a, header button, h1, #feature-preview, #alur-kerja button, #alur-kerja dd, #pricing button, footer a')
@@ -25,9 +35,9 @@ test('navigation, all feature previews, and FAQ remain usable at this viewport',
   await expect(page.locator('header').getByRole('link', { name: 'Masuk', exact: true })).toBeVisible();
   await expect(page.locator('header').getByRole('link', { name: 'Mulai Gratis', exact: true })).toBeVisible();
   const groups = [
-    { name: 'Biaya & Produksi', titles: ['Biaya resep & harga jual', 'Coba resep & rencana produksi', 'Biaya overhead', 'Catat hasil produksi'] },
-    { name: 'Stok & Penjualan', titles: ['Kontrol stok FIFO & FEFO', 'Belanja bahan & pemasok', 'Kasir & laba penjualan', 'Catatan pelanggan'] },
-    { name: 'Kelola Usaha', titles: ['Ringkasan usaha', 'Kelola beberapa toko', 'Atur akses karyawan', 'Asisten Bisnis AI'] },
+    { name: 'Resep & Produksi', titles: ['Biaya resep & harga jual', 'Coba resep & rencana produksi', 'Biaya overhead', 'Catat hasil produksi'] },
+    { name: 'Stok & Kasir', titles: ['Kontrol stok FIFO & FEFO', 'Belanja bahan & pemasok', 'Kasir & laba penjualan', 'Catatan pelanggan'] },
+    { name: 'Laporan & Pengelolaan', titles: ['Ringkasan usaha', 'Kelola beberapa toko', 'Atur akses karyawan', 'Asisten Bisnis AI'] },
   ];
   for (const group of groups) {
     const category = page.getByRole('group', { name: 'Kategori fitur' }).getByRole('button', { name: group.name, exact: true });
@@ -42,10 +52,10 @@ test('navigation, all feature previews, and FAQ remain usable at this viewport',
       await expectContentFits(page);
     }
   }
-  const question = page.getByRole('button', { name: 'Siapa yang bisa melihat resep dan catatan penjualan saya?' });
+  const question = page.getByRole('button', { name: 'Apakah akses kasir, dapur, dan pemilik bisa dibedakan?' });
   await question.click();
   await expect(question).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.getByRole('region', { name: 'Siapa yang bisa melihat resep dan catatan penjualan saya?' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Apakah akses kasir, dapur, dan pemilik bisa dibedakan?' })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('landing.png'), fullPage: true, animations: 'disabled' });
 });
 
@@ -57,7 +67,7 @@ test('workflow replaces the simulator directly after the hero', async ({ page })
   expect(sections.indexOf('alur-kerja')).toBeLessThan(sections.indexOf('fitur'));
   await page.getByRole('link', { name: 'Lihat cara kerja', exact: true }).click();
   await expect(page).toHaveURL(/#alur-kerja$/);
-  await expect(page.getByRole('heading', { name: 'Ikuti satu pesanan, dari kasir sampai laporan.' })).toBeInViewport();
+  await expect(page.getByRole('heading', { name: 'Pesanan masuk, usaha tetap teratur.' })).toBeInViewport();
 });
 
 test('hero artwork loops automatically and respects reduced motion', async ({ page }) => {
@@ -66,8 +76,10 @@ test('hero artwork loops automatically and respects reduced motion', async ({ pa
     heroBottom: document.querySelector('#hero')!.getBoundingClientRect().bottom,
     workflowTop: document.querySelector('#alur-kerja')!.getBoundingClientRect().top,
   }));
-  expect(opening.heroBottom).toBeGreaterThanOrEqual(opening.viewportHeight - 1);
-  expect(opening.workflowTop).toBeGreaterThanOrEqual(opening.viewportHeight - 1);
+  if (page.viewportSize()!.width >= 640) {
+    expect(opening.heroBottom).toBeGreaterThanOrEqual(opening.viewportHeight - 1);
+  }
+  expect(opening.workflowTop).toBeGreaterThanOrEqual(opening.heroBottom - 1);
   const illustration = page.locator('#hero .hero-slide-cashier');
   const kitchen = page.locator('#hero .hero-slide-kitchen');
   await expect.poll(() => illustration.evaluate((element: HTMLImageElement) => element.currentSrc)).toMatch(/ekatra-hero-cashier(?:-mobile)?\.webp$/);
@@ -105,33 +117,31 @@ test('free and paid plans preserve their registration destinations', async ({ pa
 });
 
 
-test('workflow tour connects the POS order to production and gross profit', async ({ page }) => {
+test('workflow follows scrolling and does not replay after the full tour is passed', async ({ page }) => {
   await expect(page.locator('#workflow-example')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Putar alur', exact: true }).click();
-  await page.getByRole('button', { name: 'Jeda alur', exact: true }).click();
+  await scrollWorkflow(page, 0.15);
   const example = page.locator('#workflow-example');
   await expect(example).toContainText('Rp 50.000');
-  await page.getByRole('button', { name: '3. Bahan & biaya', exact: true }).click();
+  await scrollWorkflow(page, 0.55);
   await expect(example).toContainText('Rp 12.000');
   await expect(example).toContainText('Rp 24.000');
-  await page.getByRole('button', { name: 'Berikutnya', exact: true }).click();
+  await scrollWorkflow(page, 0.75);
   await expect(example).toContainText('Makanan siap untuk pelanggan.');
-  await page.getByRole('button', { name: 'Berikutnya', exact: true }).click();
-  await expect(page.getByRole('button', { name: '5. Laporan', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await scrollWorkflow(page, 0.95);
+  await expect(page.getByRole('button', { name: 'Lihat tahap 5: Laporan', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(example).toContainText('Rp 26.000');
-  await page.getByRole('button', { name: 'Selesai', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Putar ulang', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Putar ulang', exact: true }).click();
-  await expect(example).toContainText('Pesanan masuk lewat kasir.');
-  await example.getByRole('button', { name: 'Tutup penjelasan' }).click();
+  await scrollWorkflow(page, 1.03);
+  await expect(page.locator('.tour-scroll-track')).toHaveClass(/tour-scroll-complete/);
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await page.locator('.tour-map').scrollIntoViewIfNeeded();
   await expect(example).toHaveCount(0);
   await expectContentFits(page);
-  await page.getByRole('link', { name: 'Mulai dari usaha Anda', exact: true }).click();
+  await page.getByRole('link', { name: 'Hitung resep pertama', exact: true }).last().click();
   await expect(page).toHaveURL(/\/register$/);
 });
 
 
-test('mobile shortcuts clear the sticky header and workflow choices keep their context', async ({ page }) => {
+test('mobile shortcuts clear the sticky header and hotspots move to their scroll stage', async ({ page }) => {
   const mobileNav = page.getByRole('navigation', { name: 'Navigasi halaman', exact: true });
   if (page.viewportSize()!.width >= 1024) {
     await expect(mobileNav).toBeHidden();
@@ -143,12 +153,12 @@ test('mobile shortcuts clear the sticky header and workflow choices keep their c
   const pricingTop = await page.locator('#pricing').evaluate((element) => element.getBoundingClientRect().top);
   expect(pricingTop).toBeGreaterThanOrEqual(headerBottom);
   await mobileNav.getByRole('link', { name: 'Cara kerja', exact: true }).click();
-  const step = page.getByRole('button', { name: '3. Bahan & biaya', exact: true });
+  const step = page.getByRole('button', { name: 'Lihat tahap 3: Bahan & biaya', exact: true });
   await step.scrollIntoViewIfNeeded();
-  const scrollBefore = await page.evaluate(() => window.scrollY);
   await step.click();
-  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
   await expect(step).toHaveAttribute('aria-pressed', 'true');
+  const frameTop = await page.locator('.tour-scroll-sticky').evaluate(element => element.getBoundingClientRect().top);
+  expect(frameTop).toBeGreaterThanOrEqual(headerBottom);
   await expectContentFits(page);
 });
 

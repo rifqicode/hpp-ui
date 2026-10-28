@@ -15,7 +15,7 @@ describe('page titles', () => {
     ['/production/hpp/production-simulation', 'Simulasi Produksi & Restock'], ['/production/overheads', 'Biaya Overhead'],
     ['/sales/pos', 'Point of Sale'], ['/sales/history', 'Riwayat Transaksi'], ['/sales/customers', 'Pelanggan'],
     ['/settings/store', 'Pengaturan Toko'], ['/settings/role', 'Manajemen Role'], ['/settings', 'Pengaturan Akun'],
-    ['/subscription', 'Paket & Langganan'], ['/subscription/invoices', 'Paket & Langganan'], ['/unknown', 'HPP Manager'],
+    ['/subscription', 'Paket & Langganan'], ['/subscription/invoices', 'Paket & Langganan'], ['/guidance', 'Panduan Toko'], ['/unknown', 'HPP Manager'],
   ])('maps %s to %s', (path, expected) => { expect(getActiveMenuTitle(path)).toBe(expected) })
 })
 
@@ -24,7 +24,7 @@ describe('navigation permissions and route boundaries', () => {
     const original = JSON.stringify(NAVIGATION)
     const result = filterNavigation(NAVIGATION, () => false)
     expect(result.map(item => item.id)).toEqual(['administration'])
-    expect(result[0].children?.map(item => item.id)).toEqual(['subscription', 'account-settings'])
+    expect(result[0].children?.map(item => item.id)).toEqual(['guidance', 'subscription', 'account-settings'])
     expect(JSON.stringify(NAVIGATION)).toBe(original)
   })
   it.each([

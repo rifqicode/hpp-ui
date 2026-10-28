@@ -12,6 +12,10 @@ export function getActiveMenuTitle(pathname: string): string {
     return 'Dashboard';
   }
 
+  if (path === '/guidance' || path.startsWith('/guidance/')) {
+    return 'Panduan Toko';
+  }
+
   // Inventory
   if (path === '/inventory/stocks') {
     return 'Bahan Baku';

@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react"
 
 // Layouts
 import { DashboardLayout } from "./components/layout/dashboard-layout"
+import { GUIDANCE_UI_ENABLED } from "@/features/guidance"
 
 // Lazy-loaded App Pages (Code Splitting)
 const ProductReportPage = React.lazy(() => import("./pages/reports/product-report-page"))
@@ -37,12 +38,14 @@ const TransactionHistoryPage = React.lazy(() => import("./pages/sales/transactio
 const CustomerListPage = React.lazy(() => import("./pages/sales/customer-list-page"))
 const SubscriptionPage = React.lazy(() => import("./pages/subscription/subscription-page"))
 const NotificationListPage = React.lazy(() => import("./pages/notifications/notification-list-page"))
+const StoreGuidancePage = React.lazy(() => import("./pages/guidance/store-guidance-page"))
 const LoginPage = React.lazy(() => import("./pages/auth/login-page"))
 const RegisterPage = React.lazy(() => import("./pages/auth/register-page"))
 const AcceptInvitePage = React.lazy(() => import("./pages/auth/accept-invite-page"))
 const ForgotPasswordPage = React.lazy(() => import("./pages/auth/forgot-password-page"))
 const ResetPasswordPage = React.lazy(() => import("./pages/auth/reset-password-page"))
 const VerifyEmailPage = React.lazy(() => import("./pages/auth/verify-email-page"))
+const ContactPage = React.lazy(() => import("./pages/landing/contact-page"))
 const LandingPage = React.lazy(() => import("./pages/landing/landing-page"))
 const PublicStorefrontPage = React.lazy(() => import("./pages/storefront/public-storefront-page"))
 const PublicOrderTrackingPage = React.lazy(() => import("./pages/storefront/public-order-tracking-page"))
@@ -65,6 +68,7 @@ function App() {
         <Routes>
           {/* Public Landing, Storefront & Auth Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/hubungi-kami" element={<ContactPage />} />
           <Route path="/s/:storeSlug" element={<PublicStorefrontPage />} />
           <Route path="/s/:storeSlug/orders/:trackingToken" element={<PublicOrderTrackingPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -124,6 +128,16 @@ function App() {
             <Route path="/settings" element={<AccountSettingPage />} />
             <Route path="/subscription" element={<SubscriptionPage />} />
             <Route path="/notifications" element={<NotificationListPage />} />
+            <Route
+              path="/guidance"
+              element={
+                GUIDANCE_UI_ENABLED ? (
+                  <StoreGuidancePage />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              }
+            />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>

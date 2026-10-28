@@ -1,5 +1,6 @@
 import { modifierService } from '@/features/recipes/services/modifier-service';
 import { onboardingService } from '@/features/onboarding/services/onboarding-service';
+import { guidanceService } from '@/features/guidance/services/guidance-service';
 import { vi } from 'vitest'
 import apiClient from '@/lib/api-client'
 import { authService } from '@/features/auth/services/auth-service'
@@ -33,6 +34,8 @@ export function mockPageServices() {
   vi.spyOn(onboardingService, 'get').mockResolvedValue({ state: { id: 'onboarding-1', store_id: 'store-1', status: 'IN_PROGRESS', step: 1, revision: 0, draft: {}, product_id: null }, should_start: false });
   vi.spyOn(onboardingService, 'materials').mockResolvedValue([]);
   vi.spyOn(onboardingService, 'products').mockResolvedValue([]);
+  vi.spyOn(guidanceService, 'list').mockResolvedValue([]);
+  vi.spyOn(guidanceService, 'complete').mockResolvedValue({ guidance: 'mock', is_completed: true });
   vi.spyOn(dashboardService, 'getOverview').mockResolvedValue(dashboardFixture())
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true, json: async () => ({ success: true, data: { whatsapp: null } }),
@@ -85,6 +88,7 @@ export function mockPageServices() {
   vi.spyOn(customerService, 'getCustomers').mockResolvedValue({ data: [], total: 0, page: 1, per_page: 10, total_pages: 1 })
   vi.spyOn(customerService, 'getCustomerSummary').mockResolvedValue({ total_customers: 0, active_customers: 0, total_spent_amount: 0 })
   vi.spyOn(salesService, 'getProducts').mockResolvedValue([])
+  vi.spyOn(salesService, 'getSales').mockResolvedValue([])
   vi.spyOn(salesService, 'getPaginatedSales').mockResolvedValue({ data: [], total: 0, page: 1, per_page: 10, total_pages: 1 })
   vi.spyOn(salesService, 'getSummary').mockResolvedValue({ totalRevenue: 0, totalTransactions: 0, totalHpp: 0, totalGrossProfit: 0, averageMarginPct: 0 })
   vi.spyOn(subscriptionService, 'getUsage').mockResolvedValue(usage())

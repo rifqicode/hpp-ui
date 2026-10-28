@@ -53,6 +53,7 @@ import type {
 import { overheadService } from "@/features/overheads/services/overhead-service"
 import type { OverheadType } from "@/features/overheads/types"
 import { CurrencyText } from "@/components/ui/currency-text"
+import { FeatureGuidanceTour, GuidanceTourTrigger } from "@/features/guidance"
 
 function formatBatchDate(value: string): string {
   return new Date(value).toLocaleString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
@@ -304,6 +305,7 @@ export default function BatchListPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          <GuidanceTourTrigger feature="production" />
           {(activeView === "list" || activeView === "kanban") && <Button
             variant="outline"
             size="sm"
@@ -315,6 +317,7 @@ export default function BatchListPage() {
             Perbarui
           </Button>}
           <Button
+            data-guidance="new-batch-btn"
             onClick={() => navigate("/production/batches/new")}
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs flex-1 sm:flex-initial"
           >
@@ -329,7 +332,7 @@ export default function BatchListPage() {
         next.set("tab", value)
         return next
       })}>
-        <TabsList aria-label="Tampilan produksi" className="mb-4 grid w-full max-w-md grid-flow-col auto-cols-fr">
+        <TabsList data-guidance="production-view-tabs" aria-label="Tampilan produksi" className="mb-4 grid w-full max-w-md grid-flow-col auto-cols-fr">
           {[
             { value: "kanban", label: "Papan Kanban" },
             { value: "list", label: "Daftar Tabel" },
@@ -693,6 +696,8 @@ export default function BatchListPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <FeatureGuidanceTour feature="production" />
     </div>
   )
 }

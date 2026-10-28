@@ -368,6 +368,10 @@ export function BatchBuilder({
         queryClient.invalidateQueries({ queryKey: ["subscription-usage"] }),
       ])
 
+      window.dispatchEvent(
+        new CustomEvent("guidance-task-success", { detail: { feature: "production" } })
+      )
+
       if (onSaved) {
         onSaved(newBatch)
       } else {

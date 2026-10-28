@@ -71,6 +71,7 @@ import { ReceiptSettingsTab } from "@/features/settings/components/receipt-setti
 import { PaymentSettingsTab } from "@/features/settings/components/payment-settings-tab"
 import { StaffPasswordField } from "@/features/settings/components/staff-password-field"
 import { useAuthStore } from "@/store/use-auth-store"
+import { FeatureGuidanceTour, GuidanceTourTrigger } from "@/features/guidance"
 
 const STORE_CATEGORIES = [
   "Bakery & Pastry",
@@ -226,11 +227,14 @@ export default function StoreSettingsPage() {
         <TabsContent value="profile" className="m-0 space-y-4">
           <Card className="min-w-0 gap-0 border border-border py-0 shadow-none ring-0">
             <CardHeader className="gap-1 border-b px-4 py-4 sm:px-5">
-              <CardTitle className="text-base">Informasi Toko & Outlet</CardTitle>
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-base">Informasi Toko & Outlet</CardTitle>
+                <GuidanceTourTrigger feature="store_profile" />
+              </div>
               <CardDescription className="text-xs leading-5">Informasi toko ditampilkan pada faktur, pesanan pembelian, dan struk kasir.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <form onSubmit={handleSaveProfile}>
+              <form onSubmit={handleSaveProfile} data-guidance="store-profile-form">
                 <div className="space-y-6 p-4 sm:p-5">
                   {profileSuccessMsg && <FeedbackAlert variant="success" onDismiss={() => setProfileSuccessMsg("")}>{profileSuccessMsg}</FeedbackAlert>}
                   {profileErrorMsg && <FeedbackAlert variant="error" onDismiss={() => setProfileErrorMsg("")}>{profileErrorMsg}</FeedbackAlert>}
@@ -240,7 +244,7 @@ export default function StoreSettingsPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="store-name" className="text-xs font-medium">Nama Toko / Outlet <span className="text-destructive">*</span></Label>
-                        <Input id="store-name" value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} required className="h-11 text-sm" placeholder="Nama toko Anda" />
+                        <Input id="store-name" data-guidance="store-name" value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} required className="h-11 text-sm" placeholder="Nama toko Anda" />
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="store-category" className="text-xs font-medium">Kategori Bisnis <span className="text-destructive">*</span></Label>
@@ -252,7 +256,7 @@ export default function StoreSettingsPage() {
                     </div>
                   </section>
 
-                  <section aria-labelledby="store-contact-heading" className="space-y-4 border-t pt-5">
+                  <section data-guidance="store-contact" aria-labelledby="store-contact-heading" className="space-y-4 border-t pt-5">
                     <div><h2 id="store-contact-heading" className="text-sm font-semibold">Kontak & operasional</h2><p className="mt-1 text-xs text-muted-foreground">Nomor bisnis, lokasi, dan catatan untuk toko ini.</p></div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1.5">
@@ -276,11 +280,12 @@ export default function StoreSettingsPage() {
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 px-4 py-4 sm:px-5">
                   <p className="text-[11px] text-muted-foreground">Perubahan berlaku untuk toko ini.</p>
-                  <Button type="submit" disabled={isSavingProfile} className="h-11 w-full gap-2 text-xs sm:w-auto">{isSavingProfile && <Loader2 className="size-4 animate-spin" />}Simpan Perubahan Toko</Button>
+                  <Button data-guidance="save-profile-btn" type="submit" disabled={isSavingProfile} className="h-11 w-full gap-2 text-xs sm:w-auto">{isSavingProfile && <Loader2 className="size-4 animate-spin" />}Simpan Perubahan Toko</Button>
                 </div>
               </form>
             </CardContent>
           </Card>
+          <FeatureGuidanceTour feature="store_profile" />
         </TabsContent>
 
         {/* ================= TAB 2: ANGGOTA TIM & STAF ================= */}

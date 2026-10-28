@@ -20,6 +20,7 @@ import { FeedbackAlert } from '@/components/ui/feedback-alert';
 import { Badge } from '@/components/ui/badge';
 import { settingsService } from '../services/settings-service';
 import type { StoreInfo, StorePaymentConfig, StoreBankAccount } from '../types';
+import { FeatureGuidanceTour, GuidanceTourTrigger } from '@/features/guidance';
 
 interface PaymentSettingsTabProps {
   store: StoreInfo | null;
@@ -117,6 +118,9 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
       });
       setSuccessMsg('Metode pembayaran berhasil disimpan.');
       onUpdated?.(updated);
+      window.dispatchEvent(
+        new CustomEvent('guidance-task-success', { detail: { feature: 'payment_config' } })
+      );
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal menyimpan metode pembayaran.');
     } finally {
@@ -131,8 +135,9 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
         <form onSubmit={handleSave} className="space-y-6">
           <Card className="rounded-2xl border-border shadow-xs">
             <CardHeader className="pb-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base font-semibold">Pengaturan Metode Pembayaran</CardTitle>
+                <GuidanceTourTrigger feature="payment_config" />
               </div>
               <CardDescription className="text-xs">
                 Atur metode pembayaran yang aktif di POS kasir, kode QRIS toko, dan rekening transfer bank.
@@ -173,7 +178,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
               </div>
 
               {/* 2. QRIS */}
-              <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div data-guidance="payment-qris" className="rounded-xl border border-border bg-card p-4 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 mt-0.5">
@@ -233,7 +238,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
               </div>
 
               {/* 3. Transfer Bank */}
-              <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div data-guidance="payment-bank" className="rounded-xl border border-border bg-card p-4 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 mt-0.5">
@@ -335,7 +340,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={isSaving} className="gap-2">
+                <Button data-guidance="save-payment-btn" type="submit" disabled={isSaving} className="gap-2">
                   {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                   Simpan Pengaturan Pembayaran
                 </Button>
@@ -483,6 +488,8 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
           </CardContent>
         </Card>
       </div>
+
+      <FeatureGuidanceTour feature="payment_config" />
     </div>
   );
 }

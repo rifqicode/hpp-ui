@@ -399,9 +399,9 @@ const MOBILE_PREVIEWS = [
 ]
 
 const FEATURE_GROUPS = [
-  { id: "cost-production", label: "Biaya & Produksi", featureIds: ["hpp", "simulation", "overheads", "production"] },
-  { id: "stock-sales", label: "Stok & Penjualan", featureIds: ["inventory", "purchases", "pos", "customers"] },
-  { id: "management", label: "Kelola Usaha", featureIds: ["dashboard", "stores", "staff", "ai"] },
+  { id: "cost-production", label: "Resep & Produksi", featureIds: ["hpp", "simulation", "overheads", "production"] },
+  { id: "stock-sales", label: "Stok & Kasir", featureIds: ["inventory", "purchases", "pos", "customers"] },
+  { id: "management", label: "Laporan & Pengelolaan", featureIds: ["dashboard", "stores", "staff", "ai"] },
 ]
 
 export function FeatureScrollShowcase() {
@@ -415,15 +415,15 @@ export function FeatureScrollShowcase() {
       className="relative bg-slate-50/60 border-b border-slate-200"
     >
       {/* Feature selector and illustrative product previews */}
-      <div className="flex items-center py-16 lg:py-20 overflow-hidden">
+      <div className="flex items-center py-12 sm:py-16 lg:py-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-8 lg:mb-10">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Bantu urus dapur sampai penjualan.
+              Kenali fitur Ekatra POS.
             </h2>
             <p className="text-slate-600 text-sm sm:text-base mt-2.5">
-              Mulai dari biaya resep, lalu hubungkan stok dan penjualan saat usaha Anda membutuhkannya.
+              Hitung biaya resep, catat produksi, kelola stok, dan layani transaksi kasir. Pantau hasil penjualan serta atur toko dan akses karyawan dalam satu aplikasi.
             </p>
           </div>
 

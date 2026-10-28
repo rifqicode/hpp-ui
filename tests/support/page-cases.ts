@@ -14,6 +14,7 @@ export const pageCases = [
   { file: 'inventory/purchase-stock-page.tsx', entry: '/inventory/purchase/new', text: 'Catat Pembelian Bahan' },
   { file: 'inventory/stock-detail-page.tsx', entry: '/inventory/stocks/stock-1', path: '/inventory/stocks/:materialId', text: 'Tepung Terigu' },
   { file: 'inventory/stock-list-page.tsx', entry: '/inventory/stocks', text: 'Bahan Baku & Inventaris' },
+  { file: 'landing/contact-page.tsx', entry: '/hubungi-kami', text: 'Bicarakan kebutuhan usaha Anda.', guest: true },
   { file: 'landing/landing-page.tsx', entry: '/', text: /Tahu Modalnya\./, guest: true },
   { file: 'notifications/notification-list-page.tsx', entry: '/notifications', text: 'Notifikasi' },
   { file: 'production/batch-create-page.tsx', entry: '/production/batches/new', text: 'Mulai Batch Produksi Baru' },

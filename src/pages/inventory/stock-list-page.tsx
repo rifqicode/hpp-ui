@@ -44,6 +44,7 @@ import { usePermission } from "@/hooks/use-permission"
 import { useStocks, useStockSummaryQuery } from "@/features/inventory/hooks"
 import { RecordMovementDialog } from "@/features/inventory/components/record-movement-dialog"
 import { QuotaBadge, useSubscriptionGuards } from "@/features/subscription"
+import { FeatureGuidanceTour, GuidanceTourTrigger } from "@/features/guidance"
 
 const BASE_UNITS = [
   { value: "kg", label: "Kilogram (kg)" },
@@ -198,6 +199,9 @@ export default function StockListPage() {
       })
       setIsCreateOpen(false)
       refetchSummary()
+      window.dispatchEvent(
+        new CustomEvent("guidance-task-success", { detail: { feature: "stock" } })
+      )
     } catch (err: unknown) {
       setCreateError(err instanceof Error ? err.message : "Gagal menambahkan bahan baku")
     }
@@ -247,6 +251,8 @@ export default function StockListPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          <GuidanceTourTrigger feature="stock" />
+
           <Button
             variant="outline"
             size="sm"
@@ -273,6 +279,7 @@ export default function StockListPage() {
           {canCreate && (
             <>
               <Button
+                data-guidance="add-stock-btn"
                 onClick={handleOpenCreateModal}
                 className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-2xs"
               >
@@ -281,7 +288,7 @@ export default function StockListPage() {
               </Button>
 
               <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent data-guidance="stock-create-modal" className="sm:max-w-md">
                   <form onSubmit={handleSubmitCreate}>
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2">
@@ -304,6 +311,7 @@ export default function StockListPage() {
                         <Label htmlFor="stock-name">Nama Bahan Baku</Label>
                         <Input
                           id="stock-name"
+                          data-guidance="stock-form-name"
                           placeholder="misal: Tepung Terigu Segitiga Biru"
                           value={newName}
                           onChange={(e) => setNewName(e.target.value)}
@@ -318,6 +326,7 @@ export default function StockListPage() {
                           <DropdownMenuTrigger asChild>
                             <Button
                               id="stock-unit"
+                              data-guidance="stock-form-unit"
                               type="button"
                               variant="outline"
                               className="w-full justify-between h-9"
@@ -387,7 +396,7 @@ export default function StockListPage() {
                       <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                         Batal
                       </Button>
-                      <Button type="submit" disabled={isSubmitting}>
+                      <Button type="submit" disabled={isSubmitting} data-guidance="stock-form-submit">
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Simpan Bahan Baku
                       </Button>
@@ -561,7 +570,7 @@ export default function StockListPage() {
         </div>
       ) : (summary?.total_materials ?? total) === 0 && !search && inventoryMethod === undefined && statusFilter === "all" ? (
         /* Empty State */
-        <div className="flex flex-col items-center justify-center p-12 sm:p-16 text-center rounded-2xl border-2 border-dashed border-border bg-card/60 shadow-xs">
+        <div data-guidance="stock-table" className="flex flex-col items-center justify-center p-12 sm:p-16 text-center rounded-2xl border-2 border-dashed border-border bg-card/60 shadow-xs">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-4 shadow-inner">
             <Package className="h-8 w-8" />
           </div>
@@ -571,6 +580,7 @@ export default function StockListPage() {
           </p>
           {canCreate && (
             <Button
+              data-guidance="add-stock-btn"
               onClick={handleOpenCreateModal}
               className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-xs"
             >
@@ -582,7 +592,7 @@ export default function StockListPage() {
       ) : (
         <div className="space-y-4">
           {/* Polished Table Container */}
-          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
+          <div data-guidance="stock-table" className="rounded-xl border border-border bg-card overflow-hidden shadow-2xs">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] text-sm text-left">
                 <thead className="bg-muted/50 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
@@ -696,6 +706,9 @@ export default function StockListPage() {
           }}
         />
       )}
+
+      {/* Feature Guidance Tour */}
+      <FeatureGuidanceTour feature="stock" />
     </div>
   )
 }

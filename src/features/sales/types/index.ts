@@ -130,6 +130,8 @@ export interface Sale {
   paymentReference?: string;
   payment_reference?: string;
   notes?: string;
+  internalNotes?: string;
+  internal_notes?: string;
   transactionDate: string;
   transaction_date?: string;
   createdAt: string;
@@ -209,6 +211,8 @@ export interface CreateSaleInput {
   paymentReference?: string;
   payment_reference?: string;
   notes?: string;
+  internalNotes?: string;
+  internal_notes?: string;
 }
 
 export interface SaleQuery {

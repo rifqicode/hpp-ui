@@ -2,6 +2,7 @@ import type { ComponentType } from "react"
 import {
   LayoutDashboard, Factory, Package, ShoppingCart, Settings, Users,
   Calculator, History, Store, ClipboardList, Layers, CreditCard, ChartNoAxesCombined,
+  Compass,
 } from "lucide-react"
 import type { SubscriptionFeatures } from "@/features/subscription"
 
@@ -53,6 +54,7 @@ export const NAVIGATION: NavigationItem[] = [
   {
     id: "administration", title: "Administration", icon: Settings,
     children: [
+      { id: "guidance", title: "Panduan Toko", url: "/guidance", icon: Compass },
       { id: "subscription", title: "Subscription", url: "/subscription", icon: CreditCard },
       { id: "store-settings", title: "Store Settings", url: "/settings/store", icon: Store, permission: "menu:settings" },
       { id: "account-settings", title: "Account Settings", url: "/settings", icon: Settings },

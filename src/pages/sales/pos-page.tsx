@@ -38,6 +38,7 @@ import type { CartItem, PaymentMethod, Sale, Customer } from '../../features/sal
 import type { Product, ProductVariantView, ModifierOption } from '../../features/recipes/types';
 import { useAuthStore } from '../../store/use-auth-store';
 import { settingsService } from '@/features/settings/services/settings-service';
+import { FeatureGuidanceTour, GuidanceTourTrigger } from '@/features/guidance';
 
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -88,6 +89,7 @@ function PosSession() {
   const [matchedCustomer, setMatchedCustomer] = React.useState<Customer | null>(null);
   const [isSearchingCustomer, setIsSearchingCustomer] = React.useState(false);
   const [orderNotes, setOrderNotes] = React.useState('');
+  const [internalNotes, setInternalNotes] = React.useState('');
 
   const handleCustomerPhoneChange = async (val: string) => {
     setCustomerPhone(val);
@@ -354,6 +356,7 @@ function PosSession() {
     setCustomerName('');
     setMatchedCustomer(null);
     setOrderNotes('');
+    setInternalNotes('');
     setTableNumber('');
     setFulfillmentType('DINE_IN');
   };
@@ -381,6 +384,7 @@ function PosSession() {
         cashReceived: paymentMethod === 'CASH' ? cashReceivedNum : undefined,
         paymentReference: paymentReference.trim() || undefined,
         notes: orderNotes.trim() || undefined,
+        internalNotes: internalNotes.trim() || undefined,
         items: cart.map((c) => ({
           variantId: c.product.id,
           modifierOptionIds: c.modifiers.map((o) => o.id),
@@ -393,6 +397,9 @@ function PosSession() {
       setCompletedSale(sale);
       setIsPaymentOpen(false);
       setIsReceiptOpen(true);
+      window.dispatchEvent(
+        new CustomEvent('guidance-task-success', { detail: { feature: 'pos' } })
+      );
 
       // Reset cart
       setCart([]);
@@ -400,6 +407,7 @@ function PosSession() {
       setCustomerName('');
       setMatchedCustomer(null);
       setOrderNotes('');
+      setInternalNotes('');
       setTableNumber('');
       setFulfillmentType('DINE_IN');
 
@@ -447,6 +455,7 @@ function PosSession() {
           <Button variant="outline" asChild className="h-11 shrink-0 gap-2 rounded-xl px-3 text-xs">
             <Link to="/sales/history" aria-label="Riwayat Transaksi"><History className="size-4" /><span className="hidden sm:inline">Riwayat Transaksi</span></Link>
           </Button>
+          <GuidanceTourTrigger feature="pos" />
         </div>
       </header>
 
@@ -463,7 +472,7 @@ function PosSession() {
       </div>
 
       <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
-        <section aria-label="Katalog produk" className={`${mobileTab === 'catalog' ? 'flex' : 'hidden lg:flex'} min-w-0 flex-col gap-4`}>
+        <section data-guidance="pos-catalog" aria-label="Katalog produk" className={`${mobileTab === 'catalog' ? 'flex' : 'hidden lg:flex'} min-w-0 flex-col gap-4`}>
           <div className="rounded-2xl border bg-card p-3 sm:p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold">Katalog produk</h2>
@@ -547,7 +556,7 @@ function PosSession() {
           </div>
         </section>
 
-        <section aria-label="Pesanan pelanggan" className={`${mobileTab === 'cart' ? 'flex' : 'hidden lg:flex'} min-w-0 flex-col rounded-2xl border bg-card lg:sticky lg:top-4 h-[calc(100dvh-10rem)] lg:h-[calc(100dvh-13rem)] overflow-hidden`}>
+        <section data-guidance="pos-cart" aria-label="Pesanan pelanggan" className={`${mobileTab === 'cart' ? 'flex' : 'hidden lg:flex'} min-w-0 flex-col rounded-2xl border bg-card lg:sticky lg:top-4 h-[calc(100dvh-10rem)] lg:h-[calc(100dvh-13rem)] overflow-hidden`}>
           <div className="flex items-center justify-between gap-2 border-b p-4 shrink-0">
             <div>
               <h2 className="flex items-center gap-2 text-sm font-semibold"><ShoppingCart className="size-4" />Pesanan Pelanggan</h2>
@@ -629,6 +638,7 @@ function PosSession() {
             <Separator />
             <div className="flex items-center justify-between gap-2"><span className="text-sm font-medium">Total Tagihan</span><span className="text-xl font-bold tracking-tight tabular-nums"><CurrencyText value={totalBill} /></span></div>
             <Button
+              data-guidance="pos-checkout"
               disabled={cart.length === 0}
               onClick={handleOpenPayment}
               aria-label="Proses Pesanan"
@@ -644,7 +654,7 @@ function PosSession() {
 
       {/* Payment Dialog */}
       <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-        <DialogContent className="sm:max-w-2xl md:max-w-3xl rounded-2xl max-h-[90dvh] flex flex-col">
+        <DialogContent data-guidance="pos-payment-modal" className="sm:max-w-2xl md:max-w-3xl rounded-2xl max-h-[90dvh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">Pembayaran Transaksi</DialogTitle>
             <DialogDescription className="text-xs">
@@ -774,6 +784,18 @@ function PosSession() {
                     onChange={(e) => setOrderNotes(e.target.value)}
                     className="h-9 text-xs bg-background"
                   />
+                  <div className="space-y-1">
+                    <Input
+                      aria-label="Catatan internal kasir"
+                      placeholder="Catatan Internal Kasir / Backoffice (opsional)"
+                      value={internalNotes}
+                      onChange={(e) => setInternalNotes(e.target.value)}
+                      className="h-9 text-xs bg-background"
+                    />
+                    <p className="text-[10px] text-muted-foreground px-0.5">
+                      Khusus internal kasir &amp; backoffice, tidak dicetak di struk
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1272,6 +1294,8 @@ function PosSession() {
           void queryClient.invalidateQueries();
         }}
       />
+
+      <FeatureGuidanceTour feature="pos" />
     </div>
   );
 }

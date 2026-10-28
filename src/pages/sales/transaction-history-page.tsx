@@ -334,7 +334,7 @@ export default function TransactionHistoryPage() {
                 <tbody className="divide-y divide-border/70">{sales.map((sale) => <tr key={sale.id} className="cursor-pointer transition-colors hover:bg-muted/30" onClick={() => handleOpenDetail(sale)}>
                   <td className="px-4 py-4"><span className="block font-semibold">{sale.invoiceNumber}</span><span className="mt-1 block whitespace-nowrap text-[10px] text-muted-foreground">{new Date(sale.transactionDate).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</span></td>
                   <td className="px-4 py-4"><span className="block max-w-40 truncate font-medium">{sale.customerName || 'Pelanggan Umum'}</span>{sale.customer?.phone && <span className="mt-1 block text-[10px] text-muted-foreground">{sale.customer.phone}</span>}<span className="mt-1 block text-[10px] text-muted-foreground">Kasir: {sale.cashierName || 'Kasir'}</span></td>
-                  <td className="px-4 py-4"><span>{sale.items.reduce((sum, item) => sum + item.quantity, 0)} item · {sale.items.length} jenis</span><span className="mt-1 block max-w-44 truncate text-[10px] text-muted-foreground" title={sale.items.map((item) => `${item.productName} (${item.quantity})`).join(', ')}>{sale.items.map((item) => `${item.productName} (${item.quantity})`).join(', ')}</span>{sale.notes && <span className="mt-1 block max-w-44 truncate text-[10px] italic text-muted-foreground" title={sale.notes}>{sale.notes}</span>}</td>
+                  <td className="px-4 py-4"><span>{sale.items.reduce((sum, item) => sum + item.quantity, 0)} item · {sale.items.length} jenis</span><span className="mt-1 block max-w-44 truncate text-[10px] text-muted-foreground" title={sale.items.map((item) => `${item.productName} (${item.quantity})`).join(', ')}>{sale.items.map((item) => `${item.productName} (${item.quantity})`).join(', ')}</span>{sale.notes && <span className="mt-1 block max-w-44 truncate text-[10px] italic text-muted-foreground" title={sale.notes}>{sale.notes}</span>}{(sale.internalNotes || sale.internal_notes) && <span className="mt-1 block max-w-44 truncate text-[10px] text-amber-700 bg-amber-500/10 px-1 py-0.5 rounded" title={sale.internalNotes || sale.internal_notes}>[Internal]: {sale.internalNotes || sale.internal_notes}</span>}</td>
                   <td className="px-4 py-4"><SaleStatusBadge sale={sale} /></td>
                   <td className="px-4 py-4"><span className="rounded-md border px-2 py-1 text-[10px]">{sale.paymentMethod === 'CASH' ? 'Tunai' : sale.paymentMethod === 'TRANSFER' ? 'Transfer bank' : sale.paymentMethod === 'DEBIT' ? 'Kartu debit' : sale.paymentMethod}</span></td>
                   <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums"><CurrencyText value={sale.totalAmount} /></td>
@@ -439,6 +439,12 @@ export default function TransactionHistoryPage() {
                     <div className="flex justify-between text-[10px] text-muted-foreground italic">
                       <span>Catatan:</span>
                       <span>{selectedSale.notes}</span>
+                    </div>
+                  )}
+                  {Boolean(selectedSale.internalNotes || selectedSale.internal_notes) && (
+                    <div className="flex justify-between text-[10px] text-amber-700 bg-amber-500/10 px-1.5 py-1 rounded">
+                      <span className="font-semibold">Catatan Internal:</span>
+                      <span className="italic">{selectedSale.internalNotes || selectedSale.internal_notes}</span>
                     </div>
                   )}
                   <div className="flex flex-wrap gap-1.5 justify-between items-center pt-0.5">

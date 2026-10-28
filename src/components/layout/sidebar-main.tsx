@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar"
 import { StoreDropdown } from "./store-dropdown"
 import { OnboardingInvitation } from "@/features/onboarding/components/onboarding-entry"
+import { StoreGuidanceSidebarCard } from "@/features/guidance"
 import type { OnboardingData } from "@/features/onboarding/types"
 import { useStoresQuery, useStorePermissionsQuery } from "@/features/settings/hooks/use-stores-query"
 import { NAVIGATION, filterNavigation, getActiveNavigationIds, type NavigationItem } from "./sidebar-navigation"
@@ -209,6 +210,7 @@ export function SidebarMain({ onboardingData }: { onboardingData?: OnboardingDat
             ))}
           </SidebarMenu>
         </nav>
+        <StoreGuidanceSidebarCard />
         <OnboardingInvitation data={onboardingData} />
       </SidebarContent>
 

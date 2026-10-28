@@ -11,6 +11,7 @@ import { getActiveMenuTitle } from "@/lib/page-info"
 
 import { NotificationDropdown } from "./notification-dropdown"
 import { UserDropdown } from "./user-dropdown"
+import { StoreGuidanceNavbarButton, GUIDANCE_UI_ENABLED } from "@/features/guidance"
 import { GracePeriodBanner, UpgradeModal } from "@/features/subscription"
 import { SUBSCRIPTION_TIER_LABELS, type SubscriptionTier } from "@/features/subscription/types/subscription"
 import { AIChatFloatingDrawer } from "@/features/ai-chat"
@@ -87,6 +88,7 @@ function DashboardWorkspace({ onboardingData }: { onboardingData?: OnboardingDat
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              {GUIDANCE_UI_ENABLED && <StoreGuidanceNavbarButton />}
               <AIChatFloatingDrawer />
               <NotificationDropdown />
               <UserDropdown />

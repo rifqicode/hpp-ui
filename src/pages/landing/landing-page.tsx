@@ -8,6 +8,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 import { HeroVisual } from "./components/hero-visual"
+import { PricingHost } from "./components/pricing-host"
 import { FeatureScrollShowcase } from "./components/feature-scroll-showcase"
 import { ProductionWorkflow } from "./components/production-workflow"
 import { Button } from "@/components/ui/button"
@@ -16,52 +17,50 @@ import { useAuthStore } from "@/store/use-auth-store"
 import { UpgradeModal } from "@/features/subscription/components/UpgradeModal"
 import type { SubscriptionTier } from "@/features/subscription/types/subscription"
 
-import { WhatsAppCTA, type WhatsAppCTAConfig } from "./components/whatsapp-cta"
-import {
-  EkatraLogo,
-  EkatraWordmark,
-} from "@/components/brand/ekatra-logo"
+import { WhatsAppCTA } from "./components/whatsapp-cta"
+import { PublicHeader, PublicFooter } from "./components/public-navigation"
+import { useLandingContact } from "./hooks/use-landing-contact"
 
 const FAQ_ITEMS = [
   {
-    question: `Usaha saya masih kecil, bisa pakai ${APP_NAME}?`,
+    question: `Usaha saya masih kecil, apakah cocok memakai ${APP_NAME}?`,
     answer:
-      "Bisa. Paket Free Starter gratis untuk satu toko, dengan 20 bahan baku, 10 resep, dan 20 kali produksi per bulan. Mulai dengan mencatat harga bahan dan takaran satu resep. Anda bisa lanjut mencatat produksi dan penjualan saat membutuhkannya.",
+      "Cocok. Anda bisa mulai dari satu toko dan satu resep, lalu mencatat produksi serta penjualan sesuai kebutuhan. Tidak perlu langsung memakai semua fitur.",
   },
   {
-    question: "Apa bedanya HPP, laba kotor, dan laba bersih?",
+    question: "Apa yang perlu disiapkan untuk mulai?",
     answer:
-      "HPP (Harga Pokok Produksi) adalah biaya membuat menu, termasuk bahan, kemasan, upah, dan biaya produksi yang Anda masukkan. Laba kotor adalah uang penjualan dikurangi HPP menu yang terjual. Untuk tahu laba bersih, kurangi lagi biaya usaha lain yang belum masuk HPP, seperti sewa tempat.",
+      "Siapkan daftar bahan, harga beli, dan takaran resep yang ingin dihitung. Mulai dari satu menu dulu; bahan dan resep lain bisa ditambahkan bertahap. Catat juga stok yang tersedia sebelum mulai mencatat pemakaian bahan.",
   },
   {
-    question: "Margin itu apa, dan apa bedanya dengan laba?",
+    question: "Apakah pesanan kasir langsung terhubung ke dapur?",
     answer:
-      "Laba kotor menunjukkan selisih harga jual dan HPP dalam rupiah. Margin laba kotor menunjukkan selisih itu sebagai persentase harga jual. Misalnya, harga jual Rp 18.000 dan HPP Rp 6.100 menghasilkan laba kotor Rp 11.900, atau margin sekitar 66,1%. Ini belum dikurangi biaya usaha lain di luar HPP.",
+      "Ya, untuk menu yang diatur agar dibuat saat dipesan. Saat kasir mencatat penjualan, Ekatra membuat antrean produksi yang bisa ditindaklanjuti tim dapur. Untuk produk yang sudah siap jual, penjualan menggunakan stok produk jadi.",
   },
   {
-    question: "Kapan saya perlu pindah ke paket berbayar?",
+    question: "Kapan stok bahan otomatis berkurang?",
     answer:
-      "Pilih Growth jika Anda perlu mencatat lebih dari 10 resep, lebih dari 20 kali produksi per bulan, mengajak karyawan memakai aplikasi, atau menambah toko. Lihat perbandingan paket di bagian harga dan periksa rinciannya sebelum membayar.",
+      "Stok bahan berkurang saat produksi ditandai selesai, mengikuti resep dan jumlah yang diproduksi. Pesanan yang baru masuk antrean dapur belum mengurangi stok bahan. Pastikan resep dan stok sudah dicatat agar pemakaiannya sesuai.",
   },
   {
-    question: "Bagaimana menentukan bahan yang perlu dipakai lebih dulu?",
+    question: "Bagaimana Ekatra menghitung biaya dan laba setiap menu?",
     answer:
-      "Anda bisa memilih bahan yang datang lebih dulu (FIFO), atau yang paling dekat tanggal kedaluwarsanya (FEFO). Aplikasi mencatat pengurangan stok mengikuti pilihan itu. Saat mengambil bahan di dapur, tetap ikuti urutan pada catatan agar bahan yang dipakai sesuai.",
+      "Ekatra menghitung HPP, yaitu biaya membuat menu, dari bahan dan biaya produksi yang Anda masukkan. Dari penjualan yang tercatat, Ekatra menghitung laba kotor dengan mengurangi nilai penjualan dengan HPP produk terjual. Laba kotor ini belum dikurangi biaya usaha lain di luar HPP.",
   },
   {
-    question: "Kalau punya lebih dari satu toko, bisa dikelola di sini?",
+    question: "Apakah bisa mengelola beberapa toko?",
     answer:
-      "Bisa. Paket Growth untuk hingga 3 toko, sedangkan Max Growth untuk hingga 10 toko. Setiap toko punya catatan stok sendiri. Anda juga bisa mengatur fitur yang boleh dipakai karyawan sesuai paket.",
+      "Bisa. Paket Growth mendukung hingga 3 toko, sedangkan Max Growth hingga 10 toko. Setiap toko memiliki catatan stok dan transaksi sendiri, sehingga Anda bisa memeriksa usaha per toko.",
   },
   {
-    question: "Siapa yang bisa melihat resep dan catatan penjualan saya?",
+    question: "Apakah akses kasir, dapur, dan pemilik bisa dibedakan?",
     answer:
-      "Data toko hanya bisa dibuka melalui akun yang punya izin. Sebagai pemilik, Anda bisa mengatur akses karyawan sesuai tugasnya dan mengeluarkan akun dari perangkat yang pernah dipakai melalui pengaturan akun.",
+      "Bisa. Pemilik dapat mengatur akses karyawan sesuai tugas, seperti kasir, produksi, atau pengelolaan stok. Jumlah karyawan dan pilihan pengaturan akses mengikuti paket yang dipakai.",
   },
   {
-    question: "Bagaimana kalau ingin ganti paket?",
+    question: "Bisa mulai gratis? Kapan perlu pindah paket?",
     answer:
-      "Buka halaman langganan di aplikasi, lalu pilih paket yang dibutuhkan. Periksa harga dan masa aktifnya sebelum membayar. Pembayaran diproses melalui Midtrans.",
+      "Bisa. Free Starter menyediakan 1 toko, 20 bahan baku, 10 resep, dan 20 kali produksi per bulan, yang dikelola oleh pemilik. Pilih paket berbayar saat membutuhkan kapasitas lebih besar, akses karyawan, atau tambahan toko. Anda bisa memilih paket melalui halaman langganan di aplikasi.",
   },
 ]
 
@@ -72,23 +71,7 @@ export default function LandingPage() {
   const [isUpgradeOpen, setIsUpgradeOpen] = React.useState(false)
   const [selectedTier, setSelectedTier] = React.useState<SubscriptionTier>("GROWTH")
 
-  const [whatsapp, setWhatsapp] = React.useState<WhatsAppCTAConfig | null>(null)
-
-  React.useEffect(() => {
-    const controller = new AbortController()
-    const baseURL = (import.meta.env.VITE_API_URL || "http://localhost:8080/api").replace(/\/$/, "")
-    // Public settings do not need the authenticated client's session or loading overlay.
-    fetch(`${baseURL}/config/landing`, { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) return
-        const body = await response.json()
-        if (body.success && !controller.signal.aborted) {
-          setWhatsapp(body.data?.whatsapp ?? null)
-        }
-      })
-      .catch(() => { /* The landing page remains usable when settings are unavailable. */ })
-    return () => controller.abort()
-  }, [])
+  const { whatsapp } = useLandingContact()
 
   // FAQ Accordion state
   const [expandedFaqIndex, setExpandedFaqIndex] = React.useState<number | null>(0)
@@ -109,6 +92,15 @@ export default function LandingPage() {
       window.history.pushState(null, "", `#${targetId}`)
     }
   }
+
+  React.useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(window.location.hash.slice(1))
+      const offset = (document.querySelector("header")?.getBoundingClientRect().height ?? 64) + 12
+      window.scrollTo({ top: target ? window.scrollY + target.getBoundingClientRect().top - offset : 0, behavior: "instant" })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
 
   const handlePlanAction = (tier: SubscriptionTier) => {
     if (tier === "FREE") {
@@ -132,85 +124,7 @@ export default function LandingPage() {
     <div className="brand-light-surface min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans selection:bg-primary selection:text-white antialiased overflow-x-clip">
         <a href="#konten-utama" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-primary focus:shadow-lg">Lewati navigasi</a>
         {/* Integrated Navigation Header */}
-        <header className="w-full border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 sm:h-16 flex items-center justify-between gap-2">
-            {/* Brand Logo */}
-            <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group">
-              <EkatraLogo
-                className="h-6 w-8 sm:h-8 sm:w-12 transition-transform group-hover:scale-105"
-              />
-              <EkatraWordmark className="text-base sm:text-2xl" />
-            </Link>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-4 text-sm font-medium text-slate-600">
-              <a
-                href="#fitur"
-                onClick={(e) => handleScrollTo(e, "fitur")}
-                className="hover:text-primary transition-colors cursor-pointer"
-              >
-                Fitur
-              </a>
-              <a
-                href="#alur-kerja"
-                onClick={(e) => handleScrollTo(e, "alur-kerja")}
-                className="hover:text-primary transition-colors cursor-pointer"
-              >
-                Cara Kerja
-              </a>
-              <a
-                href="#pricing"
-                onClick={(e) => handleScrollTo(e, "pricing")}
-                className="hover:text-primary transition-colors cursor-pointer"
-              >
-                Harga Paket
-              </a>
-              <a
-                href="#faq"
-                onClick={(e) => handleScrollTo(e, "faq")}
-                className="hover:text-primary transition-colors cursor-pointer"
-              >
-                Tanya jawab
-              </a>
-            </nav>
-
-            {/* Auth actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {isAuthenticated ? (
-                <Button asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm font-medium text-xs sm:text-sm h-8 sm:h-11 px-2.5 sm:px-4">
-                  <Link to="/dashboard" aria-label="Buka dashboard" className="flex items-center gap-2">
-                    <span>Buka Dashboard</span>
-                    <ArrowRight className="hidden sm:block size-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <>
-                  <Button variant="ghost" asChild className="h-8 sm:h-11 text-slate-700 hover:text-slate-900 font-medium text-xs sm:text-sm px-2.5 sm:px-4">
-                    <Link to="/login">Masuk</Link>
-                  </Button>
-                  <Button asChild className="bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20 font-medium text-xs sm:text-sm h-8 sm:h-11 px-2.5 sm:px-4">
-                    <Link to="/register" className="flex items-center gap-1.5">
-                      <span>Mulai Gratis</span>
-                      <ArrowRight className="hidden min-[360px]:block size-3.5" />
-                    </Link>
-                  </Button>
-                </>
-              )}
-
-
-            </div>
-          </div>
-          <nav aria-label="Navigasi halaman" className="grid grid-cols-4 border-t border-slate-100 px-3 text-xs font-semibold text-slate-600 lg:hidden">
-            {[
-              { id: "alur-kerja", label: "Cara kerja" },
-              { id: "fitur", label: "Fitur" },
-              { id: "pricing", label: "Harga" },
-              { id: "faq", label: "Bantuan" },
-            ].map(({ id, label }) => (
-              <a key={id} href={`#${id}`} onClick={(e) => handleScrollTo(e, id)} className="flex min-h-8 sm:min-h-11 py-0.5 text-[11px] sm:text-xs items-center justify-center rounded-md hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{label}</a>
-            ))}
-          </nav>
-        </header>
+        <PublicHeader onSectionClick={handleScrollTo} />
 
       <main id="konten-utama" tabIndex={-1} className="scroll-mt-32 lg:scroll-mt-20">
       {/* ======================================================== */}
@@ -219,26 +133,26 @@ export default function LandingPage() {
       <section
         id="hero"
         aria-labelledby="hero-heading"
-        className="relative min-h-[calc(100svh-80px)] lg:min-h-[calc(100svh-65px)] flex flex-col justify-between overflow-hidden border-b border-slate-200"
+        className="relative min-h-0 sm:min-h-[calc(100svh-109px)] lg:min-h-[calc(100svh-65px)] flex flex-col justify-between overflow-hidden border-b border-slate-200"
         style={{ background: "radial-gradient(ellipse 36% 44% at 84% 43%, rgba(96, 165, 250, 0.22), transparent 100%), radial-gradient(ellipse 36% 42% at 66% 60%, rgba(var(--brand-indigo-rgb), 0.2), transparent 100%), #FFFFFF" }}
       >
 
         {/* Hero Main Body */}
         <div className="flex-1 flex items-center py-4 sm:py-8 lg:py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-center">
               {/* Left Column: Heading, Typing Text, Call to Action */}
               <div className="lg:col-span-6 flex flex-col text-left">
                 <p className="mb-2 sm:mb-4 text-xs sm:text-sm font-semibold text-primary">Untuk pemilik usaha kuliner</p>
 
                 {/* Main Heading */}
-                <h1 id="hero-heading" className="text-2xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-3 sm:mb-5">
+                <h1 id="hero-heading" className="text-[clamp(1.75rem,7.5vw,2.5rem)] sm:text-5xl md:text-4xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15] mb-3 sm:mb-5">
                   <span className="block">Tahu Modalnya.</span>
                   <span className="block text-primary">Atur Harganya.</span>
                   <span className="block text-primary">Jaga Untungnya.</span>
                 </h1>
 
-                <p className="text-sm sm:text-lg text-slate-600 leading-relaxed max-w-xl mb-3 sm:mb-7">
+                <p className="text-sm sm:text-base lg:text-lg text-slate-600 leading-relaxed max-w-xl mb-3 sm:mb-7">
                   Hitung biaya tiap menu, tentukan harga jual berdasarkan margin, dan kelola bahan baku dalam satu aplikasi.
                 </p>
 
@@ -248,7 +162,7 @@ export default function LandingPage() {
                     <Button
                       size="lg"
                       asChild
-                      className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 h-12 px-7 font-bold text-base"
+                      className="public-mobile-button bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 h-12 px-7 font-bold text-base"
                     >
                       <Link to="/dashboard" className="flex items-center justify-center gap-2">
                         <span>Buka Dashboard</span>
@@ -260,7 +174,7 @@ export default function LandingPage() {
                       <Button
                         size="lg"
                         asChild
-                        className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 h-12 px-7 font-bold text-base transition-all transform hover:-translate-y-0.5"
+                        className="public-mobile-button bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25 h-12 px-7 font-bold text-base transition-all transform hover:-translate-y-0.5"
                       >
                         <Link to="/register" className="flex items-center justify-center gap-2">
                           <span>Hitung resep pertama</span>
@@ -271,7 +185,7 @@ export default function LandingPage() {
                         size="lg"
                         variant="outline"
                         asChild
-                        className="border-slate-300 text-slate-700 hover:bg-slate-100 h-12 px-6 font-semibold text-base cursor-pointer"
+                        className="public-mobile-button border-slate-300 text-slate-700 hover:bg-slate-100 h-12 px-6 font-semibold text-base cursor-pointer"
                       >
                         <a
                           href="#alur-kerja"
@@ -286,7 +200,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="relative lg:col-span-6 flex items-center justify-center">
+              <div className="relative mx-auto flex w-full max-w-sm items-center justify-center sm:max-w-none lg:col-span-6">
                 <HeroVisual />
               </div>
             </div>
@@ -331,16 +245,17 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 max-w-6xl mx-auto items-stretch lg:px-20 xl:px-24">
             {/* Free Starter Plan */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between">
+            <div className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6 lg:p-5 xl:p-7 hover:border-slate-300 transition-all flex flex-col justify-between">
+              <PricingHost character="cashier" />
               <div>
                 <div className="mb-4">
                   <h3 className="text-lg font-bold text-slate-900">Free Starter</h3>
                   <p className="text-sm text-slate-600 mt-1">Untuk mulai mencatat biaya resep di satu toko</p>
                 </div>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold text-slate-900">Rp 0</span>
+                  <span className="whitespace-nowrap text-3xl font-extrabold text-slate-900">Rp 0</span>
                   <span className="text-xs text-slate-500">/selamanya</span>
                 </div>
                 <ul className="space-y-3 text-sm text-slate-700 mb-8">
@@ -369,14 +284,14 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 onClick={() => handlePlanAction("FREE")}
-                className="w-full text-sm font-semibold h-11 rounded-xl border-slate-300 hover:bg-slate-50 cursor-pointer"
+                className="public-mobile-button w-full text-sm font-semibold h-12 rounded-xl sm:h-11 border-slate-300 hover:bg-slate-50 cursor-pointer"
               >
                 {isAuthenticated ? "Buka Dashboard" : "Mulai Gratis"}
               </Button>
             </div>
 
             {/* Growth Plan (Highlighted) */}
-            <div className="rounded-2xl border-2 border-primary bg-indigo-50/20 p-7 shadow-lg relative flex flex-col justify-between ring-2 ring-primary/20">
+            <div className="rounded-2xl border-2 border-primary bg-indigo-50/20 p-5 shadow-lg sm:p-6 lg:p-5 xl:p-7 relative flex flex-col justify-between ring-2 ring-primary/20">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white whitespace-nowrap text-[11px] font-bold px-3 py-1 rounded-full shadow-xs flex items-center gap-1">
                 <Sparkles className="size-3" /> Usaha Berkembang
               </div>
@@ -386,7 +301,7 @@ export default function LandingPage() {
                   <p className="text-sm text-slate-600 mt-1">Untuk produksi rutin dan berbagi tugas dengan karyawan</p>
                 </div>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold text-slate-900">Rp 149.000</span>
+                  <span className="whitespace-nowrap text-3xl font-extrabold text-slate-900">Rp 149.000</span>
                   <span className="text-xs text-slate-500">/bulan</span>
                 </div>
                 <ul className="space-y-3 text-sm text-slate-700 mb-8">
@@ -418,14 +333,15 @@ export default function LandingPage() {
               </div>
               <Button
                 onClick={() => handlePlanAction("GROWTH")}
-                className="w-full text-sm font-semibold h-11 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/25 cursor-pointer"
+                className="public-mobile-button w-full text-sm font-semibold h-12 rounded-xl sm:h-11 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/25 cursor-pointer"
               >
                 Pilih Paket Growth
               </Button>
             </div>
 
             {/* Max Growth Plan */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-xs hover:border-slate-400 transition-all flex flex-col justify-between relative">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs sm:p-6 lg:p-5 xl:p-7 hover:border-slate-400 transition-all flex flex-col justify-between relative sm:col-span-2 lg:col-span-1">
+              <PricingHost character="chef" />
               <div className="absolute -top-3 left-6 bg-slate-900 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
                 <Factory className="size-3 text-amber-400" /> Waralaba & Resto Besar
               </div>
@@ -435,10 +351,10 @@ export default function LandingPage() {
                   <p className="text-sm text-slate-600 mt-1">Untuk mengurus banyak cabang dan lebih banyak karyawan</p>
                 </div>
                 <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-extrabold text-slate-900">Rp 499.000</span>
+                  <span className="whitespace-nowrap text-3xl font-extrabold text-slate-900">Rp 499.000</span>
                   <span className="text-xs text-slate-500">/bulan</span>
                 </div>
-                <ul className="space-y-3 text-sm text-slate-700 mb-8">
+                <ul className="space-y-3 text-sm text-slate-700 mb-8 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-3 sm:space-y-0 lg:block lg:space-y-3">
                   <li className="flex items-center gap-2.5">
                     <Check className="size-4 text-emerald-600 shrink-0" />
                     <span className="font-semibold text-slate-900">Hingga 10 Toko / Cabang</span>
@@ -467,7 +383,7 @@ export default function LandingPage() {
               </div>
               <Button
                 onClick={() => handlePlanAction("MAX_GROWTH")}
-                className="w-full text-sm font-semibold h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
+                className="public-mobile-button w-full text-sm font-semibold h-12 rounded-xl sm:h-11 bg-slate-900 hover:bg-slate-800 text-white cursor-pointer"
               >
                 Pilih Paket Max Growth
               </Button>
@@ -484,10 +400,10 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-xl mx-auto mb-14">
             <p className="text-xs uppercase tracking-widest font-bold text-primary mb-2">
-              Tanya jawab
+              Pertanyaan umum
             </p>
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Pertanyaan seputar perhitungan HPP dan resep
+              Yang perlu Anda tahu tentang {APP_NAME}.
             </h2>
           </div>
 
@@ -521,13 +437,25 @@ export default function LandingPage() {
               )
             })}
           </div>
+
+          <section aria-labelledby="contact-invitation-heading" className="mt-8 border-t border-slate-200 pt-6 sm:mt-10 sm:pt-8">
+            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center sm:gap-6">
+              <div>
+                <h3 id="contact-invitation-heading" className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Masih ada pertanyaan?</h3>
+                <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-slate-600">Tanyakan kebutuhan usaha Anda langsung ke tim Ekatra.</p>
+              </div>
+              <Button variant="ghost" asChild className="public-mobile-button h-11 shrink-0 px-3 font-semibold text-primary hover:bg-indigo-50 hover:text-primary">
+                <Link to="/hubungi-kami">Hubungi Kami <ArrowRight aria-hidden="true" className="ml-2 size-4" /></Link>
+              </Button>
+            </div>
+          </section>
         </div>
       </section>
 
       {/* ======================================================== */}
       {/* 8. BOTTOM HIGH-CONVERSION CTA BANNER                     */}
       {/* ======================================================== */}
-      <section className="py-20 bg-slate-950 text-white relative overflow-hidden">
+      <section className="py-12 sm:py-20 bg-slate-950 text-white relative overflow-hidden">
         {/* Glow Effects */}
         <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-96 h-96 bg-primary/25 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none" />
@@ -547,7 +475,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 asChild
-                className="bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 shadow-xl shadow-primary/30"
+                className="public-mobile-button bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 shadow-xl shadow-primary/30"
               >
                 <Link to="/dashboard" className="flex items-center gap-2">
                   <span>Buka Dashboard</span>
@@ -558,7 +486,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 asChild
-                className="bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 shadow-xl shadow-primary/30"
+                className="public-mobile-button bg-primary hover:bg-primary/90 text-white font-bold px-8 h-12 shadow-xl shadow-primary/30"
               >
                 <Link to="/register" className="flex items-center gap-2">
                   <span>Hitung resep pertama</span>
@@ -570,7 +498,7 @@ export default function LandingPage() {
               size="lg"
               variant="outline"
               asChild
-              className="border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-200 h-12 px-7 font-semibold"
+              className="public-mobile-button border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-200 h-12 px-7 font-semibold"
             >
               <Link to="/login">Masuk ke Akun</Link>
             </Button>
@@ -582,54 +510,7 @@ export default function LandingPage() {
       {/* ======================================================== */}
       {/* 9. PROFESSIONAL FOOTER                                   */}
       {/* ======================================================== */}
-      <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-800">
-            <div className="flex items-center gap-2.5">
-              <EkatraLogo
-                darkMode
-                className="h-8 w-12 sm:h-9 sm:w-14"
-              />
-              <EkatraWordmark darkMode className="text-2xl text-white" />
-            </div>
-            <p className="text-xs text-slate-400 text-center md:text-right max-w-md">
-              Bantu hitung biaya menu, atur harga jual, catat stok bahan, dan lihat hasil penjualan usaha kuliner Anda.
-            </p>
-          </div>
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-            <p>© {new Date().getFullYear()} {APP_NAME}. Hak cipta dilindungi.</p>
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center">
-              <a
-                href="#fitur"
-                onClick={(e) => handleScrollTo(e, "fitur")}
-                className="hover:text-slate-300 transition-colors cursor-pointer"
-              >
-                Fitur
-              </a>
-              <a
-                href="#alur-kerja"
-                onClick={(e) => handleScrollTo(e, "alur-kerja")}
-                className="hover:text-slate-300 transition-colors cursor-pointer"
-              >
-                Cara Kerja
-              </a>
-              <a
-                href="#pricing"
-                onClick={(e) => handleScrollTo(e, "pricing")}
-                className="hover:text-slate-300 transition-colors cursor-pointer"
-              >
-                Harga
-              </a>
-              <Link to="/login" className="hover:text-slate-300 transition-colors">
-                Masuk
-              </Link>
-              <Link to="/register" className="hover:text-slate-300 transition-colors">
-                Daftar
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter onSectionClick={handleScrollTo} />
 
       <WhatsAppCTA config={whatsapp} />
 

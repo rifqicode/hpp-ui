@@ -109,6 +109,8 @@ export function normalizeSale(raw: any): Sale {
     paymentReference: raw.payment_reference ?? raw.paymentReference,
     payment_reference: raw.payment_reference ?? raw.paymentReference,
     notes: raw.notes,
+    internalNotes: raw.internal_notes ?? raw.internalNotes ?? '',
+    internal_notes: raw.internal_notes ?? raw.internalNotes ?? '',
     transactionDate:
       raw.transaction_date ?? raw.transactionDate ?? new Date().toISOString(),
     transaction_date:
@@ -217,6 +219,7 @@ export const salesService = {
       payment_reference:
         input.paymentReference || input.payment_reference || undefined,
       notes: input.notes,
+      internal_notes: input.internalNotes || input.internal_notes || undefined,
     };
 
     const res = await apiClient.post<any>('/sales', payload);

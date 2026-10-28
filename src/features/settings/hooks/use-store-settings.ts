@@ -198,6 +198,9 @@ export function useStoreSettings(activeTab: string = "profile") {
       setProfileSuccessMsg("Informasi profil toko berhasil diperbarui!")
       const updatedList = await settingsService.getStoresList()
       setStoresList(updatedList)
+      window.dispatchEvent(
+        new CustomEvent("guidance-task-success", { detail: { feature: "store_profile" } })
+      )
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Gagal memperbarui profil toko."
       setProfileErrorMsg(msg)

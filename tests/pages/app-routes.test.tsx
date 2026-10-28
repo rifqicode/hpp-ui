@@ -31,6 +31,7 @@ vi.mock('@/pages/sales/transaction-history-page', () => ({ default: () => <h1>Tr
 vi.mock('@/pages/sales/customer-list-page', () => ({ default: () => <h1>CustomerListPage</h1> }))
 vi.mock('@/pages/subscription/subscription-page', () => ({ default: () => <h1>SubscriptionPage</h1> }))
 vi.mock('@/pages/notifications/notification-list-page', () => ({ default: () => <h1>NotificationListPage</h1> }))
+vi.mock('@/pages/guidance/store-guidance-page', () => ({ default: () => <h1>StoreGuidancePage</h1> }))
 vi.mock('@/pages/auth/login-page', () => ({ default: () => <h1>LoginPage</h1> }))
 vi.mock('@/pages/auth/register-page', () => ({ default: ({ initialStep }: { initialStep?: number }) => <h1>{initialStep === 2 ? 'StoreSetup' : 'RegisterPage'}</h1> }))
 vi.mock('@/pages/auth/accept-invite-page', () => ({ default: () => <h1>AcceptInvitePage</h1> }))
@@ -54,7 +55,7 @@ const routes = [
   ['/production/overheads', 'OverheadListPage'], ['/sales/pos', 'PosPage'], ['/sales/history', 'TransactionHistoryPage'],
   ['/sales/customers', 'CustomerListPage'], ['/settings', 'AccountSettingPage'], ['/settings/store', 'StoreSettingsPage'],
   ['/settings/role/new', 'RoleCreatePage'], ['/settings/role/role-1', 'RoleCreatePage'], ['/subscription', 'SubscriptionPage'],
-  ['/notifications', 'NotificationListPage'],
+  ['/notifications', 'NotificationListPage'], ['/guidance', 'StoreGuidancePage'],
 ] as const
 
 function openApp(entry: string) {

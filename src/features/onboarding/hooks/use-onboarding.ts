@@ -156,7 +156,7 @@ export function useOnboarding(storeId: string) {
         const result = await save(completeStep(draft, 4), 4, 'complete');
         queryClient.setQueriesData({ queryKey: ['onboarding'] }, { ...result, should_start: false });
         await queryClient.invalidateQueries({ queryKey: ['onboarding'] });
-        navigate('/dashboard');
+        navigate('/dashboard?welcome=1');
       }
     });
   }

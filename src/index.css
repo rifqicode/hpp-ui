@@ -165,6 +165,13 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Interactive Guidance Spotlight Target Elevation */
+  .data-guidance-active-target {
+    position: relative !important;
+    z-index: 51 !important;
+    pointer-events: auto !important;
+  }
 }
 
 .sidebar-branch-content {

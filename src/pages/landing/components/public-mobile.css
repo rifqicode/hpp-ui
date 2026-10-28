@@ -1,0 +1,30 @@
+@media (max-width: 639px) {
+  .brand-light-surface .public-mobile-button {
+    position: relative;
+    height: 40px;
+    padding-inline: 14px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .brand-light-surface .public-mobile-button::after {
+    content: "";
+    position: absolute;
+    inset: -2px 0;
+  }
+
+  .brand-light-surface .public-mobile-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .brand-light-surface .public-mobile-button-header {
+    height: 36px;
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+
+  .brand-light-surface .public-mobile-button-header::after {
+    inset-block: -4px;
+  }
+}
