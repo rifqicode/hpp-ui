@@ -1,3 +1,5 @@
+import { formatInternationalPhone as formatPhoneInput } from '@/features/auth/lib/phone';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { variantViews } from '@/features/recipes/services/recipe-service';
 import { cartKey } from '@/features/sales/lib/cart';
 import { usePOSPromotions } from '@/features/promotions/hooks/use-pos-promotions';
@@ -96,7 +98,8 @@ function PosSession() {
   const [internalNotes, setInternalNotes] = React.useState('');
   const promotion = usePOSPromotions(cart, customerPhone);
 
-  const handleCustomerPhoneChange = async (val: string) => {
+  const handleCustomerPhoneChange = async (rawVal: string) => {
+    const val = formatPhoneInput(rawVal);
     setCustomerPhone(val);
     const cleaned = val.trim();
     if (cleaned.length >= 8) {
@@ -754,12 +757,11 @@ function PosSession() {
                     <span className="text-[10px] text-muted-foreground">Opsional</span>
                   </div>
                   <div className="space-y-2">
-                    <Input
+                    <PhoneInput
                       aria-label="Nomor HP pelanggan"
-                      type="tel"
                       placeholder="No. HP / WA Pelanggan"
                       value={customerPhone}
-                      onChange={(e) => handleCustomerPhoneChange(e.target.value)}
+                      onValueChange={handleCustomerPhoneChange}
                       className="h-9 text-xs bg-background"
                     />
                     <Input

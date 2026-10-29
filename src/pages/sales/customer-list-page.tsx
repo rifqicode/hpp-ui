@@ -1,3 +1,5 @@
+import { formatInternationalPhone as formatPhoneInput } from '@/features/auth/lib/phone';
+import { PhoneInput } from '@/components/ui/phone-input';
 import * as React from 'react';
 import {
   Users,
@@ -111,7 +113,7 @@ export default function CustomerListPage() {
     setSelectedCustomer(customer);
     setEditForm({
       name: customer.name,
-      phone: customer.phone,
+      phone: formatPhoneInput(customer.phone),
       email: customer.email || '',
       address: customer.address || '',
       notes: customer.notes || '',
@@ -143,6 +145,7 @@ export default function CustomerListPage() {
       alert(customerErrorMessage(err, 'Gagal menambahkan pelanggan'));
     } finally {
       setIsSubmitting(false);
+      handleRefresh();
     }
   };
 
@@ -160,6 +163,7 @@ export default function CustomerListPage() {
       alert(customerErrorMessage(err, 'Gagal mengubah pelanggan'));
     } finally {
       setIsSubmitting(false);
+      handleRefresh();
     }
   };
 
@@ -177,6 +181,7 @@ export default function CustomerListPage() {
       alert(customerErrorMessage(err, 'Gagal menghapus pelanggan'));
     } finally {
       setIsSubmitting(false);
+      handleRefresh();
     }
   };
 
@@ -305,7 +310,7 @@ export default function CustomerListPage() {
                       <td className="px-5 py-3.5">
                         <span className="font-mono text-xs flex items-center gap-1.5 text-foreground">
                           <Phone className="h-3 w-3 text-muted-foreground" />
-                          {c.phone}
+                          {formatPhoneInput(c.phone) || c.phone}
                         </span>
                       </td>
 
@@ -404,7 +409,6 @@ export default function CustomerListPage() {
         <DialogContent className="max-w-md p-6">
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <Plus className="size-5 text-primary" />
               <span>Tambah Pelanggan Baru</span>
             </DialogTitle>
           </DialogHeader>
@@ -427,10 +431,10 @@ export default function CustomerListPage() {
               <label className="text-xs font-semibold text-foreground">
                 Nomor WhatsApp / HP <span className="text-red-500">*</span>
               </label>
-              <Input
-                placeholder="Contoh: 081234567890"
+              <PhoneInput
+                placeholder="81234567890"
                 value={addForm.phone}
-                onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+                onValueChange={(phone) => setAddForm({ ...addForm, phone })}
                 required
                 className="h-9 text-xs"
               />
@@ -517,9 +521,9 @@ export default function CustomerListPage() {
               <label className="text-xs font-semibold text-foreground">
                 Nomor WhatsApp / HP
               </label>
-              <Input
+              <PhoneInput
                 value={editForm.phone || ''}
-                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                onValueChange={(phone) => setEditForm({ ...editForm, phone })}
                 className="h-9 text-xs"
               />
             </div>
@@ -597,7 +601,7 @@ export default function CustomerListPage() {
                   <div>
                     <span className="block text-[10px]">No. WhatsApp:</span>
                     <span className="font-mono text-foreground font-medium">
-                      {selectedCustomer.phone}
+                      {formatPhoneInput(selectedCustomer.phone) || selectedCustomer.phone}
                     </span>
                   </div>
                   <div>

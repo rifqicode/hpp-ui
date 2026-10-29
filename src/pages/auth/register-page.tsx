@@ -41,6 +41,7 @@ import { settingsService } from "@/features/settings/services/settings-service"
 import { useAuthStore } from "@/store/use-auth-store"
 import { RegistrationAgreement } from "@/features/auth/components/registration-agreement"
 import { useServiceAgreement } from "@/features/auth/hooks/use-service-agreement"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { normalizeOperationalPhoneInput } from "@/features/auth/lib/phone"
 
 const MAX_PHONE_DIGITS = 12
@@ -749,20 +750,14 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   <Label htmlFor="store-phone" className="text-xs font-bold text-slate-700">
                     No. WhatsApp Operasional <span className="text-slate-400 font-normal text-[11px]">(Opsional)</span>
                   </Label>
-                  <div className="relative">
-                    <span aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-700">+62</span>
-                    <Input
-                      id="store-phone"
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel-national"
-                      aria-describedby="store-phone-help"
-                      value={phone}
-                      onChange={(e) => setPhone(normalizeOperationalPhoneInput(e.target.value).slice(0, MAX_PHONE_DIGITS))}
-                      placeholder="81234567890"
-                      className="pl-14 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
+                  <PhoneInput
+                    id="store-phone"
+                    aria-describedby="store-phone-help"
+                    value={phone ? `+62${phone}` : ""}
+                    onValueChange={(value) => setPhone(normalizeOperationalPhoneInput(value).slice(0, MAX_PHONE_DIGITS))}
+                    placeholder="81234567890"
+                    className="pl-14 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                     />
-                  </div>
                   <p id="store-phone-help" className="text-xs leading-relaxed text-slate-600">Kode negara +62 sudah ditambahkan. Masukkan nomor mulai dari 8.</p>
                 </div>
 
