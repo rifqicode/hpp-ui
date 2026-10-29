@@ -113,6 +113,8 @@ export function normalizeSale(raw: any): Sale {
     cash_received: cashReceived,
     cashChange,
     cash_change: cashChange,
+    edcIssuerBank: raw.edc_issuer_bank ?? raw.edcIssuerBank,
+    edc_issuer_bank: raw.edc_issuer_bank ?? raw.edcIssuerBank,
     paymentReference: raw.payment_reference ?? raw.paymentReference,
     payment_reference: raw.payment_reference ?? raw.paymentReference,
     notes: raw.notes,
@@ -226,6 +228,9 @@ export const salesService = {
           : undefined,
       payment_reference:
         input.paymentReference || input.payment_reference || undefined,
+      edc_issuer_bank: (input.paymentMethod || input.payment_method) === 'EDC'
+        ? input.edcIssuerBank || input.edc_issuer_bank || undefined
+        : undefined,
       notes: input.notes,
       internal_notes: input.internalNotes || input.internal_notes || undefined,
     };

@@ -71,6 +71,36 @@ function normalizeRole(r: RawRole): Role {
 }
 
 export const settingsService = {
+  uploadQrisImage: async (file: File): Promise<string> => {
+    const contentType = file.type || 'image/png';
+    let presigned;
+    try {
+      presigned = await apiClient.post<{
+        upload_url?: string;
+        uploadUrl?: string;
+        public_url?: string;
+        publicUrl?: string;
+      }>('/store/settings/upload-qris-presigned-url', {
+        filename: file.name,
+        content_type: contentType,
+        file_size: file.size,
+      });
+    } catch (error) {
+      throw toError(error, 'Gagal mendapatkan izin unggah gambar QRIS.');
+    }
+    const uploadUrl = presigned.data?.upload_url || presigned.data?.uploadUrl || '';
+    const publicUrl = presigned.data?.public_url || presigned.data?.publicUrl || '';
+    if (!uploadUrl) throw new Error('Gagal mendapatkan izin unggah gambar QRIS.');
+
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': contentType },
+    });
+    if (!putRes.ok) throw new Error(`Gagal mengunggah gambar (HTTP ${putRes.status})`);
+    return publicUrl;
+  },
+
   // Store Operations
   getStoreProfile: async (_storeId?: string): Promise<StoreInfo> => {
     const res = await apiClient.get<StoreInfo>('/store');

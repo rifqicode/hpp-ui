@@ -23,6 +23,8 @@ export interface StorePaymentConfig {
   enable_bank_transfer: boolean;
   bank_accounts: StoreBankAccount[];
   payment_instruction?: string;
+  enable_edc: boolean;
+  edc_supported_banks: string[];
 }
 
 export interface StoreInfo {

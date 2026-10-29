@@ -10,6 +10,8 @@ import {
   Check,
   Copy,
   Info,
+  CreditCard,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { FeedbackAlert } from '@/components/ui/feedback-alert';
 import { Badge } from '@/components/ui/badge';
+import { ImageDropzone } from '@/components/ui/image-dropzone';
 import { settingsService } from '../services/settings-service';
 import type { StoreInfo, StorePaymentConfig, StoreBankAccount } from '../types';
 import { FeatureGuidanceTour, GuidanceTourTrigger } from '@/features/guidance';
@@ -35,6 +38,8 @@ const DEFAULT_PAYMENT_CONFIG: StorePaymentConfig = {
   enable_bank_transfer: false,
   bank_accounts: [],
   payment_instruction: '',
+  enable_edc: false,
+  edc_supported_banks: [],
 };
 
 export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps) {
@@ -48,6 +53,8 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
       enable_bank_transfer: existing?.enable_bank_transfer ?? DEFAULT_PAYMENT_CONFIG.enable_bank_transfer,
       bank_accounts: existing?.bank_accounts ? [...existing.bank_accounts] : [],
       payment_instruction: existing?.payment_instruction ?? DEFAULT_PAYMENT_CONFIG.payment_instruction,
+      enable_edc: existing?.enable_edc ?? DEFAULT_PAYMENT_CONFIG.enable_edc,
+      edc_supported_banks: existing?.edc_supported_banks ? [...existing.edc_supported_banks] : [],
     };
   });
 
@@ -55,6 +62,25 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
   const [successMsg, setSuccessMsg] = React.useState('');
   const [errorMsg, setErrorMsg] = React.useState('');
   const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
+  const [bankInput, setBankInput] = React.useState('');
+
+  const handleAddEdcBank = () => {
+    const name = bankInput.trim().toUpperCase();
+    if (!name) return;
+    setConfig((prev) =>
+      prev.edc_supported_banks.includes(name)
+        ? prev
+        : { ...prev, edc_supported_banks: [...prev.edc_supported_banks, name] }
+    );
+    setBankInput('');
+  };
+
+  const handleRemoveEdcBank = (name: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      edc_supported_banks: prev.edc_supported_banks.filter((b) => b !== name),
+    }));
+  };
 
   React.useEffect(() => {
     if (store?.payment_config || store?.paymentConfig) {
@@ -67,6 +93,8 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
         enable_bank_transfer: existing?.enable_bank_transfer ?? DEFAULT_PAYMENT_CONFIG.enable_bank_transfer,
         bank_accounts: existing?.bank_accounts ? [...existing.bank_accounts] : [],
         payment_instruction: existing?.payment_instruction ?? DEFAULT_PAYMENT_CONFIG.payment_instruction,
+        enable_edc: existing?.enable_edc ?? DEFAULT_PAYMENT_CONFIG.enable_edc,
+        edc_supported_banks: existing?.edc_supported_banks ? [...existing.edc_supported_banks] : [],
       });
     }
   }, [store]);
@@ -217,27 +245,87 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="qris_image_url" className="text-xs font-medium">
-                        URL Gambar QR Code QRIS
-                      </Label>
-                      <Input
-                        id="qris_image_url"
-                        placeholder="https://example.com/qris.png"
+                      <Label className="text-xs font-medium">Gambar QR Code QRIS</Label>
+                      <ImageDropzone
                         value={config.qris_image_url || ''}
-                        onChange={(e) =>
-                          setConfig((prev) => ({ ...prev, qris_image_url: e.target.value }))
-                        }
-                        className="h-9 text-xs font-mono"
+                        onUpload={settingsService.uploadQrisImage}
+                        onChange={(url) => setConfig((prev) => ({ ...prev, qris_image_url: url }))}
                       />
-                      <p className="text-[11px] text-muted-foreground">
-                        Masukkan link URL gambar barcode QRIS statis toko Anda.
-                      </p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* 3. Transfer Bank */}
+              {/* 3. EDC */}
+              <div data-guidance="payment-edc" className="rounded-xl border border-border bg-card p-4 space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 mt-0.5">
+                      <CreditCard className="size-5" />
+                    </div>
+                    <div>
+                      <Label htmlFor="enable_edc" className="text-sm font-semibold cursor-pointer">
+                        Mesin EDC (Kartu Debit / Kredit)
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Catat pembayaran menggunakan mesin gesek EDC fisik di outlet. Kasir dapat memasukkan nama bank penerbit dan nomor approval/trace struk EDC.
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    id="enable_edc"
+                    checked={config.enable_edc}
+                    onCheckedChange={(val) => setConfig((prev) => ({ ...prev, enable_edc: val }))}
+                  />
+                </div>
+
+                {config.enable_edc && (
+                  <div className="pt-3 border-t border-border/80 space-y-2.5 pl-1 sm:pl-10">
+                    <Label htmlFor="edc_bank_input" className="text-xs font-medium">
+                      Bank yang Didukung
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {config.edc_supported_banks.map((bank) => (
+                        <Badge key={bank} variant="secondary" className="gap-1 pr-1">
+                          {bank}
+                          <button
+                            type="button"
+                            aria-label={`Hapus ${bank}`}
+                            onClick={() => handleRemoveEdcBank(bank)}
+                            className="rounded-full p-0.5 hover:bg-muted"
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        id="edc_bank_input"
+                        placeholder="Contoh: BCA, Mandiri, BRI"
+                        value={bankInput}
+                        onChange={(e) => setBankInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            handleAddEdcBank();
+                          }
+                        }}
+                        className="h-9 text-xs"
+                      />
+                      <Button type="button" variant="outline" size="sm" className="h-9" onClick={handleAddEdcBank}>
+                        <Plus className="size-3.5" />
+                        Tambah
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Tekan Enter atau koma untuk menambahkan bank.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Transfer Bank */}
               <div data-guidance="payment-bank" className="rounded-xl border border-border bg-card p-4 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
@@ -366,7 +454,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
             {/* Opsi Metode Tab Preview */}
             <div className="space-y-2">
               <span className="text-[11px] font-medium text-muted-foreground">Pilihan Metode Kasir:</span>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-4 gap-1.5">
                 <div
                   className={`p-2.5 rounded-xl border text-center text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
                     config.enable_cash
@@ -386,6 +474,16 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                 >
                   <QrCode className="size-4 text-blue-600 dark:text-blue-400" />
                   <span>QRIS</span>
+                </div>
+                <div
+                  className={`p-2.5 rounded-xl border text-center text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
+                    config.enable_edc
+                      ? 'border-primary/40 bg-card text-foreground shadow-xs'
+                      : 'border-border/50 bg-muted/40 text-muted-foreground opacity-50 line-through'
+                  }`}
+                >
+                  <CreditCard className="size-4 text-amber-600 dark:text-amber-400" />
+                  <span>EDC / Kartu</span>
                 </div>
                 <div
                   className={`p-2.5 rounded-xl border text-center text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
@@ -419,7 +517,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                   ) : (
                     <div className="size-36 rounded-lg border border-dashed border-border flex flex-col items-center justify-center bg-muted/40 text-muted-foreground text-[10px] p-2 text-center">
                       <QrCode className="size-10 mb-1 opacity-50" />
-                      <span>Masukkan URL gambar untuk menampilkan QRIS</span>
+                      <span>Unggah gambar QRIS untuk menampilkan pratinjau</span>
                     </div>
                   )}
                 </div>

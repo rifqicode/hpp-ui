@@ -79,6 +79,7 @@ function PosSession() {
   const isCashEnabled = paymentConfig ? paymentConfig.enable_cash !== false : true;
   const isQrisEnabled = paymentConfig ? Boolean(paymentConfig.enable_qris) : true;
   const isTransferEnabled = paymentConfig ? Boolean(paymentConfig.enable_bank_transfer) : true;
+  const isEdcEnabled = paymentConfig ? Boolean(paymentConfig.enable_edc) : false;
 
   const { data: products = [], isLoading: loading, isError, refetch } = useProductsQuery();
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -129,6 +130,7 @@ function PosSession() {
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('CASH');
   const [cashReceived, setCashReceived] = React.useState<string>('');
   const [paymentReference, setPaymentReference] = React.useState('');
+  const [edcIssuerBank, setEdcIssuerBank] = React.useState('');
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [copiedBankIndex, setCopiedBankIndex] = React.useState<number | null>(null);
 
@@ -139,17 +141,16 @@ function PosSession() {
   };
 
   React.useEffect(() => {
-    if (paymentMethod === 'CASH' && !isCashEnabled) {
-      if (isQrisEnabled) setPaymentMethod('QRIS');
-      else if (isTransferEnabled) setPaymentMethod('TRANSFER');
-    } else if (paymentMethod === 'QRIS' && !isQrisEnabled) {
-      if (isCashEnabled) setPaymentMethod('CASH');
-      else if (isTransferEnabled) setPaymentMethod('TRANSFER');
-    } else if (paymentMethod === 'TRANSFER' && !isTransferEnabled) {
-      if (isCashEnabled) setPaymentMethod('CASH');
-      else if (isQrisEnabled) setPaymentMethod('QRIS');
-    }
-  }, [paymentMethod, isCashEnabled, isQrisEnabled, isTransferEnabled]);
+    const enabledByMethod: Record<string, boolean> = {
+      CASH: isCashEnabled,
+      QRIS: isQrisEnabled,
+      TRANSFER: isTransferEnabled,
+      EDC: isEdcEnabled,
+    };
+    if (enabledByMethod[paymentMethod] !== false) return;
+    const fallback = (['CASH', 'QRIS', 'TRANSFER', 'EDC'] as const).find((m) => enabledByMethod[m]);
+    if (fallback) setPaymentMethod(fallback);
+  }, [paymentMethod, isCashEnabled, isQrisEnabled, isTransferEnabled, isEdcEnabled]);
 
   // Success / Receipt Modal State
   const [completedSale, setCompletedSale] = React.useState<Sale | null>(null);
@@ -392,6 +393,7 @@ function PosSession() {
         discountAmount: 0,
         cashReceived: paymentMethod === 'CASH' ? cashReceivedNum : undefined,
         paymentReference: paymentReference.trim() || undefined,
+        edcIssuerBank: paymentMethod === 'EDC' ? edcIssuerBank.trim() || undefined : undefined,
         notes: orderNotes.trim() || undefined,
         internalNotes: internalNotes.trim() || undefined,
         items: cart.map((c) => ({
@@ -826,7 +828,7 @@ function PosSession() {
                 {/* Payment Method Selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-foreground">Metode Pembayaran</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {isCashEnabled && (
                       <button
                         type="button"
@@ -869,6 +871,21 @@ function PosSession() {
                       >
                         <CreditCard className="size-4" />
                         <span>Transfer Bank</span>
+                      </button>
+                    )}
+
+                    {isEdcEnabled && (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('EDC')}
+                        className={`p-2.5 rounded-xl border flex flex-col items-center gap-1.5 text-xs font-semibold transition-all ${
+                          paymentMethod === 'EDC'
+                            ? 'bg-primary text-primary-foreground border-primary shadow-xs'
+                            : 'bg-card hover:bg-muted text-foreground border-border'
+                        }`}
+                      >
+                        <CreditCard className="size-4" />
+                        <span>EDC / Kartu</span>
                       </button>
                     )}
                   </div>
@@ -1028,6 +1045,42 @@ function PosSession() {
                       <label className="text-[11px] font-medium text-foreground">Konfirmasi Bukti Transfer</label>
                       <Input
                         placeholder="No. Referensi / 4 Digit Rekening Pelanggan"
+                        value={paymentReference}
+                        onChange={(e) => setPaymentReference(e.target.value)}
+                        className="h-8 text-xs bg-background"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* EDC Option */}
+                {paymentMethod === 'EDC' && (
+                  <div className="space-y-3 p-3.5 bg-muted/30 border border-border rounded-xl text-xs">
+                    {paymentConfig?.edc_supported_banks && paymentConfig.edc_supported_banks.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="text-[11px] font-semibold text-muted-foreground">Bank Penerbit Kartu:</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {paymentConfig.edc_supported_banks.map((bank) => (
+                            <button
+                              key={bank}
+                              type="button"
+                              onClick={() => setEdcIssuerBank(edcIssuerBank === bank ? '' : bank)}
+                              className={`px-2.5 py-1 rounded-full border text-[11px] font-semibold transition-all ${
+                                edcIssuerBank === bank
+                                  ? 'bg-primary text-primary-foreground border-primary'
+                                  : 'bg-card hover:bg-muted text-foreground border-border'
+                              }`}
+                            >
+                              {bank}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-medium text-foreground">No. Approval / Trace Struk EDC</label>
+                      <Input
+                        placeholder="Contoh: 123456"
                         value={paymentReference}
                         onChange={(e) => setPaymentReference(e.target.value)}
                         className="h-8 text-xs bg-background"

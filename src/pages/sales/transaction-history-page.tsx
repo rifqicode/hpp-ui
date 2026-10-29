@@ -285,7 +285,7 @@ export default function TransactionHistoryPage() {
             { value: 'ALL', label: 'Semua status' }, { value: 'COMPLETED', label: 'Selesai' }, { value: 'IN_PROGRESS', label: 'Dalam proses' }, { value: 'CANCELLED', label: 'Dibatalkan' }, { value: 'RETURNED', label: 'Diretur' },
           ] },
           { id: 'payment', label: 'Metode pembayaran', value: filterMethod, onChange: (value) => { setFilterMethod(value); setPage(1); }, options: [
-            { value: 'ALL', label: 'Semua metode bayar' }, { value: 'CASH', label: 'Tunai' }, { value: 'QRIS', label: 'QRIS' }, { value: 'TRANSFER', label: 'Transfer bank' }, { value: 'DEBIT', label: 'Kartu debit' },
+            { value: 'ALL', label: 'Semua metode bayar' }, { value: 'CASH', label: 'Tunai' }, { value: 'QRIS', label: 'QRIS' }, { value: 'TRANSFER', label: 'Transfer bank' }, { value: 'DEBIT', label: 'Kartu debit' }, { value: 'EDC', label: 'EDC / Kartu' },
           ] },
         ]}
         hasFilters={hasFilters} onReset={resetFilters} isFetching={(isSalesFetching || isSummaryFetching) && !loading} fetchingLabel="Memperbarui transaksi"
@@ -338,7 +338,7 @@ export default function TransactionHistoryPage() {
                   <td className="px-4 py-4"><span className="block max-w-40 truncate font-medium">{sale.customerName || 'Pelanggan Umum'}</span>{sale.customer?.phone && <span className="mt-1 block text-[10px] text-muted-foreground">{sale.customer.phone}</span>}<span className="mt-1 block text-[10px] text-muted-foreground">Kasir: {sale.cashierName || 'Kasir'}</span></td>
                   <td className="px-4 py-4"><span>{sale.items.reduce((sum, item) => sum + item.quantity, 0)} item · {sale.items.length} jenis</span><span className="mt-1 block max-w-44 truncate text-[10px] text-muted-foreground" title={sale.items.map((item) => `${item.productName} (${item.quantity})`).join(', ')}>{sale.items.map((item) => `${item.productName} (${item.quantity})`).join(', ')}</span>{sale.notes && <span className="mt-1 block max-w-44 truncate text-[10px] italic text-muted-foreground" title={sale.notes}>{sale.notes}</span>}{(sale.internalNotes || sale.internal_notes) && <span className="mt-1 block max-w-44 truncate text-[10px] text-amber-700 bg-amber-500/10 px-1 py-0.5 rounded" title={sale.internalNotes || sale.internal_notes}>[Internal]: {sale.internalNotes || sale.internal_notes}</span>}</td>
                   <td className="px-4 py-4"><SaleStatusBadge sale={sale} /></td>
-                  <td className="px-4 py-4"><span className="rounded-md border px-2 py-1 text-[10px]">{sale.paymentMethod === 'CASH' ? 'Tunai' : sale.paymentMethod === 'TRANSFER' ? 'Transfer bank' : sale.paymentMethod === 'DEBIT' ? 'Kartu debit' : sale.paymentMethod}</span></td>
+                  <td className="px-4 py-4"><span className="rounded-md border px-2 py-1 text-[10px]">{sale.paymentMethod === 'CASH' ? 'Tunai' : sale.paymentMethod === 'TRANSFER' ? 'Transfer bank' : sale.paymentMethod === 'DEBIT' ? 'Kartu debit' : sale.paymentMethod === 'EDC' ? 'EDC / Kartu' : sale.paymentMethod}</span></td>
                   <td className="whitespace-nowrap px-4 py-4 text-right font-semibold tabular-nums"><CurrencyText value={sale.totalAmount} /></td>
                   <td className="px-4 py-4 text-right" onClick={(event) => event.stopPropagation()}><Button variant="outline" size="sm" onClick={() => handleOpenDetail(sale)} aria-label={`Struk ${sale.invoiceNumber}`} className="h-9 gap-1.5 text-xs"><Receipt className="size-3.5" />Struk</Button></td>
                 </tr>)}</tbody>

@@ -1,6 +1,6 @@
 import type { ProductVariantView, ModifierOption } from '../../recipes/types';
 
-export type PaymentMethod = 'CASH' | 'QRIS' | 'TRANSFER' | 'DEBIT';
+export type PaymentMethod = 'CASH' | 'QRIS' | 'TRANSFER' | 'DEBIT' | 'EDC';
 export type SaleStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING_CONFIRMATION' | 'CANCELLED' | 'RETURNED';
 export type OrderSource = 'POS' | 'ONLINE' | string;
 export type OrderFulfillmentType = 'DINE_IN' | 'PICKUP' | 'DELIVERY' | string;
@@ -135,6 +135,8 @@ export interface Sale {
   cash_change?: number;
   paymentReference?: string;
   payment_reference?: string;
+  edcIssuerBank?: string;
+  edc_issuer_bank?: string;
   notes?: string;
   internalNotes?: string;
   internal_notes?: string;
@@ -218,6 +220,8 @@ export interface CreateSaleInput {
   cash_received?: number;
   paymentReference?: string;
   payment_reference?: string;
+  edcIssuerBank?: string;
+  edc_issuer_bank?: string;
   notes?: string;
   internalNotes?: string;
   internal_notes?: string;
