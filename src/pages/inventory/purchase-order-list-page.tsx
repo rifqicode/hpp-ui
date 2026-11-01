@@ -98,7 +98,6 @@ export default function PurchaseOrderListPage() {
     setCompleteSupplierId,
     itemTotalPrices,
     setItemTotalPrices,
-    handleOpenComplete,
     handleConfirmComplete,
     // Actions & Permissions
     submitting,

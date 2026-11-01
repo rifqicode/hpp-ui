@@ -44,7 +44,7 @@ function getValidDropTarget(po: PurchaseOrder | null): ColumnDef['id'] | null {
   if (po.status === 'PURCHASE_ORDER') return 'invoice';
   if (po.status === 'PURCHASE_INVOICE' && po.receiptStatus !== 'RECEIVED') return 'diterima';
   if (
-    (po.status === 'PURCHASE_INVOICE' || po.status === 'PURCHASE_ORDER') &&
+    po.status === 'PURCHASE_INVOICE' &&
     po.receiptStatus === 'RECEIVED' &&
     po.paymentStatus !== 'PAID'
   ) {
