@@ -1,5 +1,5 @@
-import { BatchBuilder } from "@/features/production/components/batch-builder"
+import { BatchBuilder } from '@/features/production/components/batch-builder';
 
 export default function BatchCreatePage() {
-  return <BatchBuilder />
+  return <BatchBuilder />;
 }

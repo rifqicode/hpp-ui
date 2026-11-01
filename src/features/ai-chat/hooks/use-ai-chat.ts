@@ -1,10 +1,6 @@
 import * as React from 'react';
 import { aiChatService } from '../services/ai-chat-service';
-import type {
-  ConversationHeader,
-  ConversationDetail,
-  AIChatMessage,
-} from '../types/ai-chat';
+import type { ConversationHeader, ConversationDetail, AIChatMessage } from '../types/ai-chat';
 import { useAuthStore } from '@/store/use-auth-store';
 import axios from 'axios';
 
@@ -12,11 +8,13 @@ const getSessionStorageKey = (storeId?: string | null) =>
   `ai_active_session_${storeId || 'default'}`;
 
 export function useAIChat() {
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
 
   const [isOpen, setIsOpen] = React.useState(false);
   const [conversations, setConversations] = React.useState<ConversationHeader[]>([]);
-  const [activeConversation, setActiveConversation] = React.useState<ConversationDetail | null>(null);
+  const [activeConversation, setActiveConversation] = React.useState<ConversationDetail | null>(
+    null,
+  );
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(false);
   const [isLoadingActive, setIsLoadingActive] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
@@ -78,7 +76,7 @@ export function useAIChat() {
         setIsLoadingActive(false);
       }
     },
-    [activeStoreId]
+    [activeStoreId],
   );
 
   // Start new conversation mode (session clean slate)
@@ -162,9 +160,9 @@ export function useAIChat() {
           created_at: resp.created_at,
         };
 
-        setActiveConversation((prev) => {
+        setActiveConversation(prev => {
           if (!prev) return null;
-          const otherMessages = prev.messages.filter((m) => m.id !== tempUserMsg.id);
+          const otherMessages = prev.messages.filter(m => m.id !== tempUserMsg.id);
           return {
             ...prev,
             id: resp.conversation_id,
@@ -189,11 +187,10 @@ export function useAIChat() {
           setQuotaExceeded(true);
           const limit = err?.response?.data?.errors?.limit ?? 10;
           setQuotaMessage(
-            `Batas kuota pertanyaan AI hari ini telah tercapai (${limit} pertanyaan/hari). Silakan upgrade paket untuk kuota lebih besar.`
+            `Batas kuota pertanyaan AI hari ini telah tercapai (${limit} pertanyaan/hari). Silakan upgrade paket untuk kuota lebih besar.`,
           );
         } else {
-          const msg =
-            err?.response?.data?.message || err?.message || 'Gagal mengirim pesan ke AI.';
+          const msg = err?.response?.data?.message || err?.message || 'Gagal mengirim pesan ke AI.';
           setError(msg);
 
           // Inline fallback assistant message with retry button
@@ -206,15 +203,15 @@ export function useAIChat() {
             created_at: new Date().toISOString(),
           };
 
-          setActiveConversation((prev) =>
-            prev ? { ...prev, messages: [...prev.messages, errorAssistantMsg] } : prev
+          setActiveConversation(prev =>
+            prev ? { ...prev, messages: [...prev.messages, errorAssistantMsg] } : prev,
           );
         }
       } finally {
         setIsSending(false);
       }
     },
-    [activeConversation, isSending, activeStoreId, loadHistory]
+    [activeConversation, isSending, activeStoreId, loadHistory],
   );
 
   // Delete conversation
@@ -230,7 +227,7 @@ export function useAIChat() {
         console.error('Failed to delete conversation:', err);
       }
     },
-    [activeConversation, loadHistory, startNewChat]
+    [activeConversation, loadHistory, startNewChat],
   );
 
   // Retry last message in active conversation
@@ -241,18 +238,18 @@ export function useAIChat() {
     setError(null);
 
     // Filter out previous error message if present
-    setActiveConversation((prev) => {
+    setActiveConversation(prev => {
       if (!prev) return prev;
       return {
         ...prev,
-        messages: prev.messages.filter((m) => !m.is_error),
+        messages: prev.messages.filter(m => !m.is_error),
       };
     });
 
     try {
       let resp;
       if (activeConversation.id.startsWith('temp-conv-')) {
-        const lastUserMsg = [...activeConversation.messages].reverse().find((m) => m.role === 'user');
+        const lastUserMsg = [...activeConversation.messages].reverse().find(m => m.role === 'user');
         if (!lastUserMsg) return;
         resp = await aiChatService.createConversation({ message: lastUserMsg.content });
       } else {
@@ -268,7 +265,7 @@ export function useAIChat() {
         created_at: resp.created_at,
       };
 
-      setActiveConversation((prev) => {
+      setActiveConversation(prev => {
         if (!prev) return null;
         return {
           ...prev,

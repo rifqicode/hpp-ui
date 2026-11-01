@@ -1,11 +1,6 @@
 import { Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { SofiVectorAvatar } from './sofi-vector-avatar';
 
@@ -25,10 +20,12 @@ export function AIChatFloatingButton({ onClick, isOpen, isLocked }: AIChatFloati
             onClick={onClick}
             data-testid="ai-chat-floating-btn"
             aria-label="Tanya Asisten AI"
-            title={isLocked ? "Fitur Khusus Max Growth - Tanya Sofi" : "Tanya Sofi - Asisten Bisnis AI"}
+            title={
+              isLocked ? 'Fitur Khusus Max Growth - Tanya Sofi' : 'Tanya Sofi - Asisten Bisnis AI'
+            }
             className={cn(
-              "h-9 px-2.5 sm:px-3 rounded-lg border border-primary/25 bg-primary/5 hover:bg-primary/10 text-primary font-medium flex items-center gap-2 text-xs transition-colors shrink-0 cursor-pointer shadow-xs",
-              isOpen && "bg-primary/15 border-primary/40 ring-1 ring-primary/20"
+              'h-9 px-2.5 sm:px-3 rounded-lg border border-primary/25 bg-primary/5 hover:bg-primary/10 text-primary font-medium flex items-center gap-2 text-xs transition-colors shrink-0 cursor-pointer shadow-xs',
+              isOpen && 'bg-primary/15 border-primary/40 ring-1 ring-primary/20',
             )}
           >
             <SofiVectorAvatar className="h-5 w-5 shrink-0" />

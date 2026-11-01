@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
@@ -37,12 +37,27 @@ const mockOrders: PurchaseOrder[] = [
     createdAt: '2026-10-21T00:00:00Z',
   },
   {
+    id: 'po-2b',
+    poNumber: 'PO-002B',
+    category: 'PURCHASE_ORDER',
+    supplierName: 'CV Makmur Sejahtera',
+    orderDate: '2026-10-21T00:00:00Z',
+    status: 'PURCHASE_INVOICE',
+    receiptStatus: 'NOT_RECEIVED',
+    paymentStatus: 'UNPAID',
+    items: [{ id: 'item-2b', stockId: 's2', stockName: 'Gula Pasir', quantity: 5, baseUnit: 'kg', unitPrice: 15000, totalPrice: 75000 }],
+    totalAmount: 75000,
+    attachments: [],
+    completionAttachments: [],
+    createdAt: '2026-10-21T00:00:00Z',
+  },
+  {
     id: 'po-3',
     poNumber: 'PO-003',
     category: 'PURCHASE_ORDER',
     supplierName: 'UD Rukun',
     orderDate: '2026-10-22T00:00:00Z',
-    status: 'PURCHASE_ORDER',
+    status: 'PURCHASE_INVOICE',
     receiptStatus: 'RECEIVED',
     paymentStatus: 'UNPAID',
     paymentDueDate: '2026-10-20T00:00:00Z', // past due
@@ -70,7 +85,7 @@ const mockOrders: PurchaseOrder[] = [
 ]
 
 describe('PurchaseOrderKanban', () => {
-  it('renders all 4 columns and distributes orders correctly', () => {
+  it('renders all 6 columns and distributes orders correctly', () => {
     render(
       <MemoryRouter>
         <PurchaseOrderKanban orders={mockOrders} canProcess={true} />
@@ -79,24 +94,93 @@ describe('PurchaseOrderKanban', () => {
 
     expect(screen.getByRole('heading', { name: 'Purchase Request' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Purchase Order' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Purchase Invoice' })).toBeInTheDocument()
     expect(screen.getByText('Barang Diterima')).toBeInTheDocument()
     expect(screen.getByText('Selesai')).toBeInTheDocument()
+    expect(screen.getByText('Ditolak / Dibatalkan')).toBeInTheDocument()
 
     expect(screen.getByText('PO-001')).toBeInTheDocument()
     expect(screen.getByText('PO-002')).toBeInTheDocument()
+    expect(screen.getByText('PO-002B')).toBeInTheDocument()
     expect(screen.getByText('PO-003')).toBeInTheDocument()
     expect(screen.getByText('PO-004')).toBeInTheDocument()
 
-    expect(screen.getByText('Tempo Lewat')).toBeInTheDocument()
+    expect(screen.getByText(/Tempo lewat/i)).toBeInTheDocument()
   })
 
   it('triggers action callbacks when clicking buttons', async () => {
     const user = userEvent.setup()
     const onApprove = vi.fn()
+    const onCreateInvoice = vi.fn()
     const onReceive = vi.fn()
     const onPay = vi.fn()
 
     render(
+      <MemoryRouter>
+        <PurchaseOrderKanban
+          orders={mockOrders}
+          canProcess={true}
+          onApprove={onApprove}
+          onCreateInvoice={onCreateInvoice}
+          onReceive={onReceive}
+          onPay={onPay}
+        />
+      </MemoryRouter>
+    )
+
+    const approveBtn = screen.getByRole('button', { name: /setujui/i })
+    await user.click(approveBtn)
+    expect(onApprove).toHaveBeenCalledWith(mockOrders[0])
+
+    const invoiceBtn = screen.getByRole('button', { name: /set harga & invoice/i })
+    await user.click(invoiceBtn)
+    expect(onCreateInvoice).toHaveBeenCalledWith(mockOrders[1])
+
+    const receiveBtn = screen.getByRole('button', { name: /terima barang/i })
+    await user.click(receiveBtn)
+    expect(onReceive).toHaveBeenCalledWith(mockOrders[2])
+
+    const payBtn = screen.getByRole('button', { name: /tandai lunas/i })
+    await user.click(payBtn)
+    expect(onPay).toHaveBeenCalledWith(mockOrders[3])
+  })
+
+  it('applies alert and blinking styles for overdue requiredDate and paymentDueDate', () => {
+    const ordersWithAlerts: PurchaseOrder[] = [
+      {
+        ...mockOrders[0],
+        id: 'po-late-req',
+        requiredDate: '2020-01-01T00:00:00Z', // past required date -> late
+      },
+      {
+        ...mockOrders[1],
+        id: 'po-warn-req',
+        requiredDate: new Date(Date.now() + 24 * 3600_000).toISOString(), // within 48h -> warning
+      },
+      mockOrders[3], // overdue payment
+    ]
+
+    const { container } = render(
+      <MemoryRouter>
+        <PurchaseOrderKanban orders={ordersWithAlerts} canProcess={true} />
+      </MemoryRouter>
+    )
+
+    // Checks late card animation class
+    const lateCards = container.querySelectorAll('.kds-card-late')
+    expect(lateCards.length).toBeGreaterThanOrEqual(2)
+
+    // Checks warning card animation class
+    const warningCards = container.querySelectorAll('.kds-card-warning')
+    expect(warningCards.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('triggers action callbacks on drag and drop between columns', () => {
+    const onApprove = vi.fn()
+    const onReceive = vi.fn()
+    const onPay = vi.fn()
+
+    const { container } = render(
       <MemoryRouter>
         <PurchaseOrderKanban
           orders={mockOrders}
@@ -108,16 +192,26 @@ describe('PurchaseOrderKanban', () => {
       </MemoryRouter>
     )
 
-    const approveBtn = screen.getByRole('button', { name: /setujui/i })
-    await user.click(approveBtn)
-    expect(onApprove).toHaveBeenCalledWith(mockOrders[0])
+    // Find the draggable card for PO-001 (PURCHASE_REQUEST)
+    const cardPO1 = screen.getByText('PO-001').closest('[draggable="true"]')!
+    expect(cardPO1).not.toBeNull()
 
-    const receiveBtn = screen.getByRole('button', { name: /terima barang/i })
-    await user.click(receiveBtn)
-    expect(onReceive).toHaveBeenCalledWith(mockOrders[1])
+    // Start dragging PO-001
+    fireEvent.dragStart(cardPO1, {
+      clientX: 50,
+      clientY: 50,
+      dataTransfer: { setData: vi.fn(), effectAllowed: '' },
+    })
 
-    const payBtn = screen.getByRole('button', { name: /tandai lunas/i })
-    await user.click(payBtn)
-    expect(onPay).toHaveBeenCalledWith(mockOrders[2])
+    // Find target column for PO: 'dipesan' (Purchase Order column)
+    const columns = container.querySelectorAll('.grid > div')
+    const dipesanCol = columns[1] // second column is dipesan
+
+    fireEvent.dragOver(dipesanCol, {
+      dataTransfer: { dropEffect: '' },
+    })
+    fireEvent.drop(dipesanCol)
+
+    expect(onApprove).toHaveBeenCalledWith(expect.objectContaining({ id: 'po-1' }))
   })
 })

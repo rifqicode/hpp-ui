@@ -16,8 +16,10 @@ export function PaymentChannelSelector({
   onSelectChannel,
   disabled = false,
 }: PaymentChannelSelectorProps) {
-  const qrisChannels = channels.filter((ch) => ch.category === 'QRIS' && ch.enabled !== false);
-  const vaChannels = channels.filter((ch) => ch.category === 'VIRTUAL_ACCOUNT' && ch.enabled !== false);
+  const qrisChannels = channels.filter(ch => ch.category === 'QRIS' && ch.enabled !== false);
+  const vaChannels = channels.filter(
+    ch => ch.category === 'VIRTUAL_ACCOUNT' && ch.enabled !== false,
+  );
 
   return (
     <div className="space-y-4">
@@ -28,7 +30,7 @@ export function PaymentChannelSelector({
             <span>Pembayaran Instan (QRIS)</span>
           </div>
           <div className="grid gap-2 sm:grid-cols-1">
-            {qrisChannels.map((channel) => {
+            {qrisChannels.map(channel => {
               const isSelected = selectedChannelCode === channel.code;
               return (
                 <Card
@@ -37,7 +39,7 @@ export function PaymentChannelSelector({
                   role="radio"
                   aria-checked={isSelected}
                   onClick={() => !disabled && onSelectChannel(channel.code)}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
                       e.preventDefault();
                       onSelectChannel(channel.code);
@@ -56,12 +58,19 @@ export function PaymentChannelSelector({
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-foreground">{channel.name}</span>
-                          <Badge variant="secondary" className="text-[10px] uppercase font-mono px-1.5 py-0">
+                          <span className="font-semibold text-sm text-foreground">
+                            {channel.name}
+                          </span>
+                          <Badge
+                            variant="secondary"
+                            className="text-[10px] uppercase font-mono px-1.5 py-0"
+                          >
                             Semua e-Wallet & Bank
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{channel.description}</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {channel.description}
+                        </p>
                       </div>
                     </div>
                     <div
@@ -88,7 +97,7 @@ export function PaymentChannelSelector({
             <span>Virtual Account Bank (Otomatis Terverifikasi)</span>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            {vaChannels.map((channel) => {
+            {vaChannels.map(channel => {
               const isSelected = selectedChannelCode === channel.code;
               const bankName = channel.code.replace('_va', '').toUpperCase();
               return (
@@ -98,7 +107,7 @@ export function PaymentChannelSelector({
                   role="radio"
                   aria-checked={isSelected}
                   onClick={() => !disabled && onSelectChannel(channel.code)}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
                       e.preventDefault();
                       onSelectChannel(channel.code);
@@ -116,9 +125,13 @@ export function PaymentChannelSelector({
                         <Badge variant="outline" className="text-[11px] font-bold tracking-wide">
                           {bankName}
                         </Badge>
-                        <span className="font-semibold text-sm text-foreground truncate">{channel.name}</span>
+                        <span className="font-semibold text-sm text-foreground truncate">
+                          {channel.name}
+                        </span>
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{channel.description}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {channel.description}
+                      </p>
                     </div>
                     <div
                       className={`h-5 w-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${

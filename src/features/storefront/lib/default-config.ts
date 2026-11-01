@@ -33,8 +33,7 @@ export const STORE_SECTION_METADATA: Record<
   },
   hero_banner: {
     label: 'Profil & Perkenalan Toko',
-    description:
-      'Nama toko, kalimat utama, deskripsi singkat, keunggulan, dan foto sampul',
+    description: 'Nama toko, kalimat utama, deskripsi singkat, keunggulan, dan foto sampul',
   },
   info_and_contact: {
     label: 'Alamat, Jam Buka & WhatsApp',
@@ -78,7 +77,7 @@ export const CHECKOUT_SECTION_METADATA: Record<
 
 export function createDefaultStorefrontConfig(
   storeName = 'Toko Kami',
-  phone = ''
+  phone = '',
 ): StorefrontConfig {
   return {
     template_style: 'EXPRESS_MENU',
@@ -92,8 +91,8 @@ export function createDefaultStorefrontConfig(
       banner_url: '',
       logo_url: '',
     },
-    store_sections: DEFAULT_STORE_SECTIONS.map((s) => ({ ...s })),
-    checkout_sections: DEFAULT_CHECKOUT_SECTIONS.map((s) => ({ ...s })),
+    store_sections: DEFAULT_STORE_SECTIONS.map(s => ({ ...s })),
+    checkout_sections: DEFAULT_CHECKOUT_SECTIONS.map(s => ({ ...s })),
     checkout: {
       allow_dine_in: true,
       allow_pickup: true,
@@ -136,8 +135,7 @@ export function createDefaultStorefrontConfig(
       brand_name: storeName,
       brand_tagline: 'Kualitas Terbaik & Terpercaya',
       hero_title: `Selamat Datang di ${storeName}`,
-      hero_subtitle:
-        'Pesan menu favorit Anda secara praktis langsung dari halaman resmi kami.',
+      hero_subtitle: 'Pesan menu favorit Anda secara praktis langsung dari halaman resmi kami.',
       hero_highlights: [
         'Bahan Pilihan Berkualitas',
         'Dibuat Segar Setiap Hari',
@@ -147,8 +145,7 @@ export function createDefaultStorefrontConfig(
       hero_secondary_cta_text: 'Hubungi WhatsApp',
       announcement_text: 'Pesan online lebih cepat — tanpa antre, langsung diproses kasir!',
       checkout_title: 'Selesaikan Pesanan Anda',
-      checkout_subtitle:
-        'Lengkapi informasi pemesan dan pilih metode pembayaran di bawah ini.',
+      checkout_subtitle: 'Lengkapi informasi pemesan dan pilih metode pembayaran di bawah ini.',
       customer_section_title: 'Informasi Pemesan',
       notes_placeholder: 'Contoh: Kurangi gula, sambal dipisah, atau patokan alamat...',
       submit_button_text: 'Kirim Pesanan Sekarang',
@@ -161,9 +158,9 @@ export function createDefaultStorefrontConfig(
 
 function mergeSectionOrder(
   incoming: unknown,
-  defaults: StorefrontSectionItem[]
+  defaults: StorefrontSectionItem[],
 ): StorefrontSectionItem[] {
-  const validIds = new Set(defaults.map((d) => d.id));
+  const validIds = new Set(defaults.map(d => d.id));
   const result: StorefrontSectionItem[] = [];
   const seen = new Set<string>();
 
@@ -198,7 +195,7 @@ function mergeSectionOrder(
 export function normalizeStorefrontConfig(
   raw: unknown,
   storeName = 'Toko Kami',
-  phone = ''
+  phone = '',
 ): StorefrontConfig {
   const defaults = createDefaultStorefrontConfig(storeName, phone);
   if (!raw || typeof raw !== 'object') {
@@ -207,18 +204,12 @@ export function normalizeStorefrontConfig(
 
   const obj = raw as Record<string, any>;
   const rawTheme = obj.theme && typeof obj.theme === 'object' ? obj.theme : {};
-  const rawCheckout =
-    obj.checkout && typeof obj.checkout === 'object' ? obj.checkout : {};
+  const rawCheckout = obj.checkout && typeof obj.checkout === 'object' ? obj.checkout : {};
   const rawDelivery =
-    rawCheckout.delivery && typeof rawCheckout.delivery === 'object'
-      ? rawCheckout.delivery
-      : {};
-  const rawPayment =
-    obj.payment && typeof obj.payment === 'object' ? obj.payment : {};
-  const rawContact =
-    obj.contact && typeof obj.contact === 'object' ? obj.contact : {};
-  const rawCopy =
-    obj.copywriting && typeof obj.copywriting === 'object' ? obj.copywriting : {};
+    rawCheckout.delivery && typeof rawCheckout.delivery === 'object' ? rawCheckout.delivery : {};
+  const rawPayment = obj.payment && typeof obj.payment === 'object' ? obj.payment : {};
+  const rawContact = obj.contact && typeof obj.contact === 'object' ? obj.contact : {};
+  const rawCopy = obj.copywriting && typeof obj.copywriting === 'object' ? obj.copywriting : {};
 
   return {
     template_style:
@@ -264,19 +255,11 @@ export function normalizeStorefrontConfig(
           ? rawTheme.show_hero_image
           : defaults.theme.show_hero_image,
       banner_url:
-        typeof rawTheme.banner_url === 'string'
-          ? rawTheme.banner_url
-          : defaults.theme.banner_url,
-      logo_url:
-        typeof rawTheme.logo_url === 'string'
-          ? rawTheme.logo_url
-          : defaults.theme.logo_url,
+        typeof rawTheme.banner_url === 'string' ? rawTheme.banner_url : defaults.theme.banner_url,
+      logo_url: typeof rawTheme.logo_url === 'string' ? rawTheme.logo_url : defaults.theme.logo_url,
     },
     store_sections: mergeSectionOrder(obj.store_sections, DEFAULT_STORE_SECTIONS),
-    checkout_sections: mergeSectionOrder(
-      obj.checkout_sections,
-      DEFAULT_CHECKOUT_SECTIONS
-    ),
+    checkout_sections: mergeSectionOrder(obj.checkout_sections, DEFAULT_CHECKOUT_SECTIONS),
     checkout: {
       allow_dine_in:
         typeof rawCheckout.allow_dine_in === 'boolean'
@@ -383,8 +366,7 @@ export function normalizeStorefrontConfig(
     },
     contact: {
       whatsapp_number:
-        typeof rawContact.whatsapp_number === 'string' &&
-        rawContact.whatsapp_number.trim() !== ''
+        typeof rawContact.whatsapp_number === 'string' && rawContact.whatsapp_number.trim() !== ''
           ? rawContact.whatsapp_number
           : defaults.contact.whatsapp_number,
       show_floating_whatsapp:
@@ -439,8 +421,7 @@ export function normalizeStorefrontConfig(
           ? rawCopy.announcement_text
           : defaults.copywriting.announcement_text,
       checkout_title:
-        typeof rawCopy.checkout_title === 'string' &&
-        rawCopy.checkout_title.trim() !== ''
+        typeof rawCopy.checkout_title === 'string' && rawCopy.checkout_title.trim() !== ''
           ? rawCopy.checkout_title
           : defaults.copywriting.checkout_title,
       checkout_subtitle:
@@ -457,13 +438,11 @@ export function normalizeStorefrontConfig(
           ? rawCopy.notes_placeholder
           : defaults.copywriting.notes_placeholder,
       submit_button_text:
-        typeof rawCopy.submit_button_text === 'string' &&
-        rawCopy.submit_button_text.trim() !== ''
+        typeof rawCopy.submit_button_text === 'string' && rawCopy.submit_button_text.trim() !== ''
           ? rawCopy.submit_button_text
           : defaults.copywriting.submit_button_text,
       order_success_title:
-        typeof rawCopy.order_success_title === 'string' &&
-        rawCopy.order_success_title.trim() !== ''
+        typeof rawCopy.order_success_title === 'string' && rawCopy.order_success_title.trim() !== ''
           ? rawCopy.order_success_title
           : defaults.copywriting.order_success_title,
       order_success_message:
@@ -477,7 +456,7 @@ export function normalizeStorefrontConfig(
 export function calculateStorefrontDeliveryFee(
   subtotal: number,
   fulfillmentType: FulfillmentType,
-  delivery: StorefrontDeliveryConfig
+  delivery: StorefrontDeliveryConfig,
 ): number {
   if (fulfillmentType !== 'DELIVERY') {
     return 0;
@@ -485,10 +464,7 @@ export function calculateStorefrontDeliveryFee(
   if (delivery.delivery_fee_mode !== 'FLAT_RATE') {
     return 0;
   }
-  if (
-    delivery.free_delivery_min_order > 0 &&
-    subtotal >= delivery.free_delivery_min_order
-  ) {
+  if (delivery.free_delivery_min_order > 0 && subtotal >= delivery.free_delivery_min_order) {
     return 0;
   }
   return Math.max(0, Number(delivery.flat_delivery_fee) || 0);

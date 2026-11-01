@@ -1,7 +1,7 @@
-import * as React from "react"
-import { useInitialLoading } from "@/hooks/use-initial-loading"
-import { useParams, Link, useNavigate } from "react-router-dom"
-import { RecordPurchaseDialog } from "@/features/inventory/components/record-purchase-dialog"
+import * as React from 'react';
+import { useInitialLoading } from '@/hooks/use-initial-loading';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { RecordPurchaseDialog } from '@/features/inventory/components/record-purchase-dialog';
 import {
   ArrowLeft,
   Building2,
@@ -14,18 +14,12 @@ import {
   Pencil,
   FileText,
   Loader2,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -33,7 +27,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -41,17 +35,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { CurrencyText } from "@/components/ui/currency-text"
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { CurrencyText } from '@/components/ui/currency-text';
 
-import { useSupplierDetail } from "@/features/suppliers/hooks"
+import { useSupplierDetail } from '@/features/suppliers/hooks';
 
 export default function SupplierDetailPage() {
-  const { supplierId } = useParams<{ supplierId: string }>()
-  const navigate = useNavigate()
+  const { supplierId } = useParams<{ supplierId: string }>();
+  const navigate = useNavigate();
 
   const {
     supplier,
@@ -67,14 +61,14 @@ export default function SupplierDetailPage() {
     formatDate,
     totalSpent,
     averageOrder,
-  } = useSupplierDetail(supplierId)
+  } = useSupplierDetail(supplierId);
 
-  const [isPurchaseOpen, setIsPurchaseOpen] = React.useState(false)
+  const [isPurchaseOpen, setIsPurchaseOpen] = React.useState(false);
 
-  const isInitialLoading = useInitialLoading(loading)
+  const isInitialLoading = useInitialLoading(loading);
   if (isInitialLoading) {
     // Global LoadingOverlay renders the spinner on top of this placeholder
-    return <div className="min-h-[60vh]" />
+    return <div className="min-h-[60vh]" />;
   }
 
   if (!supplier) {
@@ -82,11 +76,11 @@ export default function SupplierDetailPage() {
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <Building2 className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-lg font-semibold">Supplier tidak ditemukan</h2>
-        <Button variant="outline" onClick={() => navigate("/inventory/suppliers")}>
+        <Button variant="outline" onClick={() => navigate('/inventory/suppliers')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Kembali ke Daftar Supplier
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -109,11 +103,16 @@ export default function SupplierDetailPage() {
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{supplier.name}</h1>
-                <Badge variant="success" className="text-xs">Partner Aktif</Badge>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {supplier.name}
+                </h1>
+                <Badge variant="success" className="text-xs">
+                  Partner Aktif
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" /> Terdaftar sejak: {formatDate(supplier.createdAt)}
+                <Calendar className="h-3.5 w-3.5" /> Terdaftar sejak:{' '}
+                {formatDate(supplier.createdAt)}
               </p>
             </div>
           </div>
@@ -150,7 +149,9 @@ export default function SupplierDetailPage() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div>
-              <span className="text-xs text-muted-foreground block mb-0.5">Nomor Telepon / WA:</span>
+              <span className="text-xs text-muted-foreground block mb-0.5">
+                Nomor Telepon / WA:
+              </span>
               {supplier.contact ? (
                 <span className="font-medium text-foreground">{supplier.contact}</span>
               ) : (
@@ -171,7 +172,9 @@ export default function SupplierDetailPage() {
           <CardContent className="text-sm">
             <span className="text-xs text-muted-foreground block mb-0.5">Lokasi Pengiriman:</span>
             <p className="font-medium text-foreground leading-relaxed">
-              {supplier.address || <span className="text-muted-foreground italic">Alamat belum diatur</span>}
+              {supplier.address || (
+                <span className="text-muted-foreground italic">Alamat belum diatur</span>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -187,15 +190,21 @@ export default function SupplierDetailPage() {
           <CardContent className="space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total Belanja:</span>
-              <span className="font-bold text-foreground font-mono"><CurrencyText value={totalSpent} /></span>
+              <span className="font-bold text-foreground font-mono">
+                <CurrencyText value={totalSpent} />
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Frekuensi Transaksi:</span>
-              <span className="font-medium text-foreground">{purchases.length || supplier.totalOrdersCount || 0} kali</span>
+              <span className="font-medium text-foreground">
+                {purchases.length || supplier.totalOrdersCount || 0} kali
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Rata-rata Order:</span>
-              <span className="font-medium text-foreground font-mono"><CurrencyText value={averageOrder} /></span>
+              <span className="font-medium text-foreground font-mono">
+                <CurrencyText value={averageOrder} />
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -216,7 +225,9 @@ export default function SupplierDetailPage() {
             className="rounded-lg text-xs font-semibold py-2.5 transition-all duration-200 text-muted-foreground hover:text-foreground hover:bg-muted/80 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=active]:shadow-primary/30 data-[state=active]:font-bold"
           >
             <Package className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Bahan Baku Pasokan ({supplier.suppliedMaterials?.length || 0})</span>
+            <span className="truncate">
+              Bahan Baku Pasokan ({supplier.suppliedMaterials?.length || 0})
+            </span>
           </TabsTrigger>
         </TabsList>
 
@@ -249,7 +260,7 @@ export default function SupplierDetailPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      purchases.map((rec) => (
+                      purchases.map(rec => (
                         <TableRow key={rec.id} className="hover:bg-muted/30">
                           <TableCell className="text-sm text-muted-foreground">
                             {formatDate(rec.purchaseDate)}
@@ -286,7 +297,7 @@ export default function SupplierDetailPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {(!supplier.suppliedMaterials || supplier.suppliedMaterials.length === 0) ? (
+              {!supplier.suppliedMaterials || supplier.suppliedMaterials.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   Belum ada data katalog bahan baku untuk supplier ini.
                 </div>
@@ -318,9 +329,7 @@ export default function SupplierDetailPage() {
         <DialogContent className="sm:max-w-[500px] rounded-xl">
           <DialogHeader>
             <DialogTitle>Edit Informasi Supplier</DialogTitle>
-            <DialogDescription>
-              Perbarui detail kontak dan alamat vendor ini.
-            </DialogDescription>
+            <DialogDescription>Perbarui detail kontak dan alamat vendor ini.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleUpdateSubmit} className="space-y-4 py-2">
@@ -331,7 +340,7 @@ export default function SupplierDetailPage() {
               <Input
                 id="edit-name"
                 value={editData.name}
-                onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                onChange={e => setEditData({ ...editData, name: e.target.value })}
                 className="rounded-xl"
                 required
               />
@@ -344,7 +353,7 @@ export default function SupplierDetailPage() {
               <Input
                 id="edit-contact"
                 value={editData.contact}
-                onChange={(e) => setEditData({ ...editData, contact: e.target.value })}
+                onChange={e => setEditData({ ...editData, contact: e.target.value })}
                 className="rounded-xl"
               />
             </div>
@@ -356,7 +365,7 @@ export default function SupplierDetailPage() {
               <Textarea
                 id="edit-address"
                 value={editData.address}
-                onChange={(e) => setEditData({ ...editData, address: e.target.value })}
+                onChange={e => setEditData({ ...editData, address: e.target.value })}
                 className="rounded-xl min-h-[90px]"
               />
             </div>
@@ -388,5 +397,5 @@ export default function SupplierDetailPage() {
         onSuccess={loadData}
       />
     </div>
-  )
+  );
 }

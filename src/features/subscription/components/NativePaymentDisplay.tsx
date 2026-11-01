@@ -41,8 +41,8 @@ export function NativePaymentDisplay({
   const expiryTimestamp = instructions?.expires_at
     ? new Date(instructions.expires_at).getTime()
     : invoice.created_at
-    ? new Date(invoice.created_at).getTime() + 24 * 60 * 60 * 1000
-    : Date.now() + 24 * 60 * 60 * 1000;
+      ? new Date(invoice.created_at).getTime() + 24 * 60 * 60 * 1000
+      : Date.now() + 24 * 60 * 60 * 1000;
 
   const [timeLeft, setTimeLeft] = useState<number>(() => Math.max(0, expiryTimestamp - Date.now()));
 
@@ -78,7 +78,8 @@ export function NativePaymentDisplay({
   };
 
   const isQRIS = instructions?.payment_method === 'qris' || invoice.payment_method === 'qris';
-  const isMandiri = instructions?.payment_method === 'mandiri_va' || instructions?.bank === 'MANDIRI';
+  const isMandiri =
+    instructions?.payment_method === 'mandiri_va' || instructions?.bank === 'MANDIRI';
   const bankName = instructions?.bank || invoice.payment_method?.replace('_va', '').toUpperCase();
 
   const handleCancel = async () => {
@@ -97,7 +98,10 @@ export function NativePaymentDisplay({
       {/* Expiry Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs sm:text-sm">
         <div className="flex items-center gap-2 text-foreground font-medium">
-          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-500 shrink-0" aria-hidden="true" />
+          <Clock
+            className="h-4 w-4 text-amber-600 dark:text-amber-500 shrink-0"
+            aria-hidden="true"
+          />
           <span>Selesaikan pembayaran dalam</span>
         </div>
         <div className="font-mono font-bold text-amber-700 dark:text-amber-400 text-sm">
@@ -106,7 +110,10 @@ export function NativePaymentDisplay({
       </div>
 
       {statusMessage && (
-        <div role="status" className="p-3 text-xs sm:text-sm rounded-lg bg-muted border border-border text-foreground">
+        <div
+          role="status"
+          className="p-3 text-xs sm:text-sm rounded-lg bg-muted border border-border text-foreground"
+        >
           {statusMessage}
         </div>
       )}
@@ -194,7 +201,9 @@ export function NativePaymentDisplay({
           {/* Virtual Account Specific Display */}
           {!isQRIS && !isMandiri && instructions?.va_number && (
             <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-2">
-              <p className="text-xs text-muted-foreground font-medium">Nomor Virtual Account ({bankName})</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Nomor Virtual Account ({bankName})
+              </p>
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-lg sm:text-xl font-bold text-foreground tracking-wider select-all">
                   {instructions.va_number}
@@ -225,7 +234,9 @@ export function NativePaymentDisplay({
           {isMandiri && (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-1.5">
-                <p className="text-xs text-muted-foreground font-medium">Kode Perusahaan (Biller Code)</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Kode Perusahaan (Biller Code)
+                </p>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-base font-bold text-foreground select-all">
                     {instructions?.biller_code || '-'}
@@ -237,14 +248,20 @@ export function NativePaymentDisplay({
                       onClick={() => handleCopy(instructions.biller_code!, 'biller')}
                       className="h-7 px-2 text-xs"
                     >
-                      {copiedField === 'biller' ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                      {copiedField === 'biller' ? (
+                        <Check className="h-3 w-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
                     </Button>
                   )}
                 </div>
               </div>
 
               <div className="p-3.5 rounded-lg border border-border/60 bg-muted/20 space-y-1.5">
-                <p className="text-xs text-muted-foreground font-medium">Nomor Pelanggan (Bill Key)</p>
+                <p className="text-xs text-muted-foreground font-medium">
+                  Nomor Pelanggan (Bill Key)
+                </p>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-base font-bold text-foreground select-all">
                     {instructions?.bill_key || '-'}
@@ -256,7 +273,11 @@ export function NativePaymentDisplay({
                       onClick={() => handleCopy(instructions.bill_key!, 'billkey')}
                       className="h-7 px-2 text-xs"
                     >
-                      {copiedField === 'billkey' ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                      {copiedField === 'billkey' ? (
+                        <Check className="h-3 w-3 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
                     </Button>
                   )}
                 </div>
@@ -274,10 +295,15 @@ export function NativePaymentDisplay({
               <div className="p-3.5 space-y-2 text-muted-foreground">
                 <ol className="list-decimal list-inside space-y-1.5 leading-relaxed">
                   <li>Buka aplikasi mobile banking atau e-wallet apa pun yang mendukung QRIS.</li>
-                  <li>Pilih menu <strong>Scan</strong> atau <strong>Bayar</strong>.</li>
+                  <li>
+                    Pilih menu <strong>Scan</strong> atau <strong>Bayar</strong>.
+                  </li>
                   <li>Arahkan kamera ke kode QR yang ditampilkan di atas.</li>
                   <li>Periksa nama merchant dan nominal tagihan yang tertera.</li>
-                  <li>Konfirmasi dan masukkan PIN transaksi Anda. Pembayaran otomatis terverifikasi seketika.</li>
+                  <li>
+                    Konfirmasi dan masukkan PIN transaksi Anda. Pembayaran otomatis terverifikasi
+                    seketika.
+                  </li>
                 </ol>
               </div>
             ) : (
@@ -383,7 +409,10 @@ export function NativePaymentDisplay({
             disabled={isChecking || isCancelling}
             className="gap-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isChecking ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <RefreshCw
+              className={`h-4 w-4 ${isChecking ? 'animate-spin' : ''}`}
+              aria-hidden="true"
+            />
             {isChecking ? 'Memeriksa Pembayaran…' : 'Cek Status Pembayaran'}
           </Button>
         </div>
@@ -409,7 +438,8 @@ export function NativePaymentDisplay({
             <span>Konfirmasi Pembatalan Tagihan</span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Apakah Anda yakin ingin membatalkan tagihan ini? Setelah dibatalkan, nomor tagihan dan Virtual Account ini tidak dapat digunakan lagi.
+            Apakah Anda yakin ingin membatalkan tagihan ini? Setelah dibatalkan, nomor tagihan dan
+            Virtual Account ini tidak dapat digunakan lagi.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             <Button

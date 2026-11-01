@@ -10,7 +10,7 @@ import SubscriptionPage from '@/pages/subscription/subscription-page'
 import { stockService } from '@/features/inventory/services/stock-service'
 import { purchaseOrderService } from '@/features/purchase-orders/services/po-service'
 import { recipeService } from '@/features/recipes/services/recipe-service'
-import { productionService } from '@/features/production/services/production-service'
+import { productionBatchService } from '@/features/production/services/production-batch-service'
 import { supplierService } from '@/features/suppliers/services/supplier-service'
 import { subscriptionService } from '@/features/subscription/services/subscriptionService'
 import { mockPageServices, resetSession } from '../support/page-services'
@@ -37,9 +37,9 @@ describe('detail page failures', () => {
     expect(screen.getByRole('button', { name: 'Coba lagi' })).toBeVisible()
   })
   it('handles a missing batch', async () => {
-    vi.mocked(productionService.getBatchById).mockRejectedValue(new Error('Not found'))
+    vi.spyOn(productionBatchService, 'get').mockRejectedValue(new Error('Not found'))
     renderPage(<BatchDetailPage />, '/production/batches/missing', '/production/batches/:batchId')
-    expect(await screen.findByRole('heading', { name: 'Batch Produksi Tidak Ditemukan' })).toBeVisible()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Detail batch belum berhasil dimuat.')
   })
   it('handles a missing supplier and navigates back', async () => {
     vi.mocked(supplierService.getSupplierById).mockRejectedValue(new Error('Not found'))

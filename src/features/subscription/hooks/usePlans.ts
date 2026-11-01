@@ -9,4 +9,3 @@ export const usePlans = (enabled = true) => {
     enabled,
   });
 };
-

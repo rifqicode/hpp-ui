@@ -37,7 +37,7 @@ export function formatIdrCurrencyPlain(amount: number): string {
 export function buildStoreInquiryWhatsAppUrl(
   phone: string,
   storeName: string,
-  customGreeting?: string
+  customGreeting?: string,
 ): string {
   const normalized = normalizeWhatsAppPhone(phone);
   if (!normalized) return '';
@@ -59,10 +59,10 @@ export function buildOrderConfirmationWhatsAppUrl(params: {
 
   const { order, storeName, trackingUrl } = params;
   const itemLines = order.items
-    .map((item) => {
+    .map(item => {
       const modStr =
         item.modifiers && item.modifiers.length > 0
-          ? ` (${item.modifiers.map((m) => m.name).join(', ')})`
+          ? ` (${item.modifiers.map(m => m.name).join(', ')})`
           : '';
       return `- ${item.quantity}x ${item.product_name} - ${item.variant_name}${modStr}`;
     })
@@ -92,7 +92,7 @@ export function buildOrderConfirmationWhatsAppUrl(params: {
   }
   lines.push(
     `*Total Tagihan: ${formatIdrCurrencyPlain(order.total_amount)}*`,
-    `Metode Pembayaran: *${order.payment_method}*`
+    `Metode Pembayaran: *${order.payment_method}*`,
   );
 
   if (order.custom_field_label && order.custom_field_value) {

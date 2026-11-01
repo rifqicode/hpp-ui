@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { storeKeys } from '../hooks/use-stores-query';
 import {
   Save,
   Loader2,
@@ -43,6 +45,7 @@ const DEFAULT_PAYMENT_CONFIG: StorePaymentConfig = {
 };
 
 export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps) {
+  const queryClient = useQueryClient();
   const [config, setConfig] = React.useState<StorePaymentConfig>(() => {
     const existing = store?.payment_config || store?.paymentConfig;
     return {
@@ -50,9 +53,11 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
       enable_qris: existing?.enable_qris ?? DEFAULT_PAYMENT_CONFIG.enable_qris,
       qris_image_url: existing?.qris_image_url ?? DEFAULT_PAYMENT_CONFIG.qris_image_url,
       qris_merchant_name: existing?.qris_merchant_name ?? DEFAULT_PAYMENT_CONFIG.qris_merchant_name,
-      enable_bank_transfer: existing?.enable_bank_transfer ?? DEFAULT_PAYMENT_CONFIG.enable_bank_transfer,
+      enable_bank_transfer:
+        existing?.enable_bank_transfer ?? DEFAULT_PAYMENT_CONFIG.enable_bank_transfer,
       bank_accounts: existing?.bank_accounts ? [...existing.bank_accounts] : [],
-      payment_instruction: existing?.payment_instruction ?? DEFAULT_PAYMENT_CONFIG.payment_instruction,
+      payment_instruction:
+        existing?.payment_instruction ?? DEFAULT_PAYMENT_CONFIG.payment_instruction,
       enable_edc: existing?.enable_edc ?? DEFAULT_PAYMENT_CONFIG.enable_edc,
       edc_supported_banks: existing?.edc_supported_banks ? [...existing.edc_supported_banks] : [],
     };
@@ -67,18 +72,18 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
   const handleAddEdcBank = () => {
     const name = bankInput.trim().toUpperCase();
     if (!name) return;
-    setConfig((prev) =>
+    setConfig(prev =>
       prev.edc_supported_banks.includes(name)
         ? prev
-        : { ...prev, edc_supported_banks: [...prev.edc_supported_banks, name] }
+        : { ...prev, edc_supported_banks: [...prev.edc_supported_banks, name] },
     );
     setBankInput('');
   };
 
   const handleRemoveEdcBank = (name: string) => {
-    setConfig((prev) => ({
+    setConfig(prev => ({
       ...prev,
-      edc_supported_banks: prev.edc_supported_banks.filter((b) => b !== name),
+      edc_supported_banks: prev.edc_supported_banks.filter(b => b !== name),
     }));
   };
 
@@ -89,10 +94,13 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
         enable_cash: existing?.enable_cash ?? DEFAULT_PAYMENT_CONFIG.enable_cash,
         enable_qris: existing?.enable_qris ?? DEFAULT_PAYMENT_CONFIG.enable_qris,
         qris_image_url: existing?.qris_image_url ?? DEFAULT_PAYMENT_CONFIG.qris_image_url,
-        qris_merchant_name: existing?.qris_merchant_name ?? DEFAULT_PAYMENT_CONFIG.qris_merchant_name,
-        enable_bank_transfer: existing?.enable_bank_transfer ?? DEFAULT_PAYMENT_CONFIG.enable_bank_transfer,
+        qris_merchant_name:
+          existing?.qris_merchant_name ?? DEFAULT_PAYMENT_CONFIG.qris_merchant_name,
+        enable_bank_transfer:
+          existing?.enable_bank_transfer ?? DEFAULT_PAYMENT_CONFIG.enable_bank_transfer,
         bank_accounts: existing?.bank_accounts ? [...existing.bank_accounts] : [],
-        payment_instruction: existing?.payment_instruction ?? DEFAULT_PAYMENT_CONFIG.payment_instruction,
+        payment_instruction:
+          existing?.payment_instruction ?? DEFAULT_PAYMENT_CONFIG.payment_instruction,
         enable_edc: existing?.enable_edc ?? DEFAULT_PAYMENT_CONFIG.enable_edc,
         edc_supported_banks: existing?.edc_supported_banks ? [...existing.edc_supported_banks] : [],
       });
@@ -101,19 +109,22 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
 
   const handleAddBankAccount = () => {
     const newAccount: StoreBankAccount = {
-      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `acc_${Date.now()}`,
+      id:
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `acc_${Date.now()}`,
       bank_name: '',
       account_number: '',
       account_holder_name: '',
     };
-    setConfig((prev) => ({
+    setConfig(prev => ({
       ...prev,
       bank_accounts: [...prev.bank_accounts, newAccount],
     }));
   };
 
   const handleUpdateBankAccount = (index: number, field: keyof StoreBankAccount, val: string) => {
-    setConfig((prev) => {
+    setConfig(prev => {
       const updated = [...prev.bank_accounts];
       updated[index] = { ...updated[index], [field]: val };
       return { ...prev, bank_accounts: updated };
@@ -121,7 +132,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
   };
 
   const handleRemoveBankAccount = (index: number) => {
-    setConfig((prev) => ({
+    setConfig(prev => ({
       ...prev,
       bank_accounts: prev.bank_accounts.filter((_, i) => i !== index),
     }));
@@ -144,10 +155,11 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
       const updated = await settingsService.updateStoreProfile({
         payment_config: config,
       });
+      queryClient.setQueryData(storeKeys.profile(store.id), updated);
       setSuccessMsg('Metode pembayaran berhasil disimpan.');
       onUpdated?.(updated);
       window.dispatchEvent(
-        new CustomEvent('guidance-task-success', { detail: { feature: 'payment_config' } })
+        new CustomEvent('guidance-task-success', { detail: { feature: 'payment_config' } }),
       );
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal menyimpan metode pembayaran.');
@@ -164,11 +176,14 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
           <Card className="rounded-2xl border-border shadow-xs">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between gap-2">
-                <CardTitle className="text-base font-semibold">Pengaturan Metode Pembayaran</CardTitle>
+                <CardTitle className="text-base font-semibold">
+                  Pengaturan Metode Pembayaran
+                </CardTitle>
                 <GuidanceTourTrigger feature="payment_config" />
               </div>
               <CardDescription className="text-xs">
-                Atur metode pembayaran yang aktif di POS kasir, kode QRIS toko, dan rekening transfer bank.
+                Atur metode pembayaran yang aktif di POS kasir, kode QRIS toko, dan rekening
+                transfer bank.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -201,12 +216,15 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                 <Switch
                   id="enable_cash"
                   checked={config.enable_cash}
-                  onCheckedChange={(val) => setConfig((prev) => ({ ...prev, enable_cash: val }))}
+                  onCheckedChange={val => setConfig(prev => ({ ...prev, enable_cash: val }))}
                 />
               </div>
 
               {/* 2. QRIS */}
-              <div data-guidance="payment-qris" className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div
+                data-guidance="payment-qris"
+                className="rounded-xl border border-border bg-card p-4 space-y-4"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 mt-0.5">
@@ -217,14 +235,15 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                         QRIS (Quick Response Code Indonesian Standard)
                       </Label>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Tampilkan QR code statis toko di kasir untuk scan pembayaran via e-wallet dan m-banking.
+                        Tampilkan QR code statis toko di kasir untuk scan pembayaran via e-wallet
+                        dan m-banking.
                       </p>
                     </div>
                   </div>
                   <Switch
                     id="enable_qris"
                     checked={config.enable_qris}
-                    onCheckedChange={(val) => setConfig((prev) => ({ ...prev, enable_qris: val }))}
+                    onCheckedChange={val => setConfig(prev => ({ ...prev, enable_qris: val }))}
                   />
                 </div>
 
@@ -238,8 +257,8 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                         id="qris_merchant_name"
                         placeholder={store?.name || 'Contoh: TOKO ROTI SEJAHTERA'}
                         value={config.qris_merchant_name}
-                        onChange={(e) =>
-                          setConfig((prev) => ({ ...prev, qris_merchant_name: e.target.value }))
+                        onChange={e =>
+                          setConfig(prev => ({ ...prev, qris_merchant_name: e.target.value }))
                         }
                         className="h-9 text-xs"
                       />
@@ -249,7 +268,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                       <ImageDropzone
                         value={config.qris_image_url || ''}
                         onUpload={settingsService.uploadQrisImage}
-                        onChange={(url) => setConfig((prev) => ({ ...prev, qris_image_url: url }))}
+                        onChange={url => setConfig(prev => ({ ...prev, qris_image_url: url }))}
                       />
                     </div>
                   </div>
@@ -257,7 +276,10 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
               </div>
 
               {/* 3. EDC */}
-              <div data-guidance="payment-edc" className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div
+                data-guidance="payment-edc"
+                className="rounded-xl border border-border bg-card p-4 space-y-4"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 mt-0.5">
@@ -268,14 +290,15 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                         Mesin EDC (Kartu Debit / Kredit)
                       </Label>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Catat pembayaran menggunakan mesin gesek EDC fisik di outlet. Kasir dapat memasukkan nama bank penerbit dan nomor approval/trace struk EDC.
+                        Catat pembayaran menggunakan mesin gesek EDC fisik di outlet. Kasir dapat
+                        memasukkan nama bank penerbit dan nomor approval/trace struk EDC.
                       </p>
                     </div>
                   </div>
                   <Switch
                     id="enable_edc"
                     checked={config.enable_edc}
-                    onCheckedChange={(val) => setConfig((prev) => ({ ...prev, enable_edc: val }))}
+                    onCheckedChange={val => setConfig(prev => ({ ...prev, enable_edc: val }))}
                   />
                 </div>
 
@@ -285,7 +308,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                       Bank yang Didukung
                     </Label>
                     <div className="flex flex-wrap gap-1.5">
-                      {config.edc_supported_banks.map((bank) => (
+                      {config.edc_supported_banks.map(bank => (
                         <Badge key={bank} variant="secondary" className="gap-1 pr-1">
                           {bank}
                           <button
@@ -304,8 +327,8 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                         id="edc_bank_input"
                         placeholder="Contoh: BCA, Mandiri, BRI"
                         value={bankInput}
-                        onChange={(e) => setBankInput(e.target.value)}
-                        onKeyDown={(e) => {
+                        onChange={e => setBankInput(e.target.value)}
+                        onKeyDown={e => {
                           if (e.key === 'Enter' || e.key === ',') {
                             e.preventDefault();
                             handleAddEdcBank();
@@ -313,7 +336,13 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                         }}
                         className="h-9 text-xs"
                       />
-                      <Button type="button" variant="outline" size="sm" className="h-9" onClick={handleAddEdcBank}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9"
+                        onClick={handleAddEdcBank}
+                      >
                         <Plus className="size-3.5" />
                         Tambah
                       </Button>
@@ -326,14 +355,20 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
               </div>
 
               {/* 4. Transfer Bank */}
-              <div data-guidance="payment-bank" className="rounded-xl border border-border bg-card p-4 space-y-4">
+              <div
+                data-guidance="payment-bank"
+                className="rounded-xl border border-border bg-card p-4 space-y-4"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 mt-0.5">
                       <Building className="size-5" />
                     </div>
                     <div>
-                      <Label htmlFor="enable_bank_transfer" className="text-sm font-semibold cursor-pointer">
+                      <Label
+                        htmlFor="enable_bank_transfer"
+                        className="text-sm font-semibold cursor-pointer"
+                      >
                         Transfer Bank
                       </Label>
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -344,7 +379,9 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                   <Switch
                     id="enable_bank_transfer"
                     checked={config.enable_bank_transfer}
-                    onCheckedChange={(val) => setConfig((prev) => ({ ...prev, enable_bank_transfer: val }))}
+                    onCheckedChange={val =>
+                      setConfig(prev => ({ ...prev, enable_bank_transfer: val }))
+                    }
                   />
                 </div>
 
@@ -366,7 +403,8 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
 
                     {config.bank_accounts.length === 0 ? (
                       <div className="text-center py-4 px-3 rounded-lg border border-dashed border-border bg-muted/20 text-xs text-muted-foreground">
-                        Belum ada nomor rekening terdaftar. Klik &quot;Tambah Rekening&quot; untuk menambahkan rekening pertama.
+                        Belum ada nomor rekening terdaftar. Klik &quot;Tambah Rekening&quot; untuk
+                        menambahkan rekening pertama.
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -392,29 +430,45 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               <div className="space-y-1">
-                                <Label className="text-[11px] text-muted-foreground">Nama Bank</Label>
+                                <Label className="text-[11px] text-muted-foreground">
+                                  Nama Bank
+                                </Label>
                                 <Input
                                   placeholder="BCA / Mandiri / BRI"
                                   value={acc.bank_name}
-                                  onChange={(e) => handleUpdateBankAccount(index, 'bank_name', e.target.value)}
+                                  onChange={e =>
+                                    handleUpdateBankAccount(index, 'bank_name', e.target.value)
+                                  }
                                   className="h-8 text-xs"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <Label className="text-[11px] text-muted-foreground">Nomor Rekening</Label>
+                                <Label className="text-[11px] text-muted-foreground">
+                                  Nomor Rekening
+                                </Label>
                                 <Input
                                   placeholder="1234567890"
                                   value={acc.account_number}
-                                  onChange={(e) => handleUpdateBankAccount(index, 'account_number', e.target.value)}
+                                  onChange={e =>
+                                    handleUpdateBankAccount(index, 'account_number', e.target.value)
+                                  }
                                   className="h-8 text-xs font-mono"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <Label className="text-[11px] text-muted-foreground">Atas Nama (Pemilik)</Label>
+                                <Label className="text-[11px] text-muted-foreground">
+                                  Atas Nama (Pemilik)
+                                </Label>
                                 <Input
                                   placeholder="Nama Pemilik Rekening"
                                   value={acc.account_holder_name}
-                                  onChange={(e) => handleUpdateBankAccount(index, 'account_holder_name', e.target.value)}
+                                  onChange={e =>
+                                    handleUpdateBankAccount(
+                                      index,
+                                      'account_holder_name',
+                                      e.target.value,
+                                    )
+                                  }
                                   className="h-8 text-xs"
                                 />
                               </div>
@@ -428,8 +482,17 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button data-guidance="save-payment-btn" type="submit" disabled={isSaving} className="gap-2">
-                  {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                <Button
+                  data-guidance="save-payment-btn"
+                  type="submit"
+                  disabled={isSaving}
+                  className="gap-2"
+                >
+                  {isSaving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
                   Simpan Pengaturan Pembayaran
                 </Button>
               </div>
@@ -444,7 +507,9 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Info className="size-4 text-primary" />
-              <CardTitle className="text-sm font-semibold">Pratinjau di Modal Kasir (POS)</CardTitle>
+              <CardTitle className="text-sm font-semibold">
+                Pratinjau di Modal Kasir (POS)
+              </CardTitle>
             </div>
             <CardDescription className="text-xs">
               Simulasi tampilan opsi pembayaran saat kasir melakukan proses Checkout.
@@ -453,7 +518,9 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
           <CardContent className="space-y-4">
             {/* Opsi Metode Tab Preview */}
             <div className="space-y-2">
-              <span className="text-[11px] font-medium text-muted-foreground">Pilihan Metode Kasir:</span>
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Pilihan Metode Kasir:
+              </span>
               <div className="grid grid-cols-4 gap-1.5">
                 <div
                   className={`p-2.5 rounded-xl border text-center text-xs font-semibold flex flex-col items-center gap-1 transition-all ${
@@ -510,7 +577,7 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                       src={config.qris_image_url}
                       alt="QRIS"
                       className="size-36 object-contain rounded-lg border border-border p-1 bg-white"
-                      onError={(e) => {
+                      onError={e => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
                     />
@@ -543,8 +610,12 @@ export function PaymentSettingsTab({ store, onUpdated }: PaymentSettingsTabProps
                         className="p-2.5 rounded-lg border border-border/80 bg-muted/30 flex items-center justify-between gap-2"
                       >
                         <div className="space-y-0.5 min-w-0">
-                          <div className="text-xs font-bold uppercase">{acc.bank_name || 'BANK'}</div>
-                          <div className="text-xs font-mono tracking-wider">{acc.account_number || '-'}</div>
+                          <div className="text-xs font-bold uppercase">
+                            {acc.bank_name || 'BANK'}
+                          </div>
+                          <div className="text-xs font-mono tracking-wider">
+                            {acc.account_number || '-'}
+                          </div>
                           <div className="text-[10px] text-muted-foreground truncate">
                             a.n. {acc.account_holder_name || '-'}
                           </div>

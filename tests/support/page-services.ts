@@ -1,3 +1,5 @@
+import { productionBatchService } from '@/features/production/services/production-batch-service'
+import { productionHead } from './production-batch-fixture'
 import { modifierService } from '@/features/recipes/services/modifier-service';
 import { onboardingService } from '@/features/onboarding/services/onboarding-service';
 import { guidanceService } from '@/features/guidance/services/guidance-service';
@@ -27,7 +29,7 @@ export function resetSession(authenticated = true) {
   useAuthStore.setState({
     user: authenticated ? user : null, token: authenticated ? 'test-token' : null,
     activeStoreId: authenticated ? store.id : null, activeStoreName: authenticated ? store.name : null,
-    permissions: [...permissions.map(p => p.code), 'menu:reports', 'menu:promotions', 'promotions:read'],
+    permissions: [...permissions.map(p => p.code), 'production:read', 'production:write', 'menu:reports', 'menu:promotions', 'promotions:read'],
   })
 }
 
@@ -83,6 +85,9 @@ export function mockPageServices() {
   vi.spyOn(purchaseOrderService, 'getPurchaseOrders').mockResolvedValue({ items: [], total: 0, page: 1, limit: 10, totalPages: 1 })
   vi.spyOn(purchaseOrderService, 'getPurchaseOrderById').mockResolvedValue(order)
   vi.spyOn(purchaseOrderService, 'getPurchaseOrderSummary').mockResolvedValue({ total_orders: 0, request_count: 0, order_count: 0, completed_count: 0, total_completed_amount: 0 })
+  vi.spyOn(productionBatchService, 'preview').mockResolvedValue({ items: [], ingredients: [], is_all_sufficient: true })
+  vi.spyOn(productionBatchService, 'list').mockResolvedValue([])
+  vi.spyOn(productionBatchService, 'get').mockResolvedValue(productionHead({ batch_number: batch.batchNumber }))
   vi.spyOn(productionService, 'getBatches').mockResolvedValue([])
   vi.spyOn(productionService, 'getBatchById').mockResolvedValue(batch)
   vi.spyOn(overheadService, 'getOverheads').mockResolvedValue([])

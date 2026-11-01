@@ -6,7 +6,8 @@ export const overheadKeys = {
   all: ['overheads'] as const,
   lists: () => [...overheadKeys.all, 'list'] as const,
   list: (query?: OverheadQuery) => [...overheadKeys.lists(), query] as const,
-  allItems: (query?: { activeOnly?: boolean; category?: OverheadCategory }) => [...overheadKeys.all, 'all-items', query] as const,
+  allItems: (query?: { activeOnly?: boolean; category?: OverheadCategory }) =>
+    [...overheadKeys.all, 'all-items', query] as const,
   summary: () => [...overheadKeys.all, 'summary'] as const,
   detail: (id: string) => [...overheadKeys.all, 'detail', id] as const,
 };
@@ -19,7 +20,10 @@ export function useOverheadsQuery(query?: OverheadQuery, options?: { enabled?: b
   });
 }
 
-export function useAllOverheadsQuery(query?: { activeOnly?: boolean; category?: OverheadCategory }, options?: { enabled?: boolean }) {
+export function useAllOverheadsQuery(
+  query?: { activeOnly?: boolean; category?: OverheadCategory },
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: overheadKeys.allItems(query),
     queryFn: () => overheadService.getOverheads(query),

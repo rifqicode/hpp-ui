@@ -1,3 +1,12 @@
+export interface KitchenSettings {
+  enable_kds_timer_alert: boolean;
+  default_prep_time_minutes: number;
+  warning_time_minutes: number;
+  late_time_minutes: number;
+  enable_manual_timer_alert?: boolean;
+  manual_warning_lead_minutes?: number;
+}
+
 export interface ReceiptConfig {
   paper_size: '58mm' | '80mm';
   header_text?: string;
@@ -28,6 +37,8 @@ export interface StorePaymentConfig {
 }
 
 export interface StoreInfo {
+  timezone?: string;
+  kitchen_settings?: KitchenSettings;
   id: string;
   name: string;
   staff_login_code?: string;
@@ -45,12 +56,12 @@ export interface StoreInfo {
   phone?: string;
   description?: string;
   isMain?: boolean;
-  status: "online" | "offline";
-  role?: "OWNER" | "STAFF" | string;
+  status: 'online' | 'offline';
+  role?: 'OWNER' | 'STAFF' | string;
   createdAt?: string;
 }
 
-export type StaffRole = "OWNER" | "STAFF" | string;
+export type StaffRole = 'OWNER' | 'STAFF' | string;
 
 export interface Permission {
   id: string;
@@ -95,7 +106,7 @@ export interface StaffMember {
   role: StaffRole;
   joinedAt?: string;
   joined_at?: string;
-  status: "active" | "invited";
+  status: 'active' | 'invited';
 }
 
 export interface InviteStaffInput {
@@ -139,6 +150,5 @@ export interface DeviceSession {
   location: string;
   lastActive: string;
   isCurrent: boolean;
-  type: "desktop" | "mobile";
+  type: 'desktop' | 'mobile';
 }
-

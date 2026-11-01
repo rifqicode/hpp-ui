@@ -1,3 +1,5 @@
+import { productionBatchService } from '@/features/production/services/production-batch-service'
+import { productionHead } from './production-batch-fixture'
 import { vi } from 'vitest'
 import { promotionService } from '@/features/promotions/services/promotion-service';
 import { promotionFixture } from './promotion-fixtures';
@@ -31,7 +33,7 @@ export function populatedProduct(edge = false): Product {
   })
 }
 export function mockPopulatedPages(edge = false) {
-  useAuthStore.setState({ permissions: [...allPermissions, 'menu:promotions', 'promotions:read'] })
+  useAuthStore.setState({ permissions: [...allPermissions, 'production:read', 'production:write', 'menu:promotions', 'promotions:read'] })
   vi.mocked(promotionService.list).mockResolvedValue({ data: [promotionFixture({ store_id: store.id })], total: 1, page: 1, per_page: 12, active_count: 0, max_active_promotions: 5 });
   const first = populatedProduct(edge)
   const products = [first, product({ id: 'product-2', name: 'Donat', currentStock: 0, sellingPrice: 5000, latestHpp: 6000, category: '', minStock: 1 }), product({ id: 'product-3', name: 'Kopi Susu', mode: 'MAKE_TO_ORDER', currentStock: 0, latestHpp: 0, estimatedHpp: 2500, sellingPrice: 12000 })]
@@ -55,6 +57,7 @@ export function mockPopulatedPages(edge = false) {
   vi.mocked(salesService.getSummary).mockResolvedValue({ totalRevenue: 100000, totalTransactions: 10, totalHpp: 40000, totalGrossProfit: 60000, averageMarginPct: 60, averageOrderValue: 10000 })
   const statuses: ProductionStatus[] = ['DRAFT', 'QUEUED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'VOID']
   const batches = statuses.map((status, i) => ({ ...batch, id: `batch-${i}`, batchNumber: `BATCH-TEST-00${i + 1}`, status, goodQuantity: status === 'COMPLETED' ? 8 : 0, wasteQuantity: status === 'COMPLETED' ? 2 : 0, totalCost: 40000, hppPerUnit: 5000, overheadCost: 5000, notes: i % 2 ? 'Pesanan pelanggan' : '', ingredients: [{ stockId: stock.id, stockName: stock.name, baseUnit: 'g', quantity: 100, cost: 1000 }], overheads: [{ name: 'Gas', amount: 5000 }], hasActualConsumptions: !edge, completedAt: status === 'COMPLETED' ? '2026-01-01T10:00:00Z' : undefined, voidReason: status === 'VOID' ? 'Salah produksi' : undefined, voidedAt: status === 'VOID' ? '2026-01-01T10:00:00Z' : undefined }))
+  vi.mocked(productionBatchService.list).mockResolvedValue([productionHead()])
   vi.mocked(productionService.getBatches).mockResolvedValue(batches)
   vi.mocked(productionService.getBatchById).mockResolvedValue({ ...batches[edge ? 3 : 2], id: batch.id, batchNumber: batch.batchNumber })
   vi.spyOn(productionService, 'previewProduction').mockResolvedValue({ variant_id: first.variants[0].id, product_name: first.name, planned_qty: 10, is_all_sufficient: !edge, items: [{ stock_id: stock.id, stock_name: stock.name, unit: 'g', required_qty: 1000, available_qty: edge ? 0 : 5000, is_sufficient: !edge, estimated_cost: 10000 }], estimated_bom: 10000, overheads: [{ name: 'Gas', amount: 5000 }], estimated_overhead: 5000, estimated_total: 15000, estimated_hpp: 1500 })

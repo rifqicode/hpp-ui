@@ -29,12 +29,8 @@ export function PromotionPageHeader({
       </Button>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="break-words text-xl font-bold tracking-tight sm:text-2xl">
-            {title}
-          </h1>
-          <div className="mt-1 text-sm leading-6 text-muted-foreground">
-            {description}
-          </div>
+          <h1 className="break-words text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+          <div className="mt-1 text-sm leading-6 text-muted-foreground">{description}</div>
         </div>
         {actions}
       </div>

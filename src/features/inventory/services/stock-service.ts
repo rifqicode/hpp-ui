@@ -52,7 +52,7 @@ export const stockService = {
   getMaterials: async (): Promise<MaterialOption[]> => {
     try {
       const stocks = await stockService.getAllStocks();
-      return stocks.map((s) => ({
+      return stocks.map(s => ({
         id: s.id,
         name: s.name,
         baseUnit: s.base_unit,

@@ -1,8 +1,8 @@
-import { Link, useNavigate } from "react-router-dom"
-import { ChevronsUpDown, LogOut, Settings, User } from "lucide-react"
-import { useAuthStore } from "@/store/use-auth-store"
-import { Button } from "@/components/ui/button"
-import { UserAvatar } from "@/components/ui/user-avatar"
+import { Link, useNavigate } from 'react-router-dom';
+import { ChevronsUpDown, LogOut, Settings, User } from 'lucide-react';
+import { useAuthStore } from '@/store/use-auth-store';
+import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,15 +11,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
 
 export function UserDropdown() {
-  const navigate = useNavigate()
-  const user = useAuthStore((state) => state.user)
-  const logout = useAuthStore((state) => state.logout)
-  const userName = user?.name || "Pengguna"
-  const userEmail = user?.username || user?.email || ""
-  const userAvatar = user?.avatar
+  const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
+  const userName = user?.name || 'Pengguna';
+  const userEmail = user?.username || user?.email || '';
+  const userAvatar = user?.avatar;
 
   return (
     <DropdownMenu>
@@ -77,8 +77,8 @@ export function UserDropdown() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
-            logout()
-            navigate("/login")
+            logout();
+            navigate('/login');
           }}
           className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer gap-2.5 text-sm"
         >
@@ -87,5 +87,5 @@ export function UserDropdown() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

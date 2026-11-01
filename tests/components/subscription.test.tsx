@@ -40,6 +40,16 @@ describe('QuotaBadge', () => {
       expect(screen.getByText('Kuota produk:')).toBeVisible()
       expect(screen.queryByRole('button', { name: 'Upgrade' })).not.toBeInTheDocument()
     }
+    if (limit > 0) {
+      const progress = screen.getByRole('progressbar', { name: 'Kuota produk' })
+      expect(progress).toHaveAttribute('aria-valuenow', String(Math.min(100, current / limit * 100)))
+      expect(progress).toHaveAttribute('aria-valuetext', `${current} dari ${limit}`)
+      if (current >= limit) expect(screen.getByText('Batas tercapai')).toBeVisible()
+      else if (current / limit >= 0.8) expect(screen.getByText('Hampir penuh')).toBeVisible()
+      else expect(screen.queryByText(/Batas tercapai|Hampir penuh/)).not.toBeInTheDocument()
+    } else {
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    }
   })
 })
 

@@ -1,6 +1,6 @@
 export interface User {
   id: string;
-  account_type?: "OWNER" | "STAFF";
+  account_type?: 'OWNER' | 'STAFF';
   email: string;
   username?: string;
   name: string;

@@ -59,7 +59,7 @@ export interface CostBreakdown {
 }
 
 export interface ProductMarginItem {
- variant_id: string;
+  variant_id: string;
   product_id: string;
   product_name: string;
   category: string;
@@ -71,7 +71,7 @@ export interface ProductMarginItem {
 }
 
 export interface RecipeVsRealizedItem {
- variant_id: string;
+  variant_id: string;
   product_id: string;
   product_name: string;
   category: string;

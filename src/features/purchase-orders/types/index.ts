@@ -1,23 +1,23 @@
 import type { POAttachment } from '../lib/attachment';
 
-export type PurchaseOrderCategory = "PURCHASE_ORDER" | "DIRECT_ORDER";
+export type PurchaseOrderCategory = 'PURCHASE_ORDER' | 'DIRECT_ORDER';
 
 export const PURCHASE_ORDER_CATEGORY_LABELS: Record<PurchaseOrderCategory, string> = {
-  PURCHASE_ORDER: "Purchase Order",
-  DIRECT_ORDER: "Direct Order",
+  PURCHASE_ORDER: 'Purchase Request',
+  DIRECT_ORDER: 'Direct Purchase',
+};
+
+export const PURCHASE_ORDER_CATEGORY_SHORT_LABELS: Record<PurchaseOrderCategory, string> = {
+  PURCHASE_ORDER: 'PR',
+  DIRECT_ORDER: 'DP',
 };
 
 export type PurchaseOrderStatus =
-  | "IN_PROGRESS"
-  | "PURCHASE_REQUEST"
-  | "PURCHASE_ORDER"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "REJECTED";
+  'IN_PROGRESS' | 'PURCHASE_REQUEST' | 'PURCHASE_ORDER' | 'PURCHASE_INVOICE' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
 
-export type PurchaseOrderReceiptStatus = "NOT_RECEIVED" | "RECEIVED";
-export type PurchaseOrderPaymentStatus = "UNPAID" | "PAID";
-export type PurchaseOrderPaymentMethod = "CASH" | "TRANSFER" | "TEMPO";
+export type PurchaseOrderReceiptStatus = 'NOT_RECEIVED' | 'RECEIVED';
+export type PurchaseOrderPaymentStatus = 'UNPAID' | 'PAID';
+export type PurchaseOrderPaymentMethod = 'CASH' | 'TRANSFER' | 'TEMPO';
 
 export interface PurchaseOrderItem {
   id: string;
@@ -27,7 +27,7 @@ export interface PurchaseOrderItem {
   baseUnit: string;
   unitPrice: number;
   totalPrice: number;
-  inventoryMethod?: "FIFO" | "FEFO";
+  inventoryMethod?: 'FIFO' | 'FEFO';
 }
 
 export interface PurchaseOrderLog {
@@ -58,6 +58,10 @@ export interface PurchaseOrder {
   paymentStatus: PurchaseOrderPaymentStatus;
   paymentMethod?: PurchaseOrderPaymentMethod;
   paymentDueDate?: string;
+  invoiceNumber?: string;
+  invoicedAt?: string;
+  invoicedByUserId?: string;
+  invoicedByName?: string;
   receivedAt?: string;
   receivedByUserId?: string;
   receivedByName?: string;
@@ -65,6 +69,8 @@ export interface PurchaseOrder {
   paidByUserId?: string;
   paidByName?: string;
   cancellationReason?: string;
+  purchaseReason?: string;
+  requiredDate?: string;
   notes?: string;
   items: PurchaseOrderItem[];
   logs?: PurchaseOrderLog[];
@@ -86,6 +92,8 @@ export interface CreatePurchaseOrderInput {
   attachment_url?: string;
   attachment_name?: string;
   supplier_id?: string;
+  purchase_reason?: string;
+  required_date?: string;
   notes?: string;
   order_date?: string;
   items: CreatePOItemInput[];
@@ -97,6 +105,8 @@ export interface UpdatePurchaseOrderInput {
   attachment_url?: string;
   attachment_name?: string;
   supplier_id?: string;
+  purchase_reason?: string;
+  required_date?: string;
   notes?: string;
   items: CreatePOItemInput[];
 }
@@ -121,6 +131,15 @@ export interface CompletePurchaseOrderInput {
   completion_attachments?: POAttachment[];
   supplier_id?: string;
   prices: CompletePOPriceItem[];
+}
+
+export interface CreatePurchaseInvoiceInput {
+  invoice_number?: string;
+  payment_method: PurchaseOrderPaymentMethod;
+  payment_due_date?: string;
+  prices: CompletePOPriceItem[];
+  attachments?: POAttachment[];
+  notes?: string;
 }
 
 export interface ReceivePOInput {
@@ -150,7 +169,8 @@ export interface PurchaseOrderQueryParams {
   sort_by?: string;
 }
 
-export type PurchaseOrderKanbanColumn = 'pengajuan' | 'dipesan' | 'diterima' | 'selesai' | 'ditutup';
+export type PurchaseOrderKanbanColumn =
+  'pengajuan' | 'dipesan' | 'invoice' | 'diterima' | 'selesai' | 'ditutup';
 
 export interface PaginatedPurchaseOrders {
   items: PurchaseOrder[];
@@ -164,6 +184,7 @@ export interface PurchaseOrderSummary {
   total_orders: number;
   request_count: number;
   order_count: number;
+  invoice_count: number;
   completed_count: number;
   total_completed_amount: string | number;
 }

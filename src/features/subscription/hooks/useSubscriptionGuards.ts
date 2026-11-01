@@ -34,7 +34,8 @@ export const useSubscriptionGuards = () => {
       return { current: item.current, limit: -1, remaining: Infinity, percentage: 0 };
     }
 
-    const percentage = item.limit > 0 ? Math.min(100, Math.round((item.current / item.limit) * 100)) : 0;
+    const percentage =
+      item.limit > 0 ? Math.min(100, Math.round((item.current / item.limit) * 100)) : 0;
     return { ...item, percentage };
   };
 

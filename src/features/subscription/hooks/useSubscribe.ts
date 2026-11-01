@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/use-auth-store';
 
 export const useSubscribe = () => {
   const queryClient = useQueryClient();
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
 
   return useMutation({
     mutationFn: (tier: SubscriptionTier) => subscriptionService.subscribe(tier),

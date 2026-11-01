@@ -20,12 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { CurrencyText } from '@/components/ui/currency-text';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -76,15 +71,8 @@ export default function OverheadListPage() {
 
   // Queries
   const activeOnly =
-    statusFilter === 'ACTIVE'
-      ? true
-      : statusFilter === 'INACTIVE'
-      ? false
-      : undefined;
-  const category =
-    categoryFilter !== 'ALL'
-      ? (categoryFilter as OverheadCategory)
-      : undefined;
+    statusFilter === 'ACTIVE' ? true : statusFilter === 'INACTIVE' ? false : undefined;
+  const category = categoryFilter !== 'ALL' ? (categoryFilter as OverheadCategory) : undefined;
 
   const {
     data: overheadsData,
@@ -99,16 +87,17 @@ export default function OverheadListPage() {
     sortBy,
   });
 
-  const {
-    data: summaryData,
-    refetch: refetchSummary,
-  } = useOverheadSummaryQuery();
+  const { data: summaryData, refetch: refetchSummary } = useOverheadSummaryQuery();
 
   const items = overheadsData?.items ?? [];
   const total = overheadsData?.total ?? 0;
   const totalPages = overheadsData?.totalPages ?? 1;
 
-  const hasFilters = Boolean(search.trim()) || statusFilter !== 'ALL' || categoryFilter !== 'ALL' || sortBy !== 'name-asc';
+  const hasFilters =
+    Boolean(search.trim()) ||
+    statusFilter !== 'ALL' ||
+    categoryFilter !== 'ALL' ||
+    sortBy !== 'name-asc';
 
   const resetFilters = () => {
     setSearch('');
@@ -145,7 +134,7 @@ export default function OverheadListPage() {
   const showFeedback = (type: 'success' | 'error', text: string) => {
     setFeedback({ type, text });
     setTimeout(() => {
-      setFeedback((current) => (current?.text === text ? null : current));
+      setFeedback(current => (current?.text === text ? null : current));
     }, 4500);
   };
 
@@ -191,7 +180,11 @@ export default function OverheadListPage() {
     if (!formData.name.trim()) {
       errors.name = 'Nama biaya overhead wajib diisi';
     }
-    if (formData.defaultAmount !== null && formData.defaultAmount !== undefined && formData.defaultAmount < 0) {
+    if (
+      formData.defaultAmount !== null &&
+      formData.defaultAmount !== undefined &&
+      formData.defaultAmount < 0
+    ) {
       errors.defaultAmount = 'Nominal tidak boleh negatif';
     }
     setFormErrors(errors);
@@ -242,7 +235,7 @@ export default function OverheadListPage() {
       await overheadService.updateOverhead(item.id, { isActive: updatedStatus });
       showFeedback(
         'success',
-        `Status "${item.name}" diubah ke ${updatedStatus ? 'Aktif' : 'Non-aktif'}.`
+        `Status "${item.name}" diubah ke ${updatedStatus ? 'Aktif' : 'Non-aktif'}.`,
       );
       queryClient.invalidateQueries({ queryKey: overheadKeys.all });
     } catch {
@@ -408,7 +401,9 @@ export default function OverheadListPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center p-16 border rounded-2xl bg-card shadow-2xs">
             <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">Memuat data biaya overhead...</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              Memuat data biaya overhead...
+            </p>
           </div>
         ) : stats.total === 0 && !search && categoryFilter === 'ALL' && statusFilter === 'ALL' ? (
           /* Simplified Clean Empty State */
@@ -418,7 +413,8 @@ export default function OverheadListPage() {
             </div>
             <h2 className="text-lg font-semibold text-foreground">Belum Ada Biaya Overhead</h2>
             <p className="text-sm text-muted-foreground max-w-md mt-1 mb-6">
-              Mulai tambahkan komponen biaya operasional seperti gas, listrik, atau tenaga kerja untuk menghitung HPP secara menyeluruh dan akurat.
+              Mulai tambahkan komponen biaya operasional seperti gas, listrik, atau tenaga kerja
+              untuk menghitung HPP secara menyeluruh dan akurat.
             </p>
             <Button
               onClick={handleOpenCreate}
@@ -437,7 +433,7 @@ export default function OverheadListPage() {
                 label: 'Cari biaya overhead',
                 placeholder: 'Cari nama biaya atau keterangan...',
                 value: search,
-                onChange: (val) => {
+                onChange: val => {
                   setSearch(val);
                   setPage(1);
                 },
@@ -447,7 +443,7 @@ export default function OverheadListPage() {
                   id: 'status',
                   label: 'Status',
                   value: statusFilter,
-                  onChange: (val) => {
+                  onChange: val => {
                     setStatusFilter(val as 'ALL' | 'ACTIVE' | 'INACTIVE');
                     setPage(1);
                   },
@@ -461,7 +457,7 @@ export default function OverheadListPage() {
                   id: 'category',
                   label: 'Kategori',
                   value: categoryFilter,
-                  onChange: (val) => {
+                  onChange: val => {
                     setCategoryFilter(val);
                     setPage(1);
                   },
@@ -480,7 +476,11 @@ export default function OverheadListPage() {
               trailingActions={
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-10 gap-1.5 text-xs rounded-md shadow-2xs">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-10 gap-1.5 text-xs rounded-md shadow-2xs"
+                    >
                       <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                       Urutkan
                     </Button>
@@ -543,18 +543,20 @@ export default function OverheadListPage() {
                     {items.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
-                          <p className="font-medium text-foreground">Tidak ada biaya overhead yang cocok</p>
-                          <p className="text-xs text-muted-foreground mt-1">Coba sesuaikan kata kunci pencarian atau filter kategori Anda.</p>
+                          <p className="font-medium text-foreground">
+                            Tidak ada biaya overhead yang cocok
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Coba sesuaikan kata kunci pencarian atau filter kategori Anda.
+                          </p>
                         </td>
                       </tr>
                     ) : (
-                      items.map((item) => {
-                        const meta = OVERHEAD_CATEGORIES[item.category] || OVERHEAD_CATEGORIES.PRODUCTION;
+                      items.map(item => {
+                        const meta =
+                          OVERHEAD_CATEGORIES[item.category] || OVERHEAD_CATEGORIES.PRODUCTION;
                         return (
-                          <tr
-                            key={item.id}
-                            className="hover:bg-muted/30 transition-colors group"
-                          >
+                          <tr key={item.id} className="hover:bg-muted/30 transition-colors group">
                             <td className="px-5 py-3.5 font-medium text-foreground">
                               <div className="flex flex-col">
                                 <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -582,7 +584,11 @@ export default function OverheadListPage() {
                               </Tooltip>
                             </td>
                             <td className="px-5 py-3.5 font-mono text-xs font-semibold text-foreground">
-                              <CurrencyText value={item.defaultAmount} />
+                              <CurrencyText
+                                value={item.defaultAmount}
+                                preset="detail"
+                                showFullValueAction
+                              />
                             </td>
                             <td className="px-5 py-3.5 text-xs text-muted-foreground max-w-xs truncate">
                               {item.notes || '-'}
@@ -626,6 +632,9 @@ export default function OverheadListPage() {
                   </tbody>
                 </table>
               </div>
+              <p className="border-t px-5 py-2 text-xs text-muted-foreground">
+                Tampilan dibulatkan. Total dihitung dari nilai asli.
+              </p>
             </div>
 
             {/* Table Pagination */}
@@ -634,8 +643,8 @@ export default function OverheadListPage() {
               displayedCount={items.length}
               page={page}
               totalPages={totalPages}
-              onPrev={() => setPage((p) => Math.max(1, p - 1))}
-              onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onPrev={() => setPage(p => Math.max(1, p - 1))}
+              onNext={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={loading}
               label="biaya overhead"
             />
@@ -665,8 +674,10 @@ export default function OverheadListPage() {
                   id="name"
                   placeholder="Contoh: Gas Elpiji, Listrik Operasional, Kemasan Box"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={formErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  className={
+                    formErrors.name ? 'border-destructive focus-visible:ring-destructive' : ''
+                  }
                 />
                 {formErrors.name && (
                   <p className="text-xs text-destructive flex items-center gap-1">
@@ -688,7 +699,7 @@ export default function OverheadListPage() {
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {(['PRODUCTION', 'OPERATIONAL'] as OverheadCategory[]).map((catKey) => {
+                  {(['PRODUCTION', 'OPERATIONAL'] as OverheadCategory[]).map(catKey => {
                     const meta = OVERHEAD_CATEGORIES[catKey];
                     const isSelected = formData.category === catKey;
                     return (
@@ -738,7 +749,7 @@ export default function OverheadListPage() {
                     step="any"
                     placeholder="0"
                     value={formData.defaultAmount ?? ''}
-                    onChange={(e) =>
+                    onChange={e =>
                       setFormData({
                         ...formData,
                         defaultAmount: e.target.value === '' ? null : Number(e.target.value),
@@ -764,7 +775,7 @@ export default function OverheadListPage() {
                   id="notes"
                   placeholder="Keterangan alokasi atau dasar estimasi biaya..."
                   value={formData.notes || ''}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   rows={2}
                   className="text-xs resize-none"
                 />
@@ -773,18 +784,15 @@ export default function OverheadListPage() {
               {/* Status Aktif */}
               <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/20">
                 <div className="space-y-0.5">
-                  <Label className="text-xs font-semibold cursor-pointer">
-                    Status Aktif
-                  </Label>
+                  <Label className="text-xs font-semibold cursor-pointer">Status Aktif</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Biaya produksi yang aktif akan otomatis dimuat saat menyelesaikan batch produksi.
+                    Biaya produksi yang aktif akan otomatis dimuat saat menyelesaikan batch
+                    produksi.
                   </p>
                 </div>
                 <Switch
                   checked={formData.isActive}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, isActive: checked })
-                  }
+                  onCheckedChange={checked => setFormData({ ...formData, isActive: checked })}
                   className="data-[state=checked]:bg-emerald-600"
                 />
               </div>
@@ -799,7 +807,11 @@ export default function OverheadListPage() {
                   Batal
                 </Button>
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Menyimpan...' : editingItem ? 'Simpan Perubahan' : 'Tambah Biaya Overhead'}
+                  {saving
+                    ? 'Menyimpan...'
+                    : editingItem
+                      ? 'Simpan Perubahan'
+                      : 'Tambah Biaya Overhead'}
                 </Button>
               </DialogFooter>
             </form>
@@ -807,10 +819,7 @@ export default function OverheadListPage() {
         </Dialog>
 
         {/* Modal Konfirmasi Hapus */}
-        <Dialog
-          open={Boolean(deleteTarget)}
-          onOpenChange={(open) => !open && setDeleteTarget(null)}
-        >
+        <Dialog open={Boolean(deleteTarget)} onOpenChange={open => !open && setDeleteTarget(null)}>
           <DialogContent className="sm:max-w-[420px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-destructive">
@@ -819,10 +828,8 @@ export default function OverheadListPage() {
               </DialogTitle>
               <DialogDescription>
                 Apakah Anda yakin ingin menghapus biaya{' '}
-                <span className="font-semibold text-foreground">
-                  "{deleteTarget?.name}"
-                </span>
-                ? Tindakan ini tidak dapat dibatalkan.
+                <span className="font-semibold text-foreground">"{deleteTarget?.name}"</span>?
+                Tindakan ini tidak dapat dibatalkan.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="pt-3 gap-2 sm:gap-0">
@@ -834,11 +841,7 @@ export default function OverheadListPage() {
               >
                 Batal
               </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
+              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
                 {deleting ? 'Menghapus...' : 'Ya, Hapus'}
               </Button>
             </DialogFooter>

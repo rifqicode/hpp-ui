@@ -27,7 +27,14 @@ export interface POSPromotion {
   promo_type: string;
   min_purchase_amount: string;
   is_customer_required: boolean;
-  items: { item_role: string; required_quantity: string; reward_price: string; variant_id?: string | null; product_id?: string | null; category_id?: string | null }[];
+  items: {
+    item_role: string;
+    required_quantity: string;
+    reward_price: string;
+    variant_id?: string | null;
+    product_id?: string | null;
+    category_id?: string | null;
+  }[];
   eligible: boolean;
   reason?: string;
   needs_configuration: boolean;

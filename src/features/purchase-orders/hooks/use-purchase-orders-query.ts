@@ -10,7 +10,10 @@ export const purchaseOrderKeys = {
   detail: (id: string) => [...purchaseOrderKeys.all, 'detail', id] as const,
 };
 
-export function usePurchaseOrdersQuery(params?: PurchaseOrderQueryParams, options?: { enabled?: boolean }) {
+export function usePurchaseOrdersQuery(
+  params?: PurchaseOrderQueryParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery<PaginatedPurchaseOrders>({
     queryKey: purchaseOrderKeys.list(params),
     queryFn: () => poService.getPurchaseOrders(params),

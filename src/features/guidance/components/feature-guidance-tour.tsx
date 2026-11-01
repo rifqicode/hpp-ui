@@ -30,7 +30,7 @@ export function FeatureGuidanceTour({
   const { data: guidances = [], isLoading } = useGuidancesQuery();
   const completeMutation = useCompleteGuidanceMutation();
 
-  const serverItem = guidances.find((g) => g.guidance === feature);
+  const serverItem = guidances.find(g => g.guidance === feature);
   const isCompleted = serverItem?.is_completed ?? false;
 
   // Tour active states
@@ -65,7 +65,15 @@ export function FeatureGuidanceTour({
 
   // Auto-start tour immediately when loaded and uncompleted
   React.useEffect(() => {
-    if (GUIDANCE_UI_ENABLED && !isLoading && !isCompleted && !hasDismissed && !forceOpen && config && config.steps.length > 0) {
+    if (
+      GUIDANCE_UI_ENABLED &&
+      !isLoading &&
+      !isCompleted &&
+      !hasDismissed &&
+      !forceOpen &&
+      config &&
+      config.steps.length > 0
+    ) {
       setIsTourActive(true);
       setCurrentStepIndex(0);
     }
@@ -86,7 +94,10 @@ export function FeatureGuidanceTour({
 
     const el = document.querySelector(currentStep.target) as HTMLElement | null;
     if (el) {
-      if (lastScrolledStepRef.current !== currentStepIndex && typeof el.scrollIntoView === 'function') {
+      if (
+        lastScrolledStepRef.current !== currentStepIndex &&
+        typeof el.scrollIntoView === 'function'
+      ) {
         lastScrolledStepRef.current = currentStepIndex;
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
       }
@@ -146,7 +157,7 @@ export function FeatureGuidanceTour({
 
   const handleNext = React.useCallback(() => {
     if (currentStepIndex < steps.length - 1) {
-      setCurrentStepIndex((prev) => prev + 1);
+      setCurrentStepIndex(prev => prev + 1);
     } else {
       handleComplete();
     }
@@ -157,7 +168,7 @@ export function FeatureGuidanceTour({
 
   const handlePrev = React.useCallback(() => {
     if (currentStepIndex > 0) {
-      setCurrentStepIndex((prev) => prev - 1);
+      setCurrentStepIndex(prev => prev - 1);
     }
   }, [currentStepIndex]);
 
@@ -204,7 +215,7 @@ export function FeatureGuidanceTour({
     let isCleanedUp = false;
 
     const elevateElement = (node: HTMLElement) => {
-      if (elevatedNodes.some((item) => item.el === node)) return;
+      if (elevatedNodes.some(item => item.el === node)) return;
       const prevZ = node.style.zIndex;
       const prevPos = node.style.position;
       const prevPe = node.style.pointerEvents;
@@ -276,9 +287,13 @@ export function FeatureGuidanceTour({
 
         // If target is inside or is a modal dialog, elevate the dialog and portal as well
         const modalEl = (
-          targetEl.matches?.('[role="dialog"], [data-guidance$="-modal"], [data-slot="dialog-content"]')
+          targetEl.matches?.(
+            '[role="dialog"], [data-guidance$="-modal"], [data-slot="dialog-content"]',
+          )
             ? targetEl
-            : targetEl.closest?.('[role="dialog"], [data-guidance$="-modal"], [data-slot="dialog-content"]')
+            : targetEl.closest?.(
+                '[role="dialog"], [data-guidance$="-modal"], [data-slot="dialog-content"]',
+              )
         ) as HTMLElement | null;
 
         if (modalEl && modalEl !== targetEl) {
@@ -286,7 +301,7 @@ export function FeatureGuidanceTour({
         }
 
         const portalEl = (modalEl || targetEl).closest?.(
-          '[data-radix-portal], [data-portal]'
+          '[data-radix-portal], [data-portal]',
         ) as HTMLElement | null;
         if (portalEl) {
           elevateElement(portalEl);
@@ -355,11 +370,17 @@ export function FeatureGuidanceTour({
       } else if (canFitBottom) {
         // Fallback to below target so it doesn't cover modal inputs
         top = targetRect.top + targetRect.height + gap;
-        left = Math.min(Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2), winW - cardWidth - padding);
+        left = Math.min(
+          Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2),
+          winW - cardWidth - padding,
+        );
       } else if (canFitTop) {
         // Fallback to above target
         top = targetRect.top - cardHeight - gap;
-        left = Math.min(Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2), winW - cardWidth - padding);
+        left = Math.min(
+          Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2),
+          winW - cardWidth - padding,
+        );
       } else {
         // Constrained screen width, place along right viewport edge without negative overflow
         top = Math.min(Math.max(padding, targetRect.top), winH - cardHeight - padding);
@@ -374,10 +395,16 @@ export function FeatureGuidanceTour({
         top = Math.min(Math.max(padding, targetRect.top), winH - cardHeight - padding);
       } else if (canFitBottom) {
         top = targetRect.top + targetRect.height + gap;
-        left = Math.min(Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2), winW - cardWidth - padding);
+        left = Math.min(
+          Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2),
+          winW - cardWidth - padding,
+        );
       } else if (canFitTop) {
         top = targetRect.top - cardHeight - gap;
-        left = Math.min(Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2), winW - cardWidth - padding);
+        left = Math.min(
+          Math.max(padding, targetRect.left + (targetRect.width - cardWidth) / 2),
+          winW - cardWidth - padding,
+        );
       } else {
         top = Math.min(Math.max(padding, targetRect.top), winH - cardHeight - padding);
         left = padding;
@@ -398,7 +425,10 @@ export function FeatureGuidanceTour({
       } else if (canFitTop) {
         top = targetRect.top - cardHeight - gap;
       } else {
-        top = Math.min(Math.max(padding, targetRect.top + targetRect.height + gap), winH - cardHeight - padding);
+        top = Math.min(
+          Math.max(padding, targetRect.top + targetRect.height + gap),
+          winH - cardHeight - padding,
+        );
       }
       left = Math.min(Math.max(padding, targetRect.left), winW - cardWidth - padding);
     }
@@ -442,7 +472,7 @@ export function FeatureGuidanceTour({
               )}
 
               {/* Click-blocker for outside areas */}
-              <div className="fixed inset-0" onClick={(e) => e.stopPropagation()} />
+              <div className="fixed inset-0" onClick={e => e.stopPropagation()} />
             </div>
 
             {/* Popover Step Card (z-[60]) */}
@@ -511,7 +541,7 @@ export function FeatureGuidanceTour({
               </div>
             </div>
           </>,
-          document.body
+          document.body,
         )}
 
       {/* 3. Celebration Popover Toast */}
@@ -530,7 +560,7 @@ export function FeatureGuidanceTour({
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
     </>
   );
@@ -551,9 +581,7 @@ export function GuidanceTourTrigger({
   label?: string;
 }) {
   const handleOpen = () => {
-    window.dispatchEvent(
-      new CustomEvent('open-guidance-tour', { detail: { feature } })
-    );
+    window.dispatchEvent(new CustomEvent('open-guidance-tour', { detail: { feature } }));
   };
 
   // Guidance tour trigger is temporarily disabled on the UI per user request

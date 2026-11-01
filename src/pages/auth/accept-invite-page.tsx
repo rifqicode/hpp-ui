@@ -1,6 +1,6 @@
-import { EkatraBrand } from "@/components/brand/ekatra-logo"
-import * as React from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { EkatraBrand } from '@/components/brand/ekatra-logo';
+import * as React from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Lock,
   Eye,
@@ -12,11 +12,11 @@ import {
   Building2,
   User,
   ShieldCheck,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -24,97 +24,98 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   PasswordStrengthIndicator,
   validatePassword,
-} from "@/components/ui/password-strength-indicator"
+} from '@/components/ui/password-strength-indicator';
 
-import { authService } from "@/features/auth/services/auth-service"
-import type { InviteDetailsResponse } from "@/features/auth/types"
-import { useAuthStore } from "@/store/use-auth-store"
+import { authService } from '@/features/auth/services/auth-service';
+import type { InviteDetailsResponse } from '@/features/auth/types';
+import { useAuthStore } from '@/store/use-auth-store';
 
 export default function AcceptInvitePage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get("token") || ""
-  const setAuth = useAuthStore((state) => state.setAuth)
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
+  const setAuth = useAuthStore(state => state.setAuth);
 
-  const [loading, setLoading] = React.useState<boolean>(true)
-  const [error, setError] = React.useState<string>("")
-  const [invite, setInvite] = React.useState<InviteDetailsResponse | null>(null)
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string>('');
+  const [invite, setInvite] = React.useState<InviteDetailsResponse | null>(null);
 
   // Form states for new user
-  const [name, setName] = React.useState<string>("")
-  const [password, setPassword] = React.useState<string>("")
-  const [confirmPassword, setConfirmPassword] = React.useState<string>("")
-  const [showPassword, setShowPassword] = React.useState<boolean>(false)
-  const [submitting, setSubmitting] = React.useState<boolean>(false)
-  const [formError, setFormError] = React.useState<string>("")
+  const [name, setName] = React.useState<string>('');
+  const [password, setPassword] = React.useState<string>('');
+  const [confirmPassword, setConfirmPassword] = React.useState<string>('');
+  const [showPassword, setShowPassword] = React.useState<boolean>(false);
+  const [submitting, setSubmitting] = React.useState<boolean>(false);
+  const [formError, setFormError] = React.useState<string>('');
 
   React.useEffect(() => {
     async function verifyToken() {
       if (!token) {
-        setError("Tautan undangan tidak memiliki token yang valid.")
-        setLoading(false)
-        return
+        setError('Tautan undangan tidak memiliki token yang valid.');
+        setLoading(false);
+        return;
       }
 
       try {
-        const details = await authService.getInviteDetails(token)
-        setInvite(details)
-        setName(details.name || "")
+        const details = await authService.getInviteDetails(token);
+        setInvite(details);
+        setName(details.name || '');
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Tautan undangan tidak valid atau telah kadaluarsa."
-        setError(msg)
+        const msg =
+          err instanceof Error ? err.message : 'Tautan undangan tidak valid atau telah kadaluarsa.';
+        setError(msg);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    verifyToken()
-  }, [token])
+    verifyToken();
+  }, [token]);
 
   async function handleAccept(e: React.FormEvent) {
-    e.preventDefault()
-    setFormError("")
+    e.preventDefault();
+    setFormError('');
 
     if (!name.trim()) {
-      setFormError("Nama lengkap wajib diisi.")
-      return
+      setFormError('Nama lengkap wajib diisi.');
+      return;
     }
 
-    const passErr = validatePassword(password)
+    const passErr = validatePassword(password);
     if (passErr) {
-      setFormError(passErr)
-      return
+      setFormError(passErr);
+      return;
     }
 
     if (password !== confirmPassword) {
-      setFormError("Konfirmasi kata sandi tidak cocok.")
-      return
+      setFormError('Konfirmasi kata sandi tidak cocok.');
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       const res = await authService.acceptInvite({
         token,
         name: name.trim(),
         password,
-      })
+      });
 
-      setAuth(res.user, res.token)
+      setAuth(res.user, res.token);
       if (res.active_store_id) {
-        useAuthStore.getState().setActiveStoreId(res.active_store_id)
+        useAuthStore.getState().setActiveStoreId(res.active_store_id);
       }
 
-      navigate("/dashboard")
+      navigate('/dashboard');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menerima undangan."
-      setFormError(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menerima undangan.';
+      setFormError(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
@@ -146,13 +147,11 @@ export default function AcceptInvitePage() {
                 <AlertCircle className="h-6 w-6" />
               </div>
               <CardTitle className="text-lg font-bold">Undangan Tidak Valid</CardTitle>
-              <CardDescription className="text-xs pt-1">
-                {error}
-              </CardDescription>
+              <CardDescription className="text-xs pt-1">{error}</CardDescription>
             </CardHeader>
             <CardFooter className="pt-4">
               <Button
-                onClick={() => navigate("/login")}
+                onClick={() => navigate('/login')}
                 className="w-full rounded-xl text-xs font-semibold"
               >
                 Kembali ke Halaman Masuk
@@ -170,7 +169,8 @@ export default function AcceptInvitePage() {
               </div>
               <CardTitle className="text-lg font-bold">Akses Toko Sudah Aktif</CardTitle>
               <CardDescription className="text-xs pt-1">
-                Akun Anda (<strong className="text-foreground">{invite.email}</strong>) sudah terdaftar di sistem.
+                Akun Anda (<strong className="text-foreground">{invite.email}</strong>) sudah
+                terdaftar di sistem.
               </CardDescription>
             </CardHeader>
 
@@ -193,13 +193,14 @@ export default function AcceptInvitePage() {
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                Anda tidak perlu mengatur ulang kata sandi. Anda dapat langsung membuka toko ini melalui menu dashboard.
+                Anda tidak perlu mengatur ulang kata sandi. Anda dapat langsung membuka toko ini
+                melalui menu dashboard.
               </p>
             </CardContent>
 
             <CardFooter className="flex flex-col gap-2 pt-2">
               <Button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate('/dashboard')}
                 className="w-full rounded-xl text-xs font-semibold gap-1.5 shadow-md shadow-primary/20"
               >
                 Buka Dashboard <ArrowRight className="h-3.5 w-3.5" />
@@ -220,8 +221,8 @@ export default function AcceptInvitePage() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-bold">Atur Kata Sandi & Bergabung</CardTitle>
               <CardDescription className="text-xs pt-1">
-                Anda diundang bergabung ke{" "}
-                <strong className="text-foreground">{invite.store_name}</strong> sebagai{" "}
+                Anda diundang bergabung ke{' '}
+                <strong className="text-foreground">{invite.store_name}</strong> sebagai{' '}
                 <strong className="text-foreground">{invite.role_name}</strong>.
               </CardDescription>
             </CardHeader>
@@ -258,7 +259,7 @@ export default function AcceptInvitePage() {
                     <Input
                       id="name"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={e => setName(e.target.value)}
                       placeholder="Masukkan nama lengkap Anda"
                       className="rounded-xl pl-9 text-xs"
                       required
@@ -274,9 +275,9 @@ export default function AcceptInvitePage() {
                     <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       placeholder="Minimal 8 karakter"
                       className="rounded-xl pl-9 pr-9 text-xs"
                       required
@@ -286,11 +287,7 @@ export default function AcceptInvitePage() {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                   <PasswordStrengthIndicator password={password} />
@@ -304,9 +301,9 @@ export default function AcceptInvitePage() {
                     <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="confirm-password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={e => setConfirmPassword(e.target.value)}
                       placeholder="Ketik ulang kata sandi"
                       className="rounded-xl pl-9 text-xs"
                       required
@@ -336,5 +333,5 @@ export default function AcceptInvitePage() {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -17,7 +17,8 @@ function mockOrders(records: PurchaseOrder[]) {
       switch (params.kanban_column) {
         case 'pengajuan': return record.status === 'PURCHASE_REQUEST'
         case 'dipesan': return record.status === 'PURCHASE_ORDER' && record.receiptStatus !== 'RECEIVED'
-        case 'diterima': return record.status === 'PURCHASE_ORDER' && record.receiptStatus === 'RECEIVED' && record.paymentStatus !== 'PAID'
+        case 'invoice': return record.status === 'PURCHASE_INVOICE' && record.receiptStatus !== 'RECEIVED'
+        case 'diterima': return (record.status === 'PURCHASE_INVOICE' || record.status === 'PURCHASE_ORDER') && record.receiptStatus === 'RECEIVED' && record.paymentStatus !== 'PAID'
         case 'selesai': return record.status === 'COMPLETED'
         case 'ditutup': return record.status === 'CANCELLED' || record.status === 'REJECTED'
         default: return true
@@ -36,19 +37,18 @@ beforeEach(() => {
 it('refreshes orders and summary, filters by summary and resets all filter values', async () => {
   const user = userEvent.setup()
   renderPage(<PurchaseOrderListPage />)
-  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenCalledTimes(5))
+  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenCalledTimes(6))
   await user.click(screen.getByRole('button', { name: 'Refresh pembelian' }))
-  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenCalledTimes(10))
+  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenCalledTimes(12))
   expect(purchaseOrderService.getPurchaseOrderSummary).toHaveBeenCalledTimes(2)
   await user.click(screen.getByRole('button', { name: /Menunggu persetujuan/ }))
   await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'PURCHASE_REQUEST', page: 1 })))
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Penerimaan' }), 'RECEIVED')
   await user.selectOptions(screen.getByRole('combobox', { name: 'Pembayaran' }), 'UNPAID')
   await user.click(screen.getByRole('button', { name: 'Urutkan' }))
   await user.click(screen.getByRole('menuitem', { name: 'Nominal Tertinggi' }))
-  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenLastCalledWith(expect.objectContaining({ receipt_status: 'RECEIVED', payment_status: 'UNPAID', sort_by: 'amount-desc' })))
+  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenLastCalledWith(expect.objectContaining({ payment_status: 'UNPAID', sort_by: 'amount-desc' })))
   await user.click(screen.getByRole('button', { name: 'Reset filter' }))
-  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenLastCalledWith(expect.objectContaining({ status: undefined, receipt_status: undefined, payment_status: undefined, sort_by: 'date-desc' })))
+  await waitFor(() => expect(purchaseOrderService.getPurchaseOrders).toHaveBeenLastCalledWith(expect.objectContaining({ status: undefined, payment_status: undefined, sort_by: 'date-desc' })))
 })
 
 it('shows a recoverable list error instead of the first-purchase empty state', async () => {
@@ -90,11 +90,11 @@ it('keeps rejected and cancelled purchases visible in kanban without treating th
   expect(screen.getAllByRole('link', { name: order.poNumber })).toHaveLength(1)
 })
 
-it('shows all four filters and defaults to labeled Kanban tabs with keyboard navigation', async () => {
+it('shows filter controls and defaults to labeled Kanban tabs with keyboard navigation', async () => {
   const user = userEvent.setup()
   mockOrders([order])
   renderPage(<PurchaseOrderListPage />)
-  for (const name of ['Kategori', 'Status Dokumen', 'Penerimaan', 'Pembayaran']) {
+  for (const name of ['Kategori', 'Status Dokumen', 'Pembayaran']) {
     expect(screen.getByRole('combobox', { name })).toBeVisible()
   }
   expect(screen.queryByRole('button', { name: /Filter lainnya/ })).not.toBeInTheDocument()
@@ -118,7 +118,7 @@ it('loads ten per column independently and only queries the ten-item list when i
   await waitFor(() => expect(screen.getAllByRole('link', { name: /^(PURCHASE_REQUEST|PURCHASE_ORDER|COMPLETED)-/ })).toHaveLength(30))
   expect(screen.queryByRole('button', { name: 'Prev' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument()
-  expect(purchaseOrderService.getPurchaseOrders).toHaveBeenCalledTimes(5)
+  expect(purchaseOrderService.getPurchaseOrders).toHaveBeenCalledTimes(6)
   for (const [params] of vi.mocked(purchaseOrderService.getPurchaseOrders).mock.calls) {
     expect(params).toMatchObject({ limit: 10, page: 1, sort_by: 'date-desc' })
     expect(params?.kanban_column).toBeTruthy()
@@ -137,7 +137,7 @@ it('loads ten per column independently and only queries the ten-item list when i
   await user.selectOptions(screen.getByRole('combobox', { name: 'Pembayaran' }), 'PAID')
   await waitFor(() => expect(screen.getByRole('heading', { name: 'Tidak ada pesanan yang cocok' })).toBeVisible())
   const filtered = vi.mocked(purchaseOrderService.getPurchaseOrders).mock.calls.filter(([params]) => params?.payment_status === 'PAID')
-  expect(filtered).toHaveLength(5)
+  expect(filtered).toHaveLength(6)
   expect(filtered.every(([params]) => params?.page === 1 && params?.kanban_column)).toBe(true)
 })
 

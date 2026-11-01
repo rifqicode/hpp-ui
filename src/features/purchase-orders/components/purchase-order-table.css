@@ -51,15 +51,15 @@
     content: attr(data-label);
   }
 
-  .purchase-order-table td[data-label="Status"] {
+  .purchase-order-table td[data-label='Status'] {
     text-align: left;
   }
 
-  .purchase-order-table td[data-label="Status"] > div {
+  .purchase-order-table td[data-label='Status'] > div {
     align-items: flex-start;
   }
 
-  .purchase-order-table td[data-label="Total nilai"] {
+  .purchase-order-table td[data-label='Total nilai'] {
     grid-column: 1;
     text-align: left;
   }

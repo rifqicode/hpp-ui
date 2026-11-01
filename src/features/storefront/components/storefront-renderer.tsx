@@ -20,13 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -87,11 +81,7 @@ export function StorefrontRenderer({
     if (config.checkout.allow_delivery) list.push('DELIVERY');
     if (list.length === 0) list.push('PICKUP');
     return list;
-  }, [
-    config.checkout.allow_dine_in,
-    config.checkout.allow_pickup,
-    config.checkout.allow_delivery,
-  ]);
+  }, [config.checkout.allow_dine_in, config.checkout.allow_pickup, config.checkout.allow_delivery]);
 
   const enabledPaymentMethods = React.useMemo<PaymentMethod[]>(() => {
     const list: PaymentMethod[] = [];
@@ -107,10 +97,10 @@ export function StorefrontRenderer({
   ]);
 
   const [fulfillmentType, setFulfillmentType] = React.useState<FulfillmentType>(
-    enabledFulfillments[0] || 'PICKUP'
+    enabledFulfillments[0] || 'PICKUP',
   );
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(
-    enabledPaymentMethods[0] || 'CASH'
+    enabledPaymentMethods[0] || 'CASH',
   );
   const [customerName, setCustomerName] = React.useState('');
   const [customerPhone, setCustomerPhone] = React.useState('');
@@ -137,9 +127,8 @@ export function StorefrontRenderer({
 
   const filteredProducts = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return products.filter((p) => {
-      const matchCat =
-        selectedCategory === 'ALL' || p.category === selectedCategory;
+    return products.filter(p => {
+      const matchCat = selectedCategory === 'ALL' || p.category === selectedCategory;
       const matchSearch =
         !q ||
         p.name.toLowerCase().includes(q) ||
@@ -151,22 +140,17 @@ export function StorefrontRenderer({
 
   const totalItems = React.useMemo(
     () => cart.reduce((acc, item) => acc + item.quantity, 0),
-    [cart]
+    [cart],
   );
 
   const subtotal = React.useMemo(
     () => cart.reduce((acc, item) => acc + item.unitPrice * item.quantity, 0),
-    [cart]
+    [cart],
   );
 
   const deliveryFee = React.useMemo(
-    () =>
-      calculateStorefrontDeliveryFee(
-        subtotal,
-        fulfillmentType,
-        config.checkout.delivery
-      ),
-    [subtotal, fulfillmentType, config.checkout.delivery]
+    () => calculateStorefrontDeliveryFee(subtotal, fulfillmentType, config.checkout.delivery),
+    [subtotal, fulfillmentType, config.checkout.delivery],
   );
 
   const grandTotal = subtotal + deliveryFee;
@@ -176,14 +160,9 @@ export function StorefrontRenderer({
       buildStoreInquiryWhatsAppUrl(
         config.contact.whatsapp_number || store.phone,
         store.name,
-        config.contact.whatsapp_greeting
+        config.contact.whatsapp_greeting,
       ),
-    [
-      config.contact.whatsapp_number,
-      config.contact.whatsapp_greeting,
-      store.phone,
-      store.name,
-    ]
+    [config.contact.whatsapp_number, config.contact.whatsapp_greeting, store.phone, store.name],
   );
 
   const handleCheckoutSubmit = async (e: React.FormEvent) => {
@@ -227,9 +206,7 @@ export function StorefrontRenderer({
       config.checkout.custom_field_required &&
       !customFieldValue.trim()
     ) {
-      setFormError(
-        `Kolom "${config.checkout.custom_field_label}" wajib diisi.`
-      );
+      setFormError(`Kolom "${config.checkout.custom_field_label}" wajib diisi.`);
       return;
     }
 
@@ -238,12 +215,9 @@ export function StorefrontRenderer({
       customer_phone: customerPhone.trim(),
       customer_email: customerEmail.trim() || undefined,
       fulfillment_type: fulfillmentType,
-      table_number:
-        fulfillmentType === 'DINE_IN' ? tableNumber.trim() : undefined,
-      delivery_address:
-        fulfillmentType === 'DELIVERY' ? deliveryAddress.trim() : undefined,
-      pickup_time:
-        fulfillmentType === 'PICKUP' ? pickupTime.trim() : undefined,
+      table_number: fulfillmentType === 'DINE_IN' ? tableNumber.trim() : undefined,
+      delivery_address: fulfillmentType === 'DELIVERY' ? deliveryAddress.trim() : undefined,
+      pickup_time: fulfillmentType === 'PICKUP' ? pickupTime.trim() : undefined,
       custom_field_label: config.checkout.custom_field_enabled
         ? config.checkout.custom_field_label
         : undefined,
@@ -254,9 +228,9 @@ export function StorefrontRenderer({
       payment_method: paymentMethod,
       payment_reference: paymentReference.trim() || undefined,
       notes: notes.trim() || undefined,
-      items: cart.map((item) => ({
+      items: cart.map(item => ({
         variant_id: item.variantId,
-        modifier_option_ids: item.modifiers.map((m) => m.id),
+        modifier_option_ids: item.modifiers.map(m => m.id),
         quantity: item.quantity,
       })),
     });
@@ -283,15 +257,12 @@ export function StorefrontRenderer({
         const brandName = config.copywriting.brand_name || store.name;
         const brandTagline = config.copywriting.brand_tagline;
         const heroTitle = config.copywriting.hero_title || store.name;
-        const heroSubtitle =
-          config.copywriting.hero_subtitle || store.description;
+        const heroSubtitle = config.copywriting.hero_subtitle || store.description;
         const highlights = (config.copywriting.hero_highlights || []).filter(
-          (item) => item && item.trim() !== ''
+          item => item && item.trim() !== '',
         );
-        const primaryCtaText =
-          config.copywriting.hero_primary_cta_text || 'Lihat Menu & Pesan';
-        const secondaryCtaText =
-          config.copywriting.hero_secondary_cta_text || 'Hubungi WhatsApp';
+        const primaryCtaText = config.copywriting.hero_primary_cta_text || 'Lihat Menu & Pesan';
+        const secondaryCtaText = config.copywriting.hero_secondary_cta_text || 'Hubungi WhatsApp';
         const isCentered = heroLayout === 'CENTERED_STORY';
 
         const scrollToCatalog = () => {
@@ -332,14 +303,8 @@ export function StorefrontRenderer({
                   <Store className="size-8" />
                 </div>
               )}
-              <p className="mt-3 text-sm font-bold text-foreground">
-                {brandName}
-              </p>
-              {brandTagline && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {brandTagline}
-                </p>
-              )}
+              <p className="mt-3 text-sm font-bold text-foreground">{brandName}</p>
+              {brandTagline && <p className="mt-1 text-xs text-muted-foreground">{brandTagline}</p>}
               <Badge variant="secondary" className="mt-3 text-[10px]">
                 {store.category || 'Official Storefront'}
               </Badge>
@@ -398,11 +363,7 @@ export function StorefrontRenderer({
             </div>
 
             {highlights.length > 0 && (
-              <div
-                className={`flex flex-wrap gap-2 pt-0.5 ${
-                  isCentered ? 'justify-center' : ''
-                }`}
-              >
+              <div className={`flex flex-wrap gap-2 pt-0.5 ${isCentered ? 'justify-center' : ''}`}>
                 {highlights.map((point, idx) => (
                   <span
                     key={`${point}-${idx}`}
@@ -435,11 +396,7 @@ export function StorefrontRenderer({
                   asChild
                   className="h-10 gap-1.5 px-4 text-xs font-semibold"
                 >
-                  <a
-                    href={whatsappInquiryUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href={whatsappInquiryUrl} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="size-3.5 text-success-text" />
                     <span>{secondaryCtaText}</span>
                   </a>
@@ -452,18 +409,14 @@ export function StorefrontRenderer({
         return (
           <Card key="hero_banner" className="overflow-hidden py-0">
             {heroLayout === 'COVER_BANNER' && showHeroImage && (
-              <div className="p-3 pb-0 sm:p-5 sm:pb-0">
-                {renderHeroImageBlock('h-44 sm:h-60')}
-              </div>
+              <div className="p-3 pb-0 sm:p-5 sm:pb-0">{renderHeroImageBlock('h-44 sm:h-60')}</div>
             )}
 
             <CardContent className="p-4 sm:p-6">
               {heroLayout === 'SPLIT_SHOWCASE' && showHeroImage ? (
                 <div className="grid items-center gap-5 lg:grid-cols-12">
                   <div className="lg:col-span-7">{renderIntroCopy()}</div>
-                  <div className="lg:col-span-5">
-                    {renderHeroImageBlock('h-52 sm:h-64')}
-                  </div>
+                  <div className="lg:col-span-5">{renderHeroImageBlock('h-52 sm:h-64')}</div>
                 </div>
               ) : heroLayout === 'CENTERED_STORY' ? (
                 <div className="mx-auto max-w-2xl space-y-5">
@@ -505,11 +458,7 @@ export function StorefrontRenderer({
                   asChild
                   className="h-9 gap-1.5 text-xs"
                 >
-                  <a
-                    href={whatsappInquiryUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href={whatsappInquiryUrl} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="size-3.5 text-success-text" />
                     Tanya via WhatsApp
                   </a>
@@ -522,8 +471,7 @@ export function StorefrontRenderer({
 
       case 'product_catalog': {
         const isListLayout =
-          config.theme.catalog_layout === 'list' ||
-          config.template_style === 'EXPRESS_MENU';
+          config.theme.catalog_layout === 'list' || config.template_style === 'EXPRESS_MENU';
 
         return (
           <section
@@ -534,9 +482,7 @@ export function StorefrontRenderer({
           >
             <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Daftar Menu & Produk
-                </h2>
+                <h2 className="text-sm font-semibold text-foreground">Daftar Menu & Produk</h2>
                 <span className="text-xs text-muted-foreground">
                   {filteredProducts.length} menu tersedia
                 </span>
@@ -546,7 +492,7 @@ export function StorefrontRenderer({
                 <Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
                 <Input
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Cari menu favorit Anda..."
                   aria-label="Cari produk"
                   className="h-10 pl-9 pr-9 text-xs sm:text-sm"
@@ -576,7 +522,7 @@ export function StorefrontRenderer({
                   >
                     Semua Menu
                   </button>
-                  {categories.map((cat) => (
+                  {categories.map(cat => (
                     <button
                       key={cat}
                       type="button"
@@ -597,9 +543,7 @@ export function StorefrontRenderer({
             {filteredProducts.length === 0 ? (
               <div className="flex min-h-48 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card p-6 text-center">
                 <Package className="mb-2 size-7 text-muted-foreground" />
-                <p className="text-sm font-semibold text-foreground">
-                  Menu tidak ditemukan
-                </p>
+                <p className="text-sm font-semibold text-foreground">Menu tidak ditemukan</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Coba gunakan kata kunci pencarian atau kategori lain.
                 </p>
@@ -612,21 +556,18 @@ export function StorefrontRenderer({
                     : 'grid grid-cols-2 gap-3 sm:grid-cols-3'
                 }
               >
-                {filteredProducts.map((product) => {
+                {filteredProducts.map(product => {
                   const isMTO = product.mode === 'MAKE_TO_ORDER';
-                  const activeVariants = product.variants.filter(
-                    (v) => v.is_active
-                  );
+                  const activeVariants = product.variants.filter(v => v.is_active);
                   const isOutOfStock =
                     activeVariants.length === 0 ||
-                    (!isMTO &&
-                      !activeVariants.some((v) => v.current_stock > 0));
+                    (!isMTO && !activeVariants.some(v => v.current_stock > 0));
                   const minPrice =
                     activeVariants.length > 0
-                      ? Math.min(...activeVariants.map((v) => v.selling_price))
+                      ? Math.min(...activeVariants.map(v => v.selling_price))
                       : 0;
                   const qtyInCart = cart
-                    .filter((c) => c.productId === product.id)
+                    .filter(c => c.productId === product.id)
                     .reduce((acc, c) => acc + c.quantity, 0);
 
                   if (isListLayout) {
@@ -654,10 +595,7 @@ export function StorefrontRenderer({
                               {product.category}
                             </span>
                             {isMTO && (
-                              <Badge
-                                variant="secondary"
-                                className="px-1.5 py-0 text-[9px]"
-                              >
+                              <Badge variant="secondary" className="px-1.5 py-0 text-[9px]">
                                 Fresh / Pre-Order
                               </Badge>
                             )}
@@ -686,8 +624,8 @@ export function StorefrontRenderer({
                               {isOutOfStock
                                 ? 'Habis'
                                 : qtyInCart > 0
-                                ? `${qtyInCart} Dipilih`
-                                : 'Tambah'}
+                                  ? `${qtyInCart} Dipilih`
+                                  : 'Tambah'}
                             </Button>
                           </div>
                         </div>
@@ -725,10 +663,7 @@ export function StorefrontRenderer({
                               {product.category}
                             </span>
                             {isMTO && (
-                              <Badge
-                                variant="secondary"
-                                className="px-1.5 py-0 text-[9px]"
-                              >
+                              <Badge variant="secondary" className="px-1.5 py-0 text-[9px]">
                                 Pre-Order
                               </Badge>
                             )}
@@ -760,8 +695,8 @@ export function StorefrontRenderer({
                           {isOutOfStock
                             ? 'Stok Habis'
                             : qtyInCart > 0
-                            ? 'Tambah Lagi'
-                            : 'Pilih Menu'}
+                              ? 'Tambah Lagi'
+                              : 'Pilih Menu'}
                         </Button>
                       </div>
                     </Card>
@@ -777,9 +712,7 @@ export function StorefrontRenderer({
         return (
           <Card key="payment_and_order_info" className="py-4">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">
-                Informasi Pembayaran & Pengiriman
-              </CardTitle>
+              <CardTitle className="text-sm">Informasi Pembayaran & Pengiriman</CardTitle>
               <CardDescription className="text-xs">
                 Metode pembayaran resmi dan ketentuan pengiriman toko kami
               </CardDescription>
@@ -789,15 +722,11 @@ export function StorefrontRenderer({
                 {config.payment.enable_cash_on_cashier && (
                   <Badge variant="secondary">Tunai / Kasir</Badge>
                 )}
-                {config.payment.enable_qris && (
-                  <Badge variant="secondary">QRIS Resmi</Badge>
-                )}
+                {config.payment.enable_qris && <Badge variant="secondary">QRIS Resmi</Badge>}
                 {config.payment.enable_bank_transfer && (
                   <Badge variant="secondary">Transfer Bank</Badge>
                 )}
-                {config.checkout.allow_dine_in && (
-                  <Badge variant="outline">Makan di Tempat</Badge>
-                )}
+                {config.checkout.allow_dine_in && <Badge variant="outline">Makan di Tempat</Badge>}
                 {config.checkout.allow_pickup && (
                   <Badge variant="outline">Ambil di Toko (Pickup)</Badge>
                 )}
@@ -852,7 +781,7 @@ export function StorefrontRenderer({
                 </div>
               ) : (
                 <div className="divide-y divide-border">
-                  {cart.map((item) => (
+                  {cart.map(item => (
                     <div
                       key={item.key}
                       className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
@@ -863,13 +792,11 @@ export function StorefrontRenderer({
                         </p>
                         {item.modifiers.length > 0 && (
                           <p className="mt-0.5 text-[11px] text-muted-foreground">
-                            + {item.modifiers.map((m) => m.name).join(', ')}
+                            + {item.modifiers.map(m => m.name).join(', ')}
                           </p>
                         )}
                         <p className="mt-1 text-xs font-bold tabular-nums text-foreground">
-                          <CurrencyText
-                            value={item.unitPrice * item.quantity}
-                          />
+                          <CurrencyText value={item.unitPrice * item.quantity} />
                         </p>
                       </div>
 
@@ -878,9 +805,7 @@ export function StorefrontRenderer({
                           type="button"
                           variant="outline"
                           size="icon-xs"
-                          onClick={() =>
-                            onUpdateCartQuantity(item.key, item.quantity - 1)
-                          }
+                          onClick={() => onUpdateCartQuantity(item.key, item.quantity - 1)}
                           aria-label="Kurangi jumlah"
                         >
                           <Minus className="size-3" />
@@ -892,9 +817,7 @@ export function StorefrontRenderer({
                           type="button"
                           variant="outline"
                           size="icon-xs"
-                          onClick={() =>
-                            onUpdateCartQuantity(item.key, item.quantity + 1)
-                          }
+                          onClick={() => onUpdateCartQuantity(item.key, item.quantity + 1)}
                           aria-label="Tambah jumlah"
                         >
                           <Plus className="size-3" />
@@ -919,8 +842,7 @@ export function StorefrontRenderer({
                   <div className="flex items-center justify-between text-muted-foreground">
                     <span>Ongkos Kirim</span>
                     <span className="font-medium tabular-nums text-foreground">
-                      {config.checkout.delivery.delivery_fee_mode ===
-                      'COURIER_CONFIRMATION' ? (
+                      {config.checkout.delivery.delivery_fee_mode === 'COURIER_CONFIRMATION' ? (
                         <Badge variant="outline" className="text-[10px]">
                           Dikonfirmasi Kasir
                         </Badge>
@@ -951,9 +873,7 @@ export function StorefrontRenderer({
         return (
           <Card key="fulfillment_method" className="py-4">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">
-                Metode Penerimaan Pesanan
-              </CardTitle>
+              <CardTitle className="text-sm">Metode Penerimaan Pesanan</CardTitle>
               <CardDescription className="text-xs">
                 Pilih cara Anda menerima pesanan ini
               </CardDescription>
@@ -1014,40 +934,44 @@ export function StorefrontRenderer({
                   <Input
                     id="checkout-table"
                     value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
+                    onChange={e => setTableNumber(e.target.value)}
                     placeholder="Contoh: Meja 04 / Outdoor 2"
                     className="h-11 text-sm"
                   />
                 </div>
               )}
 
-              {fulfillmentType === 'PICKUP' &&
-                config.checkout.show_pickup_time && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="checkout-pickup-time" className="text-xs font-medium text-foreground">
-                      Perkiraan Waktu Ambil (Opsional)
-                    </Label>
-                    <Input
-                      id="checkout-pickup-time"
-                      value={pickupTime}
-                      onChange={(e) => setPickupTime(e.target.value)}
-                      placeholder="Contoh: Pukul 14:30 / 30 menit lagi"
-                      className="h-11 text-sm"
-                    />
-                  </div>
-                )}
+              {fulfillmentType === 'PICKUP' && config.checkout.show_pickup_time && (
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="checkout-pickup-time"
+                    className="text-xs font-medium text-foreground"
+                  >
+                    Perkiraan Waktu Ambil (Opsional)
+                  </Label>
+                  <Input
+                    id="checkout-pickup-time"
+                    value={pickupTime}
+                    onChange={e => setPickupTime(e.target.value)}
+                    placeholder="Contoh: Pukul 14:30 / 30 menit lagi"
+                    className="h-11 text-sm"
+                  />
+                </div>
+              )}
 
               {fulfillmentType === 'DELIVERY' && (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="checkout-address" className="text-xs font-medium text-foreground">
-                      Alamat Lengkap Pengiriman{' '}
-                      <span className="text-destructive">*</span>
+                    <Label
+                      htmlFor="checkout-address"
+                      className="text-xs font-medium text-foreground"
+                    >
+                      Alamat Lengkap Pengiriman <span className="text-destructive">*</span>
                     </Label>
                     <Textarea
                       id="checkout-address"
                       value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      onChange={e => setDeliveryAddress(e.target.value)}
                       placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan, dan patokan lokasi..."
                       rows={3}
                       className="min-h-24 text-sm"
@@ -1055,9 +979,7 @@ export function StorefrontRenderer({
                   </div>
 
                   <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-                    <span className="font-semibold text-foreground">
-                      Info Pengiriman:{' '}
-                    </span>
+                    <span className="font-semibold text-foreground">Info Pengiriman: </span>
                     {config.checkout.delivery.delivery_instruction ||
                       'Pesanan akan dikirimkan setelah dikonfirmasi oleh kasir.'}
                   </div>
@@ -1073,8 +995,7 @@ export function StorefrontRenderer({
           <Card key="customer_identity" className="py-4">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">
-                {config.copywriting.customer_section_title ||
-                  'Data Pembeli'}
+                {config.copywriting.customer_section_title || 'Data Pembeli'}
               </CardTitle>
               <CardDescription className="text-xs">
                 Digunakan oleh kasir untuk konfirmasi dan pengiriman status pesanan
@@ -1088,7 +1009,7 @@ export function StorefrontRenderer({
                 <Input
                   id="checkout-name"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  onChange={e => setCustomerName(e.target.value)}
                   placeholder="Contoh: Budi Santoso"
                   className="h-11 text-sm"
                 />
@@ -1096,14 +1017,13 @@ export function StorefrontRenderer({
 
               <div className="space-y-1.5">
                 <Label htmlFor="checkout-phone" className="text-xs font-medium text-foreground">
-                  Nomor WhatsApp Aktif{' '}
-                  <span className="text-destructive">*</span>
+                  Nomor WhatsApp Aktif <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="checkout-phone"
                   type="tel"
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={e => setCustomerPhone(e.target.value)}
                   placeholder="Contoh: 081234567890"
                   className="h-11 text-sm"
                 />
@@ -1123,7 +1043,7 @@ export function StorefrontRenderer({
                     id="checkout-email"
                     type="email"
                     value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    onChange={e => setCustomerEmail(e.target.value)}
                     placeholder="nama@email.com (untuk terima bukti pesanan & link pelacakan)"
                     className="h-11 text-sm"
                   />
@@ -1135,23 +1055,21 @@ export function StorefrontRenderer({
       }
 
       case 'custom_field_and_notes': {
-        if (
-          !config.checkout.custom_field_enabled &&
-          !config.checkout.show_notes_field
-        ) {
+        if (!config.checkout.custom_field_enabled && !config.checkout.show_notes_field) {
           return null;
         }
         return (
           <Card key="custom_field_and_notes" className="py-4">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">
-                Catatan & Permintaan Tambahan
-              </CardTitle>
+              <CardTitle className="text-sm">Catatan & Permintaan Tambahan</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {config.checkout.custom_field_enabled && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="checkout-custom-field" className="text-xs font-medium text-foreground">
+                  <Label
+                    htmlFor="checkout-custom-field"
+                    className="text-xs font-medium text-foreground"
+                  >
                     {config.checkout.custom_field_label}{' '}
                     {config.checkout.custom_field_required && (
                       <span className="text-destructive">*</span>
@@ -1160,7 +1078,7 @@ export function StorefrontRenderer({
                   <Input
                     id="checkout-custom-field"
                     value={customFieldValue}
-                    onChange={(e) => setCustomFieldValue(e.target.value)}
+                    onChange={e => setCustomFieldValue(e.target.value)}
                     placeholder={config.checkout.custom_field_placeholder}
                     className="h-11 text-sm"
                   />
@@ -1175,7 +1093,7 @@ export function StorefrontRenderer({
                   <Textarea
                     id="checkout-notes"
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={e => setNotes(e.target.value)}
                     placeholder={config.copywriting.notes_placeholder}
                     rows={3}
                     className="min-h-24 text-sm"
@@ -1212,7 +1130,7 @@ export function StorefrontRenderer({
                   <Input
                     id="checkout-pay-ref"
                     value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
+                    onChange={e => setPaymentReference(e.target.value)}
                     placeholder="Contoh: Transfer a.n. Budi Santoso BCA"
                     className="h-11 text-sm"
                   />
@@ -1239,8 +1157,8 @@ export function StorefrontRenderer({
         {viewMode === 'catalog' ? (
           <>
             {config.store_sections
-              .filter((section) => section.enabled)
-              .map((section) => renderStoreSection(section.id))}
+              .filter(section => section.enabled)
+              .map(section => renderStoreSection(section.id))}
 
             {totalItems > 0 && (
               <div className="sticky bottom-3 z-20 flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-md">
@@ -1299,8 +1217,8 @@ export function StorefrontRenderer({
             )}
 
             {config.checkout_sections
-              .filter((section) => section.enabled)
-              .map((section) => renderCheckoutSection(section.id))}
+              .filter(section => section.enabled)
+              .map(section => renderCheckoutSection(section.id))}
 
             <div className="sticky bottom-3 z-20 flex flex-col gap-2 rounded-lg border border-border bg-card p-3 shadow-md sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -1316,11 +1234,8 @@ export function StorefrontRenderer({
                 disabled={isSubmittingOrder || (!previewMode && cart.length === 0)}
                 className="h-11 gap-2 px-6 text-xs font-semibold sm:text-sm"
               >
-                {isSubmittingOrder && (
-                  <Loader2 className="size-4 animate-spin" />
-                )}
-                {config.copywriting.submit_button_text ||
-                  'Kirim Pesanan Sekarang'}
+                {isSubmittingOrder && <Loader2 className="size-4 animate-spin" />}
+                {config.copywriting.submit_button_text || 'Kirim Pesanan Sekarang'}
               </Button>
             </div>
           </form>

@@ -1,86 +1,86 @@
-import * as React from "react"
-import { useSearchParams } from "react-router-dom"
-import { authService } from "../services/auth-service"
-import { validatePassword } from "@/components/ui/password-strength-indicator"
+import * as React from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { authService } from '../services/auth-service';
+import { validatePassword } from '@/components/ui/password-strength-indicator';
 
 export function useResetPassword() {
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get("token") || ""
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
 
-  const [isValidating, setIsValidating] = React.useState(true)
-  const [isTokenValid, setIsTokenValid] = React.useState(false)
-  const [userEmail, setUserEmail] = React.useState("")
-  const [tokenError, setTokenError] = React.useState<string | null>(null)
+  const [isValidating, setIsValidating] = React.useState(true);
+  const [isTokenValid, setIsTokenValid] = React.useState(false);
+  const [userEmail, setUserEmail] = React.useState('');
+  const [tokenError, setTokenError] = React.useState<string | null>(null);
 
-  const [password, setPassword] = React.useState("")
-  const [confirmPassword, setConfirmPassword] = React.useState("")
-  const [showPassword, setShowPassword] = React.useState(false)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const [isSuccess, setIsSuccess] = React.useState(false)
-  const [formError, setFormError] = React.useState<string | null>(null)
+  const [password, setPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSuccess, setIsSuccess] = React.useState(false);
+  const [formError, setFormError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     async function validateToken() {
       if (!token) {
-        setTokenError("Tautan reset kata sandi tidak memiliki token yang valid.")
-        setIsValidating(false)
-        setIsTokenValid(false)
-        return
+        setTokenError('Tautan reset kata sandi tidak memiliki token yang valid.');
+        setIsValidating(false);
+        setIsTokenValid(false);
+        return;
       }
 
       try {
-        setIsValidating(true)
-        const res = await authService.validateResetToken(token)
-        setIsTokenValid(res.valid)
-        setUserEmail(res.email)
-        setTokenError(null)
+        setIsValidating(true);
+        const res = await authService.validateResetToken(token);
+        setIsTokenValid(res.valid);
+        setUserEmail(res.email);
+        setTokenError(null);
       } catch (err: unknown) {
-        setIsTokenValid(false)
+        setIsTokenValid(false);
         if (err instanceof Error) {
-          setTokenError(err.message)
+          setTokenError(err.message);
         } else {
-          setTokenError("Tautan reset kata sandi tidak valid atau telah kedaluwarsa.")
+          setTokenError('Tautan reset kata sandi tidak valid atau telah kedaluwarsa.');
         }
       } finally {
-        setIsValidating(false)
+        setIsValidating(false);
       }
     }
 
-    validateToken()
-  }, [token])
+    validateToken();
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setFormError(null)
+    e.preventDefault();
+    setFormError(null);
 
-    const passErr = validatePassword(password)
+    const passErr = validatePassword(password);
     if (passErr) {
-      setFormError(passErr)
-      return
+      setFormError(passErr);
+      return;
     }
 
     if (password !== confirmPassword) {
-      setFormError("Konfirmasi kata sandi tidak cocok.")
-      return
+      setFormError('Konfirmasi kata sandi tidak cocok.');
+      return;
     }
 
     try {
-      setIsSubmitting(true)
+      setIsSubmitting(true);
       await authService.resetPassword({
         token,
         new_password: password,
-      })
-      setIsSuccess(true)
+      });
+      setIsSuccess(true);
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setFormError(err.message)
+        setFormError(err.message);
       } else {
-        setFormError("Gagal mengatur ulang kata sandi. Silakan coba lagi.")
+        setFormError('Gagal mengatur ulang kata sandi. Silakan coba lagi.');
       }
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return {
     token,
@@ -98,5 +98,5 @@ export function useResetPassword() {
     isSuccess,
     formError,
     handleSubmit,
-  }
+  };
 }

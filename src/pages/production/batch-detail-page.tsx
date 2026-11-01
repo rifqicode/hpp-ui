@@ -1,784 +1,340 @@
-import {usePermission} from '@/hooks/use-permission';
-import {useQueryClient} from '@tanstack/react-query';
-import * as React from "react"
-import { ProductionStatusBadge } from "@/features/production/components/production-status"
-import { useInitialLoading } from "@/hooks/use-initial-loading"
-import { useParams, Link, useLocation } from "react-router-dom"
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Check, ChevronDown, CircleX, Loader2, Pencil, Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { CurrencyText } from '@/components/ui/currency-text';
+import { FeedbackAlert } from '@/components/ui/feedback-alert';
 import {
-  ArrowLeft,
-  Factory,
-  AlertTriangle,
-  ChevronRight,
-  Check,
-  RotateCcw,
-  Loader2,
-} from "lucide-react"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ProductionStatusBadge } from '@/features/production/components/production-status';
+import { ProductionLogDetails } from '@/features/production/components/production-log-details';
+import { ProductionBatchTiming } from '@/features/production/components/production-batch-timing';
+import { ProductionBatchEditor } from '@/features/production/components/production-batch-editor';
+import { useProductionBatchDetail } from '@/features/production/hooks/use-production-batch-detail';
+import { PRODUCTION_STATUSES } from '@/features/production/types/production-status';
+import { cn } from '@/lib/utils';
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-
-import { productionService } from "@/features/production/services/production-service"
-import type {
-  ProductionBatch,
-  CompleteProductionInput,
-  ProductionOverheadDetail,
-} from "@/features/production/types"
-import { overheadService } from "@/features/overheads/services/overhead-service"
-import type { OverheadType } from "@/features/overheads/types"
-import { CurrencyText } from "@/components/ui/currency-text"
-
-function calculateGrossMargin(sellingPrice: number, cost: number): number {
-  if (!sellingPrice || sellingPrice <= 0) return 0
-  const margin = ((sellingPrice - cost) / sellingPrice) * 100
-  return Math.round(margin * 10) / 10
-}
+const cancelActionClassName =
+  'min-h-11 cursor-pointer data-[variant=destructive]:text-red-700 data-[variant=destructive]:focus:bg-red-50 data-[variant=destructive]:focus:text-red-800 dark:data-[variant=destructive]:text-red-300 dark:data-[variant=destructive]:focus:bg-red-950 dark:data-[variant=destructive]:focus:text-red-200';
 
 export default function BatchDetailPage() {
-  const queryClient=useQueryClient();
-  const {can}=usePermission();
-  const [actionError,setActionError]=React.useState('');
-  const location = useLocation()
-  const returnToValue: unknown = location.state?.returnTo
-  const returnTo = typeof returnToValue === "string" && /^\/production\/batches(?:\?|$)/.test(returnToValue) ? returnToValue : "/production/batches"
-  const { batchId } = useParams<{ batchId: string }>()
+  const {
+    query,
+    head,
+    returnTo,
+    editing,
+    setEditing,
+    error,
+    busy,
+    updated,
+    reopen,
+    actions,
+    canWrite,
+    activeIndex,
+    activeLog,
+    activeBatch,
+    selectLog,
+    summary,
+    running,
+    queued,
+    pending,
+  } = useProductionBatchDetail();
 
-  const [batch, setBatch] = React.useState<ProductionBatch | null>(null)
-  const [loading, setLoading] = React.useState<boolean>(true)
-
-  // Modals
-  const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
-  const [activeOverheads, setActiveOverheads] = React.useState<OverheadType[]>([])
-  const [completeOverheadItems, setCompleteOverheadItems] = React.useState<
-    Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }>
-  >([])
-  const [completeData, setCompleteData] = React.useState<{
-    goodQuantity: number | ""
-    wasteQuantity: number | ""
-    notes?: string
-  }>({
-    goodQuantity: 0,
-    wasteQuantity: 0,
-    notes: "",
-  })
-  const [completeError, setCompleteError] = React.useState<string>("")
-
-  const [isCancelOpen, setIsCancelOpen] = React.useState<boolean>(false)
-  const [cancelReason, setCancelReason] = React.useState<string>("")
-  const [cancelError, setCancelError] = React.useState<string>("")
-  const [submitting, setSubmitting] = React.useState<boolean>(false)
-
-  // Helper to build initial overhead items
-  function buildInitialOverheads(
-    batchData: ProductionBatch,
-    masterOhs: OverheadType[]
-  ): Array<Omit<ProductionOverheadDetail, "amount"> & { amount: number | "" }> {
-    if (Array.isArray(batchData.recipeSnapshot?.overheads)) {
-      return batchData.recipeSnapshot.overheads.map((so) => ({
-        overheadTypeId: so.overhead_type_id,
-        name: so.name,
-        amount: Number(so.amount) || 0,
-      }))
-    }
-
-    if (masterOhs.length > 0) {
-      return masterOhs
-        .filter((ao) => !ao.category || ao.category === "PRODUCTION")
-        .map((ao) => ({
-          overheadTypeId: ao.id,
-          name: ao.name,
-          amount: Number(ao.defaultAmount) || 0,
-        }))
-    }
-
-    return []
-  }
-
-  React.useEffect(() => {
-    if (!batchId) return
-    let ignore = false
-
-    Promise.all([
-      productionService.getBatchById(batchId),
-      overheadService.getOverheads({ activeOnly: true, category: 'PRODUCTION' }),
-    ])
-      .then(([data, masterOhs]) => {
-        if (!ignore) {
-          setBatch(data)
-          setActiveOverheads(masterOhs)
-          setCompleteOverheadItems(buildInitialOverheads(data, masterOhs))
-          setCompleteData({
-            goodQuantity: data.targetQuantity,
-            wasteQuantity: 0,
-            notes: "",
-          })
-          setLoading(false)
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load batch:", err)
-        if (!ignore) setLoading(false)
-      })
-
-    return () => {
-      ignore = true
-    }
-  }, [batchId])
-
-  function openCompleteModal() {
-    if (!batch) return
-    setCompleteOverheadItems(buildInitialOverheads(batch, activeOverheads))
-    setCompleteData({
-      goodQuantity: batch.targetQuantity,
-      wasteQuantity: 0,
-      notes: "",
-    })
-    setCompleteError("")
-    setIsCompleteOpen(true)
-  }
-
-  async function handlePickup(){
-    if(!batch)return;setSubmitting(true);setActionError('');
-    try{setBatch(await productionService.pickupProduction(batch.id));void queryClient.invalidateQueries();}
-    catch(e){setActionError(e instanceof Error?e.message:'Gagal memulai proses');}
-    finally{setSubmitting(false);}
-  }
-
-  async function handleCompleteSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!batch) return
-    const goodQty = typeof completeData.goodQuantity === "number" ? completeData.goodQuantity : (Number(completeData.goodQuantity) || 0)
-    if (goodQty <= 0 || (batch.saleId && goodQty !== batch.targetQuantity)) {
-      setCompleteError("Jumlah produk yang layak dijual harus lebih dari nol. Untuk produk yang dibuat saat dipesan, jumlahnya harus sama dengan jumlah pesanan.")
-      return
-    }
-
-    setSubmitting(true)
-    setCompleteError("")
-    try {
-      const payload: CompleteProductionInput = {
-        goodQuantity: goodQty,
-        wasteQuantity: typeof completeData.wasteQuantity === "number" ? completeData.wasteQuantity : (Number(completeData.wasteQuantity) || 0),
-        notes: completeData.notes,
-        overheads: completeOverheadItems.map((oh) => ({
-          ...oh,
-          amount: Number(oh.amount) || 0,
-        })),
-      }
-      const updated = await productionService.completeProduction(batch.id, payload)
-      setBatch(updated)
-      void queryClient.invalidateQueries()
-      setIsCompleteOpen(false)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyelesaikan batch produksi"
-      setCompleteError(msg)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  async function handleCancelSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!batch) return
-
-    setSubmitting(true)
-    setCancelError("")
-    try {
-      const updated = await productionService.cancelProduction(batch.id, cancelReason)
-      setBatch(updated)
-      void queryClient.invalidateQueries()
-      setIsCancelOpen(false)
-    } catch (err: unknown) {
-      const msg = (err as any)?.response?.data?.message || (err instanceof Error ? err.message : "Gagal membatalkan / void batch produksi")
-      setCancelError(msg)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const isInitialLoading = useInitialLoading(loading)
-  if (isInitialLoading) {
-    // Global LoadingOverlay renders the spinner on top of this placeholder
-    return <div className="min-h-[60vh]" />
-  }
-
-  if (!batch) {
+  if (query.isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4">
-        <AlertTriangle className="h-10 w-10 text-amber-500" />
-        <h2 className="text-xl font-bold">Batch Produksi Tidak Ditemukan</h2>
-        <Button asChild variant="outline" className="rounded-xl">
+      <div
+        role="status"
+        className="flex min-h-[60vh] items-center justify-center gap-3 text-sm text-muted-foreground"
+      >
+        <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin motion-reduce:animate-none" />
+        Memuat detail produksi…
+      </div>
+    );
+  }
+  if (query.isError || !head) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 p-6 sm:p-12">
+        <FeedbackAlert variant="error">Detail batch belum berhasil dimuat.</FeedbackAlert>
+        <Button variant="outline" onClick={() => void query.refetch()}>
+          Coba lagi
+        </Button>
+        <Button asChild variant="outline">
           <Link to={returnTo}>Kembali ke Daftar Batch</Link>
         </Button>
       </div>
-    )
+    );
   }
-
-  const yieldRate = batch.goodQuantity && batch.targetQuantity > 0
-    ? Math.round((batch.goodQuantity / batch.targetQuantity) * 1000) / 10
-    : null
-
-  const margin = batch.hppPerUnit ? calculateGrossMargin(batch.sellingPrice, batch.hppPerUnit) : null
-
-  const hasRecordedOverheads = Boolean(batch.overheads?.length)
-  const displayedOverheads: ProductionOverheadDetail[] = hasRecordedOverheads
-    ? batch.overheads!
-    : (batch.recipeSnapshot?.overheads ?? []).map((overhead) => ({
-        overheadTypeId: overhead.overhead_type_id,
-        name: overhead.name,
-        amount: Number(overhead.amount) || 0,
-      }))
-  const displayedOverheadTotal = displayedOverheads.reduce((total, overhead) => total + (Number(overhead.amount) || 0), 0)
-
-  // Complete calculations
-  const completeStockCost = Number(batch?.stockCost) || 0
-  const completeOverheadTotal = completeOverheadItems.reduce((acc, it) => acc + (Number(it.amount) || 0), 0)
-  const completeTotalCost = completeStockCost + completeOverheadTotal
-  const goodQty = typeof completeData.goodQuantity === "number" ? completeData.goodQuantity : (Number(completeData.goodQuantity) || 0)
-  const completeHppPerUnit = goodQty > 0 ? Math.round(completeTotalCost / goodQty) : 0
+  if (editing && canWrite && head.status === 'DRAFT') {
+    return <ProductionBatchEditor batch={head} onSaved={updated} />;
+  }
+  const multiple = head.logs.length > 1;
+  const canBegin = head.status === 'QUEUED' || (head.status === 'IN_PROGRESS' && queued.length > 0);
+  const canReopen = head.source === 'MANUAL' && head.status === 'QUEUED' && !head.started_at;
+  const orderContext = [
+    head.order_context_snapshot?.invoice_number
+      ? `#${head.order_context_snapshot.invoice_number}`
+      : '',
+    head.order_context_snapshot?.table_number
+      ? `Meja ${head.order_context_snapshot.table_number}`
+      : '',
+  ].filter(Boolean);
 
   return (
-    <div className="flex flex-col gap-6 pb-16 animate-in fade-in duration-500">
-      {/* Breadcrumb & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="rounded-xl text-xs">
-            <Link to={returnTo}>
-              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              Daftar Batch
-            </Link>
-          </Button>
-          <span className="text-xs text-muted-foreground">/</span>
-          <span className="font-mono text-xs font-bold text-foreground">
-            {batch.batchNumber}
-          </span>
+    <div className="min-w-0 space-y-6 pb-12 sm:space-y-8">
+      <header aria-label="Informasi batch" className="space-y-4">
+        <Link
+          to={returnTo}
+          className="inline-flex min-h-11 items-center gap-2 rounded text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ArrowLeft aria-hidden="true" className="h-4 w-4" /> Daftar Batch
+        </Link>
+        <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-start">
+          <div className="min-w-0 space-y-2">
+            <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">
+              {head.batch_number}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+              <ProductionStatusBadge status={head.status} />
+              <span>
+                {head.source === 'MANUAL' ? 'Manual' : head.source === 'ONLINE' ? 'Online' : 'POS'}
+              </span>
+              <span>{head.logs.length} varian</span>
+              {orderContext.length > 0 && (
+                <span className="break-all">{orderContext.join(' · ')}</span>
+              )}
+            </div>
+          </div>
+          {canWrite && (
+            <div className="flex flex-wrap items-center gap-2">
+              {head.status === 'DRAFT' ? (
+                <Button disabled={busy || actions.busy} onClick={() => setEditing(true)}>
+                  Edit draft
+                </Button>
+              ) : running.length > 0 ? (
+                <Button disabled={busy || actions.busy} onClick={() => actions.complete(head)}>
+                  <Check aria-hidden="true" className="mr-2 h-4 w-4" />
+                  {running.length > 1 ? 'Selesaikan semua varian' : 'Selesaikan produksi'}
+                </Button>
+              ) : (
+                canBegin && (
+                  <Button disabled={busy || actions.busy} onClick={() => actions.begin(head)}>
+                    Mulai proses
+                  </Button>
+                )
+              )}
+              {(pending || canReopen) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" disabled={busy || actions.busy}>
+                      Action <ChevronDown aria-hidden="true" className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-48">
+                    {canBegin && running.length > 0 && (
+                      <DropdownMenuItem
+                        className="min-h-11 cursor-pointer text-blue-700 focus:bg-blue-50 focus:text-blue-800 dark:text-blue-300 dark:focus:bg-blue-950 dark:focus:text-blue-200"
+                        onSelect={() => actions.begin(head)}
+                      >
+                        <Play aria-hidden="true" className="size-4" />
+                        Mulai varian antre
+                      </DropdownMenuItem>
+                    )}
+                    {canReopen && (
+                      <DropdownMenuItem
+                        className="min-h-11 cursor-pointer"
+                        onSelect={() => void reopen()}
+                      >
+                        <Pencil aria-hidden="true" className="size-4" />
+                        Edit produksi
+                      </DropdownMenuItem>
+                    )}
+                    {pending && (
+                      <DropdownMenuItem
+                        variant="destructive"
+                        className={cancelActionClassName}
+                        onSelect={() => actions.cancel(head)}
+                      >
+                        <CircleX aria-hidden="true" className="size-4" />
+                        Batalkan batch
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          )}
         </div>
-
-        {(batch.status==='QUEUED'||batch.status==='DRAFT')&&can('production:write')&&<Button disabled={submitting} onClick={()=>void handlePickup()}>{submitting?'Memulai…':'Mulai proses'}</Button>}
-        {batch.status === "IN_PROGRESS" && (
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button
-              onClick={openCompleteModal}
-              size="sm"
-              className="rounded-xl text-xs font-semibold bg-primary text-primary-foreground h-9 flex-1 sm:flex-initial"
-            >
-              <Check className="h-3.5 w-3.5 mr-1.5" /> Selesaikan & Hitung HPP
-            </Button>
-            <Button
-              onClick={() => {
-                setCancelReason("")
-                setCancelError("")
-                setIsCancelOpen(true)
-              }}
-              variant="destructive"
-              size="sm"
-              className="rounded-xl text-xs h-9 flex-1 sm:flex-initial"
-            >
-              <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Batalkan Batch
-            </Button>
-          </div>
+        <ProductionBatchTiming
+          head={head}
+          timezone={actions.timezone}
+          settings={actions.settings}
+        />
+        {head.notes && (
+          <p className="break-words border-l-2 border-border pl-3 text-sm leading-relaxed">
+            <span className="font-medium">Catatan dapur: </span>
+            {head.notes}
+          </p>
         )}
-
-        {batch.status === "COMPLETED" && (
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <Button
-              onClick={() => {
-                setCancelReason("")
-                setCancelError("")
-                setIsCancelOpen(true)
-              }}
-              variant="outline"
-              size="sm"
-              className="rounded-xl text-xs h-9 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 flex-1 sm:flex-initial"
+      </header>
+      {error && <FeedbackAlert variant="error">{error}</FeedbackAlert>}
+      <div
+        className={cn(
+          'min-w-0 items-start',
+          head.logs.length > 0 && 'grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]',
+        )}
+      >
+        {head.logs.length > 0 && (
+          <aside className="contents lg:block lg:min-w-0 lg:space-y-5">
+            <div className="min-w-0 lg:overflow-hidden lg:rounded-xl lg:border lg:border-border lg:bg-card">
+              <div className="rounded-xl border border-border bg-card p-3 lg:hidden">
+                <label htmlFor="batch-variant" className="mb-2 block text-sm font-medium">
+                  Pilih varian
+                </label>
+                <select
+                  id="batch-variant"
+                  value={activeLog?.id ?? ''}
+                  onChange={e => selectLog(e.target.value)}
+                  className="h-11 w-full min-w-0 cursor-pointer rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {head.logs.map(log => (
+                    <option key={log.id} value={log.id}>
+                      {log.recipe_snapshot.product_name} - {log.recipe_snapshot.variant_name} ·{' '}
+                      {PRODUCTION_STATUSES[log.status].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <nav aria-label="Varian produksi" className="hidden divide-y divide-border lg:block">
+                {head.logs.map(log => (
+                  <button
+                    key={log.id}
+                    type="button"
+                    aria-current={log.id === activeLog?.id ? 'true' : undefined}
+                    aria-controls="batch-variant-detail"
+                    onClick={() => selectLog(log.id)}
+                    className={cn(
+                      'group/batch-variant block w-full cursor-pointer space-y-1 px-3 py-3 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-current',
+                      log.id === activeLog?.id &&
+                        'bg-primary font-semibold text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground',
+                    )}
+                  >
+                    <span className="block break-words font-medium">
+                      {log.recipe_snapshot.product_name}
+                    </span>
+                    <span className="block break-words font-normal group-aria-[current=true]/batch-variant:text-primary-foreground">
+                      {log.recipe_snapshot.variant_name}
+                    </span>
+                    <span className="block text-[10px] font-normal leading-4 group-aria-[current=true]/batch-variant:text-primary-foreground">
+                      {PRODUCTION_STATUSES[log.status].label} ·{' '}
+                      {Number(
+                        log.status === 'COMPLETED' ? log.good_quantity : log.target_quantity,
+                      ).toLocaleString('id-ID')}{' '}
+                      {log.recipe_snapshot.product_unit || 'pcs'}
+                    </span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+            {head.status === 'COMPLETED' && (
+              <section
+                aria-label="Biaya seluruh batch"
+                className="order-last min-w-0 space-y-3 rounded-xl border border-border bg-card p-4 text-sm lg:order-none"
+              >
+                <h3 className="font-medium">Biaya seluruh batch</h3>
+                <dl className="space-y-2 tabular-nums">
+                  <div className="flex flex-wrap justify-between gap-x-3">
+                    <dt className="text-muted-foreground">Bahan</dt>
+                    <dd>
+                      <CurrencyText value={summary.material} />
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap justify-between gap-x-3">
+                    <dt className="text-muted-foreground">Biaya lain</dt>
+                    <dd>
+                      <CurrencyText value={summary.overhead} />
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap justify-between gap-x-3 border-t border-border pt-2 font-semibold">
+                    <dt>Total</dt>
+                    <dd>
+                      <CurrencyText value={summary.total} />
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            )}
+          </aside>
+        )}
+        {activeLog && activeBatch ? (
+          <Card className="min-w-0 gap-0 border border-border p-4 shadow-none ring-0 sm:p-5">
+            <section
+              id="batch-variant-detail"
+              aria-label="Detail varian"
+              className="min-w-0 space-y-4"
             >
-              <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Void Produksi
-            </Button>
-          </div>
+              {head.sale_id &&
+                activeLog.status === 'COMPLETED' &&
+                Number(activeLog.unfulfilled_quantity || 0) > 0 && (
+                  <FeedbackAlert variant="info">
+                    Pesanan belum terpenuhi: kurang {Number(activeLog.unfulfilled_quantity)}{' '}
+                    {activeLog.recipe_snapshot.product_unit}.
+                  </FeedbackAlert>
+                )}
+              <ProductionLogDetails
+                variantIndex={activeIndex}
+                totalVariants={head.logs.length}
+                timezone={actions.timezone}
+                headerActions={
+                  multiple &&
+                  canWrite &&
+                  ['DRAFT', 'QUEUED', 'IN_PROGRESS'].includes(activeLog.status) ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" disabled={actions.busy} aria-label="Action">
+                            Action <ChevronDown aria-hidden="true" className="ml-2 h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {activeLog.status === 'IN_PROGRESS' && (
+                            <DropdownMenuItem
+                              className="min-h-11 cursor-pointer text-emerald-700 focus:bg-emerald-50 focus:text-emerald-800 dark:text-emerald-300 dark:focus:bg-emerald-950 dark:focus:text-emerald-200"
+                              onSelect={() => actions.complete(head, [activeLog])}
+                            >
+                              <Check aria-hidden="true" className="size-4" />
+                              Selesaikan varian
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            className={cancelActionClassName}
+                            onSelect={() => actions.cancel(head, activeLog.id)}
+                          >
+                            <CircleX aria-hidden="true" className="size-4" />
+                            Batalkan varian
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  ) : undefined
+                }
+                batch={{
+                  ...activeBatch,
+                  batchNumber: head.batch_number,
+                  notes: activeLog.notes || '',
+                }}
+              />
+            </section>
+          </Card>
+        ) : (
+          <p className="py-8 text-sm text-muted-foreground">Belum ada varian pada batch ini.</p>
         )}
       </div>
-
-      {actionError&&<p role="alert" className="text-sm text-destructive">{actionError}</p>}
-      {/* Hero Header Card */}
-      <Card className="rounded-3xl border-slate-200/80 shadow-sm overflow-hidden bg-card w-full">
-        <div className="p-4 sm:p-6 pb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                <Factory className="h-7 w-7" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-xl font-black text-foreground">
-                    {batch.batchNumber}
-                  </span>
-                  <ProductionStatusBadge status={batch.status} />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <Link
-                    to={`/production/products/${batch.productId}`}
-                    className="text-sm font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1"
-                  >
-                    <span>{batch.productName}</span>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Link>
-                  {!!batch.recipeSnapshot?.modifiers?.length && <ul className="mt-2 space-y-1 text-sm">{batch.recipeSnapshot.modifiers.map(m=><li key={m.id}>+ {m.name}{m.stock_id&&` · ${Number(m.ingredient_quantity)} ${m.unit} per unit`}</li>)}</ul>}
-
-                  <span className="text-xs text-muted-foreground">• {batch.productCategory}</span>
-                </div>
-
-                <p className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-3 gap-y-1">
-                  <span>
-                    Mulai:{" "}
-                    {new Date(batch.startedAt).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  {batch.completedAt && (
-                    <span>
-                      Selesai:{" "}
-                      {new Date(batch.completedAt).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {batch.notes && (
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-muted-foreground max-w-sm">
-                <span className="font-semibold text-slate-700 block mb-0.5">Catatan Dapur:</span>
-                "{batch.notes}"
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 5-Column Metric Highlights */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 border-t border-slate-100 gap-px bg-slate-200/60 dark:bg-slate-800">
-          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
-              Target vs Hasil
-            </span>
-            <div className="text-base sm:text-lg font-black font-mono text-foreground mt-0.5 truncate">
-              {batch.goodQuantity !== undefined ? batch.goodQuantity : "-"} / {batch.targetQuantity}{" "}
-              <span className="text-xs font-normal text-muted-foreground">{batch.productUnit}</span>
-            </div>
-            {yieldRate !== null && (
-              <span className="text-[10px] text-emerald-600 font-bold block truncate">
-                Yield: {yieldRate}% ({batch.wasteQuantity || 0} afkir)
-              </span>
-            )}
-          </div>
-
-          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
-              Biaya Bahan Baku (BOM)
-            </span>
-            <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
-              <CurrencyText value={batch.stockCost} />
-            </div>
-            <span className="text-[10px] text-muted-foreground block truncate">{batch.ingredients.length} {batch.hasActualConsumptions ? "bahan terpotong" : "bahan direncanakan"}</span>
-          </div>
-
-          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
-              Biaya Overhead
-            </span>
-            <div className="text-base sm:text-lg font-black font-mono text-slate-800 dark:text-slate-100 mt-0.5 truncate">
-              {displayedOverheads.length > 0 ? (
-                <CurrencyText value={displayedOverheadTotal} />
-              ) : (
-                "-"
-              )}
-            </div>
-            <span className="text-[10px] text-muted-foreground block truncate">
-              {hasRecordedOverheads ? "Total biaya overhead" : displayedOverheads.length > 0 ? "Estimasi biaya overhead" : "Dihitung saat selesai"}
-            </span>
-          </div>
-
-          <div className="p-3 px-4 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
-              HPP per Unit Aktual
-            </span>
-            <div className="text-base sm:text-lg font-black font-mono text-primary mt-0.5 truncate">
-              {batch.hppPerUnit ? <CurrencyText value={batch.hppPerUnit} /> : "-"}
-            </div>
-            <span className="text-[10px] text-muted-foreground block truncate">Harga Jual: <CurrencyText value={batch.sellingPrice} /></span>
-          </div>
-
-          <div className="p-3 px-4 col-span-2 sm:col-span-1 bg-slate-50/90 dark:bg-slate-900/90 min-w-0">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block truncate">
-              Gross Margin Batch
-            </span>
-            <div className="mt-1">
-              {margin !== null ? (
-                <Badge
-                  variant="outline"
-                  className={`font-mono text-xs font-bold px-2 py-0.5 ${
-                    margin >= 50
-                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
-                      : margin >= 25
-                      ? "bg-amber-500/10 text-amber-700 border-amber-300"
-                      : "bg-red-500/10 text-red-700 border-red-300"
-                  }`}
-                >
-                  +{margin}%
-                </Badge>
-              ) : (
-                <span className="text-xs text-muted-foreground italic">Menunggu kalkulasi</span>
-              )}
-            </div>
-            <span className="text-[10px] text-muted-foreground mt-0.5 block truncate">
-              {batch.totalCost ? <>Total Modal: <CurrencyText value={batch.totalCost} /></> : "Dalam proses"}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* SECTION 1: RINCIAN KONSUMSI BAHAN BAKU (FIFO AUDIT TRAIL) */}
-      <Card className="rounded-2xl border-slate-200/80 shadow-sm w-full bg-card">
-        <CardHeader className="p-5 pb-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-lg font-bold">{batch.hasActualConsumptions ? "Audit Konsumsi Bahan Baku (BOM FIFO)" : "Estimasi Kebutuhan Bahan Baku"}</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                {batch.hasActualConsumptions ? "Rincian bahan yang diambil dari gudang untuk batch produksi ini." : "Kebutuhan berdasarkan takaran bahan baku per unit dan add-on saat order dibuat. Waste aktual dicatat saat penyelesaian."}
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
-              {batch.hasActualConsumptions ? "Total Bahan" : "Estimasi Bahan"}: <CurrencyText value={batch.hasActualConsumptions ? batch.stockCost : batch.ingredients.reduce((sum, item) => sum + item.cost, 0)} />
-            </Badge>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <Table className="min-w-[600px]">
-            <TableHeader className="bg-slate-50/70">
-              <TableRow>
-                <TableHead className="text-xs font-bold uppercase text-muted-foreground">Nama Bahan Baku</TableHead>
-                <TableHead className="text-xs font-bold uppercase text-muted-foreground">{batch.hasActualConsumptions ? "Kuantitas Terpakai" : "Kuantitas Rencana"}</TableHead>
-                <TableHead className="text-xs font-bold uppercase text-muted-foreground">{batch.hasActualConsumptions ? "Modal Bahan (FIFO)" : "Estimasi Biaya Bahan"}</TableHead>
-                <TableHead className="text-xs font-bold uppercase text-muted-foreground">Porsi dari Total Biaya Bahan</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {batch.ingredients.map((ing, index) => {
-                const totalCost = batch.hasActualConsumptions ? batch.stockCost : batch.ingredients.reduce((sum, item) => sum + item.cost, 0)
-                const share = totalCost > 0 ? Math.round((ing.cost / totalCost) * 1000) / 10 : 0
-
-                return (
-                  <TableRow key={`${ing.stockId}-${index}`}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm text-foreground">{ing.stockName}</span>
-                        <span className="text-[11px] text-muted-foreground font-mono">ID: {ing.stockId}</span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="font-mono font-bold text-sm text-foreground">
-                      {ing.quantity.toLocaleString("id-ID")} {ing.baseUnit}
-                    </TableCell>
-
-                    <TableCell className="font-mono font-bold text-sm text-slate-800">
-                      <CurrencyText value={ing.cost} />
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-24 bg-slate-200 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-primary h-full rounded-full"
-                            style={{ width: `${Math.min(share, 100)}%` }}
-                          />
-                        </div>
-                        <span className="font-mono text-xs font-semibold text-slate-700">
-                          {share}%
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* SECTION 2: RINCIAN BIAYA OVERHEAD */}
-      {displayedOverheads.length > 0 && (
-        <Card className="rounded-2xl border-slate-200/80 shadow-sm w-full bg-card">
-          <CardHeader className="p-5 pb-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <CardTitle className="text-lg font-bold">Rincian Biaya Overhead Operasional</CardTitle>
-                <CardDescription className="text-xs text-muted-foreground">
-                  {hasRecordedOverheads
-                    ? "Alokasi biaya langsung non-bahan yang diserap ke dalam HPP unit barang bagus."
-                    : "Estimasi overhead saat produksi dimulai. Nominal aktual ditentukan saat produksi selesai."}
-                </CardDescription>
-              </div>
-              <Badge variant="outline" className="text-xs font-mono font-semibold self-start sm:self-auto shrink-0">
-                {hasRecordedOverheads ? "Total Overhead" : "Estimasi Overhead"}: <CurrencyText value={displayedOverheadTotal} />
-              </Badge>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-5 pt-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {displayedOverheads.map((oh, idx) => (
-                <div key={oh.id || idx} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200/70 dark:border-slate-800">
-                  <span className="text-xs text-muted-foreground block truncate" title={oh.name}>
-                    {oh.name}
-                  </span>
-                  <span className="font-mono font-bold text-base text-foreground mt-1 block">
-                    <CurrencyText value={Number(oh.amount) || 0} />
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* COMPLETE DIALOG */}
-      <Dialog open={isCompleteOpen} onOpenChange={setIsCompleteOpen}>
-        <DialogContent className="sm:max-w-[540px] rounded-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Selesaikan Batch & Kalkulasi HPP</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Masukkan hasil panen dan overhead riil untuk menghitung HPP per unit final.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleCompleteSubmit} className="space-y-4 py-2">
-            {completeError && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>{completeError}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="production-good-qty" className="text-xs font-semibold">Unit Bagus</Label>
-                <Input
-                  type="number"
-                  id="production-good-qty"
-                  min="0.0001"
-                  step="0.0001"
-                  placeholder="1"
-                  value={completeData.goodQuantity}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    if (val === "") {
-                      setCompleteData((prev) => ({ ...prev, goodQuantity: "" }))
-                    } else {
-                      const parsed = Number(val)
-                      setCompleteData((prev) => ({ ...prev, goodQuantity: isNaN(parsed) ? "" : parsed }))
-                    }
-                  }}
-                  onBlur={() => {
-                    if (completeData.goodQuantity === "" || Number(completeData.goodQuantity) <= 0) {
-                      setCompleteData((prev) => ({ ...prev, goodQuantity: 1 }))
-                    }
-                  }}
-                  className="rounded-xl h-10 font-mono font-bold"
-                  required
-                />
-              </div>
-
-              <div className="grid gap-1.5">
-                <Label htmlFor="production-waste-qty" className="text-xs font-semibold">Unit Rusak (Afkir)</Label>
-                <Input
-                  type="number"
-                  id="production-waste-qty"
-                  min="0"
-                  step="0.0001"
-                  placeholder="0"
-                  value={completeData.wasteQuantity}
-                  onChange={(e) => {
-                    const val = e.target.value
-                    if (val === "") {
-                      setCompleteData((prev) => ({ ...prev, wasteQuantity: "" }))
-                    } else {
-                      const parsed = Number(val)
-                      setCompleteData((prev) => ({ ...prev, wasteQuantity: isNaN(parsed) ? "" : parsed }))
-                    }
-                  }}
-                  onBlur={() => {
-                    if (completeData.wasteQuantity === "" || Number(completeData.wasteQuantity) < 0) {
-                      setCompleteData((prev) => ({ ...prev, wasteQuantity: 0 }))
-                    }
-                  }}
-                  className="rounded-xl h-10 font-mono"
-                />
-              </div>
-            </div>
-
-            {/* Dynamic Overhead Items */}
-            <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                  Biaya Overhead Operasional (Batch Ini)
-                </span>
-                <span className="text-xs font-mono font-bold text-slate-700">
-                  Total: <CurrencyText value={completeOverheadTotal} />
-                </span>
-              </div>
-
-              {completeOverheadItems.length === 0 ? (
-                <div className="text-xs text-muted-foreground py-2 text-center">
-                  Tidak ada overhead aktif untuk batch ini.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {completeOverheadItems.map((oh, idx) => (
-                    <div key={oh.overheadTypeId || idx} className="grid gap-1 bg-white p-2.5 rounded-xl border border-slate-200">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs font-semibold text-slate-800 truncate" title={oh.name}>
-                          {oh.name}
-                        </Label>
-                        <Badge variant="outline" className="text-[9px] py-0 px-1 font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
-                          Biaya Produksi
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground font-medium">Rp</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="500"
-                          placeholder="0"
-                          value={oh.amount === "" ? "" : oh.amount}
-                          onChange={(e) => {
-                            const val = e.target.value
-                            setCompleteOverheadItems((prev) =>
-                              prev.map((item, i) =>
-                                i === idx
-                                  ? {
-                                      ...item,
-                                      amount: val === "" ? "" : Number(val),
-                                    }
-                                  : item
-                              )
-                            )
-                          }}
-                          onBlur={() => {
-                            if (oh.amount === "" || (typeof oh.amount === "number" && oh.amount < 0)) {
-                              setCompleteOverheadItems((prev) =>
-                                prev.map((item, i) =>
-                                  i === idx ? { ...item, amount: 0 } : item
-                                )
-                              )
-                            }
-                          }}
-                          className="rounded-lg h-8 text-xs font-mono"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span>Proyeksi HPP per Unit:</span>
-              <span className="font-mono font-black text-lg text-primary">
-                <CurrencyText value={completeHppPerUnit} />
-              </span>
-            </div>
-
-            <DialogFooter className="pt-2 gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={() => setIsCompleteOpen(false)} className="rounded-xl">
-                Batal
-              </Button>
-              <Button type="submit" disabled={submitting} className="rounded-xl bg-primary text-primary-foreground">
-                {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                Selesaikan
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* CANCEL / VOID DIALOG */}
-      <Dialog open={isCancelOpen} onOpenChange={setIsCancelOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-2xl p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold">
-              {batch?.status === "COMPLETED" ? "Void Produksi Batch Ini?" : "Batalkan Batch Produksi?"}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              {batch?.status === "COMPLETED"
-                ? "Membatalkan batch ini akan membatalkan batch barang jadi dan mengembalikan stok bahan baku ke gudang."
-                : "Bahan baku yang telah dialokasikan akan dikembalikan ke stok gudang."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleCancelSubmit} className="space-y-4 py-2">
-            {cancelError && (
-              <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
-                {cancelError}
-              </div>
-            )}
-
-            <div className="grid gap-2">
-              <Label className="text-xs font-semibold">Alasan Pembatalan / Void</Label>
-              <Input
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Alasan pembatalan..."
-                className="rounded-xl h-10 text-sm"
-                required
-              />
-            </div>
-
-            <DialogFooter className="pt-2 gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsCancelOpen(false)} className="rounded-xl">
-                Kembali
-              </Button>
-              <Button type="submit" variant="destructive" disabled={submitting} className="rounded-xl">
-                {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                {batch?.status === "COMPLETED" ? "Void Batch" : "Batalkan"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {actions.dialogs}
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import "./hero-visual.css"
+import './hero-visual.css';
 
-const VIEWS = ["cashier", "kitchen"] as const
+const VIEWS = ['cashier', 'kitchen'] as const;
 
 export function HeroVisual() {
   return (
@@ -18,11 +18,11 @@ export function HeroVisual() {
           alt=""
           width={1280}
           height={854}
-          fetchPriority={index === 0 ? "high" : "auto"}
+          fetchPriority={index === 0 ? 'high' : 'auto'}
           decoding="async"
           className={`hero-slide-${view} pointer-events-none col-start-1 row-start-1 block h-auto w-full rounded-2xl sm:rounded-3xl`}
         />
       ))}
     </div>
-  )
+  );
 }

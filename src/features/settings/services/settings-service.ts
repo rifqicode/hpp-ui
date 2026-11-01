@@ -3,6 +3,7 @@ import { useAuthStore } from '../../../store/use-auth-store';
 import { readPermissionCache, writePermissionCache } from '../../../lib/permission-cache';
 import type {
   StoreInfo,
+  KitchenSettings,
   StaffMember,
   InviteStaffInput,
   TelegramIntegrationState,
@@ -71,6 +72,19 @@ function normalizeRole(r: RawRole): Role {
 }
 
 export const settingsService = {
+  getKitchenSettings: async (): Promise<KitchenSettings> => {
+    const res = await apiClient.get<KitchenSettings>('/store/settings/kitchen');
+    return res.data;
+  },
+
+  updateKitchenSettings: async (data: KitchenSettings): Promise<KitchenSettings> => {
+    try {
+      const res = await apiClient.put<KitchenSettings>('/store/settings/kitchen', data);
+      return res.data;
+    } catch (error) {
+      throw toError(error, 'Gagal menyimpan pengaturan dapur.');
+    }
+  },
   uploadQrisImage: async (file: File): Promise<string> => {
     const contentType = file.type || 'image/png';
     let presigned;
@@ -146,7 +160,7 @@ export const settingsService = {
   getStaffList: async (_storeId?: string): Promise<StaffMember[]> => {
     const res = await apiClient.get<StaffMember[]>('/staff');
     const list = res.data || [];
-    return list.map((item) => ({
+    return list.map(item => ({
       ...item,
       userId: item.userId || item.user_id || item.id,
       joinedAt: item.joinedAt || item.joined_at || '',
@@ -201,8 +215,13 @@ export const settingsService = {
     await apiClient.post('/integrations/telegram/disconnect');
   },
 
-  updateTelegramPreferences: async (prefs: Partial<TelegramIntegrationState>): Promise<TelegramIntegrationState> => {
-    const res = await apiClient.put<TelegramIntegrationState>('/integrations/telegram/preferences', prefs);
+  updateTelegramPreferences: async (
+    prefs: Partial<TelegramIntegrationState>,
+  ): Promise<TelegramIntegrationState> => {
+    const res = await apiClient.put<TelegramIntegrationState>(
+      '/integrations/telegram/preferences',
+      prefs,
+    );
     return res.data;
   },
 
@@ -276,13 +295,19 @@ export const settingsService = {
     return res.data;
   },
 
-  updatePreferences: async (data: Partial<SystemPreferences>, _storeId?: string): Promise<SystemPreferences> => {
+  updatePreferences: async (
+    data: Partial<SystemPreferences>,
+    _storeId?: string,
+  ): Promise<SystemPreferences> => {
     const res = await apiClient.put<SystemPreferences>('/store/preferences', data);
     return res.data;
   },
 
   // Permissions & Roles
-  getStorePermissions: async (storeId?: string, force = false): Promise<{ permissions: string[]; role: string }> => {
+  getStorePermissions: async (
+    storeId?: string,
+    force = false,
+  ): Promise<{ permissions: string[]; role: string }> => {
     const targetId = storeId || useAuthStore.getState().activeStoreId;
     const userId = useAuthStore.getState().user?.id;
     const isCurrentStore = () => {
@@ -317,7 +342,7 @@ export const settingsService = {
     const activeStoreId = useAuthStore.getState().activeStoreId;
     return res.data
       .map(normalizeRole)
-      .filter((r) => !r.storeId || !activeStoreId || r.storeId === activeStoreId);
+      .filter(r => !r.storeId || !activeStoreId || r.storeId === activeStoreId);
   },
 
   getRoleById: async (roleId: string, _storeId?: string): Promise<Role | null> => {
@@ -328,7 +353,7 @@ export const settingsService = {
     } catch {
       // Fallback: search in getRolesList
       const list = await settingsService.getRolesList();
-      return list.find((r) => r.id === roleId) || null;
+      return list.find(r => r.id === roleId) || null;
     }
   },
 

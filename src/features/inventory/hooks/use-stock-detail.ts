@@ -27,7 +27,7 @@ export function useStockDetail(id?: string) {
     let ignore = false;
     stockService
       .getStockDetail(id)
-      .then((data) => {
+      .then(data => {
         if (!ignore) {
           setDetail(data);
           setLoading(false);

@@ -28,7 +28,6 @@ interface PromotionListFiltersProps {
   view: 'table' | 'grid';
   onViewChange: (view: 'table' | 'grid') => void;
   filteredCount: number;
-  totalCount: number;
   hasFilters: boolean;
   onResetFilters: () => void;
   isLoading: boolean;
@@ -48,7 +47,6 @@ export function PromotionListFilters({
   view,
   onViewChange,
   filteredCount,
-  totalCount,
   hasFilters,
   onResetFilters,
   isLoading,
@@ -56,21 +54,24 @@ export function PromotionListFilters({
   isError,
 }: PromotionListFiltersProps) {
   const [showFilters, setShowFilters] = useState(false);
+  const selectClass =
+    'h-11 w-full min-w-0 cursor-pointer rounded-lg border border-input bg-background px-3 text-base focus-visible:outline-2 focus-visible:outline-ring xl:h-10 xl:text-sm';
 
   return (
-    <section aria-label="Filter promosi" className="space-y-3">
-      <div className="grid grid-cols-2 items-center gap-2 md:flex md:flex-wrap">
-        <div className="relative col-span-2 w-full min-w-0 md:w-auto md:flex-1">
+    <section aria-label="Filter promosi" className="space-y-4">
+      <div className="grid grid-cols-2 items-center gap-2 xl:flex xl:flex-wrap">
+        <div className="relative col-span-2 min-w-0 xl:min-w-48 xl:flex-1">
           <Search
             className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
+            type="search"
             aria-label="Cari promosi"
-            placeholder="Cari nama, kode, atau deskripsi promosi..."
+            placeholder="Cari nama promo…"
             value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="h-9 rounded-lg pl-9 pr-9"
+            onChange={event => onSearchChange(event.target.value)}
+            className="h-11 rounded-lg pl-9 pr-11 xl:h-10 [&::-webkit-search-cancel-button]:appearance-none"
           />
           {search && (
             <Button
@@ -78,7 +79,7 @@ export function PromotionListFilters({
               variant="ghost"
               size="icon"
               aria-label="Hapus pencarian"
-              className="absolute right-0 top-0 size-9"
+              className="absolute right-0 top-0 size-11 xl:size-10"
               onClick={() => onSearchChange('')}
             >
               <X className="size-4" aria-hidden="true" />
@@ -89,7 +90,7 @@ export function PromotionListFilters({
         <Button
           type="button"
           variant="outline"
-          className="h-9 rounded-lg w-full md:hidden"
+          className="h-11 w-full xl:hidden"
           aria-expanded={showFilters}
           aria-controls="promotion-filter-options"
           onClick={() => setShowFilters(!showFilters)}
@@ -101,15 +102,15 @@ export function PromotionListFilters({
         <div
           id="promotion-filter-options"
           className={cn(
-            'order-last col-span-2 w-full grid-cols-2 gap-2 md:order-none md:grid md:w-auto md:max-w-md',
-            showFilters ? 'grid' : 'hidden'
+            'order-last col-span-2 grid-cols-1 gap-2 min-[380px]:grid-cols-2 xl:order-none xl:grid xl:w-[23rem]',
+            showFilters ? 'grid' : 'hidden',
           )}
         >
           <select
             aria-label="Status promosi"
-            className="h-9 w-full min-w-0 rounded-lg border border-input bg-background px-2.5 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-card"
+            className={selectClass}
             value={status}
-            onChange={(e) => onStatusChange(e.target.value as PromotionStatusFilter)}
+            onChange={event => onStatusChange(event.target.value as PromotionStatusFilter)}
           >
             <option value="all">Semua status</option>
             <option value="active">Aktif</option>
@@ -117,18 +118,17 @@ export function PromotionListFilters({
             <option value="scheduled">Terjadwal</option>
             <option value="ended">Berakhir</option>
           </select>
-
           <select
             aria-label="Model promosi"
-            className="h-9 w-full min-w-0 rounded-lg border border-input bg-background px-2.5 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-card"
+            className={selectClass}
             value={type}
-            onChange={(e) => onTypeChange(e.target.value as PromotionTypeFilter)}
+            onChange={event => onTypeChange(event.target.value as PromotionTypeFilter)}
           >
-            <option value="all">Semua model</option>
-            <option value="DIRECT_DISCOUNT">Potongan Harga (Diskon)</option>
-            <option value="BUY_X_GET_Y">Beli X Gratis Y (Bonus)</option>
-            <option value="BUNDLE">Paket Kombo Hemat</option>
-            <option value="SPECIAL_PRICE">Tebus Murah</option>
+            <option value="all">Semua jenis promo</option>
+            <option value="DIRECT_DISCOUNT">Potongan harga</option>
+            <option value="BUY_X_GET_Y">Beli X gratis Y</option>
+            <option value="BUNDLE">Paket hemat</option>
+            <option value="SPECIAL_PRICE">Tebus murah</option>
           </select>
         </div>
 
@@ -137,10 +137,10 @@ export function PromotionListFilters({
             <Button
               type="button"
               variant="outline"
-              className="h-9 rounded-lg w-full min-w-0 md:w-auto"
+              className="h-11 w-full min-w-0 xl:h-10 xl:w-auto"
               aria-label={`Urutkan: ${PROMO_SORTS[sort]}`}
             >
-              <ArrowUpDown className="size-4" aria-hidden="true" />
+              <ArrowUpDown className="size-4 shrink-0" aria-hidden="true" />
               <span className="truncate">{PROMO_SORTS[sort]}</span>
             </Button>
           </DropdownMenuTrigger>
@@ -148,6 +148,7 @@ export function PromotionListFilters({
             {Object.entries(PROMO_SORTS).map(([value, label]) => (
               <DropdownMenuItem
                 key={value}
+                className="min-h-11"
                 onClick={() => onSortChange(value as PromotionSort)}
               >
                 {label}
@@ -159,28 +160,34 @@ export function PromotionListFilters({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+        <div
+          className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
+          aria-live="polite"
+        >
           <span>
             {isLoading
-              ? 'Memuat promosi...'
+              ? 'Memuat promosi…'
               : isError
-              ? 'Data belum tersedia'
-              : `${filteredCount} promosi${hasFilters ? ` dari ${totalCount}` : ''}`}
+                ? 'Data belum tersedia'
+                : `${filteredCount.toLocaleString('id-ID')} promosi${hasFilters ? ' ditemukan' : ''}`}
           </span>
           {hasFilters && (
             <Button
               type="button"
               variant="ghost"
-              className="h-8 text-xs text-primary dark:text-indigo-300"
+              className="h-11 px-2 text-sm sm:h-10"
               onClick={onResetFilters}
             >
               Reset filter
             </Button>
           )}
-          {isFetching && !isLoading && <span>Memperbarui promosi...</span>}
+          {isFetching && !isLoading && <span className="text-xs">Memperbarui…</span>}
         </div>
-
-        <div role="group" aria-label="Tampilan promosi" className="hidden items-center gap-1 md:flex">
+        <div
+          role="group"
+          aria-label="Tampilan promosi"
+          className="hidden items-center gap-1 xl:flex"
+        >
           {[
             { value: 'table' as const, label: 'Tampilan tabel', icon: List },
             { value: 'grid' as const, label: 'Tampilan kartu', icon: LayoutGrid },
@@ -190,12 +197,12 @@ export function PromotionListFilters({
               type="button"
               size="icon"
               variant={view === value ? 'secondary' : 'ghost'}
-              className="size-9"
+              className="size-10"
               aria-label={label}
               aria-pressed={view === value}
               onClick={() => onViewChange(value)}
             >
-              <Icon className="size-4" />
+              <Icon className="size-4" aria-hidden="true" />
             </Button>
           ))}
         </div>

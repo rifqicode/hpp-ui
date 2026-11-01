@@ -1,347 +1,380 @@
-import * as React from "react"
-import { useQueryClient } from "@tanstack/react-query"
-import { useAuthStore } from "@/store/use-auth-store"
-import { settingsService } from "@/features/settings/services/settings-service"
-import type { StoreInfo, StaffMember, Role, Permission, InviteStaffInput } from "@/features/settings/types"
+import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/store/use-auth-store';
+import { settingsService } from '@/features/settings/services/settings-service';
+import type {
+  StoreInfo,
+  StaffMember,
+  Role,
+  Permission,
+  InviteStaffInput,
+} from '@/features/settings/types';
 
-type Resource = "stores" | "staff" | "roles" | "permissions"
+type Resource = 'stores' | 'staff' | 'roles' | 'permissions';
 
 // Data required by each tab (profile is always loaded)
 const TAB_RESOURCES: Record<string, Resource[]> = {
   profile: [],
-  staff: ["staff", "roles"],
-  roles: ["roles", "permissions"],
-  stores: ["stores"],
-}
+  staff: ['staff', 'roles'],
+  roles: ['roles', 'permissions'],
+  stores: ['stores'],
+};
 
-export function useStoreSettings(activeTab: string = "profile") {
-  const queryClient = useQueryClient()
-  const setActiveStoreId = useAuthStore((state) => state.setActiveStoreId)
+export function useStoreSettings(activeTab: string = 'profile') {
+  const queryClient = useQueryClient();
+  const setActiveStoreId = useAuthStore(state => state.setActiveStoreId);
 
-  const [loading, setLoading] = React.useState<boolean>(true)
-  const [store, setStore] = React.useState<StoreInfo | null>(null)
-  const [storesList, setStoresList] = React.useState<StoreInfo[]>([])
-  const [staffList, setStaffList] = React.useState<StaffMember[]>([])
-  const [rolesList, setRolesList] = React.useState<Role[]>([])
-  const [permissionsCatalog, setPermissionsCatalog] = React.useState<Permission[]>([])
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [store, setStore] = React.useState<StoreInfo | null>(null);
+  const [storesList, setStoresList] = React.useState<StoreInfo[]>([]);
+  const [staffList, setStaffList] = React.useState<StaffMember[]>([]);
+  const [rolesList, setRolesList] = React.useState<Role[]>([]);
+  const [permissionsCatalog, setPermissionsCatalog] = React.useState<Permission[]>([]);
 
   // Store Profile Form State
   const [formData, setFormData] = React.useState<{
-    name: string
-    category: string
-    location: string
-    phone: string
-    description: string
+    name: string;
+    category: string;
+    location: string;
+    phone: string;
+    description: string;
   }>({
-    name: "",
-    category: "Bakery & Pastry",
-    location: "",
-    phone: "",
-    description: "",
-  })
-  const [isSavingProfile, setIsSavingProfile] = React.useState<boolean>(false)
-  const [profileSuccessMsg, setProfileSuccessMsg] = React.useState<string>("")
-  const [profileErrorMsg, setProfileErrorMsg] = React.useState<string>("")
+    name: '',
+    category: 'Bakery & Pastry',
+    location: '',
+    phone: '',
+    description: '',
+  });
+  const [isSavingProfile, setIsSavingProfile] = React.useState<boolean>(false);
+  const [profileSuccessMsg, setProfileSuccessMsg] = React.useState<string>('');
+  const [profileErrorMsg, setProfileErrorMsg] = React.useState<string>('');
 
   // Invite Staff Modal State
-  const [isInviteOpen, setIsInviteOpen] = React.useState<boolean>(false)
+  const [isInviteOpen, setIsInviteOpen] = React.useState<boolean>(false);
   const [inviteData, setInviteData] = React.useState<InviteStaffInput>({
-    name: "",
-    username: "",
-    password: "",
-    role_id: "",
-  })
-  const [isInviting, setIsInviting] = React.useState<boolean>(false)
-  const [inviteError, setInviteError] = React.useState<string>("")
-  const [staffMessage, setStaffMessage] = React.useState("")
-  const [resettingStaff, setResettingStaff] = React.useState<StaffMember | null>(null)
-  const [staffPassword, setStaffPassword] = React.useState("")
-  const [resetPasswordError, setResetPasswordError] = React.useState("")
-  const [isResettingPassword, setIsResettingPassword] = React.useState(false)
+    name: '',
+    username: '',
+    password: '',
+    role_id: '',
+  });
+  const [isInviting, setIsInviting] = React.useState<boolean>(false);
+  const [inviteError, setInviteError] = React.useState<string>('');
+  const [staffMessage, setStaffMessage] = React.useState('');
+  const [resettingStaff, setResettingStaff] = React.useState<StaffMember | null>(null);
+  const [staffPassword, setStaffPassword] = React.useState('');
+  const [resetPasswordError, setResetPasswordError] = React.useState('');
+  const [isResettingPassword, setIsResettingPassword] = React.useState(false);
 
   const closeInvite = () => {
-    if (isInviting) return
-    setIsInviteOpen(false)
-    setInviteData({ name: "", username: "", password: "", role_id: "" })
-    setInviteError("")
-  }
+    if (isInviting) return;
+    setIsInviteOpen(false);
+    setInviteData({ name: '', username: '', password: '', role_id: '' });
+    setInviteError('');
+  };
 
   const openPasswordReset = (staff: StaffMember) => {
-    setResettingStaff(staff)
-    setStaffPassword("")
-    setResetPasswordError("")
-  }
+    setResettingStaff(staff);
+    setStaffPassword('');
+    setResetPasswordError('');
+  };
 
   const closePasswordReset = () => {
-    if (isResettingPassword) return
-    setResettingStaff(null)
-    setStaffPassword("")
-    setResetPasswordError("")
-  }
+    if (isResettingPassword) return;
+    setResettingStaff(null);
+    setStaffPassword('');
+    setResetPasswordError('');
+  };
 
   const handleResetStaffPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!resettingStaff || isResettingPassword) return
-    if (Array.from(staffPassword).length < 8 || new TextEncoder().encode(staffPassword).length > 72) {
-      setResetPasswordError("Kata sandi minimal 8 karakter dan maksimal 72 byte.")
-      return
+    e.preventDefault();
+    if (!resettingStaff || isResettingPassword) return;
+    if (
+      Array.from(staffPassword).length < 8 ||
+      new TextEncoder().encode(staffPassword).length > 72
+    ) {
+      setResetPasswordError('Kata sandi minimal 8 karakter dan maksimal 72 byte.');
+      return;
     }
-    setIsResettingPassword(true)
-    setResetPasswordError("")
-    setStaffMessage("")
+    setIsResettingPassword(true);
+    setResetPasswordError('');
+    setStaffMessage('');
     try {
-      await settingsService.resetStaffPassword(resettingStaff.userId || resettingStaff.user_id || resettingStaff.id, staffPassword)
-      setStaffMessage(`Kata sandi ${resettingStaff.name} berhasil direset. Bagikan kata sandi baru kepada staf.`)
-      setResettingStaff(null)
-      setStaffPassword("")
+      await settingsService.resetStaffPassword(
+        resettingStaff.userId || resettingStaff.user_id || resettingStaff.id,
+        staffPassword,
+      );
+      setStaffMessage(
+        `Kata sandi ${resettingStaff.name} berhasil direset. Bagikan kata sandi baru kepada staf.`,
+      );
+      setResettingStaff(null);
+      setStaffPassword('');
     } catch (err) {
-      setResetPasswordError(err instanceof Error ? err.message : "Gagal mereset kata sandi staf.")
+      setResetPasswordError(err instanceof Error ? err.message : 'Gagal mereset kata sandi staf.');
     } finally {
-      setIsResettingPassword(false)
+      setIsResettingPassword(false);
     }
-  }
+  };
 
   // Revoke Staff Modal State
-  const [revokingStaff, setRevokingStaff] = React.useState<StaffMember | null>(null)
-  const [isRevoking, setIsRevoking] = React.useState<boolean>(false)
+  const [revokingStaff, setRevokingStaff] = React.useState<StaffMember | null>(null);
+  const [isRevoking, setIsRevoking] = React.useState<boolean>(false);
 
   // Create New Store Modal State
-  const [isNewStoreOpen, setIsNewStoreOpen] = React.useState<boolean>(false)
+  const [isNewStoreOpen, setIsNewStoreOpen] = React.useState<boolean>(false);
   const [newStoreData, setNewStoreData] = React.useState<{
-    name: string
-    category: string
-    location: string
-    phone: string
-    description: string
+    name: string;
+    category: string;
+    location: string;
+    phone: string;
+    description: string;
   }>({
-    name: "",
-    category: "Bakery & Pastry",
-    location: "",
-    phone: "",
-    description: "",
-  })
-  const [isCreatingStore, setIsCreatingStore] = React.useState<boolean>(false)
-  const [createStoreError, setCreateStoreError] = React.useState<string>("")
+    name: '',
+    category: 'Bakery & Pastry',
+    location: '',
+    phone: '',
+    description: '',
+  });
+  const [isCreatingStore, setIsCreatingStore] = React.useState<boolean>(false);
+  const [createStoreError, setCreateStoreError] = React.useState<string>('');
 
-  const [selectedRoleDetail, setSelectedRoleDetail] = React.useState<Role | null>(null)
+  const [selectedRoleDetail, setSelectedRoleDetail] = React.useState<Role | null>(null);
 
   // Load store profile only (always needed)
   const loadProfile = React.useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const currentStore = await settingsService.getStoreProfile()
-      setStore(currentStore)
+      const currentStore = await settingsService.getStoreProfile();
+      setStore(currentStore);
       setFormData({
-        name: currentStore.name || "",
-        category: currentStore.category || "Bakery & Pastry",
-        location: currentStore.location || "",
-        phone: currentStore.phone || "",
-        description: currentStore.description || "",
-      })
+        name: currentStore.name || '',
+        category: currentStore.category || 'Bakery & Pastry',
+        location: currentStore.location || '',
+        phone: currentStore.phone || '',
+        description: currentStore.description || '',
+      });
     } catch (err) {
-      console.error("Failed to load store settings:", err)
+      console.error('Failed to load store settings:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
 
-  const profileRequestedRef = React.useRef(false)
+  const profileRequestedRef = React.useRef(false);
   React.useEffect(() => {
-    if (profileRequestedRef.current) return
-    profileRequestedRef.current = true
-    loadProfile()
-  }, [loadProfile])
+    if (profileRequestedRef.current) return;
+    profileRequestedRef.current = true;
+    loadProfile();
+  }, [loadProfile]);
 
   // Lazy per-tab resources
-  const [loadedResources, setLoadedResources] = React.useState<string[]>([])
-  const requestedRef = React.useRef<Set<string>>(new Set())
-  const [cacheVersion, setCacheVersion] = React.useState(0)
-  const storeId = store?.id
+  const [loadedResources, setLoadedResources] = React.useState<string[]>([]);
+  const requestedRef = React.useRef<Set<string>>(new Set());
+  const [cacheVersion, setCacheVersion] = React.useState(0);
+  const storeId = store?.id;
 
-  const neededResources = TAB_RESOURCES[activeTab] ?? []
-  const tabLoading = neededResources.some((r) => !loadedResources.includes(r))
+  const neededResources = TAB_RESOURCES[activeTab] ?? [];
+  const tabLoading = neededResources.some(r => !loadedResources.includes(r));
 
   React.useEffect(() => {
-    if (!storeId) return
+    if (!storeId) return;
     const fetchers: Record<Resource, () => Promise<void>> = {
       stores: async () => setStoresList(await settingsService.getStoresList()),
       staff: async () => setStaffList(await settingsService.getStaffList()),
       roles: async () => setRolesList(await settingsService.getRolesList(storeId)),
-      permissions: async () => setPermissionsCatalog(await settingsService.getPermissionsCatalog(storeId)),
-    }
+      permissions: async () =>
+        setPermissionsCatalog(await settingsService.getPermissionsCatalog(storeId)),
+    };
     for (const res of TAB_RESOURCES[activeTab] ?? []) {
-      if (requestedRef.current.has(res)) continue
-      requestedRef.current.add(res)
+      if (requestedRef.current.has(res)) continue;
+      requestedRef.current.add(res);
       fetchers[res]()
-        .catch((err) => {
-          console.error(`Failed to load ${res}:`, err)
-          requestedRef.current.delete(res)
+        .catch(err => {
+          console.error(`Failed to load ${res}:`, err);
+          requestedRef.current.delete(res);
         })
-        .finally(() => setLoadedResources((prev) => (prev.includes(res) ? prev : [...prev, res])))
+        .finally(() => setLoadedResources(prev => (prev.includes(res) ? prev : [...prev, res])));
     }
-  }, [activeTab, storeId, cacheVersion])
+  }, [activeTab, storeId, cacheVersion]);
 
   // Save Store Profile
   const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!formData.name.trim()) {
-      setProfileErrorMsg("Nama toko wajib diisi.")
-      return
+      setProfileErrorMsg('Nama toko wajib diisi.');
+      return;
     }
 
-    setIsSavingProfile(true)
-    setProfileSuccessMsg("")
-    setProfileErrorMsg("")
+    setIsSavingProfile(true);
+    setProfileSuccessMsg('');
+    setProfileErrorMsg('');
     try {
-      const updated = await settingsService.updateStoreProfile(formData)
-      setStore(updated)
-      setProfileSuccessMsg("Informasi profil toko berhasil diperbarui!")
-      const updatedList = await settingsService.getStoresList()
-      setStoresList(updatedList)
+      const updated = await settingsService.updateStoreProfile(formData);
+      setStore(updated);
+      setProfileSuccessMsg('Informasi profil toko berhasil diperbarui!');
+      const updatedList = await settingsService.getStoresList();
+      setStoresList(updatedList);
       window.dispatchEvent(
-        new CustomEvent("guidance-task-success", { detail: { feature: "store_profile" } })
-      )
+        new CustomEvent('guidance-task-success', { detail: { feature: 'store_profile' } }),
+      );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memperbarui profil toko."
-      setProfileErrorMsg(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal memperbarui profil toko.';
+      setProfileErrorMsg(msg);
     } finally {
-      setIsSavingProfile(false)
+      setIsSavingProfile(false);
     }
-  }
+  };
 
   // Invite Staff
   const handleInviteSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (isInviting) return
+    e.preventDefault();
+    if (isInviting) return;
     if (!inviteData.username.trim() || !inviteData.name.trim() || !inviteData.password) {
-      setInviteError("Nama, username, dan kata sandi staf wajib diisi.")
-      return
+      setInviteError('Nama, username, dan kata sandi staf wajib diisi.');
+      return;
     }
     if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(inviteData.username.trim().toLowerCase())) {
-      setInviteError("Username harus 3–32 karakter: huruf, angka, titik, garis bawah, atau tanda hubung.")
-      return
+      setInviteError(
+        'Username harus 3–32 karakter: huruf, angka, titik, garis bawah, atau tanda hubung.',
+      );
+      return;
     }
-    if (Array.from(inviteData.password).length < 8 || new TextEncoder().encode(inviteData.password).length > 72) {
-      setInviteError("Kata sandi minimal 8 karakter dan maksimal 72 byte.")
-      return
+    if (
+      Array.from(inviteData.password).length < 8 ||
+      new TextEncoder().encode(inviteData.password).length > 72
+    ) {
+      setInviteError('Kata sandi minimal 8 karakter dan maksimal 72 byte.');
+      return;
     }
     if (!store?.staff_login_code) {
-      setInviteError("Kode login toko belum tersedia. Muat ulang halaman atau hubungi pengelola aplikasi.")
-      return
+      setInviteError(
+        'Kode login toko belum tersedia. Muat ulang halaman atau hubungi pengelola aplikasi.',
+      );
+      return;
     }
     if (!inviteData.role_id) {
-      setInviteError("Pilih peran / hak akses untuk staf.")
-      return
+      setInviteError('Pilih peran / hak akses untuk staf.');
+      return;
     }
 
-    setIsInviting(true)
-    setInviteError("")
-    setStaffMessage("")
+    setIsInviting(true);
+    setInviteError('');
+    setStaffMessage('');
     try {
-      const created = await settingsService.inviteStaff({ ...inviteData, name: inviteData.name.trim(), username: inviteData.username.trim().toLowerCase() })
-      setStaffMessage(`Akun ${created.username || `${inviteData.username.trim().toLowerCase()}@${store.staff_login_code}`} sudah aktif. Bagikan username dan kata sandi kepada staf.`)
-      setIsInviteOpen(false)
-      setInviteData({ name: "", username: "", password: "", role_id: "" })
-      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] }).catch(() => undefined)
+      const created = await settingsService.inviteStaff({
+        ...inviteData,
+        name: inviteData.name.trim(),
+        username: inviteData.username.trim().toLowerCase(),
+      });
+      setStaffMessage(
+        `Akun ${created.username || `${inviteData.username.trim().toLowerCase()}@${store.staff_login_code}`} sudah aktif. Bagikan username dan kata sandi kepada staf.`,
+      );
+      setIsInviteOpen(false);
+      setInviteData({ name: '', username: '', password: '', role_id: '' });
+      await queryClient
+        .invalidateQueries({ queryKey: ['subscription-usage'] })
+        .catch(() => undefined);
       try {
-        setStaffList(await settingsService.getStaffList())
+        setStaffList(await settingsService.getStaffList());
       } catch {
-        setStaffMessage((message) => `${message} Daftar anggota belum berhasil dimuat ulang. Muat ulang halaman untuk melihat akun baru.`)
+        setStaffMessage(
+          message =>
+            `${message} Daftar anggota belum berhasil dimuat ulang. Muat ulang halaman untuk melihat akun baru.`,
+        );
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menambahkan staf."
-      setInviteError(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menambahkan staf.';
+      setInviteError(msg);
     } finally {
-      setIsInviting(false)
+      setIsInviting(false);
     }
-  }
+  };
 
   // Confirm Revoke Staff
   const handleConfirmRevoke = async () => {
-    if (!revokingStaff) return
-    setIsRevoking(true)
+    if (!revokingStaff) return;
+    setIsRevoking(true);
     try {
-      await settingsService.revokeStaff(revokingStaff.userId || revokingStaff.id)
-      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] })
-      setRevokingStaff(null)
-      const updated = await settingsService.getStaffList()
-      setStaffList(updated)
+      await settingsService.revokeStaff(revokingStaff.userId || revokingStaff.id);
+      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
+      setRevokingStaff(null);
+      const updated = await settingsService.getStaffList();
+      setStaffList(updated);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal mencabut akses staf."
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal mencabut akses staf.';
+      alert(msg);
     } finally {
-      setIsRevoking(false)
+      setIsRevoking(false);
     }
-  }
+  };
 
   // Create Branch Store
   const handleCreateStore = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!newStoreData.name.trim()) {
-      setCreateStoreError("Nama cabang/toko wajib diisi.")
-      return
+      setCreateStoreError('Nama cabang/toko wajib diisi.');
+      return;
     }
 
-    setIsCreatingStore(true)
-    setCreateStoreError("")
+    setIsCreatingStore(true);
+    setCreateStoreError('');
     try {
-      await settingsService.createStore(newStoreData)
-      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] })
-      setIsNewStoreOpen(false)
+      await settingsService.createStore(newStoreData);
+      await queryClient.invalidateQueries({ queryKey: ['subscription-usage'] });
+      setIsNewStoreOpen(false);
       setNewStoreData({
-        name: "",
-        category: "Bakery & Pastry",
-        location: "",
-        phone: "",
-        description: "",
-      })
-      const updated = await settingsService.getStoresList()
-      setStoresList(updated)
+        name: '',
+        category: 'Bakery & Pastry',
+        location: '',
+        phone: '',
+        description: '',
+      });
+      const updated = await settingsService.getStoresList();
+      setStoresList(updated);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal membuat cabang toko."
-      setCreateStoreError(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal membuat cabang toko.';
+      setCreateStoreError(msg);
     } finally {
-      setIsCreatingStore(false)
+      setIsCreatingStore(false);
     }
-  }
+  };
 
   // Switch Active Store
   const handleSwitchStore = async (storeId: string) => {
     try {
-      const switched = await settingsService.switchStore(storeId)
+      const switched = await settingsService.switchStore(storeId);
       // Invalidate lazy-loaded tab data; effect refetches only the active tab's data
-      requestedRef.current.clear()
-      setCacheVersion((v) => v + 1)
-      setLoadedResources([])
-      setStoresList([])
-      setStaffList([])
-      setRolesList([])
-      setPermissionsCatalog([])
-      setStore(switched)
-      setActiveStoreId(switched.id)
+      requestedRef.current.clear();
+      setCacheVersion(v => v + 1);
+      setLoadedResources([]);
+      setStoresList([]);
+      setStaffList([]);
+      setRolesList([]);
+      setPermissionsCatalog([]);
+      setStore(switched);
+      setActiveStoreId(switched.id);
       setFormData({
         name: switched.name,
         category: switched.category,
         location: switched.location,
-        phone: switched.phone || "",
-        description: switched.description || "",
-      })
-      window.location.reload()
+        phone: switched.phone || '',
+        description: switched.description || '',
+      });
+      window.location.reload();
     } catch (err) {
-      console.error("Failed to switch store:", err)
+      console.error('Failed to switch store:', err);
     }
-  }
+  };
 
   // Refresh roles list explicitly (e.g. after editing/creating a role)
   const refreshRoles = React.useCallback(async () => {
-    if (!storeId) return
+    if (!storeId) return;
     try {
-      const updated = await settingsService.getRolesList(storeId)
-      setRolesList(updated)
+      const updated = await settingsService.getRolesList(storeId);
+      setRolesList(updated);
     } catch (err) {
-      console.error("Failed to refresh roles:", err)
+      console.error('Failed to refresh roles:', err);
     }
-  }, [storeId])
+  }, [storeId]);
 
   return {
     loading,
@@ -403,5 +436,5 @@ export function useStoreSettings(activeTab: string = "profile") {
 
     // Switch Store
     handleSwitchStore,
-  }
+  };
 }

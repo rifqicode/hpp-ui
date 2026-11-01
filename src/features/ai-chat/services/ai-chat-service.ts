@@ -43,7 +43,7 @@ export const aiChatService = {
     const res = await apiClient.post<AIChatResponse>(
       `/store/ai/conversations/${conversationId}/messages`,
       payload,
-      { skipLoading: true }
+      { skipLoading: true },
     );
     return res.data;
   },
@@ -52,7 +52,7 @@ export const aiChatService = {
     const res = await apiClient.post<AIChatResponse>(
       `/store/ai/conversations/${conversationId}/retry`,
       undefined,
-      { skipLoading: true }
+      { skipLoading: true },
     );
     return res.data;
   },

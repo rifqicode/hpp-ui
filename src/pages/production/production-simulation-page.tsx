@@ -1,5 +1,5 @@
-import * as React from "react"
-import { Link } from "react-router-dom"
+import * as React from 'react';
+import { Link } from 'react-router-dom';
 import {
   Factory,
   Boxes,
@@ -12,18 +12,12 @@ import {
   Package,
   Layers,
   Info,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -31,120 +25,120 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from '@/components/ui/table';
 
-import { recipeService } from "@/features/recipes/services/recipe-service"
-import type { ProductVariantView as Product } from "@/features/recipes/types"
-import { productionService } from "@/features/production/services/production-service"
-import type { ProductionPreviewResponse } from "@/features/production/types"
-import { CurrencyText } from "@/components/ui/currency-text"
+import { recipeService } from '@/features/recipes/services/recipe-service';
+import type { ProductVariantView as Product } from '@/features/recipes/types';
+import { productionService } from '@/features/production/services/production-service';
+import type { ProductionPreviewResponse } from '@/features/production/types';
+import { CurrencyText } from '@/components/ui/currency-text';
 
 function formatNumber(val: number): string {
-  return new Intl.NumberFormat("id-ID", {
+  return new Intl.NumberFormat('id-ID', {
     maximumFractionDigits: 2,
-  }).format(val || 0)
+  }).format(val || 0);
 }
 
 export default function ProductionSimulationPage() {
-  const [products, setProducts] = React.useState<Product[]>([])
-  const [selectedProductId, setSelectedProductId] = React.useState<string>("")
-  const [plannedQuantity, setPlannedQuantity] = React.useState<number>(100)
-  const [isLoadingProducts, setIsLoadingProducts] = React.useState<boolean>(true)
-  const [isPreviewLoading, setIsPreviewLoading] = React.useState<boolean>(false)
-  const [previewData, setPreviewData] = React.useState<ProductionPreviewResponse | null>(null)
-  const [previewError, setPreviewError] = React.useState<string | null>(null)
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [selectedProductId, setSelectedProductId] = React.useState<string>('');
+  const [plannedQuantity, setPlannedQuantity] = React.useState<number>(100);
+  const [isLoadingProducts, setIsLoadingProducts] = React.useState<boolean>(true);
+  const [isPreviewLoading, setIsPreviewLoading] = React.useState<boolean>(false);
+  const [previewData, setPreviewData] = React.useState<ProductionPreviewResponse | null>(null);
+  const [previewError, setPreviewError] = React.useState<string | null>(null);
 
   // Fetch products
   React.useEffect(() => {
-    let ignore = false
-    setIsLoadingProducts(true)
+    let ignore = false;
+    setIsLoadingProducts(true);
     recipeService
       .getVariants()
-      .then((data) => {
+      .then(data => {
         if (!ignore) {
-          setProducts(data)
+          setProducts(data);
           if (data.length > 0) {
-            setSelectedProductId(data[0].id)
+            setSelectedProductId(data[0].id);
           }
         }
       })
-      .catch((err) => {
-        console.error("Failed to fetch products for production simulation:", err)
+      .catch(err => {
+        console.error('Failed to fetch products for production simulation:', err);
       })
       .finally(() => {
-        if (!ignore) setIsLoadingProducts(false)
-      })
+        if (!ignore) setIsLoadingProducts(false);
+      });
 
     return () => {
-      ignore = true
-    }
-  }, [])
+      ignore = true;
+    };
+  }, []);
 
   // Selected product
   const selectedProduct = React.useMemo(() => {
-    return products.find((p) => p.id === selectedProductId) || null
-  }, [products, selectedProductId])
+    return products.find(p => p.id === selectedProductId) || null;
+  }, [products, selectedProductId]);
 
   // When selected product changes, optionally update default batch size
   const handleSelectProduct = (productId: string) => {
-    setSelectedProductId(productId)
-  }
+    setSelectedProductId(productId);
+  };
 
   // Load preview calculation from productionService
   const loadPreview = React.useCallback(async () => {
-    if (!selectedProductId || plannedQuantity <= 0) return
-    setIsPreviewLoading(true)
-    setPreviewError(null)
+    if (!selectedProductId || plannedQuantity <= 0) return;
+    setIsPreviewLoading(true);
+    setPreviewError(null);
     try {
       const data = await productionService.previewProduction({
         variantId: selectedProductId,
         quantity: plannedQuantity,
-      })
-      setPreviewData(data)
+      });
+      setPreviewData(data);
     } catch (err: any) {
-      console.error("Failed to load production preview:", err)
+      console.error('Failed to load production preview:', err);
       setPreviewError(
-        err?.response?.data?.message || err?.message || "Gagal memuat kalkulasi preview produksi."
-      )
-      setPreviewData(null)
+        err?.response?.data?.message || err?.message || 'Gagal memuat kalkulasi preview produksi.',
+      );
+      setPreviewData(null);
     } finally {
-      setIsPreviewLoading(false)
+      setIsPreviewLoading(false);
     }
-  }, [selectedProductId, plannedQuantity])
+  }, [selectedProductId, plannedQuantity]);
 
   // Trigger preview when product or plannedQuantity changes (with debounce)
   React.useEffect(() => {
     const timer = setTimeout(() => {
       if (selectedProductId && plannedQuantity > 0) {
-        loadPreview()
+        loadPreview();
       }
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [selectedProductId, plannedQuantity, loadPreview])
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [selectedProductId, plannedQuantity, loadPreview]);
 
   // Deficit items (bahan yang kurang)
   const deficitItems = React.useMemo(() => {
-    if (!previewData || !previewData.items) return []
+    if (!previewData || !previewData.items) return [];
     return previewData.items
-      .filter((item) => !item.is_sufficient || item.available_qty < item.required_qty)
-      .map((item) => {
-        const deficit = Math.max(0, item.required_qty - item.available_qty)
+      .filter(item => !item.is_sufficient || item.available_qty < item.required_qty)
+      .map(item => {
+        const deficit = Math.max(0, item.required_qty - item.available_qty);
         // Unit cost derived from estimated_cost / required_qty
-        const unitPrice = item.required_qty > 0 ? item.estimated_cost / item.required_qty : 0
-        const estimatedRestockCost = deficit * unitPrice
+        const unitPrice = item.required_qty > 0 ? item.estimated_cost / item.required_qty : 0;
+        const estimatedRestockCost = deficit * unitPrice;
         return {
           ...item,
           deficit,
           unitPrice,
           estimatedRestockCost,
-        }
-      })
-  }, [previewData])
+        };
+      });
+  }, [previewData]);
 
   // Total shopping budget for deficit items
   const totalRestockBudget = React.useMemo(() => {
-    return deficitItems.reduce((acc, curr) => acc + curr.estimatedRestockCost, 0)
-  }, [deficitItems])
+    return deficitItems.reduce((acc, curr) => acc + curr.estimatedRestockCost, 0);
+  }, [deficitItems]);
 
   return (
     <div className="flex flex-col gap-6 pb-20 animate-in fade-in duration-300">
@@ -157,12 +151,16 @@ export default function ProductionSimulationPage() {
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             Simulasi Produksi & Estimasi Restock
           </h1>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold">
+          <Badge
+            variant="outline"
+            className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold"
+          >
             Real Inventory Sync
           </Badge>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-          Simulasikan rencana batch produksi dengan stok riil gudang. Cek kecukupan bahan baku dan hitung total anggaran belanja yang dibutuhkan bila stok defisit.
+          Simulasikan rencana batch produksi dengan stok riil gudang. Cek kecukupan bahan baku dan
+          hitung total anggaran belanja yang dibutuhkan bila stok defisit.
         </p>
       </div>
 
@@ -174,7 +172,8 @@ export default function ProductionSimulationPage() {
             1. Pilih Produk & Tentukan Jumlah Produksi
           </CardTitle>
           <CardDescription className="text-xs">
-            Pilih produk yang sudah memiliki bahan baku terdaftar, lalu atur target jumlah unit yang akan diproduksi.
+            Pilih produk yang sudah memiliki bahan baku terdaftar, lalu atur target jumlah unit yang
+            akan diproduksi.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -196,22 +195,22 @@ export default function ProductionSimulationPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-1">
-              {products.map((p) => {
-                const isSelected = p.id === selectedProductId
-                const hasRecipe = (p.ingredients && p.ingredients.length > 0)
+              {products.map(p => {
+                const isSelected = p.id === selectedProductId;
+                const hasRecipe = p.ingredients && p.ingredients.length > 0;
                 return (
                   <div
                     key={p.id}
                     onClick={() => handleSelectProduct(p.id)}
                     className={`
                       p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between gap-2.5 text-left
-                      ${isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm" : "border-border hover:border-primary/40 hover:bg-muted/30"}
+                      ${isSelected ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm' : 'border-border hover:border-primary/40 hover:bg-muted/30'}
                     `}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <Badge variant="outline" className="text-[10px] py-0 px-1.5 font-medium">
-                          {p.category || "Produk"}
+                          {p.category || 'Produk'}
                         </Badge>
                         {hasRecipe ? (
                           <span className="text-[10px] text-emerald-600 font-medium">
@@ -225,18 +224,21 @@ export default function ProductionSimulationPage() {
                       </div>
                       <h4 className="font-bold text-xs text-foreground truncate">{p.name}</h4>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Basis takaran: <strong className="text-foreground">{1} {p.unit}</strong>
+                        Basis takaran:{' '}
+                        <strong className="text-foreground">
+                          {1} {p.unit}
+                        </strong>
                       </p>
                     </div>
 
                     <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
                       <span className="text-muted-foreground">HPP Saat Ini:</span>
                       <span className="font-mono font-bold text-primary">
-                        <CurrencyText value={p.latestHpp || 0} />
+                        <CurrencyText value={p.latestHpp || 0} preset="detail" />
                       </span>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           )}
@@ -246,7 +248,9 @@ export default function ProductionSimulationPage() {
             <div className="pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/20 p-4 rounded-xl">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-foreground">Target Produksi Rencana:</span>
+                  <span className="text-xs font-semibold text-foreground">
+                    Target Produksi Rencana:
+                  </span>
                   <Badge variant="secondary" className="font-bold text-xs text-primary">
                     {selectedProduct.name}
                   </Badge>
@@ -263,11 +267,11 @@ export default function ProductionSimulationPage() {
                     min="1"
                     step="1"
                     value={plannedQuantity}
-                    onChange={(e) => setPlannedQuantity(Math.max(1, Number(e.target.value) || 1))}
+                    onChange={e => setPlannedQuantity(Math.max(1, Number(e.target.value) || 1))}
                     className="w-28 rounded-xl h-10 text-center font-mono font-bold text-base text-primary"
                   />
                   <span className="text-xs font-semibold text-muted-foreground">
-                    {selectedProduct.unit || "unit"}
+                    {selectedProduct.unit || 'unit'}
                   </span>
                 </div>
 
@@ -279,7 +283,7 @@ export default function ProductionSimulationPage() {
                   disabled={isPreviewLoading}
                   className="rounded-xl h-10 px-3 text-xs font-semibold flex items-center gap-1.5"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isPreviewLoading ? "animate-spin" : ""}`} />
+                  <RefreshCw className={`h-3.5 w-3.5 ${isPreviewLoading ? 'animate-spin' : ''}`} />
                   <span>Hitung Ulang</span>
                 </Button>
               </div>
@@ -305,7 +309,9 @@ export default function ProductionSimulationPage() {
             <Card className="rounded-2xl border-border shadow-xs">
               <CardContent className="p-4 flex flex-col justify-between h-full gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">Status Kesiapan Gudang</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Status Kesiapan Gudang
+                  </span>
                   {previewData.is_all_sufficient ? (
                     <div className="h-6 w-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                       <CheckCircle2 className="h-4 w-4" />
@@ -332,7 +338,7 @@ export default function ProductionSimulationPage() {
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1 block">
                     {previewData.is_all_sufficient
-                      ? "Seluruh stok bahan baku mencukupi di gudang"
+                      ? 'Seluruh stok bahan baku mencukupi di gudang'
                       : `${deficitItems.length} bahan baku mengalami kekurangan stok`}
                   </span>
                 </div>
@@ -343,7 +349,9 @@ export default function ProductionSimulationPage() {
             <Card className="rounded-2xl border-border shadow-xs">
               <CardContent className="p-4 flex flex-col justify-between h-full gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">Total Biaya Bahan Baku</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Total Biaya Bahan Baku
+                  </span>
                   <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                     <Boxes className="h-3.5 w-3.5" />
                   </div>
@@ -353,7 +361,7 @@ export default function ProductionSimulationPage() {
                     <CurrencyText value={previewData.estimated_bom} />
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1 block">
-                    Untuk {plannedQuantity} {selectedProduct?.unit || "unit"} rencana
+                    Untuk {plannedQuantity} {selectedProduct?.unit || 'unit'} rencana
                   </span>
                 </div>
               </CardContent>
@@ -363,7 +371,9 @@ export default function ProductionSimulationPage() {
             <Card className="rounded-2xl border-border shadow-xs">
               <CardContent className="p-4 flex flex-col justify-between h-full gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">Total Biaya Batch</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Total Biaya Batch
+                  </span>
                   <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                     <Layers className="h-3.5 w-3.5" />
                   </div>
@@ -373,7 +383,8 @@ export default function ProductionSimulationPage() {
                     <CurrencyText value={previewData.estimated_total} />
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1 block">
-                    Overhead: <CurrencyText value={previewData.estimated_overhead} />
+                    Overhead:{' '}
+                    <CurrencyText value={previewData.estimated_overhead} preset="detail" />
                   </span>
                 </div>
               </CardContent>
@@ -390,10 +401,15 @@ export default function ProductionSimulationPage() {
                 </div>
                 <div>
                   <div className="font-mono font-black text-xl text-primary">
-                    <CurrencyText value={previewData.estimated_hpp} />
+                    <CurrencyText
+                      value={previewData.estimated_hpp}
+                      preset="detail"
+                      showFullValueAction
+                      rawUnit={`/ ${selectedProduct?.unit || 'unit'}`}
+                    />
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1 block">
-                    per 1 {selectedProduct?.unit || "unit"}
+                    per 1 {selectedProduct?.unit || 'unit'}
                   </span>
                 </div>
               </CardContent>
@@ -410,12 +426,16 @@ export default function ProductionSimulationPage() {
                     Rincian Belanja Restock (Bahan Baku Kurang)
                   </CardTitle>
                   <CardDescription className="text-xs mt-0.5">
-                    Daftar bahan yang defisit untuk memenuhi batch rencana, estimasi harga beli satuan, dan total anggaran belanja yang perlu disiapkan.
+                    Daftar bahan yang defisit untuk memenuhi batch rencana, estimasi harga beli
+                    satuan, dan total anggaran belanja yang perlu disiapkan.
                   </CardDescription>
                 </div>
 
                 {deficitItems.length > 0 && (
-                  <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20 text-xs font-bold py-1 px-3 self-start sm:self-auto">
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-500/10 text-amber-700 border-amber-500/20 text-xs font-bold py-1 px-3 self-start sm:self-auto"
+                  >
                     {deficitItems.length} Bahan Perlu Restock
                   </Badge>
                 )}
@@ -432,9 +452,15 @@ export default function ProductionSimulationPage() {
                     Semua bahan baku mencukupi di gudang!
                   </h4>
                   <p className="text-xs text-muted-foreground max-w-md">
-                    Stok bahan riil di gudang Anda cukup untuk memproduksi {plannedQuantity} {selectedProduct?.unit || "unit"} {previewData.product_name}. Anda dapat langsung memulai batch produksi di menu Batches.
+                    Stok bahan riil di gudang Anda cukup untuk memproduksi {plannedQuantity}{' '}
+                    {selectedProduct?.unit || 'unit'} {previewData.product_name}. Anda dapat
+                    langsung memulai batch produksi di menu Batches.
                   </p>
-                  <Button asChild size="sm" className="mt-2 rounded-xl text-xs font-semibold gap-1.5">
+                  <Button
+                    asChild
+                    size="sm"
+                    className="mt-2 rounded-xl text-xs font-semibold gap-1.5"
+                  >
                     <Link to="/production/batches/new">
                       <span>Buat Batch Produksi Sekarang</span>
                       <ArrowRight className="h-3.5 w-3.5" />
@@ -448,16 +474,28 @@ export default function ProductionSimulationPage() {
                       <TableHeader className="bg-muted/40">
                         <TableRow>
                           <TableHead className="text-xs font-semibold">Nama Bahan Baku</TableHead>
-                          <TableHead className="text-xs font-semibold text-right">Kebutuhan</TableHead>
-                          <TableHead className="text-xs font-semibold text-right">Stok Gudang</TableHead>
-                          <TableHead className="text-xs font-semibold text-right">Kekurangan (Defisit)</TableHead>
-                          <TableHead className="text-xs font-semibold text-center">Satuan</TableHead>
-                          <TableHead className="text-xs font-semibold text-right">Est. Harga Satuan</TableHead>
-                          <TableHead className="text-xs font-semibold text-right">Est. Biaya Restock</TableHead>
+                          <TableHead className="text-xs font-semibold text-right">
+                            Kebutuhan
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold text-right">
+                            Stok Gudang
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold text-right">
+                            Kekurangan (Defisit)
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold text-center">
+                            Satuan
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold text-right">
+                            Est. Harga Satuan
+                          </TableHead>
+                          <TableHead className="text-xs font-semibold text-right">
+                            Est. Biaya Restock
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {deficitItems.map((item) => (
+                        {deficitItems.map(item => (
                           <TableRow key={item.stock_id} className="hover:bg-muted/20">
                             <TableCell className="font-semibold text-xs text-foreground">
                               {item.stock_name}
@@ -475,10 +513,10 @@ export default function ProductionSimulationPage() {
                               {item.unit}
                             </TableCell>
                             <TableCell className="font-mono text-xs text-right text-muted-foreground">
-                              <CurrencyText value={item.unitPrice} />
+                              <CurrencyText value={item.unitPrice} preset="unitRate" />
                             </TableCell>
                             <TableCell className="font-mono text-xs text-right font-bold text-foreground">
-                              <CurrencyText value={item.estimatedRestockCost} />
+                              <CurrencyText value={item.estimatedRestockCost} preset="detail" />
                             </TableCell>
                           </TableRow>
                         ))}
@@ -491,12 +529,15 @@ export default function ProductionSimulationPage() {
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Info className="h-4 w-4 text-primary shrink-0" />
                       <span>
-                        Estimasi biaya restock dihitung berdasarkan harga rata-rata bahan baku saat ini.
+                        Estimasi biaya restock dihitung berdasarkan harga rata-rata bahan baku saat
+                        ini.
                       </span>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 sm:gap-4 text-sm">
-                      <span className="font-semibold text-foreground">Total Anggaran Belanja Restock:</span>
+                      <span className="font-semibold text-foreground">
+                        Total Anggaran Belanja Restock:
+                      </span>
                       <span className="font-mono font-black text-lg text-primary">
                         <CurrencyText value={totalRestockBudget} />
                       </span>
@@ -515,7 +556,8 @@ export default function ProductionSimulationPage() {
                 Daftar Lengkap Kebutuhan Bahan Produksi ({previewData.items?.length || 0} Bahan)
               </CardTitle>
               <CardDescription className="text-xs">
-                Perbandingan komprehensif antara jumlah kebutuhan produksi dan ketersediaan stok aktual di gudang untuk setiap komponen bahan baku.
+                Perbandingan komprehensif antara jumlah kebutuhan produksi dan ketersediaan stok
+                aktual di gudang untuk setiap komponen bahan baku.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -525,15 +567,23 @@ export default function ProductionSimulationPage() {
                     <TableRow>
                       <TableHead className="text-xs font-semibold">Nama Bahan Baku</TableHead>
                       <TableHead className="text-xs font-semibold text-center">Satuan</TableHead>
-                      <TableHead className="text-xs font-semibold text-right">Kebutuhan Produksi</TableHead>
-                      <TableHead className="text-xs font-semibold text-right">Stok Gudang</TableHead>
-                      <TableHead className="text-xs font-semibold text-center">Status Gudang</TableHead>
-                      <TableHead className="text-xs font-semibold text-right">Estimasi Biaya</TableHead>
+                      <TableHead className="text-xs font-semibold text-right">
+                        Kebutuhan Produksi
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-right">
+                        Stok Gudang
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-center">
+                        Status Gudang
+                      </TableHead>
+                      <TableHead className="text-xs font-semibold text-right">
+                        Estimasi Biaya
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {previewData.items?.map((item) => {
-                      const isSuff = item.is_sufficient && item.available_qty >= item.required_qty
+                    {previewData.items?.map(item => {
+                      const isSuff = item.is_sufficient && item.available_qty >= item.required_qty;
                       return (
                         <TableRow key={item.stock_id} className="hover:bg-muted/20">
                           <TableCell className="font-semibold text-xs text-foreground">
@@ -550,20 +600,26 @@ export default function ProductionSimulationPage() {
                           </TableCell>
                           <TableCell className="text-xs text-center">
                             {isSuff ? (
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-semibold">
+                              <Badge
+                                variant="outline"
+                                className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-semibold"
+                              >
                                 Cukup
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold">
+                              <Badge
+                                variant="outline"
+                                className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-semibold"
+                              >
                                 Kurang
                               </Badge>
                             )}
                           </TableCell>
                           <TableCell className="font-mono text-xs text-right font-semibold text-foreground">
-                            <CurrencyText value={item.estimated_cost} />
+                            <CurrencyText value={item.estimated_cost} preset="detail" />
                           </TableCell>
                         </TableRow>
-                      )
+                      );
                     })}
                   </TableBody>
                 </Table>
@@ -573,5 +629,5 @@ export default function ProductionSimulationPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

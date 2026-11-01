@@ -13,23 +13,24 @@ export const salesKeys = {
   customers: {
     all: ['customers'] as const,
     lists: () => ['customers', 'list'] as const,
-    list: (query?: { search?: string; page?: number; per_page?: number }) => ['customers', 'list', query] as const,
+    list: (query?: { search?: string; page?: number; per_page?: number }) =>
+      ['customers', 'list', query] as const,
     summary: () => ['customers', 'summary'] as const,
     detail: (id: string) => ['customers', 'detail', id] as const,
   },
 };
 
 export function useSalesTransactionsQuery(query?: SaleQuery, options?: { enabled?: boolean }) {
-  const storeId=useAuthStore(s=>s.activeStoreId);
+  const storeId = useAuthStore(s => s.activeStoreId);
   return useQuery({
-    queryKey: [salesKeys.list(query),storeId],
+    queryKey: [salesKeys.list(query), storeId],
     queryFn: () => salesService.getPaginatedSales(query),
     enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useSalesListQuery(query?: SaleQuery, options?: { enabled?: boolean }) {
-  const storeId=useAuthStore(s=>s.activeStoreId);
+  const storeId = useAuthStore(s => s.activeStoreId);
   return useQuery({
     queryKey: [...salesKeys.lists(), storeId, 'raw', query],
     queryFn: () => salesService.getSales(query),
@@ -38,36 +39,39 @@ export function useSalesListQuery(query?: SaleQuery, options?: { enabled?: boole
 }
 
 export function useSalesSummaryQuery(query?: SaleQuery, options?: { enabled?: boolean }) {
-  const storeId=useAuthStore(s=>s.activeStoreId);
+  const storeId = useAuthStore(s => s.activeStoreId);
   return useQuery({
-    queryKey: [salesKeys.summary(query),storeId],
+    queryKey: [salesKeys.summary(query), storeId],
     queryFn: () => salesService.getSummary(query),
     enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
-export function useCustomersQuery(query?: { search?: string; page?: number; per_page?: number }, options?: { enabled?: boolean }) {
-  const storeId=useAuthStore(s=>s.activeStoreId);
+export function useCustomersQuery(
+  query?: { search?: string; page?: number; per_page?: number },
+  options?: { enabled?: boolean },
+) {
+  const storeId = useAuthStore(s => s.activeStoreId);
   return useQuery({
-    queryKey: [salesKeys.customers.list(query),storeId],
+    queryKey: [salesKeys.customers.list(query), storeId],
     queryFn: () => customerService.getCustomers(query),
     enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useCustomerSummaryQuery(options?: { enabled?: boolean }) {
-  const storeId=useAuthStore(s=>s.activeStoreId);
+  const storeId = useAuthStore(s => s.activeStoreId);
   return useQuery({
-    queryKey: [salesKeys.customers.summary(),storeId],
+    queryKey: [salesKeys.customers.summary(), storeId],
     queryFn: () => customerService.getCustomerSummary(),
     enabled: Boolean(storeId) && (options?.enabled ?? true),
   });
 }
 
 export function useCustomerDetailQuery(id?: string, options?: { enabled?: boolean }) {
-  const storeId=useAuthStore(s=>s.activeStoreId);
+  const storeId = useAuthStore(s => s.activeStoreId);
   return useQuery({
-    queryKey: [salesKeys.customers.detail(id || ''),storeId],
+    queryKey: [salesKeys.customers.detail(id || ''), storeId],
     queryFn: () => customerService.getCustomerById(id!),
     enabled: Boolean(storeId) && Boolean(id) && (options?.enabled ?? true),
   });

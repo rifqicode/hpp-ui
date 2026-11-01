@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom"
+import { Link } from 'react-router-dom';
 import {
   Users,
   Plus,
@@ -16,19 +16,16 @@ import {
   Loader2,
   ArrowUpDown,
   X,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { QuotaBadge } from "@/features/subscription"
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { CurrencyText } from "@/components/ui/currency-text"
+import { Button } from '@/components/ui/button';
+import { QuotaBadge } from '@/features/subscription';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { CurrencyText } from '@/components/ui/currency-text';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +33,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -44,10 +41,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { TablePagination } from "@/components/ui/table-pagination"
+} from '@/components/ui/dialog';
+import { TablePagination } from '@/components/ui/table-pagination';
 
-import { useSuppliers } from "@/features/suppliers/hooks"
+import { useSuppliers } from '@/features/suppliers/hooks';
 
 export default function SupplierListPage() {
   const {
@@ -80,24 +77,25 @@ export default function SupplierListPage() {
     handleOpenDelete,
     handleSubmitForm,
     handleConfirmDelete,
-  } = useSuppliers()
+  } = useSuppliers();
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-start gap-2.5">
+            <div className="shrink-0 p-2 rounded-xl bg-primary/10 text-primary">
               <Users className="h-6 w-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">
                 Supplier & Vendor
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Kelola data vendor, kontak supplier bahan baku, dan riwayat pesanan toko Anda
               </p>
+              <QuotaBadge resource="suppliers" label="Kuota supplier" />
             </div>
           </div>
         </div>
@@ -110,7 +108,7 @@ export default function SupplierListPage() {
             disabled={loading}
             className="flex items-center gap-1.5 shadow-2xs hover:bg-muted"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button
@@ -120,7 +118,6 @@ export default function SupplierListPage() {
             <Plus className="h-4 w-4" />
             Tambah Supplier
           </Button>
-          <QuotaBadge resource="suppliers" label="Kuota" className="ml-auto sm:ml-0" />
         </div>
       </div>
 
@@ -194,7 +191,8 @@ export default function SupplierListPage() {
           </div>
           <h2 className="text-lg font-semibold text-foreground">Belum Ada Data Supplier</h2>
           <p className="text-sm text-muted-foreground max-w-md mt-1 mb-6">
-            Mulai daftarkan kontak vendor atau supplier bahan baku untuk mempermudah pencatatan Purchase Order dan alur stok.
+            Mulai daftarkan kontak vendor atau supplier bahan baku untuk mempermudah pencatatan
+            Purchase Order dan alur stok.
           </p>
           <Button
             onClick={handleOpenCreate}
@@ -213,12 +211,12 @@ export default function SupplierListPage() {
               <Input
                 placeholder="Cari nama vendor, kontak, atau alamat..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-9 bg-background/50 h-9 text-xs"
               />
               {search && (
                 <button
-                  onClick={() => setSearch("")}
+                  onClick={() => setSearch('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -229,7 +227,11 @@ export default function SupplierListPage() {
             <div className="flex flex-wrap items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs rounded-lg shadow-2xs">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs rounded-lg shadow-2xs"
+                  >
                     <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                     Urutkan
                   </Button>
@@ -240,25 +242,25 @@ export default function SupplierListPage() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => setSortBy("name-asc")}
+                    onClick={() => setSortBy('name-asc')}
                     className="cursor-pointer"
                   >
                     Nama (A - Z)
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => setSortBy("name-desc")}
+                    onClick={() => setSortBy('name-desc')}
                     className="cursor-pointer"
                   >
                     Nama (Z - A)
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => setSortBy("spent-desc")}
+                    onClick={() => setSortBy('spent-desc')}
                     className="cursor-pointer"
                   >
                     Total Pembelian Terbanyak
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => setSortBy("orders-desc")}
+                    onClick={() => setSortBy('orders-desc')}
                     className="cursor-pointer"
                   >
                     Frekuensi Order Tertinggi
@@ -271,9 +273,9 @@ export default function SupplierListPage() {
                 size="sm"
                 className="h-8 px-2.5 text-xs rounded-lg shadow-2xs"
                 onClick={() => {
-                  setSearch("")
-                  setSortBy("name-asc")
-                  loadSuppliers()
+                  setSearch('');
+                  setSortBy('name-asc');
+                  loadSuppliers();
                 }}
                 title="Reset Filter"
               >
@@ -302,16 +304,15 @@ export default function SupplierListPage() {
                       <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
                         <p className="font-medium text-foreground">Tidak ada supplier yang cocok</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {search ? "Coba sesuaikan kata kunci pencarian Anda." : "Belum ada data supplier."}
+                          {search
+                            ? 'Coba sesuaikan kata kunci pencarian Anda.'
+                            : 'Belum ada data supplier.'}
                         </p>
                       </td>
                     </tr>
                   ) : (
-                    filteredSuppliers.map((supplier) => (
-                      <tr
-                        key={supplier.id}
-                        className="hover:bg-muted/30 transition-colors group"
-                      >
+                    filteredSuppliers.map(supplier => (
+                      <tr key={supplier.id} className="hover:bg-muted/30 transition-colors group">
                         <td className="px-5 py-3.5 font-medium text-foreground">
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs uppercase shrink-0">
@@ -338,7 +339,9 @@ export default function SupplierListPage() {
                               <span className="text-foreground font-mono">{supplier.contact}</span>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground/60 italic">Tidak ada kontak</span>
+                            <span className="text-muted-foreground/60 italic">
+                              Tidak ada kontak
+                            </span>
                           )}
                         </td>
 
@@ -351,15 +354,21 @@ export default function SupplierListPage() {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground/60 italic">Tidak ada alamat</span>
+                            <span className="text-muted-foreground/60 italic">
+                              Tidak ada alamat
+                            </span>
                           )}
                         </td>
 
                         <td className="px-5 py-3.5">
                           <div className="flex flex-wrap gap-1 max-w-[200px]">
                             {supplier.suppliedMaterials && supplier.suppliedMaterials.length > 0 ? (
-                              supplier.suppliedMaterials.map((mat) => (
-                                <Badge key={mat} variant="secondary" className="text-[10px] font-normal py-0">
+                              supplier.suppliedMaterials.map(mat => (
+                                <Badge
+                                  key={mat}
+                                  variant="secondary"
+                                  className="text-[10px] font-normal py-0"
+                                >
                                   {mat}
                                 </Badge>
                               ))
@@ -376,13 +385,20 @@ export default function SupplierListPage() {
                         <td className="px-5 py-3.5 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              >
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="text-xs">
                               <DropdownMenuItem asChild className="cursor-pointer">
-                                <Link to={`/inventory/suppliers/${supplier.id}`} className="flex items-center">
+                                <Link
+                                  to={`/inventory/suppliers/${supplier.id}`}
+                                  className="flex items-center"
+                                >
                                   <Eye className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
                                   Lihat Detail
                                 </Link>
@@ -396,7 +412,10 @@ export default function SupplierListPage() {
                                 Edit Informasi
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild className="cursor-pointer">
-                                <Link to={`/inventory/purchase/new?supplierId=${supplier.id}`} className="flex items-center">
+                                <Link
+                                  to={`/inventory/purchase/new?supplierId=${supplier.id}`}
+                                  className="flex items-center"
+                                >
                                   <Plus className="mr-2 h-3.5 w-3.5 text-emerald-600" />
                                   Catat Pembelian
                                 </Link>
@@ -441,12 +460,12 @@ export default function SupplierListPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
-              {editingSupplier ? "Edit Informasi Supplier" : "Tambah Supplier Baru"}
+              {editingSupplier ? 'Edit Informasi Supplier' : 'Tambah Supplier Baru'}
             </DialogTitle>
             <DialogDescription>
               {editingSupplier
-                ? "Perbarui detail kontak dan alamat vendor ini."
-                : "Masukkan data supplier baru untuk mempermudah pencatatan pembelian stok."}
+                ? 'Perbarui detail kontak dan alamat vendor ini.'
+                : 'Masukkan data supplier baru untuk mempermudah pencatatan pembelian stok.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -464,7 +483,7 @@ export default function SupplierListPage() {
               <Input
                 id="supplier-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Contoh: PT Sumber Pangan Makmur"
                 className="h-9"
                 autoFocus
@@ -478,7 +497,7 @@ export default function SupplierListPage() {
               <Input
                 id="supplier-contact"
                 value={formData.contact}
-                onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                onChange={e => setFormData({ ...formData, contact: e.target.value })}
                 placeholder="Contoh: 0812-3456-7890 / sales@sumberpangan.com"
                 className="h-9"
               />
@@ -491,7 +510,7 @@ export default function SupplierListPage() {
               <Textarea
                 id="supplier-address"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={e => setFormData({ ...formData, address: e.target.value })}
                 placeholder="Contoh: Jl. Industri Raya No. 12, Pergudangan Cikarang"
                 className="min-h-[90px]"
               />
@@ -508,7 +527,7 @@ export default function SupplierListPage() {
               </Button>
               <Button type="submit" disabled={submitting}>
                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingSupplier ? "Simpan Perubahan" : "Simpan Supplier"}
+                {editingSupplier ? 'Simpan Perubahan' : 'Simpan Supplier'}
               </Button>
             </DialogFooter>
           </form>
@@ -524,7 +543,7 @@ export default function SupplierListPage() {
               Hapus Supplier?
             </DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus supplier{" "}
+              Apakah Anda yakin ingin menghapus supplier{' '}
               <strong className="text-foreground">{deletingSupplier?.name}</strong>? Data riwayat
               pembelian yang sudah ada akan tetap tersimpan untuk keperluan audit.
             </DialogDescription>
@@ -552,5 +571,5 @@ export default function SupplierListPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

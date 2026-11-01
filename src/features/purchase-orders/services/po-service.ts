@@ -8,6 +8,7 @@ import type {
   ApprovePOInput,
   RejectPOInput,
   CompletePurchaseOrderInput,
+  CreatePurchaseInvoiceInput,
   CompletePOPriceItem,
   ReceivePOInput,
   PayPOInput,
@@ -60,6 +61,10 @@ interface RawPurchaseOrder {
   payment_status?: PurchaseOrderPaymentStatus;
   payment_method?: PurchaseOrderPaymentMethod;
   payment_due_date?: string;
+  invoice_number?: string;
+  invoiced_at?: string;
+  invoiced_by_user_id?: string;
+  invoiced_by_name?: string;
   received_at?: string;
   received_by_user_id?: string;
   received_by_name?: string;
@@ -67,6 +72,8 @@ interface RawPurchaseOrder {
   paid_by_user_id?: string;
   paid_by_name?: string;
   cancellation_reason?: string;
+  purchase_reason?: string;
+  required_date?: string;
   notes?: string;
   total_amount: number | string;
   items?: RawPurchaseOrderItem[];
@@ -86,22 +93,30 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
   return {
     id: raw.id,
     poNumber: raw.po_number,
-    category: raw.category || "PURCHASE_ORDER",
+    category: raw.category || 'PURCHASE_ORDER',
     attachmentUrl: raw.attachment_url,
     attachmentName: raw.attachment_name,
-    attachments: raw.attachments?.length ? raw.attachments : raw.attachment_url ? [{ url: raw.attachment_url, name: raw.attachment_name || 'Dokumen PO' }] : [],
+    attachments: raw.attachments?.length
+      ? raw.attachments
+      : raw.attachment_url
+        ? [{ url: raw.attachment_url, name: raw.attachment_name || 'Dokumen PO' }]
+        : [],
     completionAttachments: raw.completion_attachments || [],
     supplierId: raw.supplier_id,
-    supplierName: raw.supplier_name || "-",
+    supplierName: raw.supplier_name || '-',
     createdByUserId: raw.created_by_user_id,
-    createdByName: raw.created_by_name || "-",
+    createdByName: raw.created_by_name || '-',
     orderDate: raw.order_date,
     completedDate: raw.completed_date,
     status: raw.status,
-    receiptStatus: raw.receipt_status || "NOT_RECEIVED",
-    paymentStatus: raw.payment_status || "UNPAID",
+    receiptStatus: raw.receipt_status || 'NOT_RECEIVED',
+    paymentStatus: raw.payment_status || 'UNPAID',
     paymentMethod: raw.payment_method,
     paymentDueDate: raw.payment_due_date,
+    invoiceNumber: raw.invoice_number,
+    invoicedAt: raw.invoiced_at,
+    invoicedByUserId: raw.invoiced_by_user_id,
+    invoicedByName: raw.invoiced_by_name,
     receivedAt: raw.received_at,
     receivedByUserId: raw.received_by_user_id,
     receivedByName: raw.received_by_name,
@@ -109,10 +124,12 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
     paidByUserId: raw.paid_by_user_id,
     paidByName: raw.paid_by_name,
     cancellationReason: raw.cancellation_reason,
-    notes: raw.notes || "",
+    purchaseReason: raw.purchase_reason,
+    requiredDate: raw.required_date,
+    notes: raw.notes || '',
     totalAmount: Number(raw.total_amount) || 0,
     createdAt: raw.created_at,
-    items: (raw.items || []).map((it) => ({
+    items: (raw.items || []).map(it => ({
       id: it.id,
       stockId: it.stock_id,
       stockName: it.stock_name,
@@ -122,10 +139,10 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
       totalPrice: Number(it.total_price) || 0,
       inventoryMethod: it.inventory_method,
     })),
-    logs: (raw.logs || []).map((l) => ({
+    logs: (raw.logs || []).map(l => ({
       id: l.id,
       userId: l.user_id,
-      userName: l.user_name || "-",
+      userName: l.user_name || '-',
       action: l.action,
       notes: l.notes,
       createdAt: l.created_at,
@@ -134,29 +151,39 @@ function mapRawPOToPurchaseOrder(raw: RawPurchaseOrder): PurchaseOrder {
 }
 
 export const purchaseOrderService = {
-  uploadAttachment: async (file: File, onProgress?: (progress: number) => void, purpose: 'request' | 'completion' = 'request'): Promise<POAttachment> => {
+  uploadAttachment: async (
+    file: File,
+    onProgress?: (progress: number) => void,
+    purpose: 'request' | 'completion' = 'request',
+  ): Promise<POAttachment> => {
     const contentType = getAttachmentContentType(file);
-    const endpoint = purpose === 'completion' ? '/purchase-orders/completion-upload-presigned-url' : '/purchase-orders/upload-presigned-url';
+    const endpoint =
+      purpose === 'completion'
+        ? '/purchase-orders/completion-upload-presigned-url'
+        : '/purchase-orders/upload-presigned-url';
     const { data } = await apiClient.post<{ upload_url: string; public_url: string }>(endpoint, {
       filename: file.name,
       content_type: contentType,
       file_size: file.size,
     });
-    if (!data.upload_url || !data.public_url) throw new Error('Gagal mendapatkan URL upload dokumen. Silakan coba lagi.');
+    if (!data.upload_url || !data.public_url)
+      throw new Error('Gagal mendapatkan URL upload dokumen. Silakan coba lagi.');
     await new Promise<void>((resolve, reject) => {
       const request = new XMLHttpRequest();
       request.open('PUT', data.upload_url);
       request.timeout = 120000;
       request.setRequestHeader('Content-Type', contentType);
-      request.upload.onprogress = (event) => {
-        if (event.lengthComputable) onProgress?.(Math.round(event.loaded / event.total * 100));
+      request.upload.onprogress = event => {
+        if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
       };
       request.onload = () => {
         if (request.status >= 200 && request.status < 300) resolve();
         else reject(new Error(`Upload dokumen gagal (HTTP ${request.status}). Silakan coba lagi.`));
       };
-      request.onerror = () => reject(new Error('Upload dokumen gagal. Periksa koneksi lalu coba lagi.'));
-      request.ontimeout = () => reject(new Error('Upload dokumen terlalu lama. Silakan coba lagi.'));
+      request.onerror = () =>
+        reject(new Error('Upload dokumen gagal. Periksa koneksi lalu coba lagi.'));
+      request.ontimeout = () =>
+        reject(new Error('Upload dokumen terlalu lama. Silakan coba lagi.'));
       request.onabort = () => reject(new Error('Upload dokumen dibatalkan.'));
       request.send(file);
     });
@@ -164,13 +191,18 @@ export const purchaseOrderService = {
     return { url: data.public_url, name: file.name };
   },
 
-  getPurchaseOrders: async (params?: PurchaseOrderQueryParams): Promise<PaginatedPurchaseOrders> => {
-    const response = await apiClient.get<RawPaginatedResponse | RawPurchaseOrder[]>('/purchase-orders', {
-      params,
-    });
+  getPurchaseOrders: async (
+    params?: PurchaseOrderQueryParams,
+  ): Promise<PaginatedPurchaseOrders> => {
+    const response = await apiClient.get<RawPaginatedResponse | RawPurchaseOrder[]>(
+      '/purchase-orders',
+      {
+        params,
+      },
+    );
 
     const data = response.data;
-    if (data && "items" in data && Array.isArray(data.items)) {
+    if (data && 'items' in data && Array.isArray(data.items)) {
       return {
         items: data.items.map(mapRawPOToPurchaseOrder),
         total: data.total || 0,
@@ -204,13 +236,19 @@ export const purchaseOrderService = {
     return mapRawPOToPurchaseOrder(response.data);
   },
 
-  updatePurchaseOrder: async (id: string, input: UpdatePurchaseOrderInput): Promise<PurchaseOrder> => {
+  updatePurchaseOrder: async (
+    id: string,
+    input: UpdatePurchaseOrderInput,
+  ): Promise<PurchaseOrder> => {
     const response = await apiClient.put<RawPurchaseOrder>(`/purchase-orders/${id}`, input);
     return mapRawPOToPurchaseOrder(response.data);
   },
 
   approvePurchaseOrder: async (id: string, input?: ApprovePOInput): Promise<PurchaseOrder> => {
-    const response = await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/approve`, input || {});
+    const response = await apiClient.post<RawPurchaseOrder>(
+      `/purchase-orders/${id}/approve`,
+      input || {},
+    );
     return mapRawPOToPurchaseOrder(response.data);
   },
 
@@ -219,17 +257,31 @@ export const purchaseOrderService = {
     return mapRawPOToPurchaseOrder(response.data);
   },
 
+  createInvoice: async (id: string, input: CreatePurchaseInvoiceInput): Promise<PurchaseOrder> => {
+    const response = await apiClient.post<RawPurchaseOrder>(
+      `/purchase-orders/${id}/invoice`,
+      input,
+    );
+    return mapRawPOToPurchaseOrder(response.data);
+  },
+
   completePurchaseOrder: async (
     id: string,
-    payload: CompletePurchaseOrderInput | CompletePOPriceItem[]
+    payload: CompletePurchaseOrderInput | CompletePOPriceItem[],
   ): Promise<PurchaseOrder> => {
     const body = Array.isArray(payload) ? { prices: payload } : payload;
-    const response = await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/complete`, body);
+    const response = await apiClient.post<RawPurchaseOrder>(
+      `/purchase-orders/${id}/complete`,
+      body,
+    );
     return mapRawPOToPurchaseOrder(response.data);
   },
 
   receivePurchaseOrder: async (id: string, input?: ReceivePOInput): Promise<PurchaseOrder> => {
-    const response = await apiClient.post<RawPurchaseOrder>(`/purchase-orders/${id}/receive`, input || {});
+    const response = await apiClient.post<RawPurchaseOrder>(
+      `/purchase-orders/${id}/receive`,
+      input || {},
+    );
     return mapRawPOToPurchaseOrder(response.data);
   },
 

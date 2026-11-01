@@ -1,12 +1,5 @@
 import * as React from 'react';
-import {
-  Banknote,
-  Building2,
-  Check,
-  Copy,
-  Maximize2,
-  QrCode,
-} from 'lucide-react';
+import { Banknote, Building2, Check, Copy, Maximize2, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -53,8 +46,7 @@ export function ManualPaymentCard({
         id: 'CASH',
         label: 'Bayar di Kasir / Tunai',
         subtitle:
-          paymentConfig.cash_instruction ||
-          'Bayar langsung saat mengambil atau menerima pesanan',
+          paymentConfig.cash_instruction || 'Bayar langsung saat mengambil atau menerima pesanan',
         icon: Banknote,
       });
     }
@@ -97,7 +89,7 @@ export function ManualPaymentCard({
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
       window.setTimeout(() => {
-        setCopiedKey((prev) => (prev === key ? null : prev));
+        setCopiedKey(prev => (prev === key ? null : prev));
       }, 2000);
     } catch {
       // Clipboard fallback ignored
@@ -106,23 +98,21 @@ export function ManualPaymentCard({
 
   const activeMethod = readOnly
     ? selectedMethod
-    : availableMethods.some((m) => m.id === selectedMethod)
-    ? selectedMethod
-    : availableMethods[0]?.id || 'CASH';
+    : availableMethods.some(m => m.id === selectedMethod)
+      ? selectedMethod
+      : availableMethods[0]?.id || 'CASH';
 
   return (
     <div className="space-y-3">
       {!readOnly && (
         <div
           className={`grid gap-2 ${
-            availableMethods.length > 1 && !compact
-              ? 'sm:grid-cols-3'
-              : 'grid-cols-1'
+            availableMethods.length > 1 && !compact ? 'sm:grid-cols-3' : 'grid-cols-1'
           }`}
           role="radiogroup"
           aria-label="Pilih metode pembayaran"
         >
-          {availableMethods.map((method) => {
+          {availableMethods.map(method => {
             const Icon = method.icon;
             const isSelected = activeMethod === method.id;
             return (
@@ -251,7 +241,8 @@ export function ManualPaymentCard({
                 className="max-h-56 w-auto rounded-md border border-border bg-background object-contain p-2"
               />
               <p className="mt-2 text-center text-[11px] text-muted-foreground">
-                Scan menggunakan GoPay, OVO, Dana, ShopeePay, atau Mobile Banking, lalu simpan bukti bayar.
+                Scan menggunakan GoPay, OVO, Dana, ShopeePay, atau Mobile Banking, lalu simpan bukti
+                bayar.
               </p>
             </div>
           ) : (
@@ -273,11 +264,12 @@ export function ManualPaymentCard({
 
           {paymentConfig.bank_accounts.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              Belum ada nomor rekening yang ditampilkan. Silakan hubungi WhatsApp toko untuk nomor rekening pembayaran.
+              Belum ada nomor rekening yang ditampilkan. Silakan hubungi WhatsApp toko untuk nomor
+              rekening pembayaran.
             </p>
           ) : (
             <div className="grid gap-2">
-              {paymentConfig.bank_accounts.map((acc) => (
+              {paymentConfig.bank_accounts.map(acc => (
                 <div
                   key={acc.id}
                   className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3"
@@ -299,9 +291,7 @@ export function ManualPaymentCard({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      handleCopy(`bank-${acc.id}`, acc.account_number)
-                    }
+                    onClick={() => handleCopy(`bank-${acc.id}`, acc.account_number)}
                     className="h-9 gap-1.5 text-xs"
                   >
                     {copiedKey === `bank-${acc.id}` ? (
@@ -324,9 +314,7 @@ export function ManualPaymentCard({
       )}
 
       {paymentConfig.payment_instruction && (
-        <p className="text-[11px] text-muted-foreground">
-          {paymentConfig.payment_instruction}
-        </p>
+        <p className="text-[11px] text-muted-foreground">{paymentConfig.payment_instruction}</p>
       )}
 
       <Dialog open={isQrisZoomOpen} onOpenChange={setIsQrisZoomOpen}>
@@ -347,9 +335,7 @@ export function ManualPaymentCard({
               />
               {totalAmount !== undefined && totalAmount > 0 && (
                 <div className="text-center">
-                  <span className="text-xs text-muted-foreground">
-                    Total Tagihan:{' '}
-                  </span>
+                  <span className="text-xs text-muted-foreground">Total Tagihan: </span>
                   <span className="text-sm font-bold text-foreground">
                     <CurrencyText value={totalAmount} />
                   </span>

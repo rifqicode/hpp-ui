@@ -1,6 +1,6 @@
-import * as React from "react"
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, AlertTriangle, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import * as React from 'react';
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, AlertTriangle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,22 +8,22 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { FormattedNumberInput } from "@/components/ui/formatted-number-input"
-import { Textarea } from "@/components/ui/textarea"
-import { CurrencyText } from "@/components/ui/currency-text"
-import { cn } from "@/lib/utils"
-import { useMovementStock } from "../hooks/use-movement-stock"
-import { StockChangePreview, StockMaterialField } from "./stock-form-fields"
-import { stockNumber } from "./stock-form-utils"
+} from '@/components/ui/dialog';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
+import { Textarea } from '@/components/ui/textarea';
+import { CurrencyText } from '@/components/ui/currency-text';
+import { cn } from '@/lib/utils';
+import { useMovementStock } from '../hooks/use-movement-stock';
+import { StockChangePreview, StockMaterialField } from './stock-form-fields';
+import { stockNumber } from './stock-form-utils';
 
-type MovementType = "ADJUSTMENT_IN" | "ADJUSTMENT_OUT"
+type MovementType = 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT';
 
 interface RecordMovementDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  initialStockId?: string
-  onSuccess?: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialStockId?: string;
+  onSuccess?: () => void;
 }
 
 export function RecordMovementDialog({
@@ -32,69 +32,76 @@ export function RecordMovementDialog({
   initialStockId,
   onSuccess,
 }: RecordMovementDialogProps) {
-  const { stocks, loading, isSubmitting, error: hookError, handleRecordAdjustment } = useMovementStock({
+  const {
+    stocks,
+    loading,
+    isSubmitting,
+    error: hookError,
+    handleRecordAdjustment,
+  } = useMovementStock({
     enabled: open,
-  })
+  });
 
-  const [selectedMaterialId, setSelectedMaterialId] = React.useState("")
-  const [movementType, setMovementType] = React.useState<MovementType>("ADJUSTMENT_IN")
-  const [quantity, setQuantity] = React.useState("")
-  const [totalCost, setTotalCost] = React.useState("")
-  const [reason, setReason] = React.useState("")
-  const [submitError, setSubmitError] = React.useState("")
-  const submissionLock = React.useRef(false)
+  const [selectedMaterialId, setSelectedMaterialId] = React.useState('');
+  const [movementType, setMovementType] = React.useState<MovementType>('ADJUSTMENT_IN');
+  const [quantity, setQuantity] = React.useState('');
+  const [totalCost, setTotalCost] = React.useState('');
+  const [reason, setReason] = React.useState('');
+  const [submitError, setSubmitError] = React.useState('');
+  const submissionLock = React.useRef(false);
 
-  const materialId = initialStockId || selectedMaterialId
-  const material = stocks.find((stock) => stock.id === materialId)
-  const isIncoming = movementType === "ADJUSTMENT_IN"
+  const materialId = initialStockId || selectedMaterialId;
+  const material = stocks.find(stock => stock.id === materialId);
+  const isIncoming = movementType === 'ADJUSTMENT_IN';
 
-  const qty = Number(quantity)
-  const numTotalCost = Number(totalCost)
-  const current = Number(material?.current_stock || 0)
-  const insufficient = !isIncoming && qty > current
+  const qty = Number(quantity);
+  const numTotalCost = Number(totalCost);
+  const current = Number(material?.current_stock || 0);
+  const insufficient = !isIncoming && qty > current;
   const valid =
     Boolean(material) &&
     Number.isFinite(qty) &&
     qty > 0 &&
     !insufficient &&
-    (!isIncoming || (Number.isFinite(numTotalCost) && numTotalCost > 0))
+    (!isIncoming || (Number.isFinite(numTotalCost) && numTotalCost > 0));
 
   function resetAndClose() {
-    setSelectedMaterialId("")
-    setMovementType("ADJUSTMENT_IN")
-    setQuantity("")
-    setTotalCost("")
-    setReason("")
-    setSubmitError("")
-    onOpenChange(false)
+    setSelectedMaterialId('');
+    setMovementType('ADJUSTMENT_IN');
+    setQuantity('');
+    setTotalCost('');
+    setReason('');
+    setSubmitError('');
+    onOpenChange(false);
   }
 
   function handleDialogChange(next: boolean) {
-    if (submissionLock.current) return
+    if (submissionLock.current) return;
     if (!next) {
-      resetAndClose()
+      resetAndClose();
     } else {
-      onOpenChange(true)
+      onOpenChange(true);
     }
   }
 
   async function onSubmit(event: React.FormEvent) {
-    event.preventDefault()
-    if (submissionLock.current) return
+    event.preventDefault();
+    if (submissionLock.current) return;
 
     if (!valid) {
       if (insufficient) {
-        setSubmitError("Jumlah pengurangan melebihi stok yang tersedia.")
+        setSubmitError('Jumlah pengurangan melebihi stok yang tersedia.');
       } else {
-        setSubmitError("Pilih bahan baku dan lengkapi jumlah serta harga yang valid.")
+        setSubmitError('Pilih bahan baku dan lengkapi jumlah serta harga yang valid.');
       }
-      return
+      return;
     }
 
-    submissionLock.current = true
-    setSubmitError("")
+    submissionLock.current = true;
+    setSubmitError('');
 
-    const calculatedPricePerUnit = (isIncoming && qty > 0 && numTotalCost > 0) ? (numTotalCost / qty) : undefined
+    const calculatedPricePerUnit =
+      isIncoming && qty > 0 && numTotalCost > 0 ? numTotalCost / qty : undefined;
 
     try {
       await handleRecordAdjustment({
@@ -103,17 +110,17 @@ export function RecordMovementDialog({
         quantity: qty,
         reason: reason.trim() || undefined,
         price_per_unit: calculatedPricePerUnit,
-      })
-      resetAndClose()
-      onSuccess?.()
+      });
+      resetAndClose();
+      onSuccess?.();
     } catch (error: unknown) {
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Mutasi stok belum berhasil disimpan. Silakan coba lagi."
-      )
+          : 'Mutasi stok belum berhasil disimpan. Silakan coba lagi.',
+      );
     } finally {
-      submissionLock.current = false
+      submissionLock.current = false;
     }
   }
 
@@ -128,7 +135,8 @@ export function RecordMovementDialog({
             <div>
               <DialogTitle>Stock Adjustment</DialogTitle>
               <DialogDescription className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Sesuaikan stok karena selisih hitungan opname fisik, kerusakan, atau kebutuhan koreksi.
+                Sesuaikan stok karena selisih hitungan opname fisik, kerusakan, atau kebutuhan
+                koreksi.
               </DialogDescription>
             </div>
           </div>
@@ -161,20 +169,20 @@ export function RecordMovementDialog({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label
                       className={cn(
-                        "relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all",
-                        movementType === "ADJUSTMENT_IN"
-                          ? "border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 ring-1 ring-emerald-500"
-                          : "border-border hover:bg-muted/40"
+                        'relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all',
+                        movementType === 'ADJUSTMENT_IN'
+                          ? 'border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 ring-1 ring-emerald-500'
+                          : 'border-border hover:bg-muted/40',
                       )}
                     >
                       <input
                         type="radio"
                         name="movement-type"
                         value="ADJUSTMENT_IN"
-                        checked={movementType === "ADJUSTMENT_IN"}
+                        checked={movementType === 'ADJUSTMENT_IN'}
                         onChange={() => {
-                          setMovementType("ADJUSTMENT_IN")
-                          setSubmitError("")
+                          setMovementType('ADJUSTMENT_IN');
+                          setSubmitError('');
                         }}
                         className="sr-only"
                       />
@@ -184,10 +192,10 @@ export function RecordMovementDialog({
                         </span>
                         <span
                           className={cn(
-                            "size-2.5 rounded-full",
-                            movementType === "ADJUSTMENT_IN"
-                              ? "bg-emerald-500 ring-2 ring-emerald-500/30"
-                              : "border border-muted-foreground/30"
+                            'size-2.5 rounded-full',
+                            movementType === 'ADJUSTMENT_IN'
+                              ? 'bg-emerald-500 ring-2 ring-emerald-500/30'
+                              : 'border border-muted-foreground/30',
                           )}
                         />
                       </div>
@@ -201,20 +209,20 @@ export function RecordMovementDialog({
 
                     <label
                       className={cn(
-                        "relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all",
-                        movementType === "ADJUSTMENT_OUT"
-                          ? "border-destructive bg-destructive/10 dark:bg-destructive/15 ring-1 ring-destructive"
-                          : "border-border hover:bg-muted/40"
+                        'relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all',
+                        movementType === 'ADJUSTMENT_OUT'
+                          ? 'border-destructive bg-destructive/10 dark:bg-destructive/15 ring-1 ring-destructive'
+                          : 'border-border hover:bg-muted/40',
                       )}
                     >
                       <input
                         type="radio"
                         name="movement-type"
                         value="ADJUSTMENT_OUT"
-                        checked={movementType === "ADJUSTMENT_OUT"}
+                        checked={movementType === 'ADJUSTMENT_OUT'}
                         onChange={() => {
-                          setMovementType("ADJUSTMENT_OUT")
-                          setSubmitError("")
+                          setMovementType('ADJUSTMENT_OUT');
+                          setSubmitError('');
                         }}
                         className="sr-only"
                       />
@@ -224,10 +232,10 @@ export function RecordMovementDialog({
                         </span>
                         <span
                           className={cn(
-                            "size-2.5 rounded-full",
-                            movementType === "ADJUSTMENT_OUT"
-                              ? "bg-destructive ring-2 ring-destructive/30"
-                              : "border border-muted-foreground/30"
+                            'size-2.5 rounded-full',
+                            movementType === 'ADJUSTMENT_OUT'
+                              ? 'bg-destructive ring-2 ring-destructive/30'
+                              : 'border border-muted-foreground/30',
                           )}
                         />
                       </div>
@@ -247,28 +255,28 @@ export function RecordMovementDialog({
                   stocks={stocks}
                   value={materialId}
                   locked={Boolean(initialStockId)}
-                  onChange={(value) => {
-                    setSelectedMaterialId(value)
-                    setQuantity("")
-                    setTotalCost("")
-                    setSubmitError("")
+                  onChange={value => {
+                    setSelectedMaterialId(value);
+                    setQuantity('');
+                    setTotalCost('');
+                    setSubmitError('');
                   }}
                 />
 
                 {/* Quantity & Total Cost */}
-                <div className={cn("grid gap-4", isIncoming ? "sm:grid-cols-2" : "grid-cols-1")}>
+                <div className={cn('grid gap-4', isIncoming ? 'sm:grid-cols-2' : 'grid-cols-1')}>
                   <div className="min-w-0 space-y-2">
                     <label htmlFor="movement-qty" className="text-sm font-medium text-foreground">
-                      Jumlah yang {isIncoming ? "Ditambahkan" : "Dikurangi"}{" "}
+                      Jumlah yang {isIncoming ? 'Ditambahkan' : 'Dikurangi'}{' '}
                       <span className="text-destructive">*</span>
                     </label>
                     <FormattedNumberInput
                       id="movement-qty"
                       value={quantity}
-                      onChange={(value) => setQuantity(String(value))}
+                      onChange={value => setQuantity(String(value))}
                       allowDecimal
                       maxDecimals={4}
-                      suffix={material?.base_unit || "satuan"}
+                      suffix={material?.base_unit || 'satuan'}
                       placeholder="Contoh: 2,5"
                       required
                       disabled={!material}
@@ -283,13 +291,16 @@ export function RecordMovementDialog({
 
                   {isIncoming && (
                     <div className="min-w-0 space-y-2">
-                      <label htmlFor="movement-total-cost" className="text-sm font-medium text-foreground">
+                      <label
+                        htmlFor="movement-total-cost"
+                        className="text-sm font-medium text-foreground"
+                      >
                         Total Harga Bahan <span className="text-destructive">*</span>
                       </label>
                       <FormattedNumberInput
                         id="movement-total-cost"
                         value={totalCost}
-                        onChange={(value) => setTotalCost(String(value))}
+                        onChange={value => setTotalCost(String(value))}
                         prefix="Rp"
                         allowDecimal
                         maxDecimals={4}
@@ -300,11 +311,13 @@ export function RecordMovementDialog({
                       />
                       {qty > 0 && numTotalCost > 0 ? (
                         <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                          Harga per {material?.base_unit || "satuan"}: <CurrencyText value={numTotalCost / qty} /> (dihitung otomatis)
+                          Harga per {material?.base_unit || 'satuan'}:{' '}
+                          <CurrencyText value={numTotalCost / qty} /> (dihitung otomatis)
                         </p>
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          Sistem otomatis menghitung harga per {material?.base_unit || "satuan"} dari total harga dibagi jumlah.
+                          Sistem otomatis menghitung harga per {material?.base_unit || 'satuan'}{' '}
+                          dari total harga dibagi jumlah.
                         </p>
                       )}
                     </div>
@@ -321,7 +334,8 @@ export function RecordMovementDialog({
                     <div>
                       <p className="font-semibold">Stok tidak mencukupi</p>
                       <p className="mt-0.5 leading-relaxed">
-                        Jumlah pengurangan ({stockNumber(qty)} {material?.base_unit}) melebihi stok yang tercatat saat ini ({stockNumber(current)} {material?.base_unit}).
+                        Jumlah pengurangan ({stockNumber(qty)} {material?.base_unit}) melebihi stok
+                        yang tercatat saat ini ({stockNumber(current)} {material?.base_unit}).
                       </p>
                     </div>
                   </div>
@@ -330,17 +344,17 @@ export function RecordMovementDialog({
                 {/* Catatan / Alasan */}
                 <div className="space-y-2">
                   <label htmlFor="movement-reason" className="text-sm font-medium text-foreground">
-                    Catatan / Alasan Penyesuaian{" "}
+                    Catatan / Alasan Penyesuaian{' '}
                     <span className="font-normal text-muted-foreground">(opsional)</span>
                   </label>
                   <Textarea
                     id="movement-reason"
                     value={reason}
-                    onChange={(event) => setReason(event.target.value)}
+                    onChange={event => setReason(event.target.value)}
                     placeholder={
                       isIncoming
-                        ? "Contoh: selisih hitung stok setelah pengecekan fisik gudang"
-                        : "Contoh: 2 kg tepung rusak karena kemasan bocor atau kedaluwarsa"
+                        ? 'Contoh: selisih hitung stok setelah pengecekan fisik gudang'
+                        : 'Contoh: 2 kg tepung rusak karena kemasan bocor atau kedaluwarsa'
                     }
                     rows={2}
                     className="min-h-20 resize-y rounded-xl"
@@ -379,18 +393,14 @@ export function RecordMovementDialog({
               >
                 Batal
               </Button>
-              <Button
-                type="submit"
-                disabled={!valid || isSubmitting}
-                className="h-11 rounded-xl"
-              >
+              <Button type="submit" disabled={!valid || isSubmitting} className="h-11 rounded-xl">
                 {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
-                {isSubmitting ? "Menyimpan…" : "Simpan Mutasi"}
+                {isSubmitting ? 'Menyimpan…' : 'Simpan Mutasi'}
               </Button>
             </DialogFooter>
           </form>
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { EkatraBrand } from "@/components/brand/ekatra-logo"
-import { Link } from "react-router-dom"
+import { EkatraBrand } from '@/components/brand/ekatra-logo';
+import { Link } from 'react-router-dom';
 import {
   Lock,
   Eye,
@@ -11,20 +11,15 @@ import {
   Loader2,
   Clock,
   ShieldAlert,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { PasswordStrengthIndicator } from "@/components/ui/password-strength-indicator"
-import { useResetPassword } from "@/features/auth/hooks"
-import { APP_NAME } from "@/lib/utils"
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { PasswordStrengthIndicator } from '@/components/ui/password-strength-indicator';
+import { useResetPassword } from '@/features/auth/hooks';
+import { APP_NAME } from '@/lib/utils';
 
 export default function ResetPasswordPage() {
   const {
@@ -42,7 +37,7 @@ export default function ResetPasswordPage() {
     isSuccess,
     formError,
     handleSubmit,
-  } = useResetPassword()
+  } = useResetPassword();
 
   return (
     <div className="brand-light-surface min-h-screen w-full flex items-center justify-center bg-slate-50/50 p-4 sm:p-6 lg:p-8">
@@ -67,7 +62,8 @@ export default function ResetPasswordPage() {
                 </span>
               </h2>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Buat kata sandi baru yang kuat untuk melindungi data produk, harga pokok penjualan, dan operasional toko Anda.
+                Buat kata sandi baru yang kuat untuk melindungi data produk, harga pokok penjualan,
+                dan operasional toko Anda.
               </p>
             </div>
 
@@ -90,7 +86,11 @@ export default function ResetPasswordPage() {
 
         {/* Right Side: Form / State Display */}
         <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
-          <Link to="/" aria-label={`${APP_NAME}, beranda`} className="mb-6 inline-flex min-h-11 items-center self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
+          <Link
+            to="/"
+            aria-label={`${APP_NAME}, beranda`}
+            className="mb-6 inline-flex min-h-11 items-center self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+          >
             <EkatraBrand className="text-base sm:text-lg" />
           </Link>
           {isValidating ? (
@@ -98,7 +98,9 @@ export default function ResetPasswordPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-foreground">Memvalidasi Tautan Reset...</p>
-                <p className="text-xs text-muted-foreground">Mohon tunggu sebentar selagi sistem memverifikasi token.</p>
+                <p className="text-xs text-muted-foreground">
+                  Mohon tunggu sebentar selagi sistem memverifikasi token.
+                </p>
               </div>
             </div>
           ) : !isTokenValid ? (
@@ -112,15 +114,13 @@ export default function ResetPasswordPage() {
                   Tautan Tidak Valid atau Kedaluwarsa
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {tokenError || "Tautan reset kata sandi telah kedaluwarsa (lebih dari 15 menit) atau sudah pernah digunakan sebelumnya."}
+                  {tokenError ||
+                    'Tautan reset kata sandi telah kedaluwarsa (lebih dari 15 menit) atau sudah pernah digunakan sebelumnya.'}
                 </p>
               </div>
 
               <div className="pt-2 flex flex-col gap-3">
-                <Button
-                  asChild
-                  className="w-full rounded-xl h-11 text-sm font-semibold"
-                >
+                <Button asChild className="w-full rounded-xl h-11 text-sm font-semibold">
                   <Link to="/forgot-password">
                     Minta Tautan Reset Baru
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -149,7 +149,8 @@ export default function ResetPasswordPage() {
                   Kata Sandi Berhasil Diperbarui
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Kata sandi baru Anda telah aktif. Seluruh sesi sebelumnya telah dinonaktifkan demi keamanan akun Anda.
+                  Kata sandi baru Anda telah aktif. Seluruh sesi sebelumnya telah dinonaktifkan demi
+                  keamanan akun Anda.
                 </p>
               </div>
 
@@ -168,11 +169,13 @@ export default function ResetPasswordPage() {
           ) : (
             <>
               <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-2xl font-bold tracking-tight">Atur Kata Sandi Baru</CardTitle>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  Atur Kata Sandi Baru
+                </CardTitle>
                 <CardDescription className="text-xs text-muted-foreground mt-1.5">
                   {userEmail
                     ? `Perbarui kata sandi untuk akun ${userEmail}.`
-                    : "Masukkan kata sandi baru minimal 8 karakter."}
+                    : 'Masukkan kata sandi baru minimal 8 karakter.'}
                 </CardDescription>
               </CardHeader>
 
@@ -192,9 +195,9 @@ export default function ResetPasswordPage() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       placeholder="Minimal 8 karakter"
                       autoFocus
                       required
@@ -212,16 +215,19 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword" className="text-xs font-semibold text-foreground">
+                  <Label
+                    htmlFor="confirmPassword"
+                    className="text-xs font-semibold text-foreground"
+                  >
                     Konfirmasi Kata Sandi Baru
                   </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="confirmPassword"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={e => setConfirmPassword(e.target.value)}
                       placeholder="Ketik ulang kata sandi baru"
                       required
                       className="pl-9 pr-9 rounded-xl h-10 text-sm"
@@ -262,5 +268,5 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

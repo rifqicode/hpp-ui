@@ -8,7 +8,7 @@
   }
 
   .brand-light-surface .public-mobile-button::after {
-    content: "";
+    content: '';
     position: absolute;
     inset: -2px 0;
   }

@@ -65,91 +65,91 @@ export interface ProductEstimate {
 }
 
 export interface ProductVariant {
- id: string;
- productId: string;
- variantName: string;
- sku: string;
- unit: string;
- sellingPrice: number;
- targetMargin: number;
- currentStock: number;
- latestHpp: number;
- estimatedHpp: number;
- minStock: number;
- isDefault: boolean;
- isActive: boolean;
- ingredients: RecipeIngredient[];
- batches: ProductBatchLot[];
+  id: string;
+  productId: string;
+  variantName: string;
+  sku: string;
+  unit: string;
+  sellingPrice: number;
+  targetMargin: number;
+  currentStock: number;
+  latestHpp: number;
+  estimatedHpp: number;
+  minStock: number;
+  isDefault: boolean;
+  isActive: boolean;
+  ingredients: RecipeIngredient[];
+  batches: ProductBatchLot[];
 }
 
 export interface Product {
- modifierGroups: ModifierGroup[];
- id: string;
- storeId?: string;
- name: string;
- category: string;
- categoryId?: string;
- mode: ProductMode;
- imageUrl: string | null;
- description: string;
- createdAt: string;
- updatedAt?: string;
- variants: ProductVariant[];
+  modifierGroups: ModifierGroup[];
+  id: string;
+  storeId?: string;
+  name: string;
+  category: string;
+  categoryId?: string;
+  mode: ProductMode;
+  imageUrl: string | null;
+  description: string;
+  createdAt: string;
+  updatedAt?: string;
+  variants: ProductVariant[];
 }
 
 // A selected operational variant, enriched with its catalog identity for pickers.
 export interface ProductVariantView extends ProductVariant {
- name: string;
- productName: string;
- category: string;
- mode: ProductMode;
- imageUrl: string | null;
- createdAt: string;
+  name: string;
+  productName: string;
+  category: string;
+  mode: ProductMode;
+  imageUrl: string | null;
+  createdAt: string;
 }
 export interface VariantInput {
- id?: string;
- variantName: string;
- sku: string;
- unit: string;
- sellingPrice: number;
- targetMargin: number;
- minStock: number;
- isDefault: boolean;
- isActive: boolean;
- ingredients: {stockId: string; quantity: number; unit?: string}[];
+  id?: string;
+  variantName: string;
+  sku: string;
+  unit: string;
+  sellingPrice: number;
+  targetMargin: number;
+  minStock: number;
+  isDefault: boolean;
+  isActive: boolean;
+  ingredients: { stockId: string; quantity: number; unit?: string }[];
 }
 export interface CreateProductInput {
- modifierGroupIds?: string[];
- name: string;
- category: string;
- categoryId?: string;
- mode: ProductMode;
- imageUrl?: string | null;
- description?: string;
- variants: VariantInput[];
+  modifierGroupIds?: string[];
+  name: string;
+  category: string;
+  categoryId?: string;
+  mode: ProductMode;
+  imageUrl?: string | null;
+  description?: string;
+  variants: VariantInput[];
 }
 export type UpdateProductInput = Partial<CreateProductInput>;
 
 export interface ModifierOption {
- id: string;
- name: string;
- price: number;
- stockId: string | null;
- quantity: number;
- unit: string;
- isActive: boolean;
+  id: string;
+  name: string;
+  price: number;
+  stockId: string | null;
+  quantity: number;
+  unit: string;
+  isActive: boolean;
 }
 export interface ModifierGroup {
- id: string;
- name: string;
- minSelection: number;
- maxSelection: number;
- isActive: boolean;
- productCount: number;
- options: ModifierOption[];
+  id: string;
+  name: string;
+  minSelection: number;
+  maxSelection: number;
+  isActive: boolean;
+  productCount: number;
+  options: ModifierOption[];
 }
-export type ModifierGroupInput = Omit<ModifierGroup,'id'|'productCount'|'options'> & {
- options: (Omit<ModifierOption,'id'> & {id?: string})[];
+export type ModifierGroupInput = Omit<ModifierGroup, 'id' | 'productCount' | 'options'> & {
+  options: (Omit<ModifierOption, 'id'> & { id?: string })[];
 };
 
 export interface AddIngredientInput {

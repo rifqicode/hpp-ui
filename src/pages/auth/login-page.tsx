@@ -1,7 +1,7 @@
-import { AuthBrandPanel } from "@/features/auth/components/auth-brand-panel"
-import { EkatraBrand } from "@/components/brand/ekatra-logo"
-import * as React from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { AuthBrandPanel } from '@/features/auth/components/auth-brand-panel';
+import { EkatraBrand } from '@/components/brand/ekatra-logo';
+import * as React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Mail,
   Lock,
@@ -13,204 +13,202 @@ import {
   Loader2,
   ShieldCheck,
   Laptop,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { authService } from "@/features/auth/services/auth-service"
-import { settingsService } from "@/features/settings/services/settings-service"
-import { useAuthStore } from "@/store/use-auth-store"
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { authService } from '@/features/auth/services/auth-service';
+import { settingsService } from '@/features/settings/services/settings-service';
+import { useAuthStore } from '@/store/use-auth-store';
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const setAuth = useAuthStore((state) => state.setAuth)
+  const navigate = useNavigate();
+  const setAuth = useAuthStore(state => state.setAuth);
 
-  const [email, setEmail] = React.useState<string>("")
-  const [password, setPassword] = React.useState<string>("")
-  const [showPassword, setShowPassword] = React.useState<boolean>(false)
-  const [rememberMe, setRememberMe] = React.useState<boolean>(false)
+  const [email, setEmail] = React.useState<string>('');
+  const [password, setPassword] = React.useState<string>('');
+  const [showPassword, setShowPassword] = React.useState<boolean>(false);
+  const [rememberMe, setRememberMe] = React.useState<boolean>(false);
 
-  const [loading, setLoading] = React.useState<boolean>(false)
-  const [error, setError] = React.useState<string>("")
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string>('');
 
   // Device verification state (Adaptive 2FA)
-  const [isVerifyingDevice, setIsVerifyingDevice] = React.useState<boolean>(false)
-  const [challengeToken, setChallengeToken] = React.useState<string>("")
-  const [emailMasked, setEmailMasked] = React.useState<string>("")
-  const [deviceInfo, setDeviceInfo] = React.useState<string>("")
-  const [otpDigits, setOtpDigits] = React.useState<string[]>(["", "", "", "", "", ""])
-  const [resendCountdown, setResendCountdown] = React.useState<number>(60)
-  const [resending, setResending] = React.useState<boolean>(false)
-  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([])
+  const [isVerifyingDevice, setIsVerifyingDevice] = React.useState<boolean>(false);
+  const [challengeToken, setChallengeToken] = React.useState<string>('');
+  const [emailMasked, setEmailMasked] = React.useState<string>('');
+  const [deviceInfo, setDeviceInfo] = React.useState<string>('');
+  const [otpDigits, setOtpDigits] = React.useState<string[]>(['', '', '', '', '', '']);
+  const [resendCountdown, setResendCountdown] = React.useState<number>(60);
+  const [resending, setResending] = React.useState<boolean>(false);
+  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   // Resend OTP countdown timer
   React.useEffect(() => {
-    let interval: ReturnType<typeof setInterval>
+    let interval: ReturnType<typeof setInterval>;
     if (isVerifyingDevice && resendCountdown > 0) {
       interval = setInterval(() => {
-        setResendCountdown((prev) => prev - 1)
-      }, 1000)
+        setResendCountdown(prev => prev - 1);
+      }, 1000);
     }
-    return () => clearInterval(interval)
-  }, [isVerifyingDevice, resendCountdown])
+    return () => clearInterval(interval);
+  }, [isVerifyingDevice, resendCountdown]);
 
   // Focus first OTP input when switching to verification screen
   React.useEffect(() => {
     if (isVerifyingDevice) {
       setTimeout(() => {
-        inputRefs.current[0]?.focus()
-      }, 50)
+        inputRefs.current[0]?.focus();
+      }, 50);
     }
-  }, [isVerifyingDevice])
+  }, [isVerifyingDevice]);
 
   const handleDigitChange = (index: number, val: string) => {
-    const char = val.slice(-1)
-    if (char && !/^\d$/.test(char)) return
-    const next = [...otpDigits]
-    next[index] = char
-    setOtpDigits(next)
+    const char = val.slice(-1);
+    if (char && !/^\d$/.test(char)) return;
+    const next = [...otpDigits];
+    next[index] = char;
+    setOtpDigits(next);
     if (char && index < 5) {
-      inputRefs.current[index + 1]?.focus()
+      inputRefs.current[index + 1]?.focus();
     }
-  }
+  };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus()
-    } else if (e.key === "Enter" && otpDigits.join("").length === 6) {
-      handleVerifyDevice()
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'Enter' && otpDigits.join('').length === 6) {
+      handleVerifyDevice();
     }
-  }
+  };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
-    if (!pasted) return
-    const next = [...otpDigits]
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const next = [...otpDigits];
     for (let i = 0; i < 6; i++) {
-      next[i] = pasted[i] || ""
+      next[i] = pasted[i] || '';
     }
-    setOtpDigits(next)
-    const lastIdx = Math.min(pasted.length - 1, 5)
-    inputRefs.current[lastIdx]?.focus()
-  }
+    setOtpDigits(next);
+    const lastIdx = Math.min(pasted.length - 1, 5);
+    inputRefs.current[lastIdx]?.focus();
+  };
 
   async function proceedLoginSuccess(user: any, token: string) {
-    setAuth(user, token)
-    const stores = await settingsService.getStoresList()
+    setAuth(user, token);
+    const stores = await settingsService.getStoresList();
     if (stores && stores.length > 0) {
-      useAuthStore.getState().setActiveStoreId(stores[0].id)
-      useAuthStore.getState().setActiveStoreName(stores[0].name)
-      await settingsService.getStorePermissions(stores[0].id)
-      navigate("/dashboard")
+      useAuthStore.getState().setActiveStoreId(stores[0].id);
+      useAuthStore.getState().setActiveStoreName(stores[0].name);
+      await settingsService.getStorePermissions(stores[0].id);
+      navigate('/dashboard');
     } else {
-      navigate("/setup-store")
+      navigate('/setup-store');
     }
   }
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (!email || !password) {
-      setError("Email atau username dan kata sandi wajib diisi")
-      return
+      setError('Email atau username dan kata sandi wajib diisi');
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError('');
 
     try {
-      const res = await authService.login({ email, password })
+      const res = await authService.login({ email, password });
 
       if (res.requires_device_verification) {
-        setIsVerifyingDevice(true)
-        setChallengeToken(res.challenge_token || "")
-        setEmailMasked(res.email_masked || email)
-        setDeviceInfo(res.device_info || "Perangkat Baru")
-        setOtpDigits(["", "", "", "", "", ""])
-        setResendCountdown(60)
-        return
+        setIsVerifyingDevice(true);
+        setChallengeToken(res.challenge_token || '');
+        setEmailMasked(res.email_masked || email);
+        setDeviceInfo(res.device_info || 'Perangkat Baru');
+        setOtpDigits(['', '', '', '', '', '']);
+        setResendCountdown(60);
+        return;
       }
 
-      await proceedLoginSuccess(res.user, res.token)
+      await proceedLoginSuccess(res.user, res.token);
     } catch (err: unknown) {
-      const errObj = err as any
+      const errObj = err as any;
       const isUnverified =
         errObj?.status === 403 ||
-        (errObj?.message && (
-          errObj.message.toLowerCase().includes("not verified") ||
-          errObj.message.toLowerCase().includes("belum diverifikasi") ||
-          errObj.message.toLowerCase().includes("verify your email")
-        ))
+        (errObj?.message &&
+          (errObj.message.toLowerCase().includes('not verified') ||
+            errObj.message.toLowerCase().includes('belum diverifikasi') ||
+            errObj.message.toLowerCase().includes('verify your email')));
 
       if (isUnverified) {
         navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, {
           state: {
             email: email.trim(),
-            message: "Email Anda belum diverifikasi. Silakan masukkan kode verifikasi yang telah dikirimkan ke email Anda.",
+            message:
+              'Email Anda belum diverifikasi. Silakan masukkan kode verifikasi yang telah dikirimkan ke email Anda.',
           },
-        })
-        return
+        });
+        return;
       }
 
       let msg =
         err instanceof Error
           ? err.message
-          : "Gagal masuk. Periksa kembali email atau username dan kata sandi Anda."
-      if (msg.toLowerCase() === "unauthorized") {
-        msg = "Email, username, atau kata sandi salah. Silakan coba lagi."
+          : 'Gagal masuk. Periksa kembali email atau username dan kata sandi Anda.';
+      if (msg.toLowerCase() === 'unauthorized') {
+        msg = 'Email, username, atau kata sandi salah. Silakan coba lagi.';
       }
-      setError(msg)
+      setError(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleVerifyDevice(e?: React.FormEvent) {
-    if (e) e.preventDefault()
-    const code = otpDigits.join("")
+    if (e) e.preventDefault();
+    const code = otpDigits.join('');
     if (code.length !== 6) {
-      setError("Silakan masukkan 6 digit kode verifikasi")
-      return
+      setError('Silakan masukkan 6 digit kode verifikasi');
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError('');
 
     try {
-      const res = await authService.verifyDevice(challengeToken, code)
-      await proceedLoginSuccess(res.user, res.token)
+      const res = await authService.verifyDevice(challengeToken, code);
+      await proceedLoginSuccess(res.user, res.token);
     } catch (err: unknown) {
       const msg =
-        err instanceof Error
-          ? err.message
-          : "Kode verifikasi salah atau telah kedaluwarsa."
-      setError(msg)
+        err instanceof Error ? err.message : 'Kode verifikasi salah atau telah kedaluwarsa.';
+      setError(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleResendOTP() {
-    if (resendCountdown > 0 || resending) return
-    setResending(true)
-    setError("")
+    if (resendCountdown > 0 || resending) return;
+    setResending(true);
+    setError('');
 
     try {
-      await authService.resendDeviceOTP(challengeToken)
-      setResendCountdown(60)
+      await authService.resendDeviceOTP(challengeToken);
+      setResendCountdown(60);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal mengirim ulang kode verifikasi."
-      setError(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal mengirim ulang kode verifikasi.';
+      setError(msg);
     } finally {
-      setResending(false)
+      setResending(false);
     }
   }
 
   function handleBackToLogin() {
-    setIsVerifyingDevice(false)
-    setError("")
-    setOtpDigits(["", "", "", "", "", ""])
+    setIsVerifyingDevice(false);
+    setError('');
+    setOtpDigits(['', '', '', '', '', '']);
   }
 
   return (
@@ -226,7 +224,10 @@ export default function LoginPage() {
           {/* Mobile Header Logo */}
           <div className="lg:hidden flex items-center gap-2.5">
             <Link to="/" className="flex items-center gap-2">
-              <EkatraBrand className="gap-3 text-xl sm:text-2xl" logoClassName="h-10 w-14 sm:h-12 sm:w-[4.25rem]" />
+              <EkatraBrand
+                className="gap-3 text-xl sm:text-2xl"
+                logoClassName="h-10 w-14 sm:h-12 sm:w-[4.25rem]"
+              />
             </Link>
           </div>
 
@@ -268,8 +269,9 @@ export default function LoginPage() {
                   Verifikasi Perangkat Baru
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
-                  Kode verifikasi 6-digit telah dikirim ke{" "}
-                  <strong className="text-slate-800 font-semibold">{emailMasked}</strong> untuk konfirmasi login dari{" "}
+                  Kode verifikasi 6-digit telah dikirim ke{' '}
+                  <strong className="text-slate-800 font-semibold">{emailMasked}</strong> untuk
+                  konfirmasi login dari{' '}
                   <span className="font-semibold text-slate-800 inline-flex items-center gap-1">
                     <Laptop className="size-3.5 inline text-slate-500" />
                     {deviceInfo}
@@ -294,14 +296,16 @@ export default function LoginPage() {
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
-                    ref={(el) => { inputRefs.current[idx] = el }}
+                    ref={el => {
+                      inputRefs.current[idx] = el;
+                    }}
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     maxLength={1}
                     value={digit}
-                    onChange={(e) => handleDigitChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(idx, e)}
+                    onChange={e => handleDigitChange(idx, e.target.value)}
+                    onKeyDown={e => handleKeyDown(idx, e)}
                     onPaste={handlePaste}
                     className="w-11 h-14 sm:w-12 sm:h-14 text-center text-xl font-bold font-mono rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none"
                     aria-label={`Digit ${idx + 1}`}
@@ -314,7 +318,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => handleVerifyDevice()}
                 className="w-full rounded-xl h-11 shadow-md shadow-primary/25 font-bold text-sm bg-primary hover:bg-primary/90 text-white transition-all hover:-translate-y-0.5 cursor-pointer"
-                disabled={loading || otpDigits.join("").length !== 6}
+                disabled={loading || otpDigits.join('').length !== 6}
               >
                 {loading ? (
                   <>
@@ -395,7 +399,7 @@ export default function LoginPage() {
                       autoCapitalize="none"
                       spellCheck={false}
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       placeholder="nama@email.com atau staf@toko"
                       className="pl-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -420,9 +424,9 @@ export default function LoginPage() {
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       placeholder="Masukkan kata sandi Anda"
                       className="pl-10 pr-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -431,7 +435,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
-                      aria-label={showPassword ? "Sembunyikan kata sandi" : "Lihat kata sandi"}
+                      aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
                     >
                       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
@@ -444,7 +448,7 @@ export default function LoginPage() {
                     <input
                       type="checkbox"
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={e => setRememberMe(e.target.checked)}
                       className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
                     />
                     <span>Ingat saya di perangkat ini</span>
@@ -488,11 +492,11 @@ export default function LoginPage() {
 
         {/* Bottom Legal Notice */}
         <div className="text-center text-[11px] text-slate-400 py-2">
-          Dilindungi oleh reCAPTCHA dan berlaku{" "}
+          Dilindungi oleh reCAPTCHA dan berlaku{' '}
           <Link to="/" className="underline hover:text-slate-600">
             Ketentuan Layanan
-          </Link>{" "}
-          &{" "}
+          </Link>{' '}
+          &{' '}
           <Link to="/" className="underline hover:text-slate-600">
             Kebijakan Privasi
           </Link>
@@ -500,5 +504,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { EkatraBrand } from "@/components/brand/ekatra-logo"
-import { Link } from "react-router-dom"
+import { EkatraBrand } from '@/components/brand/ekatra-logo';
+import { Link } from 'react-router-dom';
 import {
   Mail,
   ArrowRight,
@@ -9,30 +9,18 @@ import {
   Loader2,
   Clock,
   ShieldCheck,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { useForgotPassword } from "@/features/auth/hooks"
-import { APP_NAME } from "@/lib/utils"
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { useForgotPassword } from '@/features/auth/hooks';
+import { APP_NAME } from '@/lib/utils';
 
 export default function ForgotPasswordPage() {
-  const {
-    email,
-    setEmail,
-    isSubmitting,
-    isSuccess,
-    errorMessage,
-    handleSubmit,
-    resetForm,
-  } = useForgotPassword()
+  const { email, setEmail, isSubmitting, isSuccess, errorMessage, handleSubmit, resetForm } =
+    useForgotPassword();
 
   return (
     <div className="brand-light-surface min-h-screen w-full flex items-center justify-center bg-slate-50/50 p-4 sm:p-6 lg:p-8">
@@ -57,7 +45,8 @@ export default function ForgotPasswordPage() {
                 </span>
               </h2>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Akses kembali akun bisnis Anda untuk memantau kalkulasi HPP, margin, dan stok inventaris multi-outlet.
+                Akses kembali akun bisnis Anda untuk memantau kalkulasi HPP, margin, dan stok
+                inventaris multi-outlet.
               </p>
             </div>
 
@@ -80,7 +69,11 @@ export default function ForgotPasswordPage() {
 
         {/* Right Side: Form / Success Card */}
         <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-12">
-          <Link to="/" aria-label={`${APP_NAME}, beranda`} className="mb-6 inline-flex min-h-11 items-center self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden">
+          <Link
+            to="/"
+            aria-label={`${APP_NAME}, beranda`}
+            className="mb-6 inline-flex min-h-11 items-center self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+          >
             <EkatraBrand className="text-base sm:text-lg" />
           </Link>
           {isSuccess ? (
@@ -94,14 +87,16 @@ export default function ForgotPasswordPage() {
                   Tautan Reset Telah Dikirim
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Jika alamat email <strong className="text-foreground">{email}</strong> terdaftar di sistem kami, kami telah mengirimkan tautan untuk mengatur ulang kata sandi.
+                  Jika alamat email <strong className="text-foreground">{email}</strong> terdaftar
+                  di sistem kami, kami telah mengirimkan tautan untuk mengatur ulang kata sandi.
                 </p>
               </div>
 
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
                 <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                  Tautan ini hanya berlaku selama <strong>15 menit</strong>. Setelah digunakan atau kedaluwarsa, tautan tidak akan dapat dipakai kembali.
+                  Tautan ini hanya berlaku selama <strong>15 menit</strong>. Setelah digunakan atau
+                  kedaluwarsa, tautan tidak akan dapat dipakai kembali.
                 </p>
               </div>
 
@@ -113,10 +108,7 @@ export default function ForgotPasswordPage() {
                 >
                   Kirim Ulang ke Email Lain
                 </Button>
-                <Button
-                  asChild
-                  className="w-full rounded-xl h-11 text-sm font-semibold"
-                >
+                <Button asChild className="w-full rounded-xl h-11 text-sm font-semibold">
                   <Link to="/login">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Kembali ke Halaman Masuk
@@ -127,9 +119,12 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-2xl font-bold tracking-tight">Lupa Kata Sandi?</CardTitle>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  Lupa Kata Sandi?
+                </CardTitle>
                 <CardDescription className="text-xs text-muted-foreground mt-1.5">
-                  Masukkan email akun terdaftar Anda. Kami akan mengirimkan tautan reset kata sandi yang berlaku selama 15 menit.
+                  Masukkan email akun terdaftar Anda. Kami akan mengirimkan tautan reset kata sandi
+                  yang berlaku selama 15 menit.
                 </CardDescription>
               </CardHeader>
 
@@ -140,7 +135,10 @@ export default function ForgotPasswordPage() {
                 </div>
               )}
 
-              <p className="mb-4 text-sm text-foreground">Pakai akun staf dengan username? Minta pemilik toko mereset kata sandi dari menu Anggota Tim.</p>
+              <p className="mb-4 text-sm text-foreground">
+                Pakai akun staf dengan username? Minta pemilik toko mereset kata sandi dari menu
+                Anggota Tim.
+              </p>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-xs font-semibold text-foreground">
@@ -152,7 +150,7 @@ export default function ForgotPasswordPage() {
                       id="email"
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       placeholder="nama@perusahaan.com"
                       autoComplete="email"
                       autoFocus
@@ -195,5 +193,5 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

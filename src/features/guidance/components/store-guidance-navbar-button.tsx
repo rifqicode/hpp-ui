@@ -1,17 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Compass, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useGuidanceProgress } from '../hooks/use-guidance';
 import { GUIDANCE_UI_ENABLED } from '../config/guidance-registry';
 import { useAuthStore } from '@/store/use-auth-store';
 
 export function StoreGuidanceNavbarButton() {
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
   const { total, completed, isAllCompleted, isLoading } = useGuidanceProgress();
 
   if (!activeStoreId || isLoading || total === 0) {

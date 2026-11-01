@@ -5,7 +5,7 @@ import { GUIDANCE_REGISTRY, ORDERED_GUIDANCE_KEYS } from '../config/guidance-reg
 import type { CompleteGuidancePayload, GuidanceItem, GuidanceProgressItem } from '../types';
 
 export function useGuidancesQuery() {
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
   return useQuery({
     queryKey: ['guidances', activeStoreId],
     queryFn: ({ signal }) => {
@@ -19,19 +19,19 @@ export function useGuidancesQuery() {
 
 export function useCompleteGuidanceMutation() {
   const queryClient = useQueryClient();
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
 
   return useMutation({
     mutationFn: ({ key, payload }: { key: string; payload?: CompleteGuidancePayload }) => {
       if (!activeStoreId) throw new Error('No active store selected');
       return guidanceService.complete(activeStoreId, key, payload);
     },
-    onSuccess: (updatedItem) => {
-      queryClient.setQueryData<GuidanceItem[]>(['guidances', activeStoreId], (old) => {
+    onSuccess: updatedItem => {
+      queryClient.setQueryData<GuidanceItem[]>(['guidances', activeStoreId], old => {
         if (!old) return [updatedItem];
-        const exists = old.some((item) => item.guidance === updatedItem.guidance);
+        const exists = old.some(item => item.guidance === updatedItem.guidance);
         if (exists) {
-          return old.map((item) => (item.guidance === updatedItem.guidance ? updatedItem : item));
+          return old.map(item => (item.guidance === updatedItem.guidance ? updatedItem : item));
         }
         return [...old, updatedItem];
       });
@@ -49,7 +49,7 @@ export function useGuidanceProgress() {
     guidanceMap.set(item.guidance, item);
   }
 
-  const items: GuidanceProgressItem[] = ORDERED_GUIDANCE_KEYS.map((key) => {
+  const items: GuidanceProgressItem[] = ORDERED_GUIDANCE_KEYS.map(key => {
     const config = GUIDANCE_REGISTRY[key];
     const serverItem = guidanceMap.get(key);
     const isCompleted = serverItem?.is_completed ?? false;
@@ -64,10 +64,10 @@ export function useGuidanceProgress() {
   });
 
   const total = items.length;
-  const completed = items.filter((item) => item.isCompleted).length;
+  const completed = items.filter(item => item.isCompleted).length;
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
   const isAllCompleted = total > 0 && completed === total;
-  const nextGuidance = items.find((item) => !item.isCompleted) ?? null;
+  const nextGuidance = items.find(item => !item.isCompleted) ?? null;
 
   return {
     items,

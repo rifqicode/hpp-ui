@@ -16,8 +16,14 @@ declare global {
 const MIDTRANS_SCRIPT_ID = 'midtrans-snap-script';
 let loadingSnap: Promise<void> | null = null;
 
-export const loadMidtransSnap = (clientKey: string, isProduction: boolean = false): Promise<void> => {
-  if (!clientKey) return Promise.reject(new Error('Konfigurasi pembayaran belum tersedia. Silakan coba lagi nanti.'));
+export const loadMidtransSnap = (
+  clientKey: string,
+  isProduction: boolean = false,
+): Promise<void> => {
+  if (!clientKey)
+    return Promise.reject(
+      new Error('Konfigurasi pembayaran belum tersedia. Silakan coba lagi nanti.'),
+    );
   if (loadingSnap) return loadingSnap;
   loadingSnap = new Promise<void>((resolve, reject) => {
     if (window.snap) {
@@ -42,7 +48,10 @@ export const loadMidtransSnap = (clientKey: string, isProduction: boolean = fals
     script.onload = () => {
       window.clearTimeout(timer);
       if (window.snap) resolve();
-      else { script.remove(); reject(new Error('Layanan pembayaran gagal dimuat. Silakan coba lagi.')); }
+      else {
+        script.remove();
+        reject(new Error('Layanan pembayaran gagal dimuat. Silakan coba lagi.'));
+      }
     };
 
     script.onerror = () => {
@@ -52,7 +61,10 @@ export const loadMidtransSnap = (clientKey: string, isProduction: boolean = fals
     };
 
     document.body.appendChild(script);
-  }).catch((error) => { loadingSnap = null; throw error; });
+  }).catch(error => {
+    loadingSnap = null;
+    throw error;
+  });
   return loadingSnap;
 };
 

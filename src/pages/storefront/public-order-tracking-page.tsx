@@ -16,13 +16,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CurrencyText } from '@/components/ui/currency-text';
@@ -44,9 +38,7 @@ export default function PublicOrderTrackingPage() {
     trackingToken: string;
   }>();
 
-  const [order, setOrder] = React.useState<PublicOrderTrackingResponse | null>(
-    null
-  );
+  const [order, setOrder] = React.useState<PublicOrderTrackingResponse | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -58,26 +50,19 @@ export default function PublicOrderTrackingPage() {
       try {
         if (!silent) setLoading(true);
         else setRefreshing(true);
-        const res = await storefrontService.getPublicOrderTracking(
-          storeSlug,
-          trackingToken
-        );
+        const res = await storefrontService.getPublicOrderTracking(storeSlug, trackingToken);
         setOrder(res);
         setError('');
       } catch (err) {
         if (!silent) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Data pesanan tidak ditemukan.'
-          );
+          setError(err instanceof Error ? err.message : 'Data pesanan tidak ditemukan.');
         }
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [storeSlug, trackingToken]
+    [storeSlug, trackingToken],
   );
 
   React.useEffect(() => {
@@ -115,9 +100,7 @@ export default function PublicOrderTrackingPage() {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
         <AlertCircle className="size-8 text-destructive" />
-        <h1 className="mt-3 text-base font-bold text-foreground">
-          Pesanan Tidak Ditemukan
-        </h1>
+        <h1 className="mt-3 text-base font-bold text-foreground">Pesanan Tidak Ditemukan</h1>
         <p className="mt-1 max-w-md text-xs text-muted-foreground">
           {error || 'Tautan pelacakan pesanan tidak valid.'}
         </p>
@@ -151,10 +134,7 @@ export default function PublicOrderTrackingPage() {
     },
     {
       id: 'COMPLETED',
-      label:
-        order.fulfillment_type === 'DELIVERY'
-          ? 'Dikirim / Selesai'
-          : 'Siap Diambil / Selesai',
+      label: order.fulfillment_type === 'DELIVERY' ? 'Dikirim / Selesai' : 'Siap Diambil / Selesai',
       desc:
         order.fulfillment_type === 'DELIVERY'
           ? 'Kurir mengantar pesanan Anda'
@@ -167,10 +147,10 @@ export default function PublicOrderTrackingPage() {
     order.status === 'PENDING_CONFIRMATION'
       ? 0
       : order.status === 'IN_PROGRESS'
-      ? 1
-      : order.status === 'COMPLETED'
-      ? 2
-      : -1;
+        ? 1
+        : order.status === 'COMPLETED'
+          ? 2
+          : -1;
 
   return (
     <div
@@ -195,9 +175,7 @@ export default function PublicOrderTrackingPage() {
             disabled={refreshing}
             className="h-9 gap-1.5 text-xs text-muted-foreground"
           >
-            <RefreshCw
-              className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`}
-            />
+            <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             Perbarui Status
           </Button>
         </div>
@@ -255,8 +233,8 @@ export default function PublicOrderTrackingPage() {
                         isCurrent
                           ? 'border-primary bg-accent/60'
                           : isDone
-                          ? 'border-border bg-card'
-                          : 'border-border bg-muted/30 opacity-60'
+                            ? 'border-border bg-card'
+                            : 'border-border bg-muted/30 opacity-60'
                       }`}
                     >
                       <div
@@ -269,12 +247,8 @@ export default function PublicOrderTrackingPage() {
                         <Icon className="size-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground">
-                          {step.label}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {step.desc}
-                        </p>
+                        <p className="text-xs font-semibold text-foreground">{step.label}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">{step.desc}</p>
                       </div>
                     </div>
                   );
@@ -292,9 +266,7 @@ export default function PublicOrderTrackingPage() {
                   {order.delivery_courier_name && (
                     <p className="text-muted-foreground">
                       Kurir Pengantar:{' '}
-                      <strong className="text-foreground">
-                        {order.delivery_courier_name}
-                      </strong>
+                      <strong className="text-foreground">{order.delivery_courier_name}</strong>
                     </p>
                   )}
                   {order.delivery_tracking_info && (
@@ -304,11 +276,7 @@ export default function PublicOrderTrackingPage() {
                       </span>
                       <div className="flex items-center gap-2">
                         {isUrl(order.delivery_tracking_info) ? (
-                          <Button
-                            asChild
-                            size="sm"
-                            className="h-9 gap-1.5 text-xs font-semibold"
-                          >
+                          <Button asChild size="sm" className="h-9 gap-1.5 text-xs font-semibold">
                             <a
                               href={order.delivery_tracking_info}
                               target="_blank"
@@ -323,9 +291,7 @@ export default function PublicOrderTrackingPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              handleCopyTracking(order.delivery_tracking_info)
-                            }
+                            onClick={() => handleCopyTracking(order.delivery_tracking_info)}
                             className="h-9 gap-1.5 text-xs"
                           >
                             {copiedTracking ? (
@@ -349,10 +315,7 @@ export default function PublicOrderTrackingPage() {
             )}
 
             {whatsappUrl && (
-              <Button
-                asChild
-                className="h-11 w-full gap-2 text-xs font-semibold sm:text-sm"
-              >
+              <Button asChild className="h-11 w-full gap-2 text-xs font-semibold sm:text-sm">
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                   <MessageCircle className="size-4" />
                   Konfirmasi & Kirim Bukti via WhatsApp
@@ -364,9 +327,7 @@ export default function PublicOrderTrackingPage() {
 
         <Card className="py-4">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">
-              Instruksi Pembayaran ({order.payment_method})
-            </CardTitle>
+            <CardTitle className="text-sm">Instruksi Pembayaran ({order.payment_method})</CardTitle>
             <CardDescription className="text-xs">
               Gunakan rincian di bawah ini untuk menyelesaikan pembayaran Anda
             </CardDescription>
@@ -402,37 +363,25 @@ export default function PublicOrderTrackingPage() {
               {order.table_number && (
                 <div>
                   <span className="text-muted-foreground">Nomor Meja:</span>
-                  <p className="font-semibold text-foreground">
-                    {order.table_number}
-                  </p>
+                  <p className="font-semibold text-foreground">{order.table_number}</p>
                 </div>
               )}
               {order.pickup_time && (
                 <div>
                   <span className="text-muted-foreground">Waktu Ambil:</span>
-                  <p className="font-semibold text-foreground">
-                    {order.pickup_time}
-                  </p>
+                  <p className="font-semibold text-foreground">{order.pickup_time}</p>
                 </div>
               )}
               {order.delivery_address && (
                 <div className="sm:col-span-2">
-                  <span className="text-muted-foreground">
-                    Alamat Pengiriman:
-                  </span>
-                  <p className="font-semibold text-foreground">
-                    {order.delivery_address}
-                  </p>
+                  <span className="text-muted-foreground">Alamat Pengiriman:</span>
+                  <p className="font-semibold text-foreground">{order.delivery_address}</p>
                 </div>
               )}
               {order.custom_field_label && order.custom_field_value && (
                 <div className="sm:col-span-2">
-                  <span className="text-muted-foreground">
-                    {order.custom_field_label}:
-                  </span>
-                  <p className="font-semibold text-foreground">
-                    {order.custom_field_value}
-                  </p>
+                  <span className="text-muted-foreground">{order.custom_field_label}:</span>
+                  <p className="font-semibold text-foreground">{order.custom_field_value}</p>
                 </div>
               )}
               {order.notes && (
@@ -444,18 +393,15 @@ export default function PublicOrderTrackingPage() {
             </div>
 
             <div className="divide-y divide-border">
-              {order.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-start justify-between gap-3 py-2"
-                >
+              {order.items.map(item => (
+                <div key={item.id} className="flex items-start justify-between gap-3 py-2">
                   <div>
                     <p className="font-semibold text-foreground">
                       {item.quantity}x {item.product_name} — {item.variant_name}
                     </p>
                     {item.modifiers.length > 0 && (
                       <p className="text-[11px] text-muted-foreground">
-                        + {item.modifiers.map((m) => m.name).join(', ')}
+                        + {item.modifiers.map(m => m.name).join(', ')}
                       </p>
                     )}
                   </div>

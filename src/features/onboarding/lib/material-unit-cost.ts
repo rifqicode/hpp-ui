@@ -10,7 +10,7 @@ export function materialUnitCost(totalPrice: string, quantity: string): string |
   if (price === null || amount === null || price <= 0n || amount <= 0n) return null;
   // Match the server's four-decimal, half-up reference cost without binary rounding.
   const numerator = price * 1_000_000n;
-  const rounded = numerator / amount + (numerator % amount * 2n >= amount ? 1n : 0n);
+  const rounded = numerator / amount + ((numerator % amount) * 2n >= amount ? 1n : 0n);
   const fraction = (rounded % 10_000n).toString().padStart(4, '0').replace(/0+$/, '');
   return `${rounded / 10_000n}${fraction ? `.${fraction}` : ''}`;
 }

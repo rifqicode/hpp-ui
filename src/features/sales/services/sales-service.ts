@@ -18,30 +18,50 @@ export function normalizeSale(raw: any): Sale {
   const items = Array.isArray(raw.items)
     ? raw.items.map((it: any) => ({
         id: it.id,
-		isRewardItem: Boolean(it.is_reward_item),
-		isFreeReward: Boolean(it.is_reward_item) && isFreeReward(it.price_at_sale ?? it.priceAtSale ?? '0', it.modifiers ?? []),
-		discountAmount: Number(it.discount_amount ?? 0),
-		promotionId: it.promotion_id,
+        isRewardItem: Boolean(it.is_reward_item),
+        isFreeReward:
+          Boolean(it.is_reward_item) &&
+          isFreeReward(it.price_at_sale ?? it.priceAtSale ?? '0', it.modifiers ?? []),
+        discountAmount: Number(it.discount_amount ?? 0),
+        promotionId: it.promotion_id,
         returnedQuantity: Number(it.returned_quantity || 0),
         saleId: it.sale_id ?? it.saleId ?? raw.id,
         sale_id: it.sale_id ?? it.saleId ?? raw.id,
-        variantId:it.variant_id,
-        variantName:it.variant_name??it.variant?.variant_name??'',
-        costStatus:it.cost_status??'ESTIMATED',
-        modifiers:(it.modifiers??[]).map((m:{id:string;name:string;price:string|number;cost:string|number;total_cost:string|number})=>({id:m.id,name:m.name,price:Number(m.price),cost:Number(m.cost),totalCost:Number(m.total_cost)})),
-        productionLogId:it.production_log_id,
-        productId: it.variant?.product_id??'',
-        product_id: it.variant?.product_id??'',
+        variantId: it.variant_id,
+        variantName: it.variant_name ?? it.variant?.variant_name ?? '',
+        costStatus: it.cost_status ?? 'ESTIMATED',
+        modifiers: (it.modifiers ?? []).map(
+          (m: {
+            id: string;
+            name: string;
+            price: string | number;
+            cost: string | number;
+            total_cost: string | number;
+          }) => ({
+            id: m.id,
+            name: m.name,
+            price: Number(m.price),
+            cost: Number(m.cost),
+            totalCost: Number(m.total_cost),
+          }),
+        ),
+        productionLogId: it.production_log_id,
+        productId: it.variant?.product_id ?? '',
+        product_id: it.variant?.product_id ?? '',
         productName:
-          (it.product_name??it.variant?.product?.name??'Produk')+' - '+(it.variant_name??it.variant?.variant_name??'Varian'),
+          (it.product_name ?? it.variant?.product?.name ?? 'Produk') +
+          ' - ' +
+          (it.variant_name ?? it.variant?.variant_name ?? 'Varian'),
         product_name:
-          (it.product_name??it.variant?.product?.name??'Produk')+' - '+(it.variant_name??it.variant?.variant_name??'Varian'),
+          (it.product_name ?? it.variant?.product?.name ?? 'Produk') +
+          ' - ' +
+          (it.variant_name ?? it.variant?.variant_name ?? 'Varian'),
         category:
           it.variant?.product?.category_model?.name ??
           it.variant?.product?.category ??
           it.category ??
           'Uncategorized',
-        unit: it.unit??it.variant?.unit ?? it.unit ?? 'pcs',
+        unit: it.unit ?? it.variant?.unit ?? it.unit ?? 'pcs',
         quantity: Number(it.quantity ?? 0),
         priceAtSale: Number(it.price_at_sale ?? it.priceAtSale ?? 0),
         price_at_sale: Number(it.price_at_sale ?? it.priceAtSale ?? 0),
@@ -62,11 +82,18 @@ export function normalizeSale(raw: any): Sale {
   const totalAmount = originalTotalAmount - refundedAmount;
   const totalCost = Number(raw.total_cost ?? raw.totalCost ?? 0) - restoredCost;
   const grossProfit = Number(
-    (raw.gross_profit ?? raw.grossProfit ?? originalTotalAmount - Number(raw.total_cost ?? raw.totalCost ?? 0)) - refundedAmount + restoredCost
+    (raw.gross_profit ??
+      raw.grossProfit ??
+      originalTotalAmount - Number(raw.total_cost ?? raw.totalCost ?? 0)) -
+      refundedAmount +
+      restoredCost,
   );
-  const profitMarginPct = totalAmount > 0 ? grossProfit / totalAmount * 100 : 0;
+  const profitMarginPct = totalAmount > 0 ? (grossProfit / totalAmount) * 100 : 0;
   const discountAmount = Number(raw.discount_amount ?? raw.discountAmount ?? 0);
   const taxAmount = Number(raw.tax_amount ?? raw.taxAmount ?? 0);
+  const cashRoundingAdjustment = Number(
+    raw.cash_rounding_adjustment ?? raw.cashRoundingAdjustment ?? 0,
+  );
   const cashReceived =
     raw.cash_received != null || raw.cashReceived != null
       ? Number(raw.cash_received ?? raw.cashReceived)
@@ -77,9 +104,12 @@ export function normalizeSale(raw: any): Sale {
       : undefined;
 
   return {
-	promotionId: raw.promotion_id,
-	promotions: raw.promotions ?? [],
-    originalTotalAmount, refundedAmount, restoredCost, corrections: raw.corrections || [],
+    promotionId: raw.promotion_id,
+    promotions: raw.promotions ?? [],
+    originalTotalAmount,
+    refundedAmount,
+    restoredCost,
+    corrections: raw.corrections || [],
     id: raw.id,
     storeId: raw.store_id ?? raw.storeId ?? '',
     store_id: raw.store_id ?? raw.storeId ?? '',
@@ -87,10 +117,8 @@ export function normalizeSale(raw: any): Sale {
     invoice_number: raw.invoice_number ?? raw.invoiceNumber ?? 'TRX-UNKNOWN',
     customerId: raw.customer_id ?? raw.customerId,
     customer_id: raw.customer_id ?? raw.customerId,
-    customerName:
-      raw.customer_name ?? raw.customerName ?? raw.customer?.name ?? 'Guest',
-    customer_name:
-      raw.customer_name ?? raw.customerName ?? raw.customer?.name ?? 'Guest',
+    customerName: raw.customer_name ?? raw.customerName ?? raw.customer?.name ?? 'Guest',
+    customer_name: raw.customer_name ?? raw.customerName ?? raw.customer?.name ?? 'Guest',
     cashierId: raw.cashier_id ?? raw.cashierId,
     cashier_id: raw.cashier_id ?? raw.cashierId,
     cashierName: raw.cashier_name ?? raw.cashierName,
@@ -107,6 +135,8 @@ export function normalizeSale(raw: any): Sale {
     discount_amount: discountAmount,
     taxAmount,
     tax_amount: taxAmount,
+    cashRoundingAdjustment,
+    cash_rounding_adjustment: cashRoundingAdjustment,
     paymentMethod: raw.payment_method ?? raw.paymentMethod ?? 'CASH',
     payment_method: raw.payment_method ?? raw.paymentMethod ?? 'CASH',
     cashReceived,
@@ -120,10 +150,8 @@ export function normalizeSale(raw: any): Sale {
     notes: raw.notes,
     internalNotes: raw.internal_notes ?? raw.internalNotes ?? '',
     internal_notes: raw.internal_notes ?? raw.internalNotes ?? '',
-    transactionDate:
-      raw.transaction_date ?? raw.transactionDate ?? new Date().toISOString(),
-    transaction_date:
-      raw.transaction_date ?? raw.transactionDate ?? new Date().toISOString(),
+    transactionDate: raw.transaction_date ?? raw.transactionDate ?? new Date().toISOString(),
+    transaction_date: raw.transaction_date ?? raw.transactionDate ?? new Date().toISOString(),
     createdAt: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
     created_at: raw.created_at ?? raw.createdAt ?? new Date().toISOString(),
     status: raw.status ?? 'COMPLETED',
@@ -174,8 +202,8 @@ export const salesService = {
     const rawList = Array.isArray(res.data)
       ? res.data
       : Array.isArray(res.data?.data)
-      ? res.data.data
-      : [];
+        ? res.data.data
+        : [];
     return rawList.map(normalizeSale);
   },
 
@@ -207,37 +235,45 @@ export const salesService = {
 
   createSale: async (input: CreateSaleInput): Promise<Sale> => {
     const payload = {
-	  ...(input.promotionId ? { promotion_id: input.promotionId, reward_selections: input.rewardSelections ?? [] } : {}),
+      ...(input.promotionId
+        ? { promotion_id: input.promotionId, reward_selections: input.rewardSelections ?? [] }
+        : {}),
       customer_phone: input.customerPhone || input.customer_phone || undefined,
       customer_name: input.customerName || input.customer_name || undefined,
       fulfillment_type: input.fulfillmentType || input.fulfillment_type || 'DINE_IN',
       table_number: input.tableNumber || input.table_number || undefined,
-      items: input.items.map((it) => ({
+      items: input.items.map(it => ({
         variant_id: it.variantId,
- modifier_option_ids:it.modifierOptionIds??[],
+        modifier_option_ids: it.modifierOptionIds ?? [],
         quantity: it.quantity,
       })),
       discount_amount: input.discountAmount || input.discount_amount || 0,
       tax_amount: input.taxAmount || input.tax_amount || 0,
+      cash_rounding_adjustment:
+        input.cashRoundingAdjustment != null
+          ? input.cashRoundingAdjustment
+          : input.cash_rounding_adjustment != null
+            ? input.cash_rounding_adjustment
+            : 0,
       payment_method: input.paymentMethod || input.payment_method || 'CASH',
       cash_received:
         input.cashReceived != null
           ? input.cashReceived
           : input.cash_received != null
-          ? input.cash_received
+            ? input.cash_received
+            : undefined,
+      payment_reference: input.paymentReference || input.payment_reference || undefined,
+      edc_issuer_bank:
+        (input.paymentMethod || input.payment_method) === 'EDC'
+          ? input.edcIssuerBank || input.edc_issuer_bank || undefined
           : undefined,
-      payment_reference:
-        input.paymentReference || input.payment_reference || undefined,
-      edc_issuer_bank: (input.paymentMethod || input.payment_method) === 'EDC'
-        ? input.edcIssuerBank || input.edc_issuer_bank || undefined
-        : undefined,
       notes: input.notes,
       internal_notes: input.internalNotes || input.internal_notes || undefined,
     };
 
     const res = input.storeId
-	  ? await apiClient.post<any>('/sales', payload, { headers: { 'X-Store-ID': input.storeId } })
-	  : await apiClient.post<any>('/sales', payload);
+      ? await apiClient.post<any>('/sales', payload, { headers: { 'X-Store-ID': input.storeId } })
+      : await apiClient.post<any>('/sales', payload);
     return normalizeSale(res.data);
   },
 
@@ -246,18 +282,10 @@ export const salesService = {
     const raw = res.data || {};
     const totalRevenue = Number(raw.total_revenue ?? raw.totalRevenue ?? 0);
     const totalCost = Number(raw.total_cost ?? raw.totalCost ?? 0);
-    const totalGrossProfit = Number(
-      raw.total_gross_profit ?? raw.totalGrossProfit ?? 0
-    );
-    const averageMarginPct = Number(
-      raw.average_margin_pct ?? raw.averageMarginPct ?? 0
-    );
-    const totalTransactions = Number(
-      raw.total_transactions ?? raw.totalTransactions ?? 0
-    );
-    const averageOrderValue = Number(
-      raw.average_order_value ?? raw.averageOrderValue ?? 0
-    );
+    const totalGrossProfit = Number(raw.total_gross_profit ?? raw.totalGrossProfit ?? 0);
+    const averageMarginPct = Number(raw.average_margin_pct ?? raw.averageMarginPct ?? 0);
+    const totalTransactions = Number(raw.total_transactions ?? raw.totalTransactions ?? 0);
+    const averageOrderValue = Number(raw.average_order_value ?? raw.averageOrderValue ?? 0);
 
     return {
       totalRevenue,
@@ -269,36 +297,18 @@ export const salesService = {
     };
   },
 
-  acceptOnlineOrder: async (
-    saleId: string,
-    payload?: AcceptOnlineOrderInput
-  ): Promise<Sale> => {
-    const res = await apiClient.post<any>(
-      `/sales/${saleId}/accept-online`,
-      payload || {}
-    );
+  acceptOnlineOrder: async (saleId: string, payload?: AcceptOnlineOrderInput): Promise<Sale> => {
+    const res = await apiClient.post<any>(`/sales/${saleId}/accept-online`, payload || {});
     return normalizeSale(res.data);
   },
 
-  fulfillOnlineOrder: async (
-    saleId: string,
-    payload: FulfillOnlineOrderInput
-  ): Promise<Sale> => {
-    const res = await apiClient.post<any>(
-      `/sales/${saleId}/fulfill-online`,
-      payload
-    );
+  fulfillOnlineOrder: async (saleId: string, payload: FulfillOnlineOrderInput): Promise<Sale> => {
+    const res = await apiClient.post<any>(`/sales/${saleId}/fulfill-online`, payload);
     return normalizeSale(res.data);
   },
 
-  rejectOnlineOrder: async (
-    saleId: string,
-    payload: RejectOnlineOrderInput
-  ): Promise<Sale> => {
-    const res = await apiClient.post<any>(
-      `/sales/${saleId}/reject-online`,
-      payload
-    );
+  rejectOnlineOrder: async (saleId: string, payload: RejectOnlineOrderInput): Promise<Sale> => {
+    const res = await apiClient.post<any>(`/sales/${saleId}/reject-online`, payload);
     return normalizeSale(res.data);
   },
 };

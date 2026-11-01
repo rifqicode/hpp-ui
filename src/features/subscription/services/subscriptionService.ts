@@ -24,11 +24,41 @@ export const subscriptionService = {
       return response.data;
     } catch {
       return [
-        { code: 'qris', name: 'QRIS', category: 'QRIS', description: 'GoPay, OVO, DANA, ShopeePay, BCA, Livin, dll', enabled: true },
-        { code: 'bca_va', name: 'BCA Virtual Account', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via BCA Mobile, KlikBCA, atau ATM', enabled: true },
-        { code: 'mandiri_va', name: 'Mandiri Virtual Account', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via Livin\' by Mandiri atau ATM', enabled: true },
-        { code: 'bni_va', name: 'BNI Virtual Account', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via BNI Mobile atau ATM', enabled: true },
-        { code: 'bri_va', name: 'BRI Virtual Account (BRIVA)', category: 'VIRTUAL_ACCOUNT', description: 'Transfer via BRImo atau ATM', enabled: true },
+        {
+          code: 'qris',
+          name: 'QRIS',
+          category: 'QRIS',
+          description: 'GoPay, OVO, DANA, ShopeePay, BCA, Livin, dll',
+          enabled: true,
+        },
+        {
+          code: 'bca_va',
+          name: 'BCA Virtual Account',
+          category: 'VIRTUAL_ACCOUNT',
+          description: 'Transfer via BCA Mobile, KlikBCA, atau ATM',
+          enabled: true,
+        },
+        {
+          code: 'mandiri_va',
+          name: 'Mandiri Virtual Account',
+          category: 'VIRTUAL_ACCOUNT',
+          description: "Transfer via Livin' by Mandiri atau ATM",
+          enabled: true,
+        },
+        {
+          code: 'bni_va',
+          name: 'BNI Virtual Account',
+          category: 'VIRTUAL_ACCOUNT',
+          description: 'Transfer via BNI Mobile atau ATM',
+          enabled: true,
+        },
+        {
+          code: 'bri_va',
+          name: 'BRI Virtual Account (BRIVA)',
+          category: 'VIRTUAL_ACCOUNT',
+          description: 'Transfer via BRImo atau ATM',
+          enabled: true,
+        },
       ];
     }
   },
@@ -39,18 +69,20 @@ export const subscriptionService = {
   },
 
   subscribe: async (tier: SubscriptionTier): Promise<SubscribeResponseData> => {
-    const response = await apiClient.post<SubscribeResponseData>(
-      '/subscription/subscribe',
-      { tier }
-    );
+    const response = await apiClient.post<SubscribeResponseData>('/subscription/subscribe', {
+      tier,
+    });
     return response.data;
   },
 
-  checkout: async (tier: SubscriptionTier, paymentMethod?: string): Promise<CheckoutResponseData> => {
-    const response = await apiClient.post<CheckoutResponseData>(
-      '/subscription/checkout',
-      { tier, payment_method: paymentMethod }
-    );
+  checkout: async (
+    tier: SubscriptionTier,
+    paymentMethod?: string,
+  ): Promise<CheckoutResponseData> => {
+    const response = await apiClient.post<CheckoutResponseData>('/subscription/checkout', {
+      tier,
+      payment_method: paymentMethod,
+    });
     return response.data;
   },
 
@@ -68,10 +100,13 @@ export const subscriptionService = {
     await apiClient.post(`/subscription/invoices/${encodeURIComponent(invoiceId)}/cancel`);
   },
 
-  syncStatus: async (invoiceId: string, transactionId?: string): Promise<SyncInvoiceStatusResponse> => {
+  syncStatus: async (
+    invoiceId: string,
+    transactionId?: string,
+  ): Promise<SyncInvoiceStatusResponse> => {
     const params = transactionId ? `?transaction_id=${encodeURIComponent(transactionId)}` : '';
     const response = await apiClient.post<SyncInvoiceStatusResponse>(
-      `/subscription/invoices/${encodeURIComponent(invoiceId)}/sync-status${params}`
+      `/subscription/invoices/${encodeURIComponent(invoiceId)}/sync-status${params}`,
     );
     return response.data;
   },

@@ -19,12 +19,7 @@ interface SectionDndListProps {
   lockedIds?: string[];
 }
 
-export function SectionDndList({
-  items,
-  metadata,
-  onChange,
-  lockedIds = [],
-}: SectionDndListProps) {
+export function SectionDndList({ items, metadata, onChange, lockedIds = [] }: SectionDndListProps) {
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
 
@@ -46,24 +41,16 @@ export function SectionDndList({
 
   const toggleItem = (id: string, enabled: boolean) => {
     if (lockedIds.includes(id)) return;
-    onChange(
-      items.map((item) => (item.id === id ? { ...item, enabled } : item))
-    );
+    onChange(items.map(item => (item.id === id ? { ...item, enabled } : item)));
   };
 
-  const handleDragStart = (
-    event: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
+  const handleDragStart = (event: React.DragEvent<HTMLDivElement>, index: number) => {
     setDraggedIndex(index);
     event.dataTransfer.effectAllowed = 'move';
     event.dataTransfer.setData('text/plain', String(index));
   };
 
-  const handleDragOver = (
-    event: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>, index: number) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     if (dragOverIndex !== index) {
@@ -71,15 +58,10 @@ export function SectionDndList({
     }
   };
 
-  const handleDrop = (
-    event: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>, index: number) => {
     event.preventDefault();
     const fromIdx =
-      draggedIndex !== null
-        ? draggedIndex
-        : Number(event.dataTransfer.getData('text/plain'));
+      draggedIndex !== null ? draggedIndex : Number(event.dataTransfer.getData('text/plain'));
     if (!Number.isNaN(fromIdx)) {
       moveItem(fromIdx, index);
     }
@@ -108,18 +90,18 @@ export function SectionDndList({
             key={item.id}
             role="listitem"
             draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragOver={(e) => handleDragOver(e, index)}
-            onDrop={(e) => handleDrop(e, index)}
+            onDragStart={e => handleDragStart(e, index)}
+            onDragOver={e => handleDragOver(e, index)}
+            onDrop={e => handleDrop(e, index)}
             onDragEnd={handleDragEnd}
             className={`flex items-start justify-between gap-3 rounded-xl border p-3.5 transition-colors ${
               isDragOver
                 ? 'border-primary bg-accent/50'
                 : isDragging
-                ? 'border-border bg-muted/60 opacity-60'
-                : item.enabled
-                ? 'border-border bg-card'
-                : 'border-border bg-muted/30'
+                  ? 'border-border bg-muted/60 opacity-60'
+                  : item.enabled
+                    ? 'border-border bg-card'
+                    : 'border-border bg-muted/30'
             }`}
           >
             <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -179,7 +161,7 @@ export function SectionDndList({
                 <Switch
                   checked={item.enabled}
                   disabled={isLocked}
-                  onCheckedChange={(checked) => toggleItem(item.id, checked)}
+                  onCheckedChange={checked => toggleItem(item.id, checked)}
                   aria-label={`Aktifkan bagian ${meta.label}`}
                 />
               </div>

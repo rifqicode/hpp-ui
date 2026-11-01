@@ -7,8 +7,8 @@ interface LoadingState {
 }
 
 /** Counts in-flight API requests so the layout can show a non-blocking overlay. */
-export const useLoadingStore = create<LoadingState>()((set) => ({
+export const useLoadingStore = create<LoadingState>()(set => ({
   pending: 0,
-  start: () => set((s) => ({ pending: s.pending + 1 })),
-  stop: () => set((s) => ({ pending: Math.max(0, s.pending - 1) })),
+  start: () => set(s => ({ pending: s.pending + 1 })),
+  stop: () => set(s => ({ pending: Math.max(0, s.pending - 1) })),
 }));

@@ -1,64 +1,59 @@
-import { useMemo, useState } from 'react'
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, AlertCircle, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { useAuthStore } from '@/store/use-auth-store'
-import { useProductDetailQuery } from '@/features/reports/hooks/use-reports-query'
+import { useMemo, useState } from 'react';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useAuthStore } from '@/store/use-auth-store';
+import { useProductDetailQuery } from '@/features/reports/hooks/use-reports-query';
+import { formatCurrency } from '@/components/ui/currency-text';
 
-const money = (n: number) =>
-  new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(n)
+const money = (n: number) => formatCurrency(n, { preset: 'summary' });
 
-const number = (n: number) =>
-  n.toLocaleString('id-ID', { maximumFractionDigits: 1 })
+const number = (n: number) => n.toLocaleString('id-ID', { maximumFractionDigits: 1 });
 
-const percent = (n: number) => `${number(n)}%`
+const percent = (n: number) => `${number(n)}%`;
 
 const formatDate = (isoDate: string) => {
-  if (!isoDate) return '-'
+  if (!isoDate) return '-';
   return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('id-ID', {
     timeZone: 'UTC',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-  })
-}
+  });
+};
 
 const formatShortDate = (isoDate: string) => {
-  if (!isoDate) return '-'
+  if (!isoDate) return '-';
   return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('id-ID', {
     timeZone: 'UTC',
     day: 'numeric',
     month: 'short',
-  })
-}
+  });
+};
 
-type Metric = 'revenue' | 'quantity' | 'profit'
+type Metric = 'revenue' | 'quantity' | 'profit';
 
 export default function ProductReportPage() {
-  const { variantId, productSlug } = useParams<{ variantId?: string; productSlug?: string }>()
-  const targetId = variantId || productSlug
+  const { variantId, productSlug } = useParams<{ variantId?: string; productSlug?: string }>();
+  const targetId = variantId || productSlug;
 
-  const [searchParams, setSearchParams] = useSearchParams()
-  const location = useLocation()
-  const permissions = useAuthStore(s => s.permissions)
-  const activeStoreId = useAuthStore(s => s.activeStoreId)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const permissions = useAuthStore(s => s.permissions);
+  const activeStoreId = useAuthStore(s => s.activeStoreId);
 
-  const [metric, setMetric] = useState<Metric>('revenue')
+  const [metric, setMetric] = useState<Metric>('revenue');
 
-  const startDate = searchParams.get('start_date') || ''
-  const endDate = searchParams.get('end_date') || ''
-  const rawWeek = searchParams.get('week')
+  const startDate = searchParams.get('start_date') || '';
+  const endDate = searchParams.get('end_date') || '';
+  const rawWeek = searchParams.get('week');
   const selectedWeek =
     rawWeek !== null && rawWeek !== '' && !Number.isNaN(Number(rawWeek))
       ? Number(rawWeek)
-      : undefined
+      : undefined;
 
-  const canAccess = permissions.some(p => ['menu:reports', '*', 'ALL'].includes(p))
+  const canAccess = permissions.some(p => ['menu:reports', '*', 'ALL'].includes(p));
 
   const {
     data: report,
@@ -75,7 +70,7 @@ export default function ProductReportPage() {
       week: selectedWeek,
     },
     canAccess,
-  )
+  );
 
   const backButton = (
     <Button asChild variant="outline" size="sm">
@@ -84,20 +79,20 @@ export default function ProductReportPage() {
         Kembali ke laporan
       </Link>
     </Button>
-  )
+  );
 
   const handleSelectWeek = (weekIndex: number | undefined) => {
-    const next = new URLSearchParams(searchParams)
+    const next = new URLSearchParams(searchParams);
     if (weekIndex === undefined || weekIndex === selectedWeek) {
-      next.delete('week')
+      next.delete('week');
     } else {
-      next.set('week', String(weekIndex))
+      next.set('week', String(weekIndex));
     }
-    setSearchParams(next)
-  }
+    setSearchParams(next);
+  };
 
   const totals = useMemo(() => {
-    if (!report?.daily_rows) return null
+    if (!report?.daily_rows) return null;
     return report.daily_rows.reduce(
       (acc, r) => ({
         quantity: acc.quantity + Number(r.quantity_sold),
@@ -106,15 +101,15 @@ export default function ProductReportPage() {
         profit: acc.profit + Number(r.gross_profit),
       }),
       { quantity: 0, netSales: 0, cogs: 0, profit: 0 },
-    )
-  }, [report?.daily_rows])
+    );
+  }, [report?.daily_rows]);
 
   if (!canAccess) {
     return (
       <div className="rounded-xl border p-6 text-sm text-muted-foreground">
         Akses laporan belum diberikan untuk akun ini.
       </div>
-    )
+    );
   }
 
   if (isLoading) {
@@ -125,12 +120,12 @@ export default function ProductReportPage() {
           Memuat laporan produk…
         </div>
       </div>
-    )
+    );
   }
 
   if (isError || !report) {
     const errorMsg =
-      error instanceof Error ? error.message : 'Produk tidak ditemukan atau belum dapat dimuat.'
+      error instanceof Error ? error.message : 'Produk tidak ditemukan atau belum dapat dimuat.';
     return (
       <div className="space-y-4">
         {backButton}
@@ -146,34 +141,32 @@ export default function ProductReportPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  const growth = report.revenue_growth_pct !== null ? Number(report.revenue_growth_pct) : null
-  const marginPct = Number(report.margin_pct)
-  const targetMarginPct = Number(report.target_margin_pct)
-  const targetDiff = marginPct - targetMarginPct
+  const growth = report.revenue_growth_pct !== null ? Number(report.revenue_growth_pct) : null;
+  const marginPct = Number(report.margin_pct);
+  const targetMarginPct = Number(report.target_margin_pct);
+  const targetDiff = marginPct - targetMarginPct;
 
   const peakWeekMetric = Math.max(
     ...report.weeks.map(w => {
-      if (metric === 'quantity') return Number(w.quantity_sold)
-      if (metric === 'profit') return Number(w.gross_profit)
-      return Number(w.net_sales)
+      if (metric === 'quantity') return Number(w.quantity_sold);
+      if (metric === 'profit') return Number(w.gross_profit);
+      return Number(w.net_sales);
     }),
     1,
-  )
+  );
 
   const formatWeekMetric = (w: (typeof report.weeks)[0]) => {
-    if (metric === 'quantity') return `${number(Number(w.quantity_sold))} ${report.unit}`
-    if (metric === 'profit') return money(Number(w.gross_profit))
-    return money(Number(w.net_sales))
-  }
+    if (metric === 'quantity') return `${number(Number(w.quantity_sold))} ${report.unit}`;
+    if (metric === 'profit') return money(Number(w.gross_profit));
+    return money(Number(w.net_sales));
+  };
 
   return (
     <div className="min-w-0 space-y-6 pb-12">
-      <div className="flex items-center justify-between gap-4">
-        {backButton}
-      </div>
+      <div className="flex items-center justify-between gap-4">{backButton}</div>
 
       {/* Header */}
       <header className="rounded-xl border bg-card p-5 sm:p-6">
@@ -189,7 +182,9 @@ export default function ProductReportPage() {
           {report.display_name}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Harga jual: <strong className="text-foreground">{money(Number(report.selling_price))}</strong> · Target margin: <strong className="text-foreground">{percent(targetMarginPct)}</strong>
+          Harga jual:{' '}
+          <strong className="text-foreground">{money(Number(report.selling_price))}</strong> ·
+          Target margin: <strong className="text-foreground">{percent(targetMarginPct)}</strong>
         </p>
       </header>
 
@@ -233,7 +228,8 @@ export default function ProductReportPage() {
             {percent(marginPct)}
           </p>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {money(Number(report.unit_gross_profit))} laba per {report.unit}
+            {formatCurrency(Number(report.unit_gross_profit), { preset: 'detail' })} laba per{' '}
+            {report.unit}
           </p>
         </div>
       </div>
@@ -265,14 +261,14 @@ export default function ProductReportPage() {
 
           <div className="mt-6 grid grid-cols-4 items-end gap-2 border-b pb-4 sm:gap-4">
             {report.weeks.map(w => {
-              const isSelected = selectedWeek === w.week_index
+              const isSelected = selectedWeek === w.week_index;
               const val =
                 metric === 'quantity'
                   ? Number(w.quantity_sold)
                   : metric === 'profit'
                     ? Number(w.gross_profit)
-                    : Number(w.net_sales)
-              const heightPct = Math.round((val / peakWeekMetric) * 100)
+                    : Number(w.net_sales);
+              const heightPct = Math.round((val / peakWeekMetric) * 100);
 
               return (
                 <button
@@ -288,9 +284,7 @@ export default function ProductReportPage() {
                   <span className="flex h-36 items-end justify-center rounded bg-muted/30">
                     <span
                       className={`block w-3/4 rounded-t transition-all ${
-                        isSelected
-                          ? 'bg-primary'
-                          : 'bg-primary/40 group-hover:bg-primary/60'
+                        isSelected ? 'bg-primary' : 'bg-primary/40 group-hover:bg-primary/60'
                       }`}
                       style={{ height: `${Math.max(heightPct, 4)}%` }}
                     />
@@ -302,7 +296,7 @@ export default function ProductReportPage() {
                     {isSelected ? 'Dipilih' : ''}
                   </span>
                 </button>
-              )
+              );
             })}
           </div>
 
@@ -314,12 +308,36 @@ export default function ProductReportPage() {
               <table aria-label="Rekap empat minggu" className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b bg-muted/20">
-                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground">Minggu</th>
-                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground">Rentang</th>
-                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground text-right">Terjual</th>
-                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground text-right">Penjualan</th>
-                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground text-right">HPP</th>
-                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground text-right">Laba kotor</th>
+                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground">
+                      Minggu
+                    </th>
+                    <th scope="col" className="py-2.5 px-3 font-medium text-muted-foreground">
+                      Rentang
+                    </th>
+                    <th
+                      scope="col"
+                      className="py-2.5 px-3 font-medium text-muted-foreground text-right"
+                    >
+                      Terjual
+                    </th>
+                    <th
+                      scope="col"
+                      className="py-2.5 px-3 font-medium text-muted-foreground text-right"
+                    >
+                      Penjualan
+                    </th>
+                    <th
+                      scope="col"
+                      className="py-2.5 px-3 font-medium text-muted-foreground text-right"
+                    >
+                      HPP
+                    </th>
+                    <th
+                      scope="col"
+                      className="py-2.5 px-3 font-medium text-muted-foreground text-right"
+                    >
+                      Laba kotor
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -332,9 +350,15 @@ export default function ProductReportPage() {
                       <td className="py-2.5 px-3 text-right tabular-nums">
                         {number(Number(w.quantity_sold))} {report.unit}
                       </td>
-                      <td className="py-2.5 px-3 text-right tabular-nums">{money(Number(w.net_sales))}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums">{money(Number(w.cogs))}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums">{money(Number(w.gross_profit))}</td>
+                      <td className="py-2.5 px-3 text-right tabular-nums">
+                        {money(Number(w.net_sales))}
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums">
+                        {money(Number(w.cogs))}
+                      </td>
+                      <td className="py-2.5 px-3 text-right tabular-nums">
+                        {money(Number(w.gross_profit))}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -360,7 +384,9 @@ export default function ProductReportPage() {
             </div>
             <div className="space-y-1 py-3">
               <dt className="text-muted-foreground">HPP per unit terkini</dt>
-              <dd className="font-medium tabular-nums">{money(Number(report.current_hpp))}</dd>
+              <dd className="font-medium tabular-nums">
+                {formatCurrency(Number(report.current_hpp), { preset: 'detail' })}
+              </dd>
             </div>
             <div className="space-y-1 py-3">
               <dt className="text-muted-foreground">Perubahan dari HPP sebelumnya</dt>
@@ -392,36 +418,67 @@ export default function ProductReportPage() {
           <div className="flex items-center justify-between gap-3 border-b pb-3">
             <div>
               <h2 className="font-semibold">Dari harga jual menjadi laba</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">Komposisi biaya per 1 {report.unit}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Komposisi biaya per 1 {report.unit}
+              </p>
             </div>
-            <Badge variant={report.unit_cost_breakdown.cost_source === 'REALIZED_BATCH' ? 'default' : 'secondary'} className="text-[10px]">
-              {report.unit_cost_breakdown.cost_source === 'REALIZED_BATCH' ? 'Batch Realisasi' : 'Estimasi Standar'}
+            <Badge
+              variant={
+                report.unit_cost_breakdown.cost_source === 'REALIZED_BATCH'
+                  ? 'default'
+                  : 'secondary'
+              }
+              className="text-[10px]"
+            >
+              {report.unit_cost_breakdown.cost_source === 'REALIZED_BATCH'
+                ? 'Batch Realisasi'
+                : 'Estimasi Standar'}
             </Badge>
           </div>
           <div className="mt-4 space-y-2 text-xs sm:text-sm">
             <div className="flex justify-between py-1">
               <span className="text-muted-foreground">Harga jual / unit</span>
-              <span className="font-semibold tabular-nums">{money(Number(report.unit_cost_breakdown.selling_price))}</span>
+              <span className="font-semibold tabular-nums">
+                {money(Number(report.unit_cost_breakdown.selling_price))}
+              </span>
             </div>
             <div className="flex justify-between py-1 pl-3 text-muted-foreground">
               <span>- Bahan baku (BOM)</span>
-              <span className="tabular-nums">{money(Number(report.unit_cost_breakdown.material_cost))}</span>
+              <span className="tabular-nums">
+                {formatCurrency(Number(report.unit_cost_breakdown.material_cost), {
+                  preset: 'detail',
+                })}
+              </span>
             </div>
             <div className="flex justify-between py-1 pl-3 text-muted-foreground">
               <span>- Tenaga kerja</span>
-              <span className="tabular-nums">{money(Number(report.unit_cost_breakdown.labor_cost))}</span>
+              <span className="tabular-nums">
+                {formatCurrency(Number(report.unit_cost_breakdown.labor_cost), {
+                  preset: 'detail',
+                })}
+              </span>
             </div>
             <div className="flex justify-between py-1 pl-3 text-muted-foreground">
               <span>- Overhead</span>
-              <span className="tabular-nums">{money(Number(report.unit_cost_breakdown.overhead_cost))}</span>
+              <span className="tabular-nums">
+                {formatCurrency(Number(report.unit_cost_breakdown.overhead_cost), {
+                  preset: 'detail',
+                })}
+              </span>
             </div>
             <div className="flex justify-between border-t py-2 font-medium">
               <span>Total HPP / unit</span>
-              <span className="tabular-nums">{money(Number(report.unit_cost_breakdown.total_hpp))}</span>
+              <span className="tabular-nums">
+                {formatCurrency(Number(report.unit_cost_breakdown.total_hpp), { preset: 'detail' })}
+              </span>
             </div>
             <div className="flex justify-between border-t border-dashed py-2 font-semibold text-primary">
               <span>Laba kotor / unit</span>
-              <span className="tabular-nums">{money(Number(report.unit_cost_breakdown.unit_gross_profit))}</span>
+              <span className="tabular-nums">
+                {formatCurrency(Number(report.unit_cost_breakdown.unit_gross_profit), {
+                  preset: 'detail',
+                })}
+              </span>
             </div>
           </div>
         </section>
@@ -437,15 +494,21 @@ export default function ProductReportPage() {
           <div className="mt-4 space-y-2 text-xs sm:text-sm">
             <div className="flex justify-between py-1">
               <span className="text-muted-foreground">Penjualan kotor</span>
-              <span className="tabular-nums">{money(Number(report.reconciliation.gross_sales))}</span>
+              <span className="tabular-nums">
+                {money(Number(report.reconciliation.gross_sales))}
+              </span>
             </div>
             <div className="flex justify-between py-1 pl-3 text-muted-foreground">
               <span>- Alokasi diskon</span>
-              <span className="tabular-nums">({money(Number(report.reconciliation.discount_amount))})</span>
+              <span className="tabular-nums">
+                ({money(Number(report.reconciliation.discount_amount))})
+              </span>
             </div>
             <div className="flex justify-between py-1 pl-3 text-muted-foreground">
               <span>- Retur</span>
-              <span className="tabular-nums">({money(Number(report.reconciliation.return_amount))})</span>
+              <span className="tabular-nums">
+                ({money(Number(report.reconciliation.return_amount))})
+              </span>
             </div>
             <div className="flex justify-between border-t py-2 font-medium">
               <span>Penjualan bersih</span>
@@ -457,7 +520,9 @@ export default function ProductReportPage() {
             </div>
             <div className="flex justify-between border-t border-dashed py-2 font-semibold text-primary">
               <span>Laba kotor</span>
-              <span className="tabular-nums">{money(Number(report.reconciliation.gross_profit))}</span>
+              <span className="tabular-nums">
+                {money(Number(report.reconciliation.gross_profit))}
+              </span>
             </div>
           </div>
         </section>
@@ -475,25 +540,34 @@ export default function ProductReportPage() {
             </p>
           </div>
           {selectedWeek !== undefined && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleSelectWeek(undefined)}
-            >
+            <Button variant="outline" size="sm" onClick={() => handleSelectWeek(undefined)}>
               Tampilkan semua hari
             </Button>
           )}
         </div>
 
         <div className="overflow-x-auto">
-          <table aria-label="Rincian penjualan harian" className="w-full text-left text-xs sm:text-sm">
+          <table
+            aria-label="Rincian penjualan harian"
+            className="w-full text-left text-xs sm:text-sm"
+          >
             <thead>
               <tr className="border-b bg-muted/40">
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">Terjual</th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">Penjualan bersih</th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">HPP terjual</th>
-                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">Laba kotor</th>
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                  Tanggal
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  Terjual
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  Penjualan bersih
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  HPP terjual
+                </th>
+                <th scope="col" className="px-4 py-3 font-medium text-muted-foreground text-right">
+                  Laba kotor
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -506,7 +580,9 @@ export default function ProductReportPage() {
               ) : (
                 report.daily_rows.map(r => (
                   <tr key={r.date} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="px-4 py-3 font-medium whitespace-nowrap">{formatDate(r.date)}</td>
+                    <td className="px-4 py-3 font-medium whitespace-nowrap">
+                      {formatDate(r.date)}
+                    </td>
                     <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap">
                       {number(Number(r.quantity_sold))} {report.unit}
                     </td>
@@ -546,5 +622,5 @@ export default function ProductReportPage() {
         </div>
       </section>
     </div>
-  )
+  );
 }

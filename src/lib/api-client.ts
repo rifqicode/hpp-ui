@@ -21,7 +21,7 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(
-  (config) => {
+  config => {
     const shouldSkipLoading = Boolean(config.skipLoading || config.url?.includes('/store/ai/'));
     if (shouldSkipLoading) {
       (config as any)._skippedLoading = true;
@@ -38,16 +38,16 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
+  error => {
     if (!(error?.config as any)?._skippedLoading) {
       useLoadingStore.getState().stop();
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 apiClient.interceptors.response.use(
-  (response) => {
+  response => {
     if (!(response.config as any)?._skippedLoading) {
       useLoadingStore.getState().stop();
     }
@@ -65,7 +65,7 @@ apiClient.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  error => {
     if (!(error?.config as any)?._skippedLoading) {
       useLoadingStore.getState().stop();
     }
@@ -106,7 +106,11 @@ apiClient.interceptors.response.use(
 
       const respData = error.response.data as any;
       const errorCode = respData.errors?.code || respData.data?.code || respData.code;
-      if (errorCode === 'QUOTA_EXCEEDED' || errorCode === 'FEATURE_LOCKED' || errorCode === 'STAFF_ACCESS_SUSPENDED') {
+      if (
+        errorCode === 'QUOTA_EXCEEDED' ||
+        errorCode === 'FEATURE_LOCKED' ||
+        errorCode === 'STAFF_ACCESS_SUSPENDED'
+      ) {
         window.dispatchEvent(
           new CustomEvent('open-upgrade-modal', {
             detail: {
@@ -115,13 +119,13 @@ apiClient.interceptors.response.use(
               feature: respData.errors?.feature,
               featureName: respData.errors?.feature_name,
             },
-          })
+          }),
         );
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

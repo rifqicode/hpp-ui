@@ -35,9 +35,10 @@ const mapRawToOverhead = (raw: OverheadRawResponse): OverheadType => ({
   storeId: raw.store_id,
   name: raw.name,
   category: raw.category || 'PRODUCTION',
-  defaultAmount: raw.default_amount !== null && raw.default_amount !== undefined
-    ? Number(raw.default_amount)
-    : null,
+  defaultAmount:
+    raw.default_amount !== null && raw.default_amount !== undefined
+      ? Number(raw.default_amount)
+      : null,
   notes: raw.notes || '',
   isActive: Boolean(raw.is_active),
   createdAt: raw.created_at,
@@ -74,15 +75,23 @@ export const overheadService = {
       if (query?.page) params.append('page', query.page.toString());
       if (query?.limit) params.append('limit', query.limit.toString());
       if (query?.search) params.append('search', query.search);
-      if (query?.activeOnly !== undefined) params.append('active_only', query.activeOnly.toString());
+      if (query?.activeOnly !== undefined)
+        params.append('active_only', query.activeOnly.toString());
       if (query?.category) params.append('category', query.category);
       if (query?.sort_by) params.append('sort_by', query.sort_by);
       if (query?.sortBy) params.append('sortBy', query.sortBy);
 
       const qs = params.toString() ? `?${params.toString()}` : '';
-      const response = await apiClient.get<PaginatedOverheadRawResponse | OverheadRawResponse[]>(`/overheads${qs}`);
+      const response = await apiClient.get<PaginatedOverheadRawResponse | OverheadRawResponse[]>(
+        `/overheads${qs}`,
+      );
       const rawData = response.data;
-      if (rawData && typeof rawData === 'object' && 'items' in rawData && Array.isArray(rawData.items)) {
+      if (
+        rawData &&
+        typeof rawData === 'object' &&
+        'items' in rawData &&
+        Array.isArray(rawData.items)
+      ) {
         return {
           items: rawData.items.map(mapRawToOverhead),
           total: rawData.total,
@@ -111,15 +120,15 @@ export const overheadService = {
     } catch {
       let mock = getMockData();
       if (query?.activeOnly !== undefined) {
-        mock = mock.filter((item) => item.isActive === query.activeOnly);
+        mock = mock.filter(item => item.isActive === query.activeOnly);
       }
       if (query?.category) {
-        mock = mock.filter((item) => item.category === query.category);
+        mock = mock.filter(item => item.category === query.category);
       }
       if (query?.search) {
         const s = query.search.toLowerCase();
         mock = mock.filter(
-          (item) => item.name.toLowerCase().includes(s) || item.notes.toLowerCase().includes(s)
+          item => item.name.toLowerCase().includes(s) || item.notes.toLowerCase().includes(s),
         );
       }
       const sortVal = query?.sort_by || query?.sortBy;
@@ -149,41 +158,54 @@ export const overheadService = {
     }
   },
 
-  getOverheads: async (query?: { activeOnly?: boolean; category?: OverheadCategory }): Promise<OverheadType[]> => {
+  getOverheads: async (query?: {
+    activeOnly?: boolean;
+    category?: OverheadCategory;
+  }): Promise<OverheadType[]> => {
     try {
       const params = new URLSearchParams();
-      if (query?.activeOnly !== undefined) params.append('active_only', query.activeOnly.toString());
+      if (query?.activeOnly !== undefined)
+        params.append('active_only', query.activeOnly.toString());
       if (query?.category) params.append('category', query.category);
 
       const qs = params.toString() ? `?${params.toString()}` : '';
-      const response = await apiClient.get<OverheadRawResponse[] | { items: OverheadRawResponse[] }>(`/overheads${qs}`);
+      const response = await apiClient.get<
+        OverheadRawResponse[] | { items: OverheadRawResponse[] }
+      >(`/overheads${qs}`);
       const rawData = response.data;
       let items: OverheadRawResponse[] = [];
       if (Array.isArray(rawData)) {
         items = rawData;
-      } else if (rawData && typeof rawData === 'object' && 'items' in rawData && Array.isArray(rawData.items)) {
+      } else if (
+        rawData &&
+        typeof rawData === 'object' &&
+        'items' in rawData &&
+        Array.isArray(rawData.items)
+      ) {
         items = rawData.items;
       }
       let result = items.map(mapRawToOverhead);
       if (result.length > 0) {
         if (query?.activeOnly !== undefined) {
-          result = result.filter((item) => item.isActive === query.activeOnly);
+          result = result.filter(item => item.isActive === query.activeOnly);
         }
         if (query?.category) {
-          result = result.filter((item) => item.category === query.category);
+          result = result.filter(item => item.category === query.category);
         }
         return result;
       }
       // If backend returns empty array or doesn't have data, return mock/local fallback
       let mock = getMockData();
-      if (query?.activeOnly !== undefined) mock = mock.filter((item) => item.isActive === query.activeOnly);
-      if (query?.category) mock = mock.filter((item) => item.category === query.category);
+      if (query?.activeOnly !== undefined)
+        mock = mock.filter(item => item.isActive === query.activeOnly);
+      if (query?.category) mock = mock.filter(item => item.category === query.category);
       return mock;
     } catch {
       // Backend unavailable or 404, fallback to local storage
       let mock = getMockData();
-      if (query?.activeOnly !== undefined) mock = mock.filter((item) => item.isActive === query.activeOnly);
-      if (query?.category) mock = mock.filter((item) => item.category === query.category);
+      if (query?.activeOnly !== undefined)
+        mock = mock.filter(item => item.isActive === query.activeOnly);
+      if (query?.category) mock = mock.filter(item => item.category === query.category);
       return mock;
     }
   },
@@ -199,7 +221,7 @@ export const overheadService = {
       return mapRawToOverhead(response.data);
     } catch {
       const current = getMockData();
-      const found = current.find((item) => item.id === id);
+      const found = current.find(item => item.id === id);
       if (found) return found;
       throw new Error(`Overhead with id ${id} not found`);
     }
@@ -252,23 +274,26 @@ export const overheadService = {
       const response = await apiClient.put<OverheadRawResponse>(`/overheads/${id}`, payload);
       const updated = mapRawToOverhead(response.data);
       const current = getMockData();
-      saveMockData(current.map((item) => (item.id === id ? updated : item)));
+      saveMockData(current.map(item => (item.id === id ? updated : item)));
       return updated;
     } catch {
       const current = getMockData();
-      const existing = current.find((item) => item.id === id);
+      const existing = current.find(item => item.id === id);
       const updated: OverheadType = {
         id,
         storeId: existing?.storeId || 'default-store',
         name: input.name ?? existing?.name ?? 'Overhead',
         category: input.category ?? existing?.category ?? 'PRODUCTION',
-        defaultAmount: input.defaultAmount !== undefined ? input.defaultAmount : (existing?.defaultAmount ?? null),
+        defaultAmount:
+          input.defaultAmount !== undefined
+            ? input.defaultAmount
+            : (existing?.defaultAmount ?? null),
         notes: input.notes !== undefined ? input.notes : (existing?.notes ?? ''),
         isActive: input.isActive !== undefined ? input.isActive : (existing?.isActive ?? true),
         createdAt: existing?.createdAt ?? new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      saveMockData(current.map((item) => (item.id === id ? updated : item)));
+      saveMockData(current.map(item => (item.id === id ? updated : item)));
       return updated;
     }
   },
@@ -280,7 +305,7 @@ export const overheadService = {
       // continue to remove from mock
     }
     const current = getMockData();
-    saveMockData(current.filter((item) => item.id !== id));
+    saveMockData(current.filter(item => item.id !== id));
   },
 
   applyTemplate: async (): Promise<OverheadType[]> => {
@@ -345,8 +370,8 @@ export const overheadService = {
 
     const current = getMockData();
     // Merge without duplicating names
-    const existingNames = new Set(current.map((c) => c.name.toLowerCase()));
-    const newItems = defaultTemplates.filter((t) => !existingNames.has(t.name.toLowerCase()));
+    const existingNames = new Set(current.map(c => c.name.toLowerCase()));
+    const newItems = defaultTemplates.filter(t => !existingNames.has(t.name.toLowerCase()));
     const merged = [...current, ...newItems];
     saveMockData(merged);
     return merged;

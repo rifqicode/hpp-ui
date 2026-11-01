@@ -100,4 +100,3 @@ export interface StockSummary {
   low_stock: number;
   out_of_stock: number;
 }
-

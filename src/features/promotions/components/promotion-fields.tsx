@@ -2,11 +2,12 @@ import { useId, type ComponentProps, type ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
 import { Input } from '@/components/ui/input';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
 export const selectClass =
-  'h-9 w-full min-w-0 rounded-lg border border-input bg-background px-3 py-1.5 text-base text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive md:text-sm dark:bg-card';
+  'h-11 w-full min-w-0 cursor-pointer rounded-lg border border-input bg-background px-3 py-1.5 text-base text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive sm:h-10 md:text-sm dark:bg-card';
 
 export function PromotionFormPanel({
   title,
@@ -20,15 +21,18 @@ export function PromotionFormPanel({
   className?: string;
 }) {
   return (
-    <Card className={cn('min-w-0 gap-0 rounded-2xl border border-border/80 py-0 shadow-xs ring-0', className)}>
+    <Card
+      className={cn(
+        'min-w-0 gap-0 rounded-xl border border-border/80 py-0 shadow-none ring-0',
+        className,
+      )}
+    >
       <CardHeader className="border-b p-4 sm:px-5">
         <CardTitle className="text-base font-semibold">
           <h2>{title}</h2>
         </CardTitle>
         {description && (
-          <CardDescription className="text-xs leading-5 sm:text-sm">
-            {description}
-          </CardDescription>
+          <CardDescription className="text-xs leading-5 sm:text-sm">{description}</CardDescription>
         )}
       </CardHeader>
       <CardContent className="space-y-4 p-4 sm:p-5">{children}</CardContent>
@@ -68,7 +72,7 @@ export function Field({
         )}
         {optional && <span className="text-sm text-muted-foreground">(opsional)</span>}
       </div>
-      {children(id, hintId)}
+      {children(id, [hintId, errorId].filter(Boolean).join(' ') || undefined)}
       {hint && (
         <p id={hintId} className="text-xs leading-5 text-muted-foreground">
           {hint}
@@ -106,7 +110,8 @@ export function NumberField({
         <FormattedNumberInput
           id={id}
           aria-describedby={hintId}
-          className="h-9"
+          aria-invalid={Boolean(error)}
+          className="h-11 sm:h-10"
           value={value}
           valueType="string"
           allowDecimal={!integer}
@@ -142,7 +147,29 @@ export function TextField({
           {...props}
           id={id}
           aria-describedby={hintId}
-          className={cn('h-9', className)}
+          aria-invalid={Boolean(error)}
+          className={cn('h-11 sm:h-10', className)}
+        />
+      )}
+    </Field>
+  );
+}
+
+export function DateTimeField({
+  label,
+  error,
+  ...props
+}: ComponentProps<typeof DateTimePicker> & { label: string; error?: string }) {
+  return (
+    <Field label={label} error={error}>
+      {(id, hintId) => (
+        <DateTimePicker
+          {...props}
+          id={id}
+          aria-describedby={hintId}
+          aria-invalid={Boolean(error)}
+          className="min-h-11 sm:min-h-10"
+          timeLabel={`Jam ${label}`}
         />
       )}
     </Field>
@@ -155,7 +182,12 @@ export function CheckField({
   ...props
 }: ComponentProps<'input'> & { label: string }) {
   return (
-    <label className={cn('flex min-h-9 cursor-pointer items-center gap-3 text-sm', className)}>
+    <label
+      className={cn(
+        'flex min-h-11 cursor-pointer items-center gap-3 text-sm sm:min-h-10',
+        className,
+      )}
+    >
       <input
         {...props}
         type="checkbox"

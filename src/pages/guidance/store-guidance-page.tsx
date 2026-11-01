@@ -157,8 +157,8 @@ export default function StoreGuidancePage() {
                 item.isCompleted
                   ? 'border-border/60 bg-muted/20 opacity-90'
                   : isNext
-                  ? 'border-primary/50 bg-primary/5 ring-2 ring-primary/20 shadow-sm'
-                  : 'border-border bg-card hover:border-border/80'
+                    ? 'border-primary/50 bg-primary/5 ring-2 ring-primary/20 shadow-sm'
+                    : 'border-border bg-card hover:border-border/80'
               }`}
             >
               <CardHeader className="p-4 sm:p-5 pb-3">
@@ -169,8 +169,8 @@ export default function StoreGuidancePage() {
                         item.isCompleted
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                           : isNext
-                          ? 'bg-primary/10 text-primary'
-                          : 'bg-muted text-muted-foreground'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       <Icon className="size-4.5" />

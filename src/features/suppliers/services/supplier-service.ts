@@ -1,4 +1,4 @@
-import apiClient from "@/lib/api-client"
+import apiClient from '@/lib/api-client';
 import type {
   Supplier,
   SupplierSummary,
@@ -7,13 +7,13 @@ import type {
   SupplierPurchaseRecord,
   SupplierQueryParams,
   PaginatedSuppliers,
-} from "../types"
+} from '../types';
 
 export const supplierService = {
   getSuppliers: async (params?: SupplierQueryParams): Promise<PaginatedSuppliers> => {
-    const response = await apiClient.get<any>("/suppliers", { params })
+    const response = await apiClient.get<any>('/suppliers', { params });
     if (response.data && Array.isArray(response.data.items)) {
-      return response.data as PaginatedSuppliers
+      return response.data as PaginatedSuppliers;
     }
     if (Array.isArray(response.data)) {
       return {
@@ -22,42 +22,44 @@ export const supplierService = {
         page: 1,
         limit: response.data.length,
         totalPages: 1,
-      }
+      };
     }
-    return { items: [], total: 0, page: 1, limit: 10, totalPages: 1 }
+    return { items: [], total: 0, page: 1, limit: 10, totalPages: 1 };
   },
 
   getAllSuppliers: async (): Promise<Supplier[]> => {
-    const res = await supplierService.getSuppliers({ page: 1, limit: 1000 })
-    return res.items
+    const res = await supplierService.getSuppliers({ page: 1, limit: 1000 });
+    return res.items;
   },
 
   getSupplierSummary: async (): Promise<SupplierSummary> => {
-    const response = await apiClient.get<SupplierSummary>("/suppliers/summary")
-    return response.data
+    const response = await apiClient.get<SupplierSummary>('/suppliers/summary');
+    return response.data;
   },
 
   getSupplierById: async (id: string): Promise<Supplier> => {
-    const response = await apiClient.get<Supplier>(`/suppliers/${id}`)
-    return response.data
+    const response = await apiClient.get<Supplier>(`/suppliers/${id}`);
+    return response.data;
   },
 
   createSupplier: async (data: CreateSupplierInput): Promise<Supplier> => {
-    const response = await apiClient.post<Supplier>("/suppliers", data)
-    return response.data
+    const response = await apiClient.post<Supplier>('/suppliers', data);
+    return response.data;
   },
 
   updateSupplier: async (id: string, data: UpdateSupplierInput): Promise<Supplier> => {
-    const response = await apiClient.put<Supplier>(`/suppliers/${id}`, data)
-    return response.data
+    const response = await apiClient.put<Supplier>(`/suppliers/${id}`, data);
+    return response.data;
   },
 
   deleteSupplier: async (id: string): Promise<void> => {
-    await apiClient.delete(`/suppliers/${id}`)
+    await apiClient.delete(`/suppliers/${id}`);
   },
 
   getSupplierPurchases: async (supplierId: string): Promise<SupplierPurchaseRecord[]> => {
-    const response = await apiClient.get<SupplierPurchaseRecord[]>(`/suppliers/${supplierId}/purchases`)
-    return Array.isArray(response.data) ? response.data : []
+    const response = await apiClient.get<SupplierPurchaseRecord[]>(
+      `/suppliers/${supplierId}/purchases`,
+    );
+    return Array.isArray(response.data) ? response.data : [];
   },
-}
+};

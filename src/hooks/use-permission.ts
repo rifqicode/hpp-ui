@@ -1,7 +1,7 @@
-import { useAuthStore } from "@/store/use-auth-store";
+import { useAuthStore } from '@/store/use-auth-store';
 
 export function usePermission() {
-  const permissions = useAuthStore((state) => state.permissions) || [];
+  const permissions = useAuthStore(state => state.permissions) || [];
 
   /**
    * Check if user has a specific permission
@@ -14,14 +14,14 @@ export function usePermission() {
    * Check if user has AT LEAST ONE of the specified permissions
    */
   const canAny = (...permissionCodes: string[]): boolean => {
-    return permissionCodes.some((code) => permissions.includes(code));
+    return permissionCodes.some(code => permissions.includes(code));
   };
 
   /**
    * Check if user has ALL of the specified permissions
    */
   const canAll = (...permissionCodes: string[]): boolean => {
-    return permissionCodes.every((code) => permissions.includes(code));
+    return permissionCodes.every(code => permissions.includes(code));
   };
 
   return {

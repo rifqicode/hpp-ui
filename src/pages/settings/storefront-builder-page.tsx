@@ -17,13 +17,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
@@ -67,8 +61,7 @@ const PREVIEW_SAMPLE_PRODUCTS: PublicCatalogProduct[] = [
     category: 'Minuman Kopi',
     mode: 'MAKE_TO_ORDER',
     image_url: null,
-    description:
-      'Espresso arabika pilihan dengan susu segar dan gula aren organik.',
+    description: 'Espresso arabika pilihan dengan susu segar dan gula aren organik.',
     variants: [
       {
         id: 'var-1',
@@ -90,8 +83,7 @@ const PREVIEW_SAMPLE_PRODUCTS: PublicCatalogProduct[] = [
     category: 'Pastry & Bakery',
     mode: 'MAKE_TO_STOCK',
     image_url: null,
-    description:
-      'Croissant renyah berlapis dengan french butter panggang harian.',
+    description: 'Croissant renyah berlapis dengan french butter panggang harian.',
     variants: [
       {
         id: 'var-2',
@@ -127,16 +119,10 @@ const PREVIEW_SAMPLE_CART: StorefrontCartItem[] = [
   },
 ];
 
-export default function StorefrontBuilderPage({
-  initialStore,
-}: StorefrontBuilderPageProps = {}) {
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
-  const [store, setStore] = React.useState<StoreInfo | null>(
-    initialStore ?? null
-  );
-  const [isLoadingStore, setIsLoadingStore] = React.useState<boolean>(
-    initialStore === undefined
-  );
+export default function StorefrontBuilderPage({ initialStore }: StorefrontBuilderPageProps = {}) {
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
+  const [store, setStore] = React.useState<StoreInfo | null>(initialStore ?? null);
+  const [isLoadingStore, setIsLoadingStore] = React.useState<boolean>(initialStore === undefined);
 
   React.useEffect(() => {
     if (initialStore !== undefined) {
@@ -168,33 +154,31 @@ export default function StorefrontBuilderPage({
 
   const initialSlug = React.useMemo(
     () => store?.slug || slugifyStoreName(store?.name || 'toko-kami'),
-    [store?.slug, store?.name]
+    [store?.slug, store?.name],
   );
 
   const [slug, setSlug] = React.useState(initialSlug);
   const [isActive, setIsActive] = React.useState<boolean>(
-    Boolean(store?.isStorefrontActive ?? store?.is_storefront_active ?? false)
+    Boolean(store?.isStorefrontActive ?? store?.is_storefront_active ?? false),
   );
   const [config, setConfig] = React.useState<StorefrontConfig>(() =>
     normalizeStorefrontConfig(
       store?.storefrontConfig ?? store?.storefront_config,
       store?.name || 'Toko Kami',
-      store?.phone || ''
-    )
+      store?.phone || '',
+    ),
   );
 
   React.useEffect(() => {
     if (store) {
       setSlug(store.slug || slugifyStoreName(store.name || 'toko-kami'));
-      setIsActive(
-        Boolean(store.isStorefrontActive ?? store.is_storefront_active ?? false)
-      );
+      setIsActive(Boolean(store.isStorefrontActive ?? store.is_storefront_active ?? false));
       setConfig(
         normalizeStorefrontConfig(
           store.storefrontConfig ?? store.storefront_config,
           store.name,
-          store.phone || ''
-        )
+          store.phone || '',
+        ),
       );
     }
   }, [store]);
@@ -202,51 +186,44 @@ export default function StorefrontBuilderPage({
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveSuccess, setSaveSuccess] = React.useState('');
   const [saveError, setSaveError] = React.useState('');
-  const [uploadingField, setUploadingField] = React.useState<
-    'logo' | 'banner' | 'qris' | null
-  >(null);
-  const [previewModeTab, setPreviewModeTab] = React.useState<
-    'catalog' | 'checkout'
-  >('catalog');
+  const [uploadingField, setUploadingField] = React.useState<'logo' | 'banner' | 'qris' | null>(
+    null,
+  );
+  const [previewModeTab, setPreviewModeTab] = React.useState<'catalog' | 'checkout'>('catalog');
 
   const publicUrl = `${window.location.origin}/s/${slug || 'toko'}`;
 
-  const handleUploadImage = async (
-    field: 'logo' | 'banner' | 'qris',
-    file?: File
-  ) => {
+  const handleUploadImage = async (field: 'logo' | 'banner' | 'qris', file?: File) => {
     if (!file) return;
     try {
       setUploadingField(field);
       setSaveError('');
       const uploadedUrl = await storefrontService.uploadStorefrontImage(file);
       if (field === 'logo') {
-        setConfig((prev) => ({
+        setConfig(prev => ({
           ...prev,
           theme: { ...prev.theme, logo_url: uploadedUrl },
         }));
       } else if (field === 'banner') {
-        setConfig((prev) => ({
+        setConfig(prev => ({
           ...prev,
           theme: { ...prev.theme, banner_url: uploadedUrl },
         }));
       } else if (field === 'qris') {
-        setConfig((prev) => ({
+        setConfig(prev => ({
           ...prev,
           payment: { ...prev.payment, qris_image_url: uploadedUrl },
         }));
       }
     } catch (err) {
-      setSaveError(
-        err instanceof Error ? err.message : 'Gagal mengunggah gambar.'
-      );
+      setSaveError(err instanceof Error ? err.message : 'Gagal mengunggah gambar.');
     } finally {
       setUploadingField(null);
     }
   };
 
   const handleAddBankAccount = () => {
-    setConfig((prev) => ({
+    setConfig(prev => ({
       ...prev,
       payment: {
         ...prev.payment,
@@ -266,27 +243,25 @@ export default function StorefrontBuilderPage({
   const handleUpdateBankAccount = (
     id: string,
     key: 'bank_name' | 'account_number' | 'account_holder_name',
-    val: string
+    val: string,
   ) => {
-    setConfig((prev) => ({
+    setConfig(prev => ({
       ...prev,
       payment: {
         ...prev.payment,
-        bank_accounts: prev.payment.bank_accounts.map((acc) =>
-          acc.id === id ? { ...acc, [key]: val } : acc
+        bank_accounts: prev.payment.bank_accounts.map(acc =>
+          acc.id === id ? { ...acc, [key]: val } : acc,
         ),
       },
     }));
   };
 
   const handleRemoveBankAccount = (id: string) => {
-    setConfig((prev) => ({
+    setConfig(prev => ({
       ...prev,
       payment: {
         ...prev.payment,
-        bank_accounts: prev.payment.bank_accounts.filter(
-          (acc) => acc.id !== id
-        ),
+        bank_accounts: prev.payment.bank_accounts.filter(acc => acc.id !== id),
       },
     }));
   };
@@ -307,11 +282,7 @@ export default function StorefrontBuilderPage({
       setSlug(cleanedSlug);
       setSaveSuccess('Tampilan & pengaturan checkout berhasil disimpan!');
     } catch (err) {
-      setSaveError(
-        err instanceof Error
-          ? err.message
-          : 'Gagal menyimpan pengaturan toko online.'
-      );
+      setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan pengaturan toko online.');
     } finally {
       setIsSaving(false);
     }
@@ -331,10 +302,7 @@ export default function StorefrontBuilderPage({
   }
 
   return (
-    <form
-      onSubmit={handleSaveStorefront}
-      className="w-full min-w-0 space-y-5 pb-8"
-    >
+    <form onSubmit={handleSaveStorefront} className="w-full min-w-0 space-y-5 pb-8">
       {/* Top Header Bar */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="space-y-1.5">
@@ -359,7 +327,8 @@ export default function StorefrontBuilderPage({
                 Kustomisasi Toko Online & Checkout
               </h1>
               <p className="text-xs text-muted-foreground">
-                Atur gaya tampilan, banner perkenalan, metode layanan, dan pembayaran sambil melihat pratinjau langsung di sebelah kanan.
+                Atur gaya tampilan, banner perkenalan, metode layanan, dan pembayaran sambil melihat
+                pratinjau langsung di sebelah kanan.
               </p>
             </div>
           </div>
@@ -383,11 +352,7 @@ export default function StorefrontBuilderPage({
             disabled={isSaving}
             className="h-11 gap-2 px-5 text-xs font-semibold"
           >
-            {isSaving ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
+            {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             Simpan Perubahan
           </Button>
         </div>
@@ -412,7 +377,7 @@ export default function StorefrontBuilderPage({
         <div className="min-w-0 space-y-4 lg:col-span-5">
           <Tabs
             defaultValue="appearance"
-            onValueChange={(val) => {
+            onValueChange={val => {
               if (val === 'checkout' || val === 'payment') {
                 setPreviewModeTab('checkout');
               } else if (val === 'appearance') {
@@ -443,9 +408,7 @@ export default function StorefrontBuilderPage({
             <TabsContent value="appearance" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    Gaya Tampilan & Foto Toko
-                  </CardTitle>
+                  <CardTitle className="text-base">Gaya Tampilan & Foto Toko</CardTitle>
                   <CardDescription className="text-xs">
                     Pilih model katalog, warna tombol, serta unggah logo dan foto sampul toko Anda.
                   </CardDescription>
@@ -479,14 +442,14 @@ export default function StorefrontBuilderPage({
                           title: string;
                           desc: string;
                         }[]
-                      ).map((tpl) => {
+                      ).map(tpl => {
                         const selected = config.template_style === tpl.id;
                         return (
                           <button
                             key={tpl.id}
                             type="button"
                             onClick={() =>
-                              setConfig((prev) => ({
+                              setConfig(prev => ({
                                 ...prev,
                                 template_style: tpl.id,
                               }))
@@ -527,26 +490,21 @@ export default function StorefrontBuilderPage({
                       <select
                         id="theme-accent-select"
                         value={config.theme.accent_color}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             theme: {
                               ...prev.theme,
-                              accent_color: e.target
-                                .value as StorefrontAccentColor,
+                              accent_color: e.target.value as StorefrontAccentColor,
                             },
                           }))
                         }
                         className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <option value="default">
-                          Biru Indigo (Standar Aplikasi)
-                        </option>
+                        <option value="default">Biru Indigo (Standar Aplikasi)</option>
                         <option value="emerald">Hijau Segar (Emerald)</option>
                         <option value="teal">Biru Toska (Teal)</option>
-                        <option value="amber">
-                          Kuning Hangat (Cocok untuk Roti/Kopi)
-                        </option>
+                        <option value="amber">Kuning Hangat (Cocok untuk Roti/Kopi)</option>
                         <option value="rose">Merah Muda (Rose)</option>
                         <option value="slate">Hitam Abu Minimalis</option>
                       </select>
@@ -562,13 +520,12 @@ export default function StorefrontBuilderPage({
                       <select
                         id="theme-surface-select"
                         value={config.theme.surface_mode}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             theme: {
                               ...prev.theme,
-                              surface_mode: e.target
-                                .value as StorefrontSurfaceMode,
+                              surface_mode: e.target.value as StorefrontSurfaceMode,
                             },
                           }))
                         }
@@ -590,13 +547,12 @@ export default function StorefrontBuilderPage({
                       <select
                         id="theme-catalog-layout"
                         value={config.theme.catalog_layout}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             theme: {
                               ...prev.theme,
-                              catalog_layout: e.target
-                                .value as StorefrontCatalogLayout,
+                              catalog_layout: e.target.value as StorefrontCatalogLayout,
                             },
                           }))
                         }
@@ -617,13 +573,12 @@ export default function StorefrontBuilderPage({
                       <select
                         id="theme-radius-select"
                         value={config.theme.border_radius}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             theme: {
                               ...prev.theme,
-                              border_radius: e.target
-                                .value as StorefrontBorderRadius,
+                              border_radius: e.target.value as StorefrontBorderRadius,
                             },
                           }))
                         }
@@ -647,27 +602,20 @@ export default function StorefrontBuilderPage({
                       <select
                         id="theme-hero-layout"
                         value={config.theme.hero_layout}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             theme: {
                               ...prev.theme,
-                              hero_layout: e.target
-                                .value as StorefrontHeroLayout,
+                              hero_layout: e.target.value as StorefrontHeroLayout,
                             },
                           }))
                         }
                         className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <option value="SPLIT_SHOWCASE">
-                          Teks & Foto Berdampingan
-                        </option>
-                        <option value="COVER_BANNER">
-                          Foto Sampul di Atas
-                        </option>
-                        <option value="CENTERED_STORY">
-                          Tampilan Rata Tengah
-                        </option>
+                        <option value="SPLIT_SHOWCASE">Teks & Foto Berdampingan</option>
+                        <option value="COVER_BANNER">Foto Sampul di Atas</option>
+                        <option value="CENTERED_STORY">Tampilan Rata Tengah</option>
                       </select>
                     </div>
 
@@ -682,8 +630,8 @@ export default function StorefrontBuilderPage({
                       </div>
                       <Switch
                         checked={config.theme.show_hero_image}
-                        onCheckedChange={(checked) =>
-                          setConfig((prev) => ({
+                        onCheckedChange={checked =>
+                          setConfig(prev => ({
                             ...prev,
                             theme: {
                               ...prev.theme,
@@ -697,9 +645,7 @@ export default function StorefrontBuilderPage({
 
                   {/* Stacked Media Control: Logo Toko */}
                   <section className="space-y-3 border-t border-border pt-5">
-                    <Label className="text-xs font-medium text-foreground">
-                      Logo Toko
-                    </Label>
+                    <Label className="text-xs font-medium text-foreground">Logo Toko</Label>
                     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-muted/20 p-3">
                       {config.theme.logo_url ? (
                         <img
@@ -724,12 +670,7 @@ export default function StorefrontBuilderPage({
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) =>
-                              void handleUploadImage(
-                                'logo',
-                                e.target.files?.[0]
-                              )
-                            }
+                            onChange={e => void handleUploadImage('logo', e.target.files?.[0])}
                           />
                         </label>
                         {config.theme.logo_url && (
@@ -738,7 +679,7 @@ export default function StorefrontBuilderPage({
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              setConfig((prev) => ({
+                              setConfig(prev => ({
                                 ...prev,
                                 theme: { ...prev.theme, logo_url: '' },
                               }))
@@ -752,8 +693,8 @@ export default function StorefrontBuilderPage({
                     </div>
                     <Input
                       value={config.theme.logo_url}
-                      onChange={(e) =>
-                        setConfig((prev) => ({
+                      onChange={e =>
+                        setConfig(prev => ({
                           ...prev,
                           theme: { ...prev.theme, logo_url: e.target.value },
                         }))
@@ -792,12 +733,7 @@ export default function StorefrontBuilderPage({
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) =>
-                              void handleUploadImage(
-                                'banner',
-                                e.target.files?.[0]
-                              )
-                            }
+                            onChange={e => void handleUploadImage('banner', e.target.files?.[0])}
                           />
                         </label>
                         {config.theme.banner_url && (
@@ -806,7 +742,7 @@ export default function StorefrontBuilderPage({
                             variant="ghost"
                             size="sm"
                             onClick={() =>
-                              setConfig((prev) => ({
+                              setConfig(prev => ({
                                 ...prev,
                                 theme: { ...prev.theme, banner_url: '' },
                               }))
@@ -820,8 +756,8 @@ export default function StorefrontBuilderPage({
                     </div>
                     <Input
                       value={config.theme.banner_url}
-                      onChange={(e) =>
-                        setConfig((prev) => ({
+                      onChange={e =>
+                        setConfig(prev => ({
                           ...prev,
                           theme: { ...prev.theme, banner_url: e.target.value },
                         }))
@@ -838,11 +774,10 @@ export default function StorefrontBuilderPage({
             <TabsContent value="sections" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    Urutan Bagian Halaman Toko
-                  </CardTitle>
+                  <CardTitle className="text-base">Urutan Bagian Halaman Toko</CardTitle>
                   <CardDescription className="text-xs">
-                    Gunakan tombol panah atas/bawah atau geser untuk mengatur urutan tampilan, dan sakelar untuk menyembunyikan bagian tertentu.
+                    Gunakan tombol panah atas/bawah atau geser untuk mengatur urutan tampilan, dan
+                    sakelar untuk menyembunyikan bagian tertentu.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-5">
@@ -850,18 +785,14 @@ export default function StorefrontBuilderPage({
                     items={config.store_sections}
                     metadata={STORE_SECTION_METADATA}
                     lockedIds={['product_catalog']}
-                    onChange={(next) =>
-                      setConfig((prev) => ({ ...prev, store_sections: next }))
-                    }
+                    onChange={next => setConfig(prev => ({ ...prev, store_sections: next }))}
                   />
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    Urutan Bagian Halaman Checkout
-                  </CardTitle>
+                  <CardTitle className="text-base">Urutan Bagian Halaman Checkout</CardTitle>
                   <CardDescription className="text-xs">
                     Atur urutan pengisian data saat pembeli menyelesaikan pesanan.
                   </CardDescription>
@@ -870,13 +801,9 @@ export default function StorefrontBuilderPage({
                   <SectionDndList
                     items={config.checkout_sections}
                     metadata={CHECKOUT_SECTION_METADATA}
-                    lockedIds={[
-                      'order_summary',
-                      'customer_identity',
-                      'payment_showcase',
-                    ]}
-                    onChange={(next) =>
-                      setConfig((prev) => ({
+                    lockedIds={['order_summary', 'customer_identity', 'payment_showcase']}
+                    onChange={next =>
+                      setConfig(prev => ({
                         ...prev,
                         checkout_sections: next,
                       }))
@@ -890,9 +817,7 @@ export default function StorefrontBuilderPage({
             <TabsContent value="checkout" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    Layanan Pesanan & Aturan Ongkir
-                  </CardTitle>
+                  <CardTitle className="text-base">Layanan Pesanan & Aturan Ongkir</CardTitle>
                   <CardDescription className="text-xs">
                     Pilih cara pesanan diterima pembeli serta pengaturan ongkos kirim.
                   </CardDescription>
@@ -915,8 +840,8 @@ export default function StorefrontBuilderPage({
                         </div>
                         <Switch
                           checked={config.checkout.allow_dine_in}
-                          onCheckedChange={(v) =>
-                            setConfig((prev) => ({
+                          onCheckedChange={v =>
+                            setConfig(prev => ({
                               ...prev,
                               checkout: { ...prev.checkout, allow_dine_in: v },
                             }))
@@ -935,8 +860,8 @@ export default function StorefrontBuilderPage({
                         </div>
                         <Switch
                           checked={config.checkout.allow_pickup}
-                          onCheckedChange={(v) =>
-                            setConfig((prev) => ({
+                          onCheckedChange={v =>
+                            setConfig(prev => ({
                               ...prev,
                               checkout: { ...prev.checkout, allow_pickup: v },
                             }))
@@ -955,8 +880,8 @@ export default function StorefrontBuilderPage({
                         </div>
                         <Switch
                           checked={config.checkout.allow_delivery}
-                          onCheckedChange={(v) =>
-                            setConfig((prev) => ({
+                          onCheckedChange={v =>
+                            setConfig(prev => ({
                               ...prev,
                               checkout: { ...prev.checkout, allow_delivery: v },
                             }))
@@ -986,43 +911,37 @@ export default function StorefrontBuilderPage({
                       <select
                         id="delivery-fee-mode-select"
                         value={config.checkout.delivery.delivery_fee_mode}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             checkout: {
                               ...prev.checkout,
                               delivery: {
                                 ...prev.checkout.delivery,
-                                delivery_fee_mode: e.target
-                                  .value as StorefrontDeliveryFeeMode,
+                                delivery_fee_mode: e.target.value as StorefrontDeliveryFeeMode,
                               },
                             },
                           }))
                         }
                         className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <option value="FLAT_RATE">
-                          Tarif Flat Otomatis (Satu Harga)
-                        </option>
+                        <option value="FLAT_RATE">Tarif Flat Otomatis (Satu Harga)</option>
                         <option value="COURIER_CONFIRMATION">
                           Dikonfirmasi Kasir Sesuai Jarak / Ojek Online
                         </option>
                       </select>
                     </div>
 
-                    {config.checkout.delivery.delivery_fee_mode ===
-                      'FLAT_RATE' && (
+                    {config.checkout.delivery.delivery_fee_mode === 'FLAT_RATE' && (
                       <>
                         <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-foreground">
                             Biaya Ongkir Flat (Rp)
                           </Label>
                           <FormattedNumberInput
-                            value={String(
-                              config.checkout.delivery.flat_delivery_fee
-                            )}
-                            onValueChange={(vals) =>
-                              setConfig((prev) => ({
+                            value={String(config.checkout.delivery.flat_delivery_fee)}
+                            onValueChange={vals =>
+                              setConfig(prev => ({
                                 ...prev,
                                 checkout: {
                                   ...prev.checkout,
@@ -1043,18 +962,15 @@ export default function StorefrontBuilderPage({
                             Minimal Belanja Gratis Ongkir (Isi 0 jika tidak ada)
                           </Label>
                           <FormattedNumberInput
-                            value={String(
-                              config.checkout.delivery.free_delivery_min_order
-                            )}
-                            onValueChange={(vals) =>
-                              setConfig((prev) => ({
+                            value={String(config.checkout.delivery.free_delivery_min_order)}
+                            onValueChange={vals =>
+                              setConfig(prev => ({
                                 ...prev,
                                 checkout: {
                                   ...prev.checkout,
                                   delivery: {
                                     ...prev.checkout.delivery,
-                                    free_delivery_min_order:
-                                      vals.floatValue || 0,
+                                    free_delivery_min_order: vals.floatValue || 0,
                                   },
                                 },
                               }))
@@ -1072,8 +988,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.checkout.delivery.delivery_instruction}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             checkout: {
                               ...prev.checkout,
@@ -1106,8 +1022,8 @@ export default function StorefrontBuilderPage({
                       </div>
                       <Switch
                         checked={config.checkout.show_email_field}
-                        onCheckedChange={(v) =>
-                          setConfig((prev) => ({
+                        onCheckedChange={v =>
+                          setConfig(prev => ({
                             ...prev,
                             checkout: {
                               ...prev.checkout,
@@ -1130,8 +1046,8 @@ export default function StorefrontBuilderPage({
                         </div>
                         <Switch
                           checked={config.checkout.require_email_field}
-                          onCheckedChange={(v) =>
-                            setConfig((prev) => ({
+                          onCheckedChange={v =>
+                            setConfig(prev => ({
                               ...prev,
                               checkout: {
                                 ...prev.checkout,
@@ -1154,8 +1070,8 @@ export default function StorefrontBuilderPage({
                       </div>
                       <Switch
                         checked={config.checkout.show_pickup_time}
-                        onCheckedChange={(v) =>
-                          setConfig((prev) => ({
+                        onCheckedChange={v =>
+                          setConfig(prev => ({
                             ...prev,
                             checkout: {
                               ...prev.checkout,
@@ -1177,8 +1093,8 @@ export default function StorefrontBuilderPage({
                       </div>
                       <Switch
                         checked={config.checkout.custom_field_enabled}
-                        onCheckedChange={(v) =>
-                          setConfig((prev) => ({
+                        onCheckedChange={v =>
+                          setConfig(prev => ({
                             ...prev,
                             checkout: {
                               ...prev.checkout,
@@ -1197,8 +1113,8 @@ export default function StorefrontBuilderPage({
                           </Label>
                           <Input
                             value={config.checkout.custom_field_label}
-                            onChange={(e) =>
-                              setConfig((prev) => ({
+                            onChange={e =>
+                              setConfig(prev => ({
                                 ...prev,
                                 checkout: {
                                   ...prev.checkout,
@@ -1216,8 +1132,8 @@ export default function StorefrontBuilderPage({
                           </Label>
                           <Input
                             value={config.checkout.custom_field_placeholder}
-                            onChange={(e) =>
-                              setConfig((prev) => ({
+                            onChange={e =>
+                              setConfig(prev => ({
                                 ...prev,
                                 checkout: {
                                   ...prev.checkout,
@@ -1240,11 +1156,10 @@ export default function StorefrontBuilderPage({
             <TabsContent value="payment" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    Cara Pembayaran yang Diterima
-                  </CardTitle>
+                  <CardTitle className="text-base">Cara Pembayaran yang Diterima</CardTitle>
                   <CardDescription className="text-xs">
-                    Tampilkan pilihan bayar tunai, kode QRIS toko, dan nomor rekening bank tanpa potongan biaya admin.
+                    Tampilkan pilihan bayar tunai, kode QRIS toko, dan nomor rekening bank tanpa
+                    potongan biaya admin.
                   </CardDescription>
                 </CardHeader>
 
@@ -1262,8 +1177,8 @@ export default function StorefrontBuilderPage({
                       </div>
                       <Switch
                         checked={config.payment.enable_cash_on_cashier}
-                        onCheckedChange={(v) =>
-                          setConfig((prev) => ({
+                        onCheckedChange={v =>
+                          setConfig(prev => ({
                             ...prev,
                             payment: {
                               ...prev.payment,
@@ -1281,8 +1196,8 @@ export default function StorefrontBuilderPage({
                         </Label>
                         <Input
                           value={config.payment.cash_instruction}
-                          onChange={(e) =>
-                            setConfig((prev) => ({
+                          onChange={e =>
+                            setConfig(prev => ({
                               ...prev,
                               payment: {
                                 ...prev.payment,
@@ -1310,8 +1225,8 @@ export default function StorefrontBuilderPage({
                       </div>
                       <Switch
                         checked={config.payment.enable_qris}
-                        onCheckedChange={(v) =>
-                          setConfig((prev) => ({
+                        onCheckedChange={v =>
+                          setConfig(prev => ({
                             ...prev,
                             payment: { ...prev.payment, enable_qris: v },
                           }))
@@ -1327,8 +1242,8 @@ export default function StorefrontBuilderPage({
                           </Label>
                           <Input
                             value={config.payment.qris_merchant_name}
-                            onChange={(e) =>
-                              setConfig((prev) => ({
+                            onChange={e =>
+                              setConfig(prev => ({
                                 ...prev,
                                 payment: {
                                   ...prev.payment,
@@ -1369,11 +1284,8 @@ export default function StorefrontBuilderPage({
                                   type="file"
                                   accept="image/*"
                                   className="hidden"
-                                  onChange={(e) =>
-                                    void handleUploadImage(
-                                      'qris',
-                                      e.target.files?.[0]
-                                    )
+                                  onChange={e =>
+                                    void handleUploadImage('qris', e.target.files?.[0])
                                   }
                                 />
                               </label>
@@ -1383,7 +1295,7 @@ export default function StorefrontBuilderPage({
                                   variant="ghost"
                                   size="sm"
                                   onClick={() =>
-                                    setConfig((prev) => ({
+                                    setConfig(prev => ({
                                       ...prev,
                                       payment: {
                                         ...prev.payment,
@@ -1400,8 +1312,8 @@ export default function StorefrontBuilderPage({
                           </div>
                           <Input
                             value={config.payment.qris_image_url}
-                            onChange={(e) =>
-                              setConfig((prev) => ({
+                            onChange={e =>
+                              setConfig(prev => ({
                                 ...prev,
                                 payment: {
                                   ...prev.payment,
@@ -1430,8 +1342,8 @@ export default function StorefrontBuilderPage({
                       </div>
                       <Switch
                         checked={config.payment.enable_bank_transfer}
-                        onCheckedChange={(v) =>
-                          setConfig((prev) => ({
+                        onCheckedChange={v =>
+                          setConfig(prev => ({
                             ...prev,
                             payment: {
                               ...prev.payment,
@@ -1472,12 +1384,8 @@ export default function StorefrontBuilderPage({
                               </Label>
                               <Input
                                 value={acc.bank_name}
-                                onChange={(e) =>
-                                  handleUpdateBankAccount(
-                                    acc.id,
-                                    'bank_name',
-                                    e.target.value
-                                  )
+                                onChange={e =>
+                                  handleUpdateBankAccount(acc.id, 'bank_name', e.target.value)
                                 }
                                 placeholder="Contoh: BCA, Mandiri, BRI, GoPay"
                                 className="h-11 text-sm"
@@ -1490,12 +1398,8 @@ export default function StorefrontBuilderPage({
                               </Label>
                               <Input
                                 value={acc.account_number}
-                                onChange={(e) =>
-                                  handleUpdateBankAccount(
-                                    acc.id,
-                                    'account_number',
-                                    e.target.value
-                                  )
+                                onChange={e =>
+                                  handleUpdateBankAccount(acc.id, 'account_number', e.target.value)
                                 }
                                 placeholder="Contoh: 1234567890"
                                 className="h-11 font-mono text-sm"
@@ -1508,11 +1412,11 @@ export default function StorefrontBuilderPage({
                               </Label>
                               <Input
                                 value={acc.account_holder_name}
-                                onChange={(e) =>
+                                onChange={e =>
                                   handleUpdateBankAccount(
                                     acc.id,
                                     'account_holder_name',
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 placeholder="Contoh: Budi Santoso"
@@ -1542,11 +1446,10 @@ export default function StorefrontBuilderPage({
             <TabsContent value="copywriting" className="space-y-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    Perkenalan Toko & Kontak WhatsApp
-                  </CardTitle>
+                  <CardTitle className="text-base">Perkenalan Toko & Kontak WhatsApp</CardTitle>
                   <CardDescription className="text-xs">
-                    Atur kalimat perkenalan di bagian atas toko serta nomor WhatsApp penerima pesanan.
+                    Atur kalimat perkenalan di bagian atas toko serta nomor WhatsApp penerima
+                    pesanan.
                   </CardDescription>
                 </CardHeader>
 
@@ -1558,8 +1461,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.copywriting.brand_name}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1573,13 +1476,11 @@ export default function StorefrontBuilderPage({
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-foreground">
-                        Label Singkat
-                      </Label>
+                      <Label className="text-xs font-medium text-foreground">Label Singkat</Label>
                       <Input
                         value={config.copywriting.brand_tagline}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1598,8 +1499,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.copywriting.hero_title}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1618,8 +1519,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Textarea
                         value={config.copywriting.hero_subtitle}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1638,18 +1539,14 @@ export default function StorefrontBuilderPage({
                         Keunggulan Toko (Maks. 3 Poin)
                       </Label>
                       <div className="space-y-2.5">
-                        {[0, 1, 2].map((idx) => (
+                        {[0, 1, 2].map(idx => (
                           <Input
                             key={idx}
-                            value={
-                              config.copywriting.hero_highlights[idx] ?? ''
-                            }
-                            onChange={(e) => {
+                            value={config.copywriting.hero_highlights[idx] ?? ''}
+                            onChange={e => {
                               const val = e.target.value;
-                              setConfig((prev) => {
-                                const next = [
-                                  ...prev.copywriting.hero_highlights,
-                                ];
+                              setConfig(prev => {
+                                const next = [...prev.copywriting.hero_highlights];
                                 while (next.length < 3) next.push('');
                                 next[idx] = val;
                                 return {
@@ -1674,8 +1571,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.copywriting.hero_primary_cta_text}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1694,8 +1591,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.copywriting.hero_secondary_cta_text}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1716,8 +1613,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.contact.whatsapp_number}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
@@ -1731,13 +1628,11 @@ export default function StorefrontBuilderPage({
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-foreground">
-                        Jam Buka Toko
-                      </Label>
+                      <Label className="text-xs font-medium text-foreground">Jam Buka Toko</Label>
                       <Input
                         value={config.contact.operational_hours}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             contact: {
                               ...prev.contact,
@@ -1756,8 +1651,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.copywriting.announcement_text}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1776,8 +1671,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.copywriting.checkout_title}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1795,8 +1690,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Input
                         value={config.copywriting.submit_button_text}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,
@@ -1814,8 +1709,8 @@ export default function StorefrontBuilderPage({
                       </Label>
                       <Textarea
                         value={config.copywriting.order_success_message}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
+                        onChange={e =>
+                          setConfig(prev => ({
                             ...prev,
                             copywriting: {
                               ...prev.copywriting,

@@ -21,7 +21,7 @@ export const useNotifications = () => {
   });
 
   const notifications = query.data || [];
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return {
     ...query,

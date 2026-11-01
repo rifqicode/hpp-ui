@@ -11,7 +11,7 @@ export interface CheckoutParams {
 
 export const useCheckout = () => {
   const queryClient = useQueryClient();
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
 
   return useMutation({
     mutationFn: (params: SubscriptionTier | CheckoutParams) => {

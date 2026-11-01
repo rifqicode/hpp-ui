@@ -46,7 +46,8 @@ import { TablePagination } from '../../components/ui/table-pagination';
 import { CurrencyText } from '@/components/ui/currency-text';
 
 function customerErrorMessage(error: unknown, fallback: string): string {
-  const message = (error as { response?: { data?: { message?: unknown } } } | null)?.response?.data?.message;
+  const message = (error as { response?: { data?: { message?: unknown } } } | null)?.response?.data
+    ?.message;
   return typeof message === 'string' && message ? message : fallback;
 }
 
@@ -193,43 +194,73 @@ export default function CustomerListPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5 pb-8">
-      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div>
+      <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+        <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Manajemen Pelanggan</h1>
-          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Cari kontak pelanggan, perbarui data, dan lihat riwayat pesanan.</p>
+          <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+            Cari kontak pelanggan, perbarui data, dan lihat riwayat pesanan.
+          </p>
+          <QuotaBadge resource="customers" label="Kuota pelanggan" />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button variant="outline" onClick={handleRefresh} disabled={isFetching || isSummaryFetching} className="h-10 gap-2 text-xs">
-            <RefreshCw className={`size-3.5 ${isFetching || isSummaryFetching ? 'animate-spin motion-reduce:animate-none' : ''}`} />Refresh
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isFetching || isSummaryFetching}
+            className="h-10 gap-2 text-xs"
+          >
+            <RefreshCw
+              className={`size-3.5 ${isFetching || isSummaryFetching ? 'animate-spin motion-reduce:animate-none' : ''}`}
+            />
+            Refresh
           </Button>
-          <Button onClick={() => setIsAddOpen(true)} className="h-10 gap-2 text-xs"><Plus className="size-4" />Tambah Pelanggan</Button>
-          <QuotaBadge resource="customers" label="Kuota" className="ml-auto sm:ml-0" />
+          <Button onClick={() => setIsAddOpen(true)} className="h-10 gap-2 text-xs">
+            <Plus className="size-4" />
+            Tambah Pelanggan
+          </Button>
         </div>
       </header>
 
-      {isSummaryError && <p role="alert" className="rounded-xl border p-3 text-xs text-muted-foreground">Ringkasan pelanggan belum bisa dimuat. Klik Refresh untuk mencoba lagi.</p>}
+      {isSummaryError && (
+        <p role="alert" className="rounded-xl border p-3 text-xs text-muted-foreground">
+          Ringkasan pelanggan belum bisa dimuat. Klik Refresh untuk mencoba lagi.
+        </p>
+      )}
       {summaryData && !isSummaryError && (
         <section aria-label="Ringkasan pelanggan" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {[
             {
-              label: 'Total Pelanggan', value: summaryData.total_customers,
-              hint: 'Seluruh pelanggan terdaftar', icon: Users,
-              color: 'text-primary', background: 'bg-primary/10',
+              label: 'Total Pelanggan',
+              value: summaryData.total_customers,
+              hint: 'Seluruh pelanggan terdaftar',
+              icon: Users,
+              color: 'text-primary',
+              background: 'bg-primary/10',
             },
             {
-              label: 'Pernah Bertransaksi', value: summaryData.active_customers,
-              hint: 'Pelanggan dengan minimal satu pesanan', icon: UserCheck,
-              color: 'text-emerald-600 dark:text-emerald-400', background: 'bg-emerald-50 dark:bg-emerald-950/40',
+              label: 'Pernah Bertransaksi',
+              value: summaryData.active_customers,
+              hint: 'Pelanggan dengan minimal satu pesanan',
+              icon: UserCheck,
+              color: 'text-emerald-600 dark:text-emerald-400',
+              background: 'bg-emerald-50 dark:bg-emerald-950/40',
             },
-          ].map((metric) => (
-            <Card key={metric.label} className="min-w-0 border-border/80 bg-card px-4 py-3 shadow-2xs">
+          ].map(metric => (
+            <Card
+              key={metric.label}
+              className="min-w-0 border-border/80 bg-card px-4 py-3 shadow-2xs"
+            >
               <CardContent className="flex items-center justify-between gap-2 p-0">
                 <div className="min-w-0 space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">{metric.label}</p>
-                  <p className={`text-xl font-bold tracking-tight tabular-nums ${metric.color}`}>{metric.value.toLocaleString('id-ID')}</p>
+                  <p className={`text-xl font-bold tracking-tight tabular-nums ${metric.color}`}>
+                    {metric.value.toLocaleString('id-ID')}
+                  </p>
                   <p className="text-[11px] text-muted-foreground">{metric.hint}</p>
                 </div>
-                <span className={`shrink-0 rounded-xl p-2.5 ${metric.background} ${metric.color}`}><metric.icon className="size-5" aria-hidden="true" /></span>
+                <span className={`shrink-0 rounded-xl p-2.5 ${metric.background} ${metric.color}`}>
+                  <metric.icon className="size-5" aria-hidden="true" />
+                </span>
               </CardContent>
             </Card>
           ))}
@@ -239,11 +270,19 @@ export default function CustomerListPage() {
       <ListFilters
         label="Filter pelanggan"
         search={{
-          label: 'Cari pelanggan', placeholder: 'Cari nama, nomor HP, atau email pelanggan...',
-          value: searchQuery, onChange: (value) => { setSearchQuery(value); setPage(1); },
+          label: 'Cari pelanggan',
+          placeholder: 'Cari nama, nomor HP, atau email pelanggan...',
+          value: searchQuery,
+          onChange: value => {
+            setSearchQuery(value);
+            setPage(1);
+          },
         }}
         hasFilters={Boolean(searchQuery.trim())}
-        onReset={() => { setSearchQuery(''); setPage(1); }}
+        onReset={() => {
+          setSearchQuery('');
+          setPage(1);
+        }}
         isFetching={isFetching && !loading}
         fetchingLabel="Memperbarui pelanggan"
       />
@@ -277,19 +316,29 @@ export default function CustomerListPage() {
                     <td colSpan={7} className="px-5 py-10 text-center">
                       <div role="alert" className="space-y-2">
                         <p className="text-sm font-semibold">Gagal memuat pelanggan</p>
-                        <p className="text-xs text-muted-foreground">Periksa koneksi lalu coba lagi.</p>
-                        <Button variant="outline" onClick={() => void refetchCustomers()} className="mt-2 text-xs">Coba lagi</Button>
+                        <p className="text-xs text-muted-foreground">
+                          Periksa koneksi lalu coba lagi.
+                        </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => void refetchCustomers()}
+                          className="mt-2 text-xs"
+                        >
+                          Coba lagi
+                        </Button>
                       </div>
                     </td>
                   </tr>
                 ) : customers.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-5 py-12 text-center text-muted-foreground">
-                      {searchQuery.trim() ? 'Tidak ada pelanggan yang cocok. Coba nama, nomor HP, atau email lain.' : 'Belum ada data pelanggan yang terdaftar.'}
+                      {searchQuery.trim()
+                        ? 'Tidak ada pelanggan yang cocok. Coba nama, nomor HP, atau email lain.'
+                        : 'Belum ada data pelanggan yang terdaftar.'}
                     </td>
                   </tr>
                 ) : (
-                  customers.map((c) => (
+                  customers.map(c => (
                     <tr
                       key={c.id}
                       className="hover:bg-muted/30 transition-colors group cursor-pointer"
@@ -350,10 +399,7 @@ export default function CustomerListPage() {
                         )}
                       </td>
 
-                      <td
-                        className="px-5 py-3.5 text-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <td className="px-5 py-3.5 text-center" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1">
                           <Button
                             variant="ghost"
@@ -397,8 +443,8 @@ export default function CustomerListPage() {
           displayedCount={customers.length}
           page={page}
           totalPages={totalPages}
-          onPrev={() => setPage((p) => Math.max(1, p - 1))}
-          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+          onPrev={() => setPage(p => Math.max(1, p - 1))}
+          onNext={() => setPage(p => Math.min(totalPages, p + 1))}
           disabled={loading || isCustomersError}
           label="pelanggan"
         />
@@ -421,7 +467,7 @@ export default function CustomerListPage() {
               <Input
                 placeholder="Contoh: Budi Santoso"
                 value={addForm.name}
-                onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                onChange={e => setAddForm({ ...addForm, name: e.target.value })}
                 required
                 className="h-9 text-xs"
               />
@@ -434,45 +480,39 @@ export default function CustomerListPage() {
               <PhoneInput
                 placeholder="81234567890"
                 value={addForm.phone}
-                onValueChange={(phone) => setAddForm({ ...addForm, phone })}
+                onValueChange={phone => setAddForm({ ...addForm, phone })}
                 required
                 className="h-9 text-xs"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground">
-                Email (opsional)
-              </label>
+              <label className="text-xs font-semibold text-foreground">Email (opsional)</label>
               <Input
                 type="email"
                 placeholder="Contoh: budi@gmail.com"
                 value={addForm.email}
-                onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                onChange={e => setAddForm({ ...addForm, email: e.target.value })}
                 className="h-9 text-xs"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground">
-                Alamat (opsional)
-              </label>
+              <label className="text-xs font-semibold text-foreground">Alamat (opsional)</label>
               <Input
                 placeholder="Contoh: Jl. Melati No. 12, Jakarta"
                 value={addForm.address}
-                onChange={(e) => setAddForm({ ...addForm, address: e.target.value })}
+                onChange={e => setAddForm({ ...addForm, address: e.target.value })}
                 className="h-9 text-xs"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground">
-                Catatan (opsional)
-              </label>
+              <label className="text-xs font-semibold text-foreground">Catatan (opsional)</label>
               <Input
                 placeholder="Contoh: Pelanggan langganan roti tawar"
                 value={addForm.notes}
-                onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
+                onChange={e => setAddForm({ ...addForm, notes: e.target.value })}
                 className="h-9 text-xs"
               />
             </div>
@@ -507,23 +547,19 @@ export default function CustomerListPage() {
 
           <form onSubmit={handleUpdateCustomer} className="space-y-3.5">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground">
-                Nama Pelanggan
-              </label>
+              <label className="text-xs font-semibold text-foreground">Nama Pelanggan</label>
               <Input
                 value={editForm.name || ''}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                 className="h-9 text-xs"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground">
-                Nomor WhatsApp / HP
-              </label>
+              <label className="text-xs font-semibold text-foreground">Nomor WhatsApp / HP</label>
               <PhoneInput
                 value={editForm.phone || ''}
-                onValueChange={(phone) => setEditForm({ ...editForm, phone })}
+                onValueChange={phone => setEditForm({ ...editForm, phone })}
                 className="h-9 text-xs"
               />
             </div>
@@ -533,7 +569,7 @@ export default function CustomerListPage() {
               <Input
                 type="email"
                 value={editForm.email || ''}
-                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, email: e.target.value })}
                 className="h-9 text-xs"
               />
             </div>
@@ -542,7 +578,7 @@ export default function CustomerListPage() {
               <label className="text-xs font-semibold text-foreground">Alamat</label>
               <Input
                 value={editForm.address || ''}
-                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, address: e.target.value })}
                 className="h-9 text-xs"
               />
             </div>
@@ -551,7 +587,7 @@ export default function CustomerListPage() {
               <label className="text-xs font-semibold text-foreground">Catatan</label>
               <Input
                 value={editForm.notes || ''}
-                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
                 className="h-9 text-xs"
               />
             </div>
@@ -589,9 +625,7 @@ export default function CustomerListPage() {
               {/* Profile Card */}
               <div className="bg-card border border-border rounded-xl p-4 space-y-2 text-xs">
                 <div className="flex justify-between items-baseline">
-                  <h3 className="text-sm font-bold text-foreground">
-                    {selectedCustomer.name}
-                  </h3>
+                  <h3 className="text-sm font-bold text-foreground">{selectedCustomer.name}</h3>
                   <Badge variant="outline" className="font-semibold text-emerald-600 bg-emerald-50">
                     {selectedCustomer.total_orders}x Pesanan
                   </Badge>
@@ -633,8 +667,11 @@ export default function CustomerListPage() {
 
                 {customerDetail && customerDetail.sales?.length > 0 ? (
                   <div className="border border-border rounded-xl divide-y divide-border overflow-hidden text-xs">
-                    {customerDetail.sales.map((sale) => (
-                      <div key={sale.id} className="p-3 flex justify-between items-center bg-card hover:bg-muted/30">
+                    {customerDetail.sales.map(sale => (
+                      <div
+                        key={sale.id}
+                        className="p-3 flex justify-between items-center bg-card hover:bg-muted/30"
+                      >
                         <div>
                           <span className="font-bold text-foreground block">
                             {sale.invoiceNumber}
@@ -678,8 +715,8 @@ export default function CustomerListPage() {
 
           <p className="text-xs text-muted-foreground">
             Apakah Anda yakin ingin menghapus pelanggan{' '}
-            <strong className="text-foreground">{selectedCustomer?.name}</strong>? Data
-            transaksi terdahulu akan tetap tersimpan.
+            <strong className="text-foreground">{selectedCustomer?.name}</strong>? Data transaksi
+            terdahulu akan tetap tersimpan.
           </p>
 
           <DialogFooter className="pt-2">

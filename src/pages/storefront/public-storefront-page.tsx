@@ -1,10 +1,6 @@
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  Loader2,
-  MessageCircle,
-  Store,
-} from 'lucide-react';
+import { Loader2, MessageCircle, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -41,12 +37,11 @@ export default function PublicStorefrontPage() {
   const [cart, setCart] = React.useState<StorefrontCartItem[]>([]);
 
   // Product Variant / Modifier Dialog state
-  const [configuringProduct, setConfiguringProduct] =
-    React.useState<PublicCatalogProduct | null>(null);
+  const [configuringProduct, setConfiguringProduct] = React.useState<PublicCatalogProduct | null>(
+    null,
+  );
   const [selectedVariantId, setSelectedVariantId] = React.useState<string>('');
-  const [selectedModifierIds, setSelectedModifierIds] = React.useState<
-    string[]
-  >([]);
+  const [selectedModifierIds, setSelectedModifierIds] = React.useState<string[]>([]);
 
   // Order Submission state
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -85,9 +80,7 @@ export default function PublicStorefrontPage() {
       setData(res);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Toko tidak ditemukan atau sedang tidak aktif.'
+        err instanceof Error ? err.message : 'Toko tidak ditemukan atau sedang tidak aktif.',
       );
     } finally {
       setLoading(false);
@@ -101,27 +94,24 @@ export default function PublicStorefrontPage() {
   const commitAddToCart = (
     product: PublicCatalogProduct,
     variantId: string,
-    modifierOptionIds: string[]
+    modifierOptionIds: string[],
   ) => {
-    const variant = product.variants.find((v) => v.id === variantId);
+    const variant = product.variants.find(v => v.id === variantId);
     if (!variant) return;
 
-    const allOptions = product.modifier_groups.flatMap((g) => g.options);
-    const chosenModifiers = allOptions.filter((o) =>
-      modifierOptionIds.includes(o.id)
-    );
+    const allOptions = product.modifier_groups.flatMap(g => g.options);
+    const chosenModifiers = allOptions.filter(o => modifierOptionIds.includes(o.id));
     const modifiersPrice = chosenModifiers.reduce((acc, m) => acc + m.price, 0);
     const unitPrice = variant.selling_price + modifiersPrice;
     const key = buildCartItemKey(variant.id, modifierOptionIds);
-    const maxStock =
-      product.mode === 'MAKE_TO_ORDER' ? 999 : variant.current_stock;
+    const maxStock = product.mode === 'MAKE_TO_ORDER' ? 999 : variant.current_stock;
 
-    setCart((prev) => {
-      const existing = prev.find((item) => item.key === key);
+    setCart(prev => {
+      const existing = prev.find(item => item.key === key);
       if (existing) {
         if (existing.quantity >= maxStock) return prev;
-        return prev.map((item) =>
-          item.key === key ? { ...item, quantity: item.quantity + 1 } : item
+        return prev.map(item =>
+          item.key === key ? { ...item, quantity: item.quantity + 1 } : item,
         );
       }
       return [
@@ -146,11 +136,10 @@ export default function PublicStorefrontPage() {
   };
 
   const handleSelectProduct = (product: PublicCatalogProduct) => {
-    const activeVariants = product.variants.filter((v) => v.is_active);
+    const activeVariants = product.variants.filter(v => v.is_active);
     if (activeVariants.length === 0) return;
 
-    const hasModifiers =
-      product.mode === 'MAKE_TO_ORDER' && product.modifier_groups.length > 0;
+    const hasModifiers = product.mode === 'MAKE_TO_ORDER' && product.modifier_groups.length > 0;
 
     if (activeVariants.length === 1 && !hasModifiers) {
       const single = activeVariants[0];
@@ -160,8 +149,7 @@ export default function PublicStorefrontPage() {
       return;
     }
 
-    const defaultVariant =
-      activeVariants.find((v) => v.is_default) || activeVariants[0];
+    const defaultVariant = activeVariants.find(v => v.is_default) || activeVariants[0];
     setSelectedVariantId(defaultVariant?.id || '');
     setSelectedModifierIds([]);
     setConfiguringProduct(product);
@@ -169,46 +157,30 @@ export default function PublicStorefrontPage() {
 
   const handleUpdateCartQuantity = (key: string, nextQty: number) => {
     if (nextQty <= 0) {
-      setCart((prev) => prev.filter((item) => item.key !== key));
+      setCart(prev => prev.filter(item => item.key !== key));
       return;
     }
-    setCart((prev) =>
-      prev.map((item) =>
-        item.key === key
-          ? { ...item, quantity: Math.min(nextQty, item.maxStock) }
-          : item
-      )
+    setCart(prev =>
+      prev.map(item =>
+        item.key === key ? { ...item, quantity: Math.min(nextQty, item.maxStock) } : item,
+      ),
     );
   };
 
-  const activeVariantInModal = configuringProduct?.variants.find(
-    (v) => v.id === selectedVariantId
-  );
+  const activeVariantInModal = configuringProduct?.variants.find(v => v.id === selectedVariantId);
   const modalModifierGroups =
-    configuringProduct?.mode === 'MAKE_TO_ORDER'
-      ? configuringProduct.modifier_groups
-      : [];
+    configuringProduct?.mode === 'MAKE_TO_ORDER' ? configuringProduct.modifier_groups : [];
 
   const isModalValid = React.useMemo(() => {
     if (!configuringProduct || !activeVariantInModal) return false;
-    if (
-      configuringProduct.mode === 'MAKE_TO_STOCK' &&
-      activeVariantInModal.current_stock <= 0
-    ) {
+    if (configuringProduct.mode === 'MAKE_TO_STOCK' && activeVariantInModal.current_stock <= 0) {
       return false;
     }
-    return modalModifierGroups.every((group) => {
-      const count = group.options.filter((o) =>
-        selectedModifierIds.includes(o.id)
-      ).length;
+    return modalModifierGroups.every(group => {
+      const count = group.options.filter(o => selectedModifierIds.includes(o.id)).length;
       return count >= group.min_selection && count <= group.max_selection;
     });
-  }, [
-    configuringProduct,
-    activeVariantInModal,
-    modalModifierGroups,
-    selectedModifierIds,
-  ]);
+  }, [configuringProduct, activeVariantInModal, modalModifierGroups, selectedModifierIds]);
 
   const handleConfirmModal = () => {
     if (!configuringProduct || !isModalValid) return;
@@ -220,10 +192,7 @@ export default function PublicStorefrontPage() {
     try {
       setIsSubmitting(true);
       setSubmitError('');
-      const created = await storefrontService.createOnlineOrder(
-        storeSlug,
-        payload
-      );
+      const created = await storefrontService.createOnlineOrder(storeSlug, payload);
       setCart([]);
       try {
         localStorage.removeItem(storageKey);
@@ -235,7 +204,7 @@ export default function PublicStorefrontPage() {
       setSubmitError(
         err instanceof Error
           ? err.message
-          : 'Gagal mengirim pesanan. Silakan periksa kembali data Anda.'
+          : 'Gagal mengirim pesanan. Silakan periksa kembali data Anda.',
       );
     } finally {
       setIsSubmitting(false);
@@ -247,9 +216,7 @@ export default function PublicStorefrontPage() {
       <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
         <div className="flex items-center gap-2.5 rounded-full border border-border bg-card px-4 py-2">
           <Loader2 className="size-4 animate-spin text-primary" />
-          <span className="text-xs font-medium text-muted-foreground">
-            Memuat halaman toko...
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Memuat halaman toko...</span>
         </div>
       </div>
     );
@@ -286,7 +253,7 @@ export default function PublicStorefrontPage() {
     ? buildStoreInquiryWhatsAppUrl(
         config.contact.whatsapp_number || store.phone,
         store.name,
-        config.contact.whatsapp_greeting
+        config.contact.whatsapp_greeting,
       )
     : '';
 
@@ -324,7 +291,7 @@ export default function PublicStorefrontPage() {
 
       <Dialog
         open={Boolean(configuringProduct)}
-        onOpenChange={(open) => !open && setConfiguringProduct(null)}
+        onOpenChange={open => !open && setConfiguringProduct(null)}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -337,16 +304,13 @@ export default function PublicStorefrontPage() {
           {configuringProduct && (
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <span className="text-xs font-semibold text-foreground">
-                  Pilih Varian
-                </span>
+                <span className="text-xs font-semibold text-foreground">Pilih Varian</span>
                 <div className="grid gap-2">
                   {configuringProduct.variants
-                    .filter((v) => v.is_active)
-                    .map((variant) => {
+                    .filter(v => v.is_active)
+                    .map(variant => {
                       const out =
-                        configuringProduct.mode === 'MAKE_TO_STOCK' &&
-                        variant.current_stock <= 0;
+                        configuringProduct.mode === 'MAKE_TO_STOCK' && variant.current_stock <= 0;
                       const isChosen = selectedVariantId === variant.id;
                       return (
                         <button
@@ -358,8 +322,8 @@ export default function PublicStorefrontPage() {
                             out
                               ? 'border-border bg-muted/40 opacity-50'
                               : isChosen
-                              ? 'border-primary bg-accent/60 font-semibold text-foreground'
-                              : 'border-border bg-card text-foreground hover:bg-muted/50'
+                                ? 'border-primary bg-accent/60 font-semibold text-foreground'
+                                : 'border-border bg-card text-foreground hover:bg-muted/50'
                           }`}
                         >
                           <div>
@@ -368,8 +332,8 @@ export default function PublicStorefrontPage() {
                               {configuringProduct.mode === 'MAKE_TO_ORDER'
                                 ? 'Buat saat dipesan'
                                 : out
-                                ? 'Stok habis'
-                                : `Stok tersedia: ${variant.current_stock} ${variant.unit}`}
+                                  ? 'Stok habis'
+                                  : `Stok tersedia: ${variant.current_stock} ${variant.unit}`}
                             </span>
                           </div>
                           <span className="font-bold tabular-nums">
@@ -381,12 +345,10 @@ export default function PublicStorefrontPage() {
                 </div>
               </div>
 
-              {modalModifierGroups.map((group) => (
+              {modalModifierGroups.map(group => (
                 <div key={group.id} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-foreground">
-                      {group.name}
-                    </span>
+                    <span className="text-xs font-semibold text-foreground">{group.name}</span>
                     <Badge variant="outline" className="text-[10px]">
                       {group.min_selection > 0
                         ? `Wajib ${group.min_selection}-${group.max_selection}`
@@ -394,26 +356,21 @@ export default function PublicStorefrontPage() {
                     </Badge>
                   </div>
                   <div className="grid gap-1.5">
-                    {group.options.map((option) => {
+                    {group.options.map(option => {
                       const checked = selectedModifierIds.includes(option.id);
                       return (
                         <button
                           key={option.id}
                           type="button"
                           onClick={() => {
-                            setSelectedModifierIds((prev) => {
+                            setSelectedModifierIds(prev => {
                               if (checked) {
-                                return prev.filter((id) => id !== option.id);
+                                return prev.filter(id => id !== option.id);
                               }
-                              const groupIds = group.options.map((o) => o.id);
-                              const currentCount = prev.filter((id) =>
-                                groupIds.includes(id)
-                              ).length;
+                              const groupIds = group.options.map(o => o.id);
+                              const currentCount = prev.filter(id => groupIds.includes(id)).length;
                               if (group.max_selection === 1) {
-                                return [
-                                  ...prev.filter((id) => !groupIds.includes(id)),
-                                  option.id,
-                                ];
+                                return [...prev.filter(id => !groupIds.includes(id)), option.id];
                               }
                               if (currentCount >= group.max_selection) {
                                 return prev;

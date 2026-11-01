@@ -1,4 +1,5 @@
-export type ProductionStatus = 'DRAFT' | 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'VOID';
+export type ProductionStatus =
+  'DRAFT' | 'QUEUED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'VOID';
 
 export interface ConsumedIngredient {
   stockId: string;
@@ -16,8 +17,18 @@ export interface ProductionOverheadDetail {
 }
 
 export interface ProductionBatch {
+  productionItems?: ProductionBatch[];
+  targetCompletedAt?: string | null;
+  timerAlert?: { enabled: boolean; warningLeadMinutes: number };
   id: string;
   batchNumber: string;
+  source?: 'MANUAL' | 'POS' | 'ONLINE';
+  orderContext?: {
+    invoice_number?: string;
+    fulfillment_type?: string;
+    table_number?: string;
+    courier_name?: string;
+  };
   storeId?: string;
   saleId?: string;
   saleItemId?: string;
@@ -32,6 +43,7 @@ export interface ProductionBatch {
   goodQuantity?: number;
   wasteQuantity?: number;
   stockCost: number;
+  laborCost?: number;
   overheadCost?: number;
   overheadBreakdown?: {
     labor: number;
@@ -52,7 +64,14 @@ export interface ProductionBatch {
   recipeSnapshot?: {
     variant_id: string;
     variant_name: string;
-    modifiers?: {id:string;name:string;price:string|number;stock_id:string|null;ingredient_quantity:string|number;unit:string}[];
+    modifiers?: {
+      id: string;
+      name: string;
+      price: string | number;
+      stock_id: string | null;
+      ingredient_quantity: string | number;
+      unit: string;
+    }[];
     product_name: string;
     product_category?: string;
     product_unit?: string;

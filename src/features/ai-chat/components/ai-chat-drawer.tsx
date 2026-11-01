@@ -1,10 +1,5 @@
 import * as React from 'react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   Bot,
@@ -97,7 +92,7 @@ export function AIChatFloatingDrawer() {
           code: 'FEATURE_LOCKED',
           tier: 'MAX_GROWTH',
         },
-      })
+      }),
     );
   };
 
@@ -231,21 +226,28 @@ export function AIChatFloatingDrawer() {
                 </h3>
 
                 <p className="text-xs text-muted-foreground max-w-sm leading-relaxed mb-6">
-                  Fitur Asisten AI Bisnis hanya tersedia untuk paket Max Growth Enterprise. Silakan tingkatkan paket Anda untuk membuka fitur ini.
+                  Fitur Asisten AI Bisnis hanya tersedia untuk paket Max Growth Enterprise. Silakan
+                  tingkatkan paket Anda untuk membuka fitur ini.
                 </p>
 
                 <div className="w-full max-w-xs space-y-2.5 text-left mb-6 bg-card/60 border border-border/70 rounded-2xl p-4 text-xs">
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="text-foreground">Analisis HPP produk dan rekomendasi margin menu</span>
+                    <span className="text-foreground">
+                      Analisis HPP produk dan rekomendasi margin menu
+                    </span>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="text-foreground">Peringatan stok bahan menipis dan rekomendasi PO</span>
+                    <span className="text-foreground">
+                      Peringatan stok bahan menipis dan rekomendasi PO
+                    </span>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                    <span className="text-foreground">Wawasan cerdas performa laba dan penjualan toko</span>
+                    <span className="text-foreground">
+                      Wawasan cerdas performa laba dan penjualan toko
+                    </span>
                   </div>
                 </div>
 
@@ -283,11 +285,12 @@ export function AIChatFloatingDrawer() {
                     <MessagesSquare className="h-8 w-8 text-muted-foreground/50" />
                     <p className="text-sm font-medium">Belum ada riwayat percakapan tersimpan</p>
                     <p className="text-xs text-muted-foreground/80 max-w-xs">
-                      Setiap pertanyaan baru akan membentuk sesi percakapan mandiri yang dapat Anda tinjau kembali di sini.
+                      Setiap pertanyaan baru akan membentuk sesi percakapan mandiri yang dapat Anda
+                      tinjau kembali di sini.
                     </p>
                   </div>
                 ) : (
-                  conversations.map((conv) => {
+                  conversations.map(conv => {
                     const isActive = activeConversation?.id === conv.id;
                     return (
                       <div
@@ -298,15 +301,20 @@ export function AIChatFloatingDrawer() {
                           setShowHistoryView(false);
                         }}
                         className={cn(
-                          "group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 text-left relative",
+                          'group p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 text-left relative',
                           isActive
-                            ? "bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30"
-                            : "bg-card hover:bg-accent/40 border-border/60 text-muted-foreground hover:text-foreground"
+                            ? 'bg-primary/10 border-primary/40 text-foreground ring-1 ring-primary/30'
+                            : 'bg-card hover:bg-accent/40 border-border/60 text-muted-foreground hover:text-foreground',
                         )}
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <MessageSquare className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                            <MessageSquare
+                              className={cn(
+                                'h-3.5 w-3.5 shrink-0',
+                                isActive ? 'text-primary' : 'text-muted-foreground',
+                              )}
+                            />
                             <p className="text-sm font-semibold text-foreground truncate">
                               {conv.title || 'Percakapan Tanpa Judul'}
                             </p>
@@ -344,7 +352,7 @@ export function AIChatFloatingDrawer() {
                           size="icon"
                           data-testid={`ai-delete-btn-${conv.id}`}
                           className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0 cursor-pointer"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             deleteConversation(conv.id);
                           }}
@@ -375,7 +383,8 @@ export function AIChatFloatingDrawer() {
                       Halo! Ada yang bisa saya bantu?
                     </h3>
                     <p className="text-xs text-muted-foreground max-w-xs mt-1 leading-relaxed">
-                      Saya dapat menganalisis stok bahan, menghitung HPP produk, meninjau penjualan, dan memberi saran bisnis berdasarkan data toko Anda.
+                      Saya dapat menganalisis stok bahan, menghitung HPP produk, meninjau penjualan,
+                      dan memberi saran bisnis berdasarkan data toko Anda.
                     </p>
 
                     {/* Starter Prompt Chips */}
@@ -399,7 +408,7 @@ export function AIChatFloatingDrawer() {
                 ) : (
                   /* Message Bubbles */
                   <div className="flex flex-col">
-                    {activeConversation.messages.map((msg) => (
+                    {activeConversation.messages.map(msg => (
                       <AIChatMessageItem
                         key={msg.id}
                         message={msg}
@@ -463,7 +472,7 @@ export function AIChatFloatingDrawer() {
 
                 <textarea
                   value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
+                  onChange={e => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ketik pertanyaan untuk asisten bisnis AI..."
                   rows={1}
@@ -487,7 +496,8 @@ export function AIChatFloatingDrawer() {
                 </Button>
               </form>
               <p className="text-[10px] text-center text-muted-foreground/70 mt-2">
-                Asisten AI menganalisis data toko secara real-time. Periksa kembali keputusan bisnis penting.
+                Asisten AI menganalisis data toko secara real-time. Periksa kembali keputusan bisnis
+                penting.
               </p>
             </div>
           )}

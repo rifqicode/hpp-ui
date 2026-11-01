@@ -8,6 +8,7 @@ export function getActiveMenuTitle(pathname: string): string {
   if (path.startsWith('/reports/products/')) return 'Detail Keuntungan Produk';
   if (path === '/reports') return 'Laporan';
   if (path === '/sales/promotions') return 'Promosi & Diskon';
+  if (path.startsWith('/sales/promotions/')) return 'Detail Promosi';
 
   if (path === '/dashboard') {
     return 'Dashboard';
@@ -65,7 +66,11 @@ export function getActiveMenuTitle(pathname: string): string {
   if (path.startsWith('/production/batches/')) {
     return 'Detail Batch';
   }
-  if (path === '/production/hpp' || path === '/production/hpp/recipe-simulation' || path === '/hpp') {
+  if (
+    path === '/production/hpp' ||
+    path === '/production/hpp/recipe-simulation' ||
+    path === '/hpp'
+  ) {
     return 'Simulasi Produk Baru';
   }
   if (path === '/production/hpp/production-simulation') {

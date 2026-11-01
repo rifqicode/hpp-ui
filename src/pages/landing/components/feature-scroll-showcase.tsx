@@ -1,5 +1,5 @@
-import { APP_NAME } from "@/lib/utils"
-import * as React from "react"
+import { APP_NAME } from '@/lib/utils';
+import * as React from 'react';
 import {
   Calculator,
   Boxes,
@@ -16,404 +16,356 @@ import {
   ShieldCheck,
   UsersRound,
   MessageSquareText,
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface FeatureItem {
-  id: string
-  title: string
-  shortTitle: string
-  tagline: string
-  description: string
-  icon: React.ComponentType<{ className?: string }>
-  badgeText: string
-  badgeColor: string
+  id: string;
+  title: string;
+  shortTitle: string;
+  tagline: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeText: string;
+  badgeColor: string;
 }
 
 interface AdditionalFeature extends FeatureItem {
   preview: {
-    title: string
-    path: string
-    subtitle: string
-    columns: [string, string]
-    rows: [string, string][]
-    resultLabel: string
-    result: string
-    note: string
-  }
+    title: string;
+    path: string;
+    subtitle: string;
+    columns: [string, string];
+    rows: [string, string][];
+    resultLabel: string;
+    result: string;
+    note: string;
+  };
 }
 
 const ADDITIONAL_FEATURES: AdditionalFeature[] = [
   {
-    "id": "purchases",
-    "title": "Belanja bahan & pemasok",
-    "shortTitle": "Belanja",
-    "tagline": "Riwayat belanja lebih mudah ditelusuri.",
-    "description": "Simpan kontak pemasok dan catat pesanan belanja. Setelah bahan diterima dan dicatat, stok ikut bertambah.",
-    "icon": ClipboardCheck,
-    "badgeText": "Catatan belanja",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Pembelian bahan minggu ini",
-        "path": "inventory/purchase-orders",
-        "subtitle": "Pengajuan, persetujuan, dan penerimaan tercatat.",
-        "columns": [
-            "Pesanan",
-            "Status"
-        ],
-        "rows": [
-            [
-                "PO-014 · Susu segar",
-                "Diterima"
-            ],
-            [
-                "PO-015 · Biji kopi",
-                "Disetujui"
-            ],
-            [
-                "PO-016 · Kemasan",
-                "Draf"
-            ]
-        ],
-        "resultLabel": "Setelah barang diterima",
-        "result": "Stok bahan bertambah",
-        "note": "Harga dan tanggal belanja tersimpan agar biaya bahan bisa dicek kembali."
-    }
-},
+    id: 'purchases',
+    title: 'Belanja bahan & pemasok',
+    shortTitle: 'Belanja',
+    tagline: 'Riwayat belanja lebih mudah ditelusuri.',
+    description:
+      'Simpan kontak pemasok dan catat pesanan belanja. Setelah bahan diterima dan dicatat, stok ikut bertambah.',
+    icon: ClipboardCheck,
+    badgeText: 'Catatan belanja',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Pembelian bahan minggu ini',
+      path: 'inventory/purchase-orders',
+      subtitle: 'Pengajuan, persetujuan, dan penerimaan tercatat.',
+      columns: ['Pesanan', 'Status'],
+      rows: [
+        ['PO-014 · Susu segar', 'Diterima'],
+        ['PO-015 · Biji kopi', 'Disetujui'],
+        ['PO-016 · Kemasan', 'Draf'],
+      ],
+      resultLabel: 'Setelah barang diterima',
+      result: 'Stok bahan bertambah',
+      note: 'Harga dan tanggal belanja tersimpan agar biaya bahan bisa dicek kembali.',
+    },
+  },
   {
-    "id": "simulation",
-    "title": "Coba resep & rencana produksi",
-    "shortTitle": "Coba resep",
-    "tagline": "Rencanakan bahan & cek stok sebelum produksi.",
-    "description": "Coba ubah takaran atau jumlah porsi. Lihat kebutuhan bahan dan cek kecukupan stok gudang sebelum mulai produksi.",
-    "icon": Calculator,
-    "badgeText": "Perkiraan biaya",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Rencana produksi brownies",
-        "path": "production/hpp/production-simulation",
-        "subtitle": "Periksa kecukupan bahan gudang sebelum menjalankan produksi.",
-        "columns": [
-            "Bahan / Komponen",
-            "Kebutuhan & Status"
-        ],
-        "rows": [
-            [
-                "Tepung terigu (500 gr)",
-                "Stok cukup"
-            ],
-            [
-                "Gula pasir (250 gr)",
-                "Stok kurang (-100 gr)"
-            ],
-            [
-                "Total kebutuhan stok",
-                "1 bahan perlu dibeli"
-            ]
-        ],
-        "resultLabel": "Kesiapan bahan produksi",
-        "result": "Perlu belanja gula",
-        "note": "Aplikasi otomatis mendeteksi bahan yang kurang di gudang sebelum Anda mulai memproduksi menu."
-    }
-},
+    id: 'simulation',
+    title: 'Coba resep & rencana produksi',
+    shortTitle: 'Coba resep',
+    tagline: 'Rencanakan bahan & cek stok sebelum produksi.',
+    description:
+      'Coba ubah takaran atau jumlah porsi. Lihat kebutuhan bahan dan cek kecukupan stok gudang sebelum mulai produksi.',
+    icon: Calculator,
+    badgeText: 'Perkiraan biaya',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Rencana produksi brownies',
+      path: 'production/hpp/production-simulation',
+      subtitle: 'Periksa kecukupan bahan gudang sebelum menjalankan produksi.',
+      columns: ['Bahan / Komponen', 'Kebutuhan & Status'],
+      rows: [
+        ['Tepung terigu (500 gr)', 'Stok cukup'],
+        ['Gula pasir (250 gr)', 'Stok kurang (-100 gr)'],
+        ['Total kebutuhan stok', '1 bahan perlu dibeli'],
+      ],
+      resultLabel: 'Kesiapan bahan produksi',
+      result: 'Perlu belanja gula',
+      note: 'Aplikasi otomatis mendeteksi bahan yang kurang di gudang sebelum Anda mulai memproduksi menu.',
+    },
+  },
   {
-    "id": "overheads",
-    "title": "Biaya overhead",
-    "shortTitle": "Overhead",
-    "tagline": "Tentukan biaya overhead Anda sendiri, cegah boncos tersembunyi.",
-    "description": "Jangan biarkan biaya tak terlihat menggerus laba. Buat pos biaya kustom—mulai dari gas LPG, upah masak, hingga kemasan—dan otomatis sertakan ke dalam HPP produksi.",
-    "icon": ReceiptText,
-    "badgeText": "Kategori biaya",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Daftar komponen biaya overhead",
-        "path": "production/overheads",
-        "subtitle": "Bebas tentukan pos biaya produksi & tarif standarnya.",
-        "columns": [
-            "Pos Biaya Kustom",
-            "Kategori & Tarif"
-        ],
-        "rows": [
-            [
-                "Gas LPG & listrik oven",
-                "Produksi · Rp 5.000"
-            ],
-            [
-                "Upah harian per batch",
-                "Produksi · Rp 15.000"
-            ],
-            [
-                "Sewa tempat & utilitas",
-                "Operasional toko"
-            ]
-        ],
-        "resultLabel": "Overhead masuk ke HPP",
-        "result": "+Rp 20.000 per produksi",
-        "note": "Biaya overhead otomatis dialokasikan ke modal per porsi, memastikan harga jual Anda benar-benar menghasilkan laba bersih."
-    }
-},
+    id: 'overheads',
+    title: 'Biaya overhead',
+    shortTitle: 'Overhead',
+    tagline: 'Tentukan biaya overhead Anda sendiri, cegah boncos tersembunyi.',
+    description:
+      'Jangan biarkan biaya tak terlihat menggerus laba. Buat pos biaya kustom—mulai dari gas LPG, upah masak, hingga kemasan—dan otomatis sertakan ke dalam HPP produksi.',
+    icon: ReceiptText,
+    badgeText: 'Kategori biaya',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Daftar komponen biaya overhead',
+      path: 'production/overheads',
+      subtitle: 'Bebas tentukan pos biaya produksi & tarif standarnya.',
+      columns: ['Pos Biaya Kustom', 'Kategori & Tarif'],
+      rows: [
+        ['Gas LPG & listrik oven', 'Produksi · Rp 5.000'],
+        ['Upah harian per batch', 'Produksi · Rp 15.000'],
+        ['Sewa tempat & utilitas', 'Operasional toko'],
+      ],
+      resultLabel: 'Overhead masuk ke HPP',
+      result: '+Rp 20.000 per produksi',
+      note: 'Biaya overhead otomatis dialokasikan ke modal per porsi, memastikan harga jual Anda benar-benar menghasilkan laba bersih.',
+    },
+  },
   {
-    "id": "dashboard",
-    "title": "Ringkasan usaha",
-    "shortTitle": "Ringkasan",
-    "tagline": "Lebih cepat tahu yang perlu diperhatikan.",
-    "description": "Cek masakan yang sedang dibuat, stok menipis, dan bahan yang hampir kedaluwarsa. Lihat juga ringkasan penjualan dan laba kotor.",
-    "icon": ChartNoAxesCombined,
-    "badgeText": "Ringkasan usaha",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Ringkasan penjualan hari ini",
-        "path": "dashboard",
-        "subtitle": "Pantau biaya dan laba kotor dari satu ringkasan.",
-        "columns": [
-            "Ringkasan",
-            "Nilai"
-        ],
-        "rows": [
-            [
-                "Penjualan",
-                "Rp 1.200.000"
-            ],
-            [
-                "HPP produk terjual",
-                "Rp 600.000"
-            ],
-            [
-                "Laba kotor",
-                "Rp 600.000"
-            ]
-        ],
-        "resultLabel": "Margin laba kotor",
-        "result": "50%",
-        "note": "Ringkasan ini juga menunjukkan bahan yang menipis atau hampir kedaluwarsa."
-    }
-},
+    id: 'dashboard',
+    title: 'Ringkasan usaha',
+    shortTitle: 'Ringkasan',
+    tagline: 'Lebih cepat tahu yang perlu diperhatikan.',
+    description:
+      'Cek masakan yang sedang dibuat, stok menipis, dan bahan yang hampir kedaluwarsa. Lihat juga ringkasan penjualan dan laba kotor.',
+    icon: ChartNoAxesCombined,
+    badgeText: 'Ringkasan usaha',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Ringkasan penjualan hari ini',
+      path: 'dashboard',
+      subtitle: 'Pantau biaya dan laba kotor dari satu ringkasan.',
+      columns: ['Ringkasan', 'Nilai'],
+      rows: [
+        ['Penjualan', 'Rp 1.200.000'],
+        ['HPP produk terjual', 'Rp 600.000'],
+        ['Laba kotor', 'Rp 600.000'],
+      ],
+      resultLabel: 'Margin laba kotor',
+      result: '50%',
+      note: 'Ringkasan ini juga menunjukkan bahan yang menipis atau hampir kedaluwarsa.',
+    },
+  },
   {
-    "id": "stores",
-    "title": "Kelola beberapa toko",
-    "shortTitle": "Toko",
-    "tagline": "Tetap teratur saat usaha bertambah cabang.",
-    "description": "Pindah antar toko dari satu akun. Stok, resep, produksi, dan transaksi tersimpan sesuai toko yang sedang dikelola.",
-    "icon": Building2,
-    "badgeText": "Beberapa toko",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Satu akun, beberapa toko",
-        "path": "settings/store",
-        "subtitle": "Catatan stok dan penjualan tiap toko tetap terpisah.",
-        "columns": [
-            "Toko",
-            "Catatan data"
-        ],
-        "rows": [
-            [
-                "Kedai Pusat",
-                "Stok & transaksi terpisah"
-            ],
-            [
-                "Kedai Selatan",
-                "Stok & transaksi terpisah"
-            ],
-            [
-                "Dapur Produksi",
-                "Stok & transaksi terpisah"
-            ]
-        ],
-        "resultLabel": "Saat berpindah toko",
-        "result": "Data mengikuti toko aktif",
-        "note": "Jumlah toko yang dapat dikelola mengikuti paket langganan."
-    }
-},
+    id: 'stores',
+    title: 'Kelola beberapa toko',
+    shortTitle: 'Toko',
+    tagline: 'Tetap teratur saat usaha bertambah cabang.',
+    description:
+      'Pindah antar toko dari satu akun. Stok, resep, produksi, dan transaksi tersimpan sesuai toko yang sedang dikelola.',
+    icon: Building2,
+    badgeText: 'Beberapa toko',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Satu akun, beberapa toko',
+      path: 'settings/store',
+      subtitle: 'Catatan stok dan penjualan tiap toko tetap terpisah.',
+      columns: ['Toko', 'Catatan data'],
+      rows: [
+        ['Kedai Pusat', 'Stok & transaksi terpisah'],
+        ['Kedai Selatan', 'Stok & transaksi terpisah'],
+        ['Dapur Produksi', 'Stok & transaksi terpisah'],
+      ],
+      resultLabel: 'Saat berpindah toko',
+      result: 'Data mengikuti toko aktif',
+      note: 'Jumlah toko yang dapat dikelola mengikuti paket langganan.',
+    },
+  },
   {
-    "id": "staff",
-    "title": "Atur akses karyawan",
-    "shortTitle": "Tim",
-    "tagline": "Bagi tugas sesuai pekerjaan karyawan.",
-    "description": "Ajak karyawan memakai aplikasi. Pilih fitur yang boleh mereka buka sesuai tugas, misalnya kasir atau pencatatan stok.",
-    "icon": ShieldCheck,
-    "badgeText": "Peran & izin",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Pembagian akses tim",
-        "path": "settings?tab=staff",
-        "subtitle": "Tentukan peran sesuai pekerjaan masing-masing.",
-        "columns": [
-            "Anggota tim",
-            "Peran contoh"
-        ],
-        "rows": [
-            [
-                "Dina",
-                "Kasir"
-            ],
-            [
-                "Raka",
-                "Produksi"
-            ],
-            [
-                "Nadia",
-                "Pengelola stok"
-            ]
-        ],
-        "resultLabel": "Akses fitur",
-        "result": "Sesuai izin peran",
-        "note": "Ini contoh pembagian tugas. Pilihan pengaturan akses mengikuti paket Anda."
-    }
-},
+    id: 'staff',
+    title: 'Atur akses karyawan',
+    shortTitle: 'Tim',
+    tagline: 'Bagi tugas sesuai pekerjaan karyawan.',
+    description:
+      'Ajak karyawan memakai aplikasi. Pilih fitur yang boleh mereka buka sesuai tugas, misalnya kasir atau pencatatan stok.',
+    icon: ShieldCheck,
+    badgeText: 'Peran & izin',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Pembagian akses tim',
+      path: 'settings?tab=staff',
+      subtitle: 'Tentukan peran sesuai pekerjaan masing-masing.',
+      columns: ['Anggota tim', 'Peran contoh'],
+      rows: [
+        ['Dina', 'Kasir'],
+        ['Raka', 'Produksi'],
+        ['Nadia', 'Pengelola stok'],
+      ],
+      resultLabel: 'Akses fitur',
+      result: 'Sesuai izin peran',
+      note: 'Ini contoh pembagian tugas. Pilihan pengaturan akses mengikuti paket Anda.',
+    },
+  },
   {
-    "id": "customers",
-    "title": "Catatan pelanggan",
-    "shortTitle": "Pelanggan",
-    "tagline": "Kenali pelanggan yang kembali berbelanja.",
-    "description": "Simpan kontak pelanggan dan hubungkan dengan transaksi. Lihat riwayat pesanan, jumlah pembelian, dan total belanjanya.",
-    "icon": UsersRound,
-    "badgeText": "Riwayat pelanggan",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Catatan pelanggan: Maya",
-        "path": "sales/customers",
-        "subtitle": "Kontak dan transaksi pelanggan tersimpan bersama.",
-        "columns": [
-            "Informasi",
-            "Catatan"
-        ],
-        "rows": [
-            [
-                "Jumlah pesanan",
-                "8 transaksi"
-            ],
-            [
-                "Total belanja",
-                "Rp 640.000"
-            ],
-            [
-                "Pesanan terakhir",
-                "Brownies cokelat"
-            ]
-        ],
-        "resultLabel": "Riwayat pesanan",
-        "result": "Mudah ditelusuri",
-        "note": "Pilih nama pelanggan saat mencatat penjualan di kasir agar pembeliannya tersimpan."
-    }
-},
+    id: 'customers',
+    title: 'Catatan pelanggan',
+    shortTitle: 'Pelanggan',
+    tagline: 'Kenali pelanggan yang kembali berbelanja.',
+    description:
+      'Simpan kontak pelanggan dan hubungkan dengan transaksi. Lihat riwayat pesanan, jumlah pembelian, dan total belanjanya.',
+    icon: UsersRound,
+    badgeText: 'Riwayat pelanggan',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Catatan pelanggan: Maya',
+      path: 'sales/customers',
+      subtitle: 'Kontak dan transaksi pelanggan tersimpan bersama.',
+      columns: ['Informasi', 'Catatan'],
+      rows: [
+        ['Jumlah pesanan', '8 transaksi'],
+        ['Total belanja', 'Rp 640.000'],
+        ['Pesanan terakhir', 'Brownies cokelat'],
+      ],
+      resultLabel: 'Riwayat pesanan',
+      result: 'Mudah ditelusuri',
+      note: 'Pilih nama pelanggan saat mencatat penjualan di kasir agar pembeliannya tersimpan.',
+    },
+  },
   {
-    "id": "ai",
-    "title": "Asisten Bisnis AI",
-    "shortTitle": "Asisten AI",
-    "tagline": "Tanya apa saja seputar resep, stok, dan laba layaknya punya analis pribadi.",
-    "description": "Tak perlu repot membongkar puluhan tabel. Cukup ketik pertanyaan: 'Menu apa yang paling untung?', 'Bahan apa yang mau expired?', atau 'Berapa laba kotor hari ini?'. AI menganalisis data toko Anda secara instan.",
-    "icon": MessageSquareText,
-    "badgeText": "AI Powered",
-    "badgeColor": "bg-indigo-50 text-indigo-700 border-indigo-200",
-    "preview": {
-        "title": "Tanya jawab instan performa toko",
-        "path": "store/ai/conversations",
-        "subtitle": "Konsultasi langsung dengan asisten AI yang membaca data tokomu.",
-        "columns": [
-            "Pertanyaan Anda",
-            "Analisis & Jawaban AI"
-        ],
-        "rows": [
-            [
-                "Menu apa yang paling untung?",
-                "Kopi Susu Aren (Margin 66,1%)"
-            ],
-            [
-                "Ada bahan mau expired?",
-                "Susu segar batch #08 (3 hari lagi)"
-            ],
-            [
-                "Berapa laba kotor hari ini?",
-                "Rp 600.000 dari 42 transaksi"
-            ]
-        ],
-        "resultLabel": "Waktu analisis",
-        "result": "Jawaban instan dalam hitungan detik",
-        "note": "AI terhubung langsung ke catatan resep, stok gudang, dan riwayat transaksi toko Anda secara aman."
-    }
-},
-]
+    id: 'ai',
+    title: 'Asisten Bisnis AI',
+    shortTitle: 'Asisten AI',
+    tagline: 'Tanya apa saja seputar resep, stok, dan laba layaknya punya analis pribadi.',
+    description:
+      "Tak perlu repot membongkar puluhan tabel. Cukup ketik pertanyaan: 'Menu apa yang paling untung?', 'Bahan apa yang mau expired?', atau 'Berapa laba kotor hari ini?'. AI menganalisis data toko Anda secara instan.",
+    icon: MessageSquareText,
+    badgeText: 'AI Powered',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    preview: {
+      title: 'Tanya jawab instan performa toko',
+      path: 'store/ai/conversations',
+      subtitle: 'Konsultasi langsung dengan asisten AI yang membaca data tokomu.',
+      columns: ['Pertanyaan Anda', 'Analisis & Jawaban AI'],
+      rows: [
+        ['Menu apa yang paling untung?', 'Kopi Susu Aren (Margin 66,1%)'],
+        ['Ada bahan mau expired?', 'Susu segar batch #08 (3 hari lagi)'],
+        ['Berapa laba kotor hari ini?', 'Rp 600.000 dari 42 transaksi'],
+      ],
+      resultLabel: 'Waktu analisis',
+      result: 'Jawaban instan dalam hitungan detik',
+      note: 'AI terhubung langsung ke catatan resep, stok gudang, dan riwayat transaksi toko Anda secara aman.',
+    },
+  },
+];
 
 const FEATURES: FeatureItem[] = [
   {
-    id: "hpp",
-    title: "Biaya resep & harga jual",
-    shortTitle: "Biaya resep",
-    tagline: "Hitung biaya sesuai takaran resep",
+    id: 'hpp',
+    title: 'Biaya resep & harga jual',
+    shortTitle: 'Biaya resep',
+    tagline: 'Hitung biaya sesuai takaran resep',
     description:
-      "Masukkan takaran bahan, kemasan, dan biaya membuat menu. Lihat biaya per porsi sebagai dasar menentukan harga jual.",
+      'Masukkan takaran bahan, kemasan, dan biaya membuat menu. Lihat biaya per porsi sebagai dasar menentukan harga jual.',
     icon: Calculator,
-    badgeText: "Biaya per porsi",
-    badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    badgeText: 'Biaya per porsi',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   },
   {
-    id: "inventory",
-    title: "Kontrol stok FIFO & FEFO",
-    shortTitle: "Stok bahan",
-    tagline: "Cegah bahan expired & terbuang dengan rotasi stok otomatis",
+    id: 'inventory',
+    title: 'Kontrol stok FIFO & FEFO',
+    shortTitle: 'Stok bahan',
+    tagline: 'Cegah bahan expired & terbuang dengan rotasi stok otomatis',
     description:
-      "Atur metode FIFO untuk bahan kering dan FEFO untuk bahan yang memiliki masa expired. Stok terpotong otomatis per batch saat produksi, lengkap dengan peringatan kedaluwarsa.",
+      'Atur metode FIFO untuk bahan kering dan FEFO untuk bahan yang memiliki masa expired. Stok terpotong otomatis per batch saat produksi, lengkap dengan peringatan kedaluwarsa.',
     icon: Boxes,
-    badgeText: "Rotasi stok",
-    badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+    badgeText: 'Rotasi stok',
+    badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   {
-    id: "production",
-    title: "Catat hasil produksi",
-    shortTitle: "Produksi",
-    tagline: "Catat hasil masakan dan bahan yang terbuang",
+    id: 'production',
+    title: 'Catat hasil produksi',
+    shortTitle: 'Produksi',
+    tagline: 'Catat hasil masakan dan bahan yang terbuang',
     description:
-      "Catat jadwal memasak, jumlah porsi yang jadi, dan bahan yang terbuang. Stok bahan berkurang saat produksi ditandai selesai.",
+      'Catat jadwal memasak, jumlah porsi yang jadi, dan bahan yang terbuang. Stok bahan berkurang saat produksi ditandai selesai.',
     icon: ChefHat,
-    badgeText: "Hasil masakan",
-    badgeColor: "bg-violet-50 text-violet-700 border-violet-200",
+    badgeText: 'Hasil masakan',
+    badgeColor: 'bg-violet-50 text-violet-700 border-violet-200',
   },
   {
-    id: "pos",
-    title: "Kasir & laba penjualan",
-    shortTitle: "Kasir",
-    tagline: "Lihat laba kotor dari setiap penjualan",
+    id: 'pos',
+    title: 'Kasir & laba penjualan',
+    shortTitle: 'Kasir',
+    tagline: 'Lihat laba kotor dari setiap penjualan',
     description:
-      "Catat pesanan dan pembayaran lewat kasir di aplikasi. Stok produk berkurang dan laba kotor dihitung dari penjualan yang tercatat.",
+      'Catat pesanan dan pembayaran lewat kasir di aplikasi. Stok produk berkurang dan laba kotor dihitung dari penjualan yang tercatat.',
     icon: ShoppingCart,
-    badgeText: "Penjualan tercatat",
-    badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    badgeText: 'Penjualan tercatat',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   },
   ...ADDITIONAL_FEATURES,
-]
+];
 
 const MOBILE_PREVIEWS = [
-  { title: "Kopi Susu Gula Aren", rows: [["Biaya per porsi", "Rp 6.100"], ["Harga jual", "Rp 18.000"], ["Perkiraan laba kotor", "Rp 11.900"]] },
   {
-    title: "Prioritas pemakaian bahan (FEFO)",
+    title: 'Kopi Susu Gula Aren',
     rows: [
-      ["Batch #08 (Susu segar)", "Kedaluwarsa 3 hari lagi (Prioritas #1)"],
-      ["Batch #14 (Susu segar)", "Kedaluwarsa 9 hari lagi (Antrean #2)"],
-      ["Metode pemotongan", "FEFO (Kedaluwarsa terdekat)"],
+      ['Biaya per porsi', 'Rp 6.100'],
+      ['Harga jual', 'Rp 18.000'],
+      ['Perkiraan laba kotor', 'Rp 11.900'],
     ],
   },
-  { title: "Produksi brownies", rows: [["Rencana hasil", "30 potong"], ["Biaya bahan", "Dicatat tiap kali produksi"], ["Stok berkurang", "Saat produksi selesai"]] },
-  { title: "Contoh transaksi kasir", rows: [["Total penjualan", "Rp 64.000"], ["Total HPP", "Rp 23.120"], ["Laba kotor", "Rp 40.880"]] },
-  ...ADDITIONAL_FEATURES.map((feature) => ({ title: feature.preview.title, rows: feature.preview.rows })),
-]
+  {
+    title: 'Prioritas pemakaian bahan (FEFO)',
+    rows: [
+      ['Batch #08 (Susu segar)', 'Kedaluwarsa 3 hari lagi (Prioritas #1)'],
+      ['Batch #14 (Susu segar)', 'Kedaluwarsa 9 hari lagi (Antrean #2)'],
+      ['Metode pemotongan', 'FEFO (Kedaluwarsa terdekat)'],
+    ],
+  },
+  {
+    title: 'Produksi brownies',
+    rows: [
+      ['Rencana hasil', '30 potong'],
+      ['Biaya bahan', 'Dicatat tiap kali produksi'],
+      ['Stok berkurang', 'Saat produksi selesai'],
+    ],
+  },
+  {
+    title: 'Contoh transaksi kasir',
+    rows: [
+      ['Total penjualan', 'Rp 64.000'],
+      ['Total HPP', 'Rp 23.120'],
+      ['Laba kotor', 'Rp 40.880'],
+    ],
+  },
+  ...ADDITIONAL_FEATURES.map(feature => ({
+    title: feature.preview.title,
+    rows: feature.preview.rows,
+  })),
+];
 
 const FEATURE_GROUPS = [
-  { id: "cost-production", label: "Resep & Produksi", featureIds: ["hpp", "simulation", "overheads", "production"] },
-  { id: "stock-sales", label: "Stok & Kasir", featureIds: ["inventory", "purchases", "pos", "customers"] },
-  { id: "management", label: "Laporan & Pengelolaan", featureIds: ["dashboard", "stores", "staff", "ai"] },
-]
+  {
+    id: 'cost-production',
+    label: 'Resep & Produksi',
+    featureIds: ['hpp', 'simulation', 'overheads', 'production'],
+  },
+  {
+    id: 'stock-sales',
+    label: 'Stok & Kasir',
+    featureIds: ['inventory', 'purchases', 'pos', 'customers'],
+  },
+  {
+    id: 'management',
+    label: 'Laporan & Pengelolaan',
+    featureIds: ['dashboard', 'stores', 'staff', 'ai'],
+  },
+];
 
 export function FeatureScrollShowcase() {
-  const [activeIndex, setActiveIndex] = React.useState(0)
-  const activeGroup = FEATURE_GROUPS.find((group) => group.featureIds.includes(FEATURES[activeIndex].id)) ?? FEATURE_GROUPS[0]
-  const visibleFeatureIndices = activeGroup.featureIds.map((id) => FEATURES.findIndex((feature) => feature.id === id))
-  const additionalFeature = ADDITIONAL_FEATURES.find((feature) => feature.id === FEATURES[activeIndex].id)
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  const activeGroup =
+    FEATURE_GROUPS.find(group => group.featureIds.includes(FEATURES[activeIndex].id)) ??
+    FEATURE_GROUPS[0];
+  const visibleFeatureIndices = activeGroup.featureIds.map(id =>
+    FEATURES.findIndex(feature => feature.id === id),
+  );
+  const additionalFeature = ADDITIONAL_FEATURES.find(
+    feature => feature.id === FEATURES[activeIndex].id,
+  );
 
   return (
-    <div
-      className="relative bg-slate-50/60 border-b border-slate-200"
-    >
+    <div className="relative bg-slate-50/60 border-b border-slate-200">
       {/* Feature selector and illustrative product previews */}
       <div className="flex items-center py-12 sm:py-16 lg:py-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -423,19 +375,31 @@ export function FeatureScrollShowcase() {
               Kenali fitur Ekatra POS.
             </h2>
             <p className="text-slate-600 text-sm sm:text-base mt-2.5">
-              Hitung biaya resep, catat produksi, kelola stok, dan layani transaksi kasir. Pantau hasil penjualan serta atur toko dan akses karyawan dalam satu aplikasi.
+              Hitung biaya resep, catat produksi, kelola stok, dan layani transaksi kasir. Pantau
+              hasil penjualan serta atur toko dan akses karyawan dalam satu aplikasi.
             </p>
           </div>
 
-          <div role="group" aria-label="Kategori fitur" className="mx-auto mb-7 grid max-w-2xl grid-flow-col auto-cols-fr gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 sm:mb-9">
-            {FEATURE_GROUPS.map((group) => (
+          <div
+            role="group"
+            aria-label="Kategori fitur"
+            className="mx-auto mb-7 grid max-w-2xl grid-flow-col auto-cols-fr gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 sm:mb-9"
+          >
+            {FEATURE_GROUPS.map(group => (
               <button
                 key={group.id}
                 type="button"
                 aria-pressed={activeGroup.id === group.id}
                 aria-controls="feature-options feature-preview"
-                onClick={() => setActiveIndex(FEATURES.findIndex((feature) => feature.id === group.featureIds[0]))}
-                className={cn("flex min-h-12 min-w-0 items-center justify-center rounded-xl px-2 py-2.5 text-center text-xs font-semibold leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:px-4 sm:text-sm", activeGroup.id === group.id ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900")}
+                onClick={() =>
+                  setActiveIndex(FEATURES.findIndex(feature => feature.id === group.featureIds[0]))
+                }
+                className={cn(
+                  'flex min-h-12 min-w-0 items-center justify-center rounded-xl px-2 py-2.5 text-center text-xs font-semibold leading-snug transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:px-4 sm:text-sm',
+                  activeGroup.id === group.id
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+                )}
               >
                 {group.label}
               </button>
@@ -443,149 +407,160 @@ export function FeatureScrollShowcase() {
           </div>
 
           <div id="feature-options">
-          {/* Compact feature selector for mobile and tablet */}
-          <div className="mb-5 grid grid-flow-col auto-cols-fr gap-1 rounded-2xl border border-slate-200 bg-slate-100/80 p-1.5 lg:hidden">
-            {visibleFeatureIndices.map((idx) => {
-              const item = FEATURES[idx]
-              const Icon = item.icon
-              const isActive = activeIndex === idx
-              return (
-                <button
-                  key={item.id}
-                  aria-label={item.title}
-                  aria-pressed={isActive}
-                  aria-controls="feature-preview"
-                  onClick={() => setActiveIndex(idx)}
-                  className={cn(
-                    "flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-1 py-3 text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                    isActive
-                      ? "bg-white text-primary shadow-sm ring-1 ring-slate-200/70"
-                      : "text-slate-500 hover:bg-white/60 hover:text-slate-900"
-                  )}
-                >
-                  <Icon aria-hidden="true" className="size-5 shrink-0" />
-                  <span>{item.shortTitle}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Main 2-Column Split: Left Tabs & Right Dynamic Visual Preview */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            {/* Four feature choices in the selected category */}
-            <div className="hidden lg:flex lg:col-span-5 flex-col gap-3">
-              {visibleFeatureIndices.map((idx) => {
-                const item = FEATURES[idx]
-                const Icon = item.icon
-                const isActive = activeIndex === idx
-
-
+            {/* Compact feature selector for mobile and tablet */}
+            <div className="mb-5 grid grid-flow-col auto-cols-fr gap-1 rounded-2xl border border-slate-200 bg-slate-100/80 p-1.5 lg:hidden">
+              {visibleFeatureIndices.map(idx => {
+                const item = FEATURES[idx];
+                const Icon = item.icon;
+                const isActive = activeIndex === idx;
                 return (
                   <button
-                    type="button"
                     key={item.id}
+                    aria-label={item.title}
                     aria-pressed={isActive}
                     aria-controls="feature-preview"
                     onClick={() => setActiveIndex(idx)}
                     className={cn(
-                      "shrink-0 text-left p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group focus-visible:outline-primary",
+                      'flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-xl px-1 py-3 text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                       isActive
-                        ? "bg-white border-primary shadow-lg ring-1 ring-primary/20"
-                        : "bg-white/70 border-slate-200 hover:border-slate-300 hover:bg-white"
+                        ? 'bg-white text-primary shadow-sm ring-1 ring-slate-200/70'
+                        : 'text-slate-500 hover:bg-white/60 hover:text-slate-900',
                     )}
                   >
-                    {/* Active vertical progress indicator on left border */}
-                    {isActive && (
-                      <div
-                        className="absolute left-0 top-0 bottom-0 w-1 bg-primary transition-all"
-                        style={{ height: "100%" }}
-                      />
-                    )}
-
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={cn(
-                          "h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
-                          isActive
-                            ? "bg-primary text-white shadow-sm shadow-primary/30"
-                            : "bg-slate-50 border border-slate-200 text-slate-600"
-                        )}
-                      >
-                        <Icon className="size-5" />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                          <h3
-                            className={cn(
-                              "text-base font-bold transition-colors",
-                              isActive ? "text-primary" : "text-slate-900"
-                            )}
-                          >
-                            {item.title}
-                          </h3>
-                          <Badge
-                            variant="outline"
-                            className={cn("text-[10px] font-bold py-0.5", item.badgeColor)}
-                          >
-                            {item.badgeText}
-                          </Badge>
-                        </div>
-
-                        <p
-                          className={cn(
-                            "text-xs leading-relaxed transition-colors",
-                            isActive ? "text-slate-700 font-medium" : "text-slate-500"
-                          )}
-                        >
-                          {item.description}
-                        </p>
-                      </div>
-                    </div>
+                    <Icon aria-hidden="true" className="size-5 shrink-0" />
+                    <span>{item.shortTitle}</span>
                   </button>
-                )
+                );
               })}
             </div>
 
-            {/* Right Column: Stacked UI Card Mockup (Real App Window + Floating Depth Cards) */}
-            <div className="lg:col-span-7 min-w-0 relative">
-              {/* Subtle ambient glow behind preview */}
-              <div className="absolute -inset-2 bg-gradient-to-tr from-primary/15 via-indigo-500/10 to-transparent rounded-3xl blur-2xl -z-10" />
+            {/* Main 2-Column Split: Left Tabs & Right Dynamic Visual Preview */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+              {/* Four feature choices in the selected category */}
+              <div className="hidden lg:flex lg:col-span-5 flex-col gap-3">
+                {visibleFeatureIndices.map(idx => {
+                  const item = FEATURES[idx];
+                  const Icon = item.icon;
+                  const isActive = activeIndex === idx;
 
-              {/* Dynamic Stacked Screen Based on Active Index */}
-              <div id="feature-preview" role="region" aria-label={FEATURES[activeIndex].title} className="relative">
-                <div className="sm:hidden rounded-2xl border border-slate-200 bg-white p-5">
-                  <p className="text-xs font-medium text-slate-500">Contoh penggunaan</p>
-                  <h3 className="mt-2 text-lg font-bold text-slate-900">{MOBILE_PREVIEWS[activeIndex].title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{FEATURES[activeIndex].description}</p>
-                  <dl className="mt-5 divide-y divide-slate-100">
-                    {MOBILE_PREVIEWS[activeIndex].rows.map(([label, value]) => (
-                      <div key={label} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-sm">
-                        <dt className="text-slate-600">{label}</dt>
-                        <dd className="font-semibold text-slate-900">{value}</dd>
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      aria-pressed={isActive}
+                      aria-controls="feature-preview"
+                      onClick={() => setActiveIndex(idx)}
+                      className={cn(
+                        'shrink-0 text-left p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group focus-visible:outline-primary',
+                        isActive
+                          ? 'bg-white border-primary shadow-lg ring-1 ring-primary/20'
+                          : 'bg-white/70 border-slate-200 hover:border-slate-300 hover:bg-white',
+                      )}
+                    >
+                      {/* Active vertical progress indicator on left border */}
+                      {isActive && (
+                        <div
+                          className="absolute left-0 top-0 bottom-0 w-1 bg-primary transition-all"
+                          style={{ height: '100%' }}
+                        />
+                      )}
+
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={cn(
+                            'h-11 w-11 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105',
+                            isActive
+                              ? 'bg-primary text-white shadow-sm shadow-primary/30'
+                              : 'bg-slate-50 border border-slate-200 text-slate-600',
+                          )}
+                        >
+                          <Icon className="size-5" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                            <h3
+                              className={cn(
+                                'text-base font-bold transition-colors',
+                                isActive ? 'text-primary' : 'text-slate-900',
+                              )}
+                            >
+                              {item.title}
+                            </h3>
+                            <Badge
+                              variant="outline"
+                              className={cn('text-[10px] font-bold py-0.5', item.badgeColor)}
+                            >
+                              {item.badgeText}
+                            </Badge>
+                          </div>
+
+                          <p
+                            className={cn(
+                              'text-xs leading-relaxed transition-colors',
+                              isActive ? 'text-slate-700 font-medium' : 'text-slate-500',
+                            )}
+                          >
+                            {item.description}
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                  </dl>
-                </div>
-                <div className="hidden sm:block">
-                  {activeIndex === 0 && <HppRecipeMockup />}
-                  {activeIndex === 1 && <FifoInventoryMockup />}
-                  {activeIndex === 2 && <ProductionBatchMockup />}
-                  {activeIndex === 3 && <PosCashierMockup />}
-                  {additionalFeature && <AdditionalFeatureMockup feature={additionalFeature} />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right Column: Stacked UI Card Mockup (Real App Window + Floating Depth Cards) */}
+              <div className="lg:col-span-7 min-w-0 relative">
+                {/* Subtle ambient glow behind preview */}
+                <div className="absolute -inset-2 bg-gradient-to-tr from-primary/15 via-indigo-500/10 to-transparent rounded-3xl blur-2xl -z-10" />
+
+                {/* Dynamic Stacked Screen Based on Active Index */}
+                <div
+                  id="feature-preview"
+                  role="region"
+                  aria-label={FEATURES[activeIndex].title}
+                  className="relative"
+                >
+                  <div className="sm:hidden rounded-2xl border border-slate-200 bg-white p-5">
+                    <p className="text-xs font-medium text-slate-500">Contoh penggunaan</p>
+                    <h3 className="mt-2 text-lg font-bold text-slate-900">
+                      {MOBILE_PREVIEWS[activeIndex].title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                      {FEATURES[activeIndex].description}
+                    </p>
+                    <dl className="mt-5 divide-y divide-slate-100">
+                      {MOBILE_PREVIEWS[activeIndex].rows.map(([label, value]) => (
+                        <div
+                          key={label}
+                          className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-sm"
+                        >
+                          <dt className="text-slate-600">{label}</dt>
+                          <dd className="font-semibold text-slate-900">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                  <div className="hidden sm:block">
+                    {activeIndex === 0 && <HppRecipeMockup />}
+                    {activeIndex === 1 && <FifoInventoryMockup />}
+                    {activeIndex === 2 && <ProductionBatchMockup />}
+                    {activeIndex === 3 && <PosCashierMockup />}
+                    {additionalFeature && <AdditionalFeatureMockup feature={additionalFeature} />}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function AdditionalFeatureMockup({ feature }: { feature: AdditionalFeature }) {
-  const Icon = feature.icon
+  const Icon = feature.icon;
   return (
     <div className="relative motion-safe:animate-in motion-safe:fade-in duration-300">
       <div className="rounded-2xl border border-slate-200/90 bg-white p-5 text-slate-900 shadow-xl sm:p-6">
@@ -593,32 +568,49 @@ function AdditionalFeatureMockup({ feature }: { feature: AdditionalFeature }) {
           <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-rose-400" />
           <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-amber-400" />
           <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-emerald-400" />
-          <span className="ml-2 min-w-0 truncate rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 font-mono text-[11px] text-slate-600">{APP_NAME}/{feature.preview.path}</span>
+          <span className="ml-2 min-w-0 truncate rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 font-mono text-[11px] text-slate-600">
+            {APP_NAME}/{feature.preview.path}
+          </span>
         </div>
         <div className="mb-5 flex items-start gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-primary"><Icon aria-hidden="true" className="size-5" /></span>
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-primary">
+            <Icon aria-hidden="true" className="size-5" />
+          </span>
           <div className="min-w-0">
             <h4 className="text-lg font-bold leading-snug">{feature.preview.title}</h4>
-            <p className="mt-1 text-sm leading-relaxed text-slate-500">{feature.preview.subtitle}</p>
+            <p className="mt-1 text-sm leading-relaxed text-slate-500">
+              {feature.preview.subtitle}
+            </p>
           </div>
         </div>
         <div className="overflow-hidden rounded-xl border border-slate-200">
-          <div className="grid grid-cols-2 gap-4 bg-slate-100 px-4 py-3 text-xs font-bold text-slate-600"><span>{feature.preview.columns[0]}</span><span className="text-right">{feature.preview.columns[1]}</span></div>
+          <div className="grid grid-cols-2 gap-4 bg-slate-100 px-4 py-3 text-xs font-bold text-slate-600">
+            <span>{feature.preview.columns[0]}</span>
+            <span className="text-right">{feature.preview.columns[1]}</span>
+          </div>
           <dl className="divide-y divide-slate-100">
             {feature.preview.rows.map(([label, value]) => (
-              <div key={label} className="grid grid-cols-2 items-center gap-4 px-4 py-3.5 text-sm"><dt className="text-slate-600">{label}</dt><dd className="text-right font-semibold text-slate-900">{value}</dd></div>
+              <div key={label} className="grid grid-cols-2 items-center gap-4 px-4 py-3.5 text-sm">
+                <dt className="text-slate-600">{label}</dt>
+                <dd className="text-right font-semibold text-slate-900">{value}</dd>
+              </div>
             ))}
           </dl>
         </div>
-        <p className="mt-4 flex items-center gap-2 text-xs text-slate-400"><CheckCircle2 aria-hidden="true" className="size-3.5 text-primary" />Contoh tampilan dan angka</p>
+        <p className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+          <CheckCircle2 aria-hidden="true" className="size-3.5 text-primary" />
+          Contoh tampilan dan angka
+        </p>
       </div>
       <div className="relative mt-4 rounded-2xl border border-indigo-100 bg-white p-5 shadow-lg lg:-mt-2 lg:ml-auto lg:mr-[-12px] lg:w-[85%]">
         <p className="text-xs font-semibold text-primary">{feature.preview.resultLabel}</p>
-        <p className="mt-2 text-xl font-bold leading-snug text-slate-900">{feature.preview.result}</p>
+        <p className="mt-2 text-xl font-bold leading-snug text-slate-900">
+          {feature.preview.result}
+        </p>
         <p className="mt-2 text-xs leading-relaxed text-slate-500">{feature.preview.note}</p>
       </div>
     </div>
-  )
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -637,7 +629,9 @@ function HppRecipeMockup() {
             <span className="size-2.5 rounded-full bg-emerald-400 shrink-0" />
             <div className="ml-2 px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] font-mono text-slate-600 flex items-center gap-1.5 min-w-0 overflow-hidden">
               <span className="text-slate-400 shrink-0">{APP_NAME}/</span>
-              <span className="font-semibold text-slate-800 truncate">production/recipes/simulation</span>
+              <span className="font-semibold text-slate-800 truncate">
+                production/recipes/simulation
+              </span>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 shrink-0">
@@ -773,20 +767,16 @@ function HppRecipeMockup() {
           </div>
           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
             <span className="font-semibold text-slate-700">Perkiraan laba kotor per gelas</span>
-            <span className="font-mono font-extrabold text-emerald-700 text-sm">
-              Rp 11.900
-            </span>
+            <span className="font-mono font-extrabold text-emerald-700 text-sm">Rp 11.900</span>
           </div>
         </div>
       </div>
 
       <div className="mt-3 text-xs leading-relaxed text-slate-600">
-        <span>
-          Data contoh. Laba kotor belum dikurangi biaya usaha lain di luar HPP.
-        </span>
+        <span>Data contoh. Laba kotor belum dikurangi biaya usaha lain di luar HPP.</span>
       </div>
     </div>
-  )
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -936,7 +926,9 @@ function FifoInventoryMockup() {
               <span className="font-mono font-bold text-slate-900 block text-[11px]">
                 #INV-2026-08 (4.5 L)
               </span>
-              <span className="text-[10px] text-amber-700 font-medium">Kedaluwarsa 3 hari lagi</span>
+              <span className="text-[10px] text-amber-700 font-medium">
+                Kedaluwarsa 3 hari lagi
+              </span>
             </div>
             <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-600 text-white">
               Prioritas #1
@@ -958,12 +950,10 @@ function FifoInventoryMockup() {
       {/* STACKED FLOATING CARD 2: Toast Alert */}
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
         <div className="size-2 rounded-full bg-blue-400 motion-safe:animate-pulse" />
-        <span className="font-medium">
-          Pakai bahan yang lebih dekat kedaluwarsa lebih dulu
-        </span>
+        <span className="font-medium">Pakai bahan yang lebih dekat kedaluwarsa lebih dulu</span>
       </div>
     </div>
-  )
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1001,9 +991,7 @@ function ProductionBatchMockup() {
                 Dalam Produksi
               </Badge>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Produksi #042 · Contoh jadwal memasak
-            </p>
+            <p className="text-xs text-slate-500 mt-0.5">Produksi #042 · Contoh jadwal memasak</p>
           </div>
           <div className="hidden sm:block text-right shrink-0">
             <span className="text-[10px] text-slate-400 uppercase font-bold block">
@@ -1022,27 +1010,21 @@ function ProductionBatchMockup() {
           </div>
           <div className="divide-y divide-slate-200/70 text-slate-800">
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
-              <span className="col-span-6 font-semibold text-slate-900">
-                Cokelat batang
-              </span>
+              <span className="col-span-6 font-semibold text-slate-900">Cokelat batang</span>
               <span className="col-span-3 text-right font-mono text-slate-600">750 gr</span>
               <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
                 Tercatat
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
-              <span className="col-span-6 font-semibold text-slate-900">
-                Mentega tawar
-              </span>
+              <span className="col-span-6 font-semibold text-slate-900">Mentega tawar</span>
               <span className="col-span-3 text-right font-mono text-slate-600">450 gr</span>
               <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
                 Tercatat
               </span>
             </div>
             <div className="grid grid-cols-12 gap-2 p-2.5 items-center hover:bg-white transition-colors">
-              <span className="col-span-6 font-semibold text-slate-900">
-                Tepung Protein Sedang
-              </span>
+              <span className="col-span-6 font-semibold text-slate-900">Tepung Protein Sedang</span>
               <span className="col-span-3 text-right font-mono text-slate-600">300 gr</span>
               <span className="col-span-3 text-right text-[10px] font-semibold text-emerald-600">
                 Tercatat
@@ -1111,12 +1093,10 @@ function ProductionBatchMockup() {
       {/* STACKED FLOATING CARD 2: Toast Alert */}
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
         <div className="size-2 rounded-full bg-violet-400 motion-safe:animate-pulse" />
-        <span className="font-medium">
-          Stok bahan berkurang saat produksi ditandai selesai
-        </span>
+        <span className="font-medium">Stok bahan berkurang saat produksi ditandai selesai</span>
       </div>
     </div>
-  )
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1245,9 +1225,7 @@ function PosCashierMockup() {
           </div>
           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
             <span className="font-semibold text-slate-800">Laba kotor</span>
-            <span className="font-mono font-extrabold text-emerald-600 text-base">
-              +Rp 40.880
-            </span>
+            <span className="font-mono font-extrabold text-emerald-600 text-base">+Rp 40.880</span>
           </div>
         </div>
       </div>
@@ -1255,10 +1233,8 @@ function PosCashierMockup() {
       {/* STACKED FLOATING CARD 2: Toast Alert */}
       <div className="hidden sm:flex lg:absolute lg:-top-4 lg:-right-4 rounded-xl bg-slate-900/95 text-white shadow-xl px-3.5 py-2.5 text-xs items-center gap-2.5 border border-slate-800 backdrop-blur-md">
         <div className="size-2 rounded-full bg-emerald-400 motion-safe:animate-pulse" />
-        <span className="font-medium">
-          Penjualan tercatat, stok dan laba kotor ikut dihitung
-        </span>
+        <span className="font-medium">Penjualan tercatat, stok dan laba kotor ikut dihitung</span>
       </div>
     </div>
-  )
+  );
 }

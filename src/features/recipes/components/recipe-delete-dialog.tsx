@@ -1,5 +1,5 @@
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import type { useProductList } from "../hooks/use-product-list";
+} from '@/components/ui/dialog';
+import type { useProductList } from '../hooks/use-product-list';
 
 interface RecipeDeleteDialogProps {
   list: ReturnType<typeof useProductList>;
@@ -18,7 +18,7 @@ export function RecipeDeleteDialog({ list }: RecipeDeleteDialogProps) {
   return (
     <Dialog
       open={Boolean(list.productToDelete)}
-      onOpenChange={(open) => {
+      onOpenChange={open => {
         if (!open) list.closeDelete();
       }}
     >
@@ -26,8 +26,8 @@ export function RecipeDeleteDialog({ list }: RecipeDeleteDialogProps) {
         <DialogHeader>
           <DialogTitle>Hapus produk?</DialogTitle>
           <DialogDescription>
-            Produk <strong>{list.productToDelete?.name}</strong> akan dihapus
-            dari katalog. Riwayat produksi tetap tersimpan.
+            Produk <strong>{list.productToDelete?.name}</strong> akan dihapus dari katalog. Riwayat
+            produksi tetap tersimpan.
           </DialogDescription>
         </DialogHeader>
         {list.deleteError && (
@@ -50,9 +50,7 @@ export function RecipeDeleteDialog({ list }: RecipeDeleteDialogProps) {
             onClick={() => void list.confirmDelete()}
             disabled={list.isDeleting}
           >
-            {list.isDeleting && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {list.isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Hapus produk
           </Button>
         </DialogFooter>

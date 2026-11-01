@@ -1,16 +1,27 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { settingsService } from "@/features/settings/services/settings-service";
-import { useAuthStore } from "@/store/use-auth-store";
-import type { StoreInfo } from "@/features/settings/types";
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { settingsService } from '@/features/settings/services/settings-service';
+import { useAuthStore } from '@/store/use-auth-store';
+import type { StoreInfo } from '@/features/settings/types';
 
 export const storeKeys = {
-  all: ["stores"] as const,
-  permissions: (id: string, userId?: string) => ["store-permissions", id, userId] as const,
+  all: ['stores'] as const,
+  profile: (id: string | null) => ['store-profile', id] as const,
+  permissions: (id: string, userId?: string) => ['store-permissions', id, userId] as const,
 };
 
+export function useStoreProfileQuery() {
+  const storeId = useAuthStore(state => state.activeStoreId);
+  return useQuery({
+    queryKey: storeKeys.profile(storeId),
+    queryFn: () => settingsService.getStoreProfile(),
+    enabled: Boolean(storeId),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useStoresQuery() {
-  const activeStoreId = useAuthStore((state) => state.activeStoreId);
+  const activeStoreId = useAuthStore(state => state.activeStoreId);
 
   const query = useQuery<StoreInfo[]>({
     queryKey: storeKeys.all,
@@ -31,9 +42,9 @@ export function useStoresQuery() {
 }
 
 export function useStorePermissionsQuery(storeId?: string | null) {
-  const userId = useAuthStore((state) => state.user?.id);
+  const userId = useAuthStore(state => state.user?.id);
   const query = useQuery({
-    queryKey: storeKeys.permissions(storeId || "", userId),
+    queryKey: storeKeys.permissions(storeId || '', userId),
     queryFn: () => settingsService.getStorePermissions(storeId!),
     enabled: !!storeId && !!userId,
   });

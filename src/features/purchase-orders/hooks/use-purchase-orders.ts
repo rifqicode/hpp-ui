@@ -1,301 +1,325 @@
-import * as React from "react"
-import { useQueryClient } from "@tanstack/react-query"
-import { purchaseOrderService } from "../services/po-service"
+import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { purchaseOrderService } from '../services/po-service';
 import {
   usePurchaseOrdersQuery,
   usePurchaseOrderSummaryQuery,
   purchaseOrderKeys,
-} from "./use-purchase-orders-query"
-import { useAuthStore } from "@/store/use-auth-store"
-import { usePermission } from "@/hooks/use-permission"
-import { usePurchaseOrderKanbanQuery } from './use-purchase-order-kanban-query'
+} from './use-purchase-orders-query';
+import { useAuthStore } from '@/store/use-auth-store';
+import { usePermission } from '@/hooks/use-permission';
+import { usePurchaseOrderKanbanQuery } from './use-purchase-order-kanban-query';
 import type {
   PurchaseOrder,
   PurchaseOrderQueryParams,
   PurchaseOrderCategory,
+  CreatePurchaseInvoiceInput,
   ReceivePOInput,
   PayPOInput,
-} from "../types"
+} from '../types';
 
 export function usePurchaseOrders(viewMode: 'table' | 'kanban' = 'table') {
-  const queryClient = useQueryClient()
-  const currentUser = useAuthStore((state) => state.user)
-  const { can } = usePermission()
+  const queryClient = useQueryClient();
+  const currentUser = useAuthStore(state => state.user);
+  const { can } = usePermission();
 
-  const [search, setSearch] = React.useState<string>("")
-  const [debouncedSearch, setDebouncedSearch] = React.useState<string>("")
-  const [categoryFilter, setCategoryFilter] = React.useState<PurchaseOrderCategory | "ALL">("ALL")
-  const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
-  const [receiptStatusFilter, setReceiptStatusFilter] = React.useState<string>("ALL")
-  const [paymentStatusFilter, setPaymentStatusFilter] = React.useState<string>("ALL")
-  const [sortBy, setSortBy] = React.useState<string>("date-desc")
-  const [page, setPage] = React.useState<number>(1)
-  const [limit, setLimit] = React.useState<number>(10)
+  const [search, setSearch] = React.useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = React.useState<string>('');
+  const [categoryFilter, setCategoryFilter] = React.useState<PurchaseOrderCategory | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilter] = React.useState<string>('ALL');
+  const [receiptStatusFilter, setReceiptStatusFilter] = React.useState<string>('ALL');
+  const [paymentStatusFilter, setPaymentStatusFilter] = React.useState<string>('ALL');
+  const [sortBy, setSortBy] = React.useState<string>('date-desc');
+  const [page, setPage] = React.useState<number>(1);
+  const [limit, setLimit] = React.useState<number>(10);
 
   // Action modals state
-  const [approvingPO, setApprovingPO] = React.useState<PurchaseOrder | null>(null)
-  const [approveSupplierId, setApproveSupplierId] = React.useState<string>("")
-  const [approveNotes, setApproveNotes] = React.useState<string>("")
+  const [approvingPO, setApprovingPO] = React.useState<PurchaseOrder | null>(null);
+  const [approveSupplierId, setApproveSupplierId] = React.useState<string>('');
+  const [approveNotes, setApproveNotes] = React.useState<string>('');
 
-  const [rejectingPO, setRejectingPO] = React.useState<PurchaseOrder | null>(null)
-  const [rejectReason, setRejectReason] = React.useState<string>("")
+  const [rejectingPO, setRejectingPO] = React.useState<PurchaseOrder | null>(null);
+  const [rejectReason, setRejectReason] = React.useState<string>('');
 
-  const [completingPO, setCompletingPO] = React.useState<PurchaseOrder | null>(null)
-  const [completeSupplierId, setCompleteSupplierId] = React.useState<string>("")
-  const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({})
+  const [completingPO, setCompletingPO] = React.useState<PurchaseOrder | null>(null);
+  const [completeSupplierId, setCompleteSupplierId] = React.useState<string>('');
+  const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({});
 
-  const [submitting, setSubmitting] = React.useState<boolean>(false)
+  const [submitting, setSubmitting] = React.useState<boolean>(false);
 
   // Debounce search
   React.useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearch(search)
-      setPage(1)
-    }, 300)
-    return () => clearTimeout(handler)
-  }, [search])
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const queryParams: PurchaseOrderQueryParams = {
     page,
     limit,
     search: debouncedSearch.trim() || undefined,
-    status: statusFilter === "ALL" ? undefined : statusFilter,
-    category: categoryFilter === "ALL" ? undefined : categoryFilter,
-    receipt_status: receiptStatusFilter === "ALL" ? undefined : receiptStatusFilter,
-    payment_status: paymentStatusFilter === "ALL" ? undefined : paymentStatusFilter,
+    status: statusFilter === 'ALL' ? undefined : statusFilter,
+    category: categoryFilter === 'ALL' ? undefined : categoryFilter,
+    receipt_status: receiptStatusFilter === 'ALL' ? undefined : receiptStatusFilter,
+    payment_status: paymentStatusFilter === 'ALL' ? undefined : paymentStatusFilter,
     sort_by: sortBy,
-  }
+  };
 
-  const ordersQuery = usePurchaseOrdersQuery(queryParams, { enabled: viewMode === 'table' })
-  const kanban = usePurchaseOrderKanbanQuery(queryParams, viewMode === 'kanban')
-  const summaryQuery = usePurchaseOrderSummaryQuery()
+  const ordersQuery = usePurchaseOrdersQuery(queryParams, { enabled: viewMode === 'table' });
+  const kanban = usePurchaseOrderKanbanQuery(queryParams, viewMode === 'kanban');
+  const summaryQuery = usePurchaseOrderSummaryQuery();
 
-  const orders: PurchaseOrder[] = viewMode === 'table' ? ordersQuery.data?.items || [] : kanban.flatMap((column) => column.orders)
-  const total = viewMode === 'table' ? ordersQuery.data?.total || 0 : kanban.reduce((sum, column) => sum + column.total, 0)
-  const totalPages = ordersQuery.data?.totalPages || 1
-  const loading = (viewMode === 'table' ? ordersQuery.isLoading : kanban.some((column) => column.loading)) || summaryQuery.isLoading
-  const error = viewMode === 'table'
-    ? ordersQuery.error instanceof Error ? ordersQuery.error.message : ''
-    : kanban.every((column) => column.error && column.orders.length === 0) ? kanban[0].error : ''
+  const orders: PurchaseOrder[] =
+    viewMode === 'table' ? ordersQuery.data?.items || [] : kanban.flatMap(column => column.orders);
+  const total =
+    viewMode === 'table'
+      ? ordersQuery.data?.total || 0
+      : kanban.reduce((sum, column) => sum + column.total, 0);
+  const totalPages = ordersQuery.data?.totalPages || 1;
+  const loading =
+    (viewMode === 'table' ? ordersQuery.isLoading : kanban.some(column => column.loading)) ||
+    summaryQuery.isLoading;
+  const error =
+    viewMode === 'table'
+      ? ordersQuery.error instanceof Error
+        ? ordersQuery.error.message
+        : ''
+      : kanban.every(column => column.error && column.orders.length === 0)
+        ? kanban[0].error
+        : '';
 
   const loadOrders = React.useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all }),
-    ])
-  }, [queryClient])
+    await Promise.all([queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.all })]);
+  }, [queryClient]);
 
   // --- Handlers: Approve ---
   function handleOpenApprove(po: PurchaseOrder) {
-    setApprovingPO(po)
-    setApproveSupplierId(po.supplierId || "")
-    setApproveNotes("")
+    setApprovingPO(po);
+    setApproveSupplierId(po.supplierId || '');
+    setApproveNotes('');
   }
 
   async function handleConfirmApprove(e: React.FormEvent) {
-    e.preventDefault()
-    if (!approvingPO) return
+    e.preventDefault();
+    if (!approvingPO) return;
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       await purchaseOrderService.approvePurchaseOrder(approvingPO.id, {
         supplier_id: approveSupplierId || undefined,
         notes: approveNotes || undefined,
-      })
-      setApprovingPO(null)
-      await loadOrders()
+      });
+      setApprovingPO(null);
+      await loadOrders();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyetujui request"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menyetujui request';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   // --- Handlers: Reject ---
   function handleOpenReject(po: PurchaseOrder) {
-    setRejectingPO(po)
-    setRejectReason("")
+    setRejectingPO(po);
+    setRejectReason('');
   }
 
   async function handleConfirmReject(e: React.FormEvent) {
-    e.preventDefault()
-    if (!rejectingPO) return
+    e.preventDefault();
+    if (!rejectingPO) return;
     if (!rejectReason.trim()) {
-      alert("Alasan penolakan wajib diisi")
-      return
+      alert('Alasan penolakan wajib diisi');
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       await purchaseOrderService.rejectPurchaseOrder(rejectingPO.id, {
         reason: rejectReason.trim(),
-      })
-      setRejectingPO(null)
-      await loadOrders()
+      });
+      setRejectingPO(null);
+      await loadOrders();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menolak request"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menolak request';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   // --- Handlers: Complete ---
   function handleOpenComplete(po: PurchaseOrder) {
-    setCompletingPO(po)
-    setCompleteSupplierId(po.supplierId || "")
-    const initial: Record<string, number> = {}
-    po.items.forEach((it) => {
-      initial[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0)
-    })
-    setItemTotalPrices(initial)
+    setCompletingPO(po);
+    setCompleteSupplierId(po.supplierId || '');
+    const initial: Record<string, number> = {};
+    po.items.forEach(it => {
+      initial[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0);
+    });
+    setItemTotalPrices(initial);
   }
 
   async function handleConfirmComplete(e: React.FormEvent) {
-    e.preventDefault()
-    if (!completingPO) return
+    e.preventDefault();
+    if (!completingPO) return;
     if (!completeSupplierId) {
-      alert("Vendor / Supplier final wajib dipilih sebelum menyelesaikan pesanan")
-      return
+      alert('Vendor / Supplier final wajib dipilih sebelum menyelesaikan pesanan');
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      const prices = completingPO.items.map((it) => {
-        const total = Number(itemTotalPrices[it.id]) || 0
-        const unit_price = it.quantity > 0 ? Number((total / it.quantity).toFixed(4)) : 0
+      const prices = completingPO.items.map(it => {
+        const total = Number(itemTotalPrices[it.id]) || 0;
+        const unit_price = it.quantity > 0 ? Number((total / it.quantity).toFixed(4)) : 0;
         return {
           item_id: it.id,
           unit_price,
           total_price: total,
-        }
-      })
+        };
+      });
 
       await purchaseOrderService.completePurchaseOrder(completingPO.id, {
         supplier_id: completeSupplierId,
         prices,
-      })
-      setCompletingPO(null)
-      await loadOrders()
+      });
+      setCompletingPO(null);
+      await loadOrders();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyelesaikan purchase order"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menyelesaikan purchase order';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   // --- Handlers: Cancel ---
   async function handleCancelPO(po: PurchaseOrder, reason?: string) {
     if (!reason) {
-      const isRequest = po.status === "PURCHASE_REQUEST"
+      const isRequest = po.status === 'PURCHASE_REQUEST';
       const confirmMsg = isRequest
         ? `Apakah Anda yakin ingin membatalkan Purchase Request ${po.poNumber}?`
-        : `Apakah Anda yakin ingin membatalkan Purchase Order ${po.poNumber}?`
-      if (!window.confirm(confirmMsg)) return
+        : `Apakah Anda yakin ingin membatalkan Purchase Order ${po.poNumber}?`;
+      if (!window.confirm(confirmMsg)) return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       await purchaseOrderService.cancelPurchaseOrder(po.id, {
-        reason: reason || "Dibatalkan oleh pengguna",
-      })
-      await loadOrders()
+        reason: reason || 'Dibatalkan oleh pengguna',
+      });
+      await loadOrders();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal membatalkan pesanan"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal membatalkan pesanan';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
+    }
+  }
+
+  async function handleCreateInvoice(id: string, input: CreatePurchaseInvoiceInput) {
+    setSubmitting(true);
+    try {
+      const res = await purchaseOrderService.createInvoice(id, input);
+      await loadOrders();
+      return res;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal menerbitkan purchase invoice';
+      alert(msg);
+      throw err;
+    } finally {
+      setSubmitting(false);
     }
   }
 
   async function handleReceive(id: string, input?: ReceivePOInput) {
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      const res = await purchaseOrderService.receivePurchaseOrder(id, input)
-      await loadOrders()
-      return res
+      const res = await purchaseOrderService.receivePurchaseOrder(id, input);
+      await loadOrders();
+      return res;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal mencatat penerimaan barang"
-      alert(msg)
-      throw err
+      const msg = err instanceof Error ? err.message : 'Gagal mencatat penerimaan barang';
+      alert(msg);
+      throw err;
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handlePay(id: string, input: PayPOInput) {
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      const res = await purchaseOrderService.payPurchaseOrder(id, input)
-      await loadOrders()
-      return res
+      const res = await purchaseOrderService.payPurchaseOrder(id, input);
+      await loadOrders();
+      return res;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memproses pembayaran"
-      alert(msg)
-      throw err
+      const msg = err instanceof Error ? err.message : 'Gagal memproses pembayaran';
+      alert(msg);
+      throw err;
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleCancel(id: string, reason: string) {
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      const res = await purchaseOrderService.cancelPurchaseOrder(id, { reason })
-      await loadOrders()
-      return res
+      const res = await purchaseOrderService.cancelPurchaseOrder(id, { reason });
+      await loadOrders();
+      return res;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal membatalkan pesanan"
-      alert(msg)
-      throw err
+      const msg = err instanceof Error ? err.message : 'Gagal membatalkan pesanan';
+      alert(msg);
+      throw err;
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   // Pagination navigation
   const handleNextPage = () => {
     if (page < totalPages) {
-      setPage((prev) => prev + 1)
+      setPage(prev => prev + 1);
     }
-  }
+  };
 
   const handlePrevPage = () => {
     if (page > 1) {
-      setPage((prev) => prev - 1)
+      setPage(prev => prev - 1);
     }
-  }
+  };
 
   // RBAC checks
-  const canProcess = can("purchases:process")
-  const canRequest = can("purchases:request")
+  const canProcess = can('purchases:process');
+  const canRequest = can('purchases:request');
   const canEditPO = (po: PurchaseOrder) => {
-    if (po.status !== "PURCHASE_REQUEST") return false
-    return (
-      canProcess ||
-      (canRequest && !!currentUser?.id && po.createdByUserId === currentUser.id)
-    )
-  }
+    if (po.status !== 'PURCHASE_REQUEST') return false;
+    return canProcess || (canRequest && !!currentUser?.id && po.createdByUserId === currentUser.id);
+  };
 
   // Summary counts directly from backend summary endpoint
-  const summary = summaryQuery.data
-  const totalCount = summary?.total_orders ?? total
-  const requestCount = summary?.request_count ?? 0
-  const orderCount = summary?.order_count ?? 0
-  const completedCount = summary?.completed_count ?? 0
-  const totalCompletedAmount = Number(summary?.total_completed_amount ?? 0)
+  const summary = summaryQuery.data;
+  const totalCount = summary?.total_orders ?? total;
+  const requestCount = summary?.request_count ?? 0;
+  const orderCount = summary?.order_count ?? 0;
+  const completedCount = summary?.completed_count ?? 0;
+  const totalCompletedAmount = Number(summary?.total_completed_amount ?? 0);
 
   function formatDate(dateStr: string) {
-    if (!dateStr) return "-"
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    if (!dateStr) return '-';
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
       hour12: false,
-    }).format(new Date(dateStr)).replace(" pukul ", ", ")
+    })
+      .format(new Date(dateStr))
+      .replace(' pukul ', ', ');
   }
 
   return {
@@ -306,36 +330,38 @@ export function usePurchaseOrders(viewMode: 'table' | 'kanban' = 'table') {
     orders,
     kanban,
     loading,
-    isFetching: (viewMode === 'table' ? ordersQuery.isFetching : kanban.some((column) => column.isFetching)) || summaryQuery.isFetching,
+    isFetching:
+      (viewMode === 'table' ? ordersQuery.isFetching : kanban.some(column => column.isFetching)) ||
+      summaryQuery.isFetching,
     error,
     summaryLoading: summaryQuery.isLoading,
     summaryError: summaryQuery.isError,
     search,
     setSearch,
     categoryFilter,
-    setCategoryFilter: (category: PurchaseOrderCategory | "ALL") => {
-      setCategoryFilter(category)
-      setPage(1)
+    setCategoryFilter: (category: PurchaseOrderCategory | 'ALL') => {
+      setCategoryFilter(category);
+      setPage(1);
     },
     statusFilter,
     setStatusFilter: (status: string) => {
-      setStatusFilter(status)
-      setPage(1)
+      setStatusFilter(status);
+      setPage(1);
     },
     receiptStatusFilter,
     setReceiptStatusFilter: (status: string) => {
-      setReceiptStatusFilter(status)
-      setPage(1)
+      setReceiptStatusFilter(status);
+      setPage(1);
     },
     paymentStatusFilter,
     setPaymentStatusFilter: (status: string) => {
-      setPaymentStatusFilter(status)
-      setPage(1)
+      setPaymentStatusFilter(status);
+      setPage(1);
     },
     sortBy,
     setSortBy: (sort: string) => {
-      setSortBy(sort)
-      setPage(1)
+      setSortBy(sort);
+      setPage(1);
     },
     page,
     limit,
@@ -345,6 +371,7 @@ export function usePurchaseOrders(viewMode: 'table' | 'kanban' = 'table') {
     handleNextPage,
     handlePrevPage,
     // Actions & Operations
+    handleCreateInvoice,
     handleReceive,
     handlePay,
     handleCancel,
@@ -382,9 +409,10 @@ export function usePurchaseOrders(viewMode: 'table' | 'kanban' = 'table') {
     totalCount,
     requestCount,
     orderCount,
+    invoiceCount: summary?.invoice_count ?? 0,
     inProgressCount: orderCount,
     completedCount,
     totalCompletedAmount,
     formatDate,
-  }
+  };
 }

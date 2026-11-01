@@ -1,10 +1,10 @@
-import apiClient from '@/lib/api-client'
+import apiClient from '@/lib/api-client';
 import type {
   ProductDetailParams,
   ProductDetailReport,
   ProductProfitabilityParams,
   ProductProfitabilityReport,
-} from '../types'
+} from '../types';
 
 export const reportsApi = {
   getProductProfitability: async (
@@ -12,12 +12,12 @@ export const reportsApi = {
     params: ProductProfitabilityParams,
     signal?: AbortSignal,
   ): Promise<ProductProfitabilityReport> => {
-    const query = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== ''))
+    const query = Object.fromEntries(Object.entries(params).filter(([, value]) => value !== ''));
     const response = await apiClient.get<ProductProfitabilityReport>(
       `/stores/${storeId}/reports/product-profitability`,
       { params: query, signal, headers: { 'X-Store-ID': storeId } },
-    )
-    return response.data
+    );
+    return response.data;
   },
 
   getProductDetail: async (
@@ -28,11 +28,11 @@ export const reportsApi = {
   ): Promise<ProductDetailReport> => {
     const query = Object.fromEntries(
       Object.entries(params).filter(([, value]) => value !== undefined && value !== ''),
-    )
+    );
     const response = await apiClient.get<ProductDetailReport>(
       `/stores/${storeId}/reports/products/${variantId}`,
       { params: query, signal, headers: { 'X-Store-ID': storeId } },
-    )
-    return response.data
+    );
+    return response.data;
   },
-}
+};

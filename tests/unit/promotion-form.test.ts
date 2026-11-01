@@ -33,6 +33,8 @@ describe('promotion form contracts', () => {
   });
   it('registers the master route with a separate menu permission and subscription feature', () => {
     expect(getActiveMenuTitle('/sales/promotions')).toBe('Promosi & Diskon');
+    expect(getActiveMenuTitle(`/sales/promotions/${promotionFixture().id}`)).toBe('Detail Promosi');
+    expect([...getActiveNavigationIds(NAVIGATION, `/sales/promotions/${promotionFixture().id}`)]).toEqual(['order', 'promotions']);
     expect([...getActiveNavigationIds(NAVIGATION, '/sales/promotions')]).toEqual(['order', 'promotions']);
     const visible = filterNavigation(NAVIGATION, code => code === 'menu:promotions');
     const item = visible.find(group => group.id === 'order')?.children?.find(child => child.id === 'promotions');

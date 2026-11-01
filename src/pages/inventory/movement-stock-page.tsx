@@ -1,5 +1,5 @@
-import * as React from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import * as React from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowDownLeft,
@@ -7,33 +7,27 @@ import {
   AlertTriangle,
   Loader2,
   ArrowLeftRight,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { FormattedNumberInput } from "@/components/ui/formatted-number-input"
-import { Textarea } from "@/components/ui/textarea"
-import { CurrencyText } from "@/components/ui/currency-text"
-import { cn } from "@/lib/utils"
-import { useMovementStock } from "@/features/inventory/hooks/use-movement-stock"
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormattedNumberInput } from '@/components/ui/formatted-number-input';
+import { Textarea } from '@/components/ui/textarea';
+import { CurrencyText } from '@/components/ui/currency-text';
+import { cn } from '@/lib/utils';
+import { useMovementStock } from '@/features/inventory/hooks/use-movement-stock';
 import {
   StockChangePreview,
   StockMaterialField,
-} from "@/features/inventory/components/stock-form-fields"
-import { stockNumber } from "@/features/inventory/components/stock-form-utils"
+} from '@/features/inventory/components/stock-form-fields';
+import { stockNumber } from '@/features/inventory/components/stock-form-utils';
 
-type MovementType = "ADJUSTMENT_IN" | "ADJUSTMENT_OUT"
+type MovementType = 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT';
 
 export default function MovementStockPage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const materialFromQuery = searchParams.get("materialId")
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const materialFromQuery = searchParams.get('materialId');
 
   const {
     stocks,
@@ -41,53 +35,54 @@ export default function MovementStockPage() {
     isSubmitting,
     error: hookError,
     handleRecordAdjustment,
-  } = useMovementStock()
+  } = useMovementStock();
 
-  const [movementType, setMovementType] = React.useState<MovementType>("ADJUSTMENT_IN")
-  const [userSelectedMaterialId, setUserSelectedMaterialId] = React.useState<string>("")
-  const [quantity, setQuantity] = React.useState<string>("")
-  const [totalCost, setTotalCost] = React.useState<string>("")
-  const [reason, setReason] = React.useState<string>("")
-  const [submitError, setSubmitError] = React.useState<string>("")
+  const [movementType, setMovementType] = React.useState<MovementType>('ADJUSTMENT_IN');
+  const [userSelectedMaterialId, setUserSelectedMaterialId] = React.useState<string>('');
+  const [quantity, setQuantity] = React.useState<string>('');
+  const [totalCost, setTotalCost] = React.useState<string>('');
+  const [reason, setReason] = React.useState<string>('');
+  const [submitError, setSubmitError] = React.useState<string>('');
 
   const materialId =
     userSelectedMaterialId ||
-    (materialFromQuery && stocks.some((s) => s.id === materialFromQuery) ? materialFromQuery : "") ||
+    (materialFromQuery && stocks.some(s => s.id === materialFromQuery) ? materialFromQuery : '') ||
     stocks[0]?.id ||
-    ""
+    '';
 
-  const material = stocks.find((m) => m.id === materialId)
-  const isIncoming = movementType === "ADJUSTMENT_IN"
-  const qty = Number(quantity)
-  const numTotalCost = Number(totalCost)
-  const current = Number(material?.current_stock || 0)
-  const insufficient = !isIncoming && qty > current
+  const material = stocks.find(m => m.id === materialId);
+  const isIncoming = movementType === 'ADJUSTMENT_IN';
+  const qty = Number(quantity);
+  const numTotalCost = Number(totalCost);
+  const current = Number(material?.current_stock || 0);
+  const insufficient = !isIncoming && qty > current;
   const valid =
     Boolean(material) &&
     Number.isFinite(qty) &&
     qty > 0 &&
     !insufficient &&
-    (!isIncoming || (Number.isFinite(numTotalCost) && numTotalCost > 0))
+    (!isIncoming || (Number.isFinite(numTotalCost) && numTotalCost > 0));
 
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitError("")
+    e.preventDefault();
+    setSubmitError('');
 
     if (!material) {
-      setSubmitError("Pilih bahan baku terlebih dahulu.")
-      return
+      setSubmitError('Pilih bahan baku terlebih dahulu.');
+      return;
     }
 
     if (!valid) {
       if (insufficient) {
-        setSubmitError("Jumlah pengurangan melebihi stok yang tersedia saat ini.")
+        setSubmitError('Jumlah pengurangan melebihi stok yang tersedia saat ini.');
       } else {
-        setSubmitError("Pastikan jumlah dan harga yang diisi sudah valid.")
+        setSubmitError('Pastikan jumlah dan harga yang diisi sudah valid.');
       }
-      return
+      return;
     }
 
-    const calculatedPricePerUnit = (isIncoming && qty > 0 && numTotalCost > 0) ? (numTotalCost / qty) : undefined
+    const calculatedPricePerUnit =
+      isIncoming && qty > 0 && numTotalCost > 0 ? numTotalCost / qty : undefined;
 
     try {
       await handleRecordAdjustment({
@@ -96,14 +91,12 @@ export default function MovementStockPage() {
         quantity: qty,
         reason: reason.trim() || undefined,
         price_per_unit: calculatedPricePerUnit,
-      })
-      navigate("/inventory/stocks")
+      });
+      navigate('/inventory/stocks');
     } catch (err: unknown) {
       setSubmitError(
-        err instanceof Error
-          ? err.message
-          : "Gagal menyimpan mutasi stok. Silakan coba kembali."
-      )
+        err instanceof Error ? err.message : 'Gagal menyimpan mutasi stok. Silakan coba kembali.',
+      );
     }
   }
 
@@ -113,7 +106,7 @@ export default function MovementStockPage() {
         <Loader2 className="h-8 w-8 animate-spin mb-3 text-primary" />
         <p className="text-sm">Memuat data bahan baku...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -162,20 +155,20 @@ export default function MovementStockPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label
                   className={cn(
-                    "relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all",
-                    movementType === "ADJUSTMENT_IN"
-                      ? "border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 ring-1 ring-emerald-500"
-                      : "border-border hover:bg-muted/40"
+                    'relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all',
+                    movementType === 'ADJUSTMENT_IN'
+                      ? 'border-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 ring-1 ring-emerald-500'
+                      : 'border-border hover:bg-muted/40',
                   )}
                 >
                   <input
                     type="radio"
                     name="page-movement-type"
                     value="ADJUSTMENT_IN"
-                    checked={movementType === "ADJUSTMENT_IN"}
+                    checked={movementType === 'ADJUSTMENT_IN'}
                     onChange={() => {
-                      setMovementType("ADJUSTMENT_IN")
-                      setSubmitError("")
+                      setMovementType('ADJUSTMENT_IN');
+                      setSubmitError('');
                     }}
                     className="sr-only"
                   />
@@ -185,16 +178,14 @@ export default function MovementStockPage() {
                     </span>
                     <span
                       className={cn(
-                        "size-2.5 rounded-full",
-                        movementType === "ADJUSTMENT_IN"
-                          ? "bg-emerald-500 ring-2 ring-emerald-500/30"
-                          : "border border-muted-foreground/30"
+                        'size-2.5 rounded-full',
+                        movementType === 'ADJUSTMENT_IN'
+                          ? 'bg-emerald-500 ring-2 ring-emerald-500/30'
+                          : 'border border-muted-foreground/30',
                       )}
                     />
                   </div>
-                  <span className="text-sm font-semibold text-foreground">
-                    Tambah Stok (Masuk)
-                  </span>
+                  <span className="text-sm font-semibold text-foreground">Tambah Stok (Masuk)</span>
                   <span className="text-xs leading-relaxed text-muted-foreground">
                     Stok fisik lebih banyak atau penyesuaian masuk
                   </span>
@@ -202,20 +193,20 @@ export default function MovementStockPage() {
 
                 <label
                   className={cn(
-                    "relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all",
-                    movementType === "ADJUSTMENT_OUT"
-                      ? "border-destructive bg-destructive/10 dark:bg-destructive/15 ring-1 ring-destructive"
-                      : "border-border hover:bg-muted/40"
+                    'relative flex cursor-pointer flex-col gap-1.5 rounded-xl border p-3.5 transition-all',
+                    movementType === 'ADJUSTMENT_OUT'
+                      ? 'border-destructive bg-destructive/10 dark:bg-destructive/15 ring-1 ring-destructive'
+                      : 'border-border hover:bg-muted/40',
                   )}
                 >
                   <input
                     type="radio"
                     name="page-movement-type"
                     value="ADJUSTMENT_OUT"
-                    checked={movementType === "ADJUSTMENT_OUT"}
+                    checked={movementType === 'ADJUSTMENT_OUT'}
                     onChange={() => {
-                      setMovementType("ADJUSTMENT_OUT")
-                      setSubmitError("")
+                      setMovementType('ADJUSTMENT_OUT');
+                      setSubmitError('');
                     }}
                     className="sr-only"
                   />
@@ -225,10 +216,10 @@ export default function MovementStockPage() {
                     </span>
                     <span
                       className={cn(
-                        "size-2.5 rounded-full",
-                        movementType === "ADJUSTMENT_OUT"
-                          ? "bg-destructive ring-2 ring-destructive/30"
-                          : "border border-muted-foreground/30"
+                        'size-2.5 rounded-full',
+                        movementType === 'ADJUSTMENT_OUT'
+                          ? 'bg-destructive ring-2 ring-destructive/30'
+                          : 'border border-muted-foreground/30',
                       )}
                     />
                   </div>
@@ -256,28 +247,28 @@ export default function MovementStockPage() {
               id="page-movement-material"
               stocks={stocks}
               value={materialId}
-              onChange={(val) => {
-                setUserSelectedMaterialId(val)
-                setQuantity("")
-                setTotalCost("")
-                setSubmitError("")
+              onChange={val => {
+                setUserSelectedMaterialId(val);
+                setQuantity('');
+                setTotalCost('');
+                setSubmitError('');
               }}
             />
 
             {/* Quantity and Total Cost */}
-            <div className={cn("grid gap-4", isIncoming ? "sm:grid-cols-2" : "grid-cols-1")}>
+            <div className={cn('grid gap-4', isIncoming ? 'sm:grid-cols-2' : 'grid-cols-1')}>
               <div className="min-w-0 space-y-2">
                 <label htmlFor="page-movement-qty" className="text-sm font-medium text-foreground">
-                  Jumlah yang {isIncoming ? "Ditambahkan" : "Dikurangi"}{" "}
+                  Jumlah yang {isIncoming ? 'Ditambahkan' : 'Dikurangi'}{' '}
                   <span className="text-destructive">*</span>
                 </label>
                 <FormattedNumberInput
                   id="page-movement-qty"
                   value={quantity}
-                  onChange={(val) => setQuantity(String(val))}
+                  onChange={val => setQuantity(String(val))}
                   allowDecimal
                   maxDecimals={4}
-                  suffix={material?.base_unit || "satuan"}
+                  suffix={material?.base_unit || 'satuan'}
                   placeholder="Contoh: 2,5"
                   required
                   disabled={!material}
@@ -291,14 +282,16 @@ export default function MovementStockPage() {
 
               {isIncoming && (
                 <div className="min-w-0 space-y-2">
-                  <label htmlFor="page-movement-total-cost" className="text-sm font-medium text-foreground">
-                    Total Harga Bahan{" "}
-                    <span className="text-destructive">*</span>
+                  <label
+                    htmlFor="page-movement-total-cost"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Total Harga Bahan <span className="text-destructive">*</span>
                   </label>
                   <FormattedNumberInput
                     id="page-movement-total-cost"
                     value={totalCost}
-                    onChange={(val) => setTotalCost(String(val))}
+                    onChange={val => setTotalCost(String(val))}
                     prefix="Rp"
                     allowDecimal
                     maxDecimals={4}
@@ -309,11 +302,13 @@ export default function MovementStockPage() {
                   />
                   {qty > 0 && numTotalCost > 0 ? (
                     <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                      Harga per {material?.base_unit || "satuan"}: <CurrencyText value={numTotalCost / qty} /> (dihitung otomatis)
+                      Harga per {material?.base_unit || 'satuan'}:{' '}
+                      <CurrencyText value={numTotalCost / qty} /> (dihitung otomatis)
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Sistem otomatis menghitung harga per {material?.base_unit || "satuan"} dari total harga dibagi jumlah.
+                      Sistem otomatis menghitung harga per {material?.base_unit || 'satuan'} dari
+                      total harga dibagi jumlah.
                     </p>
                   )}
                 </div>
@@ -330,7 +325,8 @@ export default function MovementStockPage() {
                 <div>
                   <p className="font-semibold">Stok tidak mencukupi</p>
                   <p className="mt-0.5 leading-relaxed">
-                    Jumlah pengurangan ({stockNumber(qty)} {material?.base_unit}) melebihi stok yang tercatat saat ini ({stockNumber(current)} {material?.base_unit}).
+                    Jumlah pengurangan ({stockNumber(qty)} {material?.base_unit}) melebihi stok yang
+                    tercatat saat ini ({stockNumber(current)} {material?.base_unit}).
                   </p>
                 </div>
               </div>
@@ -339,17 +335,17 @@ export default function MovementStockPage() {
             {/* Reason Textarea */}
             <div className="space-y-2">
               <label htmlFor="page-movement-reason" className="text-sm font-medium text-foreground">
-                Catatan / Alasan Penyesuaian{" "}
+                Catatan / Alasan Penyesuaian{' '}
                 <span className="font-normal text-muted-foreground">(opsional)</span>
               </label>
               <Textarea
                 id="page-movement-reason"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={e => setReason(e.target.value)}
                 placeholder={
                   isIncoming
-                    ? "Contoh: selisih hitung stok setelah pengecekan fisik gudang"
-                    : "Contoh: 2 kg tepung rusak karena kemasan bocor atau kedaluwarsa"
+                    ? 'Contoh: selisih hitung stok setelah pengecekan fisik gudang'
+                    : 'Contoh: 2 kg tepung rusak karena kemasan bocor atau kedaluwarsa'
                 }
                 rows={2}
                 className="min-h-20 resize-y rounded-xl"
@@ -381,7 +377,7 @@ export default function MovementStockPage() {
                 type="button"
                 variant="outline"
                 className="rounded-xl flex-1 sm:flex-initial h-11"
-                onClick={() => navigate("/inventory/stocks")}
+                onClick={() => navigate('/inventory/stocks')}
               >
                 Batal
               </Button>
@@ -391,12 +387,12 @@ export default function MovementStockPage() {
                 className="rounded-xl flex-1 sm:flex-initial h-11"
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Menyimpan…" : "Simpan Mutasi"}
+                {isSubmitting ? 'Menyimpan…' : 'Simpan Mutasi'}
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

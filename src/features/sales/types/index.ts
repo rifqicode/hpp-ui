@@ -1,7 +1,8 @@
 import type { ProductVariantView, ModifierOption } from '../../recipes/types';
 
 export type PaymentMethod = 'CASH' | 'QRIS' | 'TRANSFER' | 'DEBIT' | 'EDC';
-export type SaleStatus = 'COMPLETED' | 'IN_PROGRESS' | 'PENDING_CONFIRMATION' | 'CANCELLED' | 'RETURNED';
+export type SaleStatus =
+  'COMPLETED' | 'IN_PROGRESS' | 'PENDING_CONFIRMATION' | 'CANCELLED' | 'RETURNED';
 export type OrderSource = 'POS' | 'ONLINE' | string;
 export type OrderFulfillmentType = 'DINE_IN' | 'PICKUP' | 'DELIVERY' | string;
 
@@ -56,14 +57,14 @@ export interface CustomerDetail {
 }
 
 export interface SaleItem {
-	 isRewardItem?: boolean;
-	 isFreeReward?: boolean;
-	 discountAmount?: number;
-	 promotionId?: string;
- variantId: string;
- variantName: string;
- costStatus: 'ESTIMATED'|'ACTUAL';
- modifiers: {id:string;name:string;price:number;cost:number;totalCost:number}[];
+  isRewardItem?: boolean;
+  isFreeReward?: boolean;
+  discountAmount?: number;
+  promotionId?: string;
+  variantId: string;
+  variantName: string;
+  costStatus: 'ESTIMATED' | 'ACTUAL';
+  modifiers: { id: string; name: string; price: number; cost: number; totalCost: number }[];
   returnedQuantity?: number;
   id: string;
   saleId: string;
@@ -95,12 +96,21 @@ export interface SaleItem {
 }
 
 export interface Sale {
-	 promotionId?: string;
-	 promotions?: { promo_name: string; promo_type: string; discount_amount: string; gross_sales: string; net_sales: string; total_cost: string; gross_profit: string; cost_status: string }[];
- originalTotalAmount?: number;
- refundedAmount?: number;
- restoredCost?: number;
- corrections?: SaleCorrection[];
+  promotionId?: string;
+  promotions?: {
+    promo_name: string;
+    promo_type: string;
+    discount_amount: string;
+    gross_sales: string;
+    net_sales: string;
+    total_cost: string;
+    gross_profit: string;
+    cost_status: string;
+  }[];
+  originalTotalAmount?: number;
+  refundedAmount?: number;
+  restoredCost?: number;
+  corrections?: SaleCorrection[];
 
   id: string;
   storeId?: string;
@@ -127,6 +137,8 @@ export interface Sale {
   discount_amount?: number;
   taxAmount: number;
   tax_amount?: number;
+  cashRoundingAdjustment?: number;
+  cash_rounding_adjustment?: number;
   paymentMethod: PaymentMethod;
   payment_method?: PaymentMethod;
   cashReceived?: number;
@@ -182,8 +194,8 @@ export interface Sale {
 }
 
 export interface CartItem {
- key: string;
- modifiers: ModifierOption[];
+  key: string;
+  modifiers: ModifierOption[];
   product: ProductVariantView;
   quantity: number;
   price: number;
@@ -192,8 +204,8 @@ export interface CartItem {
 }
 
 export interface CreateSaleInput {
-	 promotionId?: string;
-	 rewardSelections?: { variant_id: string; modifier_option_ids: string[] }[];
+  promotionId?: string;
+  rewardSelections?: { variant_id: string; modifier_option_ids: string[] }[];
   storeId?: string;
   customerPhone?: string;
   customer_phone?: string;
@@ -214,6 +226,8 @@ export interface CreateSaleInput {
   discount_amount?: number;
   taxAmount?: number;
   tax_amount?: number;
+  cashRoundingAdjustment?: number;
+  cash_rounding_adjustment?: number;
   paymentMethod: PaymentMethod;
   payment_method?: PaymentMethod;
   cashReceived?: number;
@@ -280,12 +294,22 @@ export interface CustomerSummary {
 }
 
 export interface SaleCorrection {
- id: string; actor_id: string; actor_name?: string; kind: string; reason: string; refund_method: string;
- refund_reference: string; refund_amount: string | number; created_at: string;
- items: { id: string; sale_item_id: string; quantity: string | number; restock: boolean }[];
+  id: string;
+  actor_id: string;
+  actor_name?: string;
+  kind: string;
+  reason: string;
+  refund_method: string;
+  refund_reference: string;
+  refund_amount: string | number;
+  created_at: string;
+  items: { id: string; sale_item_id: string; quantity: string | number; restock: boolean }[];
 }
 export interface CorrectSaleInput {
- request_id: string; kind: 'CANCEL' | 'RETURN'; reason: string; refund_method: string;
- refund_reference?: string;
- items: { sale_item_id: string; quantity: number; restock: boolean }[];
+  request_id: string;
+  kind: 'CANCEL' | 'RETURN';
+  reason: string;
+  refund_method: string;
+  refund_reference?: string;
+  items: { sale_item_id: string; quantity: number; restock: boolean }[];
 }

@@ -1,17 +1,17 @@
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button';
 
 export interface TablePaginationProps {
-  total: number
-  displayedCount: number
-  page?: number
-  totalPages?: number
-  onPrev: () => void
-  onNext: () => void
-  disabled?: boolean
-  label?: string
-  prevLabel?: string
-  nextLabel?: string
-  className?: string
+  total: number;
+  displayedCount: number;
+  page?: number;
+  totalPages?: number;
+  onPrev: () => void;
+  onNext: () => void;
+  disabled?: boolean;
+  label?: string;
+  prevLabel?: string;
+  nextLabel?: string;
+  className?: string;
 }
 
 export function TablePagination({
@@ -22,16 +22,16 @@ export function TablePagination({
   onPrev,
   onNext,
   disabled = false,
-  label = "data",
-  prevLabel = "Prev",
-  nextLabel = "Next",
-  className = "",
+  label = 'data',
+  prevLabel = 'Prev',
+  nextLabel = 'Next',
+  className = '',
 }: TablePaginationProps) {
-  if (total <= 0) return null
+  if (total <= 0) return null;
 
-  const isPrevDisabled = disabled || (page !== undefined ? page <= 1 : false)
+  const isPrevDisabled = disabled || (page !== undefined ? page <= 1 : false);
   const isNextDisabled =
-    disabled || (totalPages !== undefined && page !== undefined ? page >= totalPages : false)
+    disabled || (totalPages !== undefined && page !== undefined ? page >= totalPages : false);
 
   return (
     <div
@@ -59,5 +59,5 @@ export function TablePagination({
         </Button>
       </div>
     </div>
-  )
+  );
 }

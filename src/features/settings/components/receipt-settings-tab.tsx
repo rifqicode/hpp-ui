@@ -1,13 +1,5 @@
 import * as React from 'react';
-import {
-  Printer,
-  Save,
-  Loader2,
-  Check,
-  Receipt,
-  Smartphone,
-  Monitor,
-} from 'lucide-react';
+import { Printer, Save, Loader2, Check, Receipt, Smartphone, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,7 +36,8 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
       footer_text: existing?.footer_text ?? DEFAULT_RECEIPT_CONFIG.footer_text,
       show_logo: existing?.show_logo ?? DEFAULT_RECEIPT_CONFIG.show_logo,
       show_cashier_name: existing?.show_cashier_name ?? DEFAULT_RECEIPT_CONFIG.show_cashier_name,
-      show_customer_phone: existing?.show_customer_phone ?? DEFAULT_RECEIPT_CONFIG.show_customer_phone,
+      show_customer_phone:
+        existing?.show_customer_phone ?? DEFAULT_RECEIPT_CONFIG.show_customer_phone,
       show_notes: existing?.show_notes ?? DEFAULT_RECEIPT_CONFIG.show_notes,
     };
   });
@@ -62,7 +55,8 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
         footer_text: existing?.footer_text ?? DEFAULT_RECEIPT_CONFIG.footer_text,
         show_logo: existing?.show_logo ?? DEFAULT_RECEIPT_CONFIG.show_logo,
         show_cashier_name: existing?.show_cashier_name ?? DEFAULT_RECEIPT_CONFIG.show_cashier_name,
-        show_customer_phone: existing?.show_customer_phone ?? DEFAULT_RECEIPT_CONFIG.show_customer_phone,
+        show_customer_phone:
+          existing?.show_customer_phone ?? DEFAULT_RECEIPT_CONFIG.show_customer_phone,
         show_notes: existing?.show_notes ?? DEFAULT_RECEIPT_CONFIG.show_notes,
       });
     }
@@ -82,7 +76,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
       setSuccessMsg('Pengaturan struk berhasil disimpan.');
       onUpdated?.(updated);
       window.dispatchEvent(
-        new CustomEvent('guidance-task-success', { detail: { feature: 'receipt_config' } })
+        new CustomEvent('guidance-task-success', { detail: { feature: 'receipt_config' } }),
       );
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal menyimpan pengaturan struk.');
@@ -102,11 +96,14 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
         <Card className="rounded-2xl border-border shadow-xs">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-base font-semibold">Pengaturan Format Struk & Printer</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                Pengaturan Format Struk & Printer
+              </CardTitle>
               <GuidanceTourTrigger feature="receipt_config" />
             </div>
             <CardDescription className="text-xs">
-              Sesuaikan ukuran kertas printer thermal dan informasi yang tercetak pada struk transaksi.
+              Sesuaikan ukuran kertas printer thermal dan informasi yang tercetak pada struk
+              transaksi.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -132,7 +129,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
                 <div data-guidance="paper-size" className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setConfig((prev) => ({ ...prev, paper_size: '58mm' }))}
+                    onClick={() => setConfig(prev => ({ ...prev, paper_size: '58mm' }))}
                     className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
                       config.paper_size === '58mm'
                         ? 'border-primary bg-primary/5 ring-2 ring-primary/20 text-foreground'
@@ -153,7 +150,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
 
                   <button
                     type="button"
-                    onClick={() => setConfig((prev) => ({ ...prev, paper_size: '80mm' }))}
+                    onClick={() => setConfig(prev => ({ ...prev, paper_size: '80mm' }))}
                     className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all ${
                       config.paper_size === '80mm'
                         ? 'border-primary bg-primary/5 ring-2 ring-primary/20 text-foreground'
@@ -182,7 +179,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
                 <Input
                   id="header-text"
                   value={config.header_text || ''}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, header_text: e.target.value }))}
+                  onChange={e => setConfig(prev => ({ ...prev, header_text: e.target.value }))}
                   placeholder="Contoh: Slogan, Alamat Lengkap, atau Media Sosial"
                   className="h-10 text-xs"
                 />
@@ -200,7 +197,7 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
                   data-guidance="footer-text"
                   id="footer-text"
                   value={config.footer_text || ''}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, footer_text: e.target.value }))}
+                  onChange={e => setConfig(prev => ({ ...prev, footer_text: e.target.value }))}
                   placeholder="Contoh: Terima kasih atas kunjungan Anda! Follow IG: @tokoanda"
                   rows={2}
                   className="text-xs resize-none"
@@ -223,23 +220,25 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
                   </div>
                   <Switch
                     checked={config.show_cashier_name}
-                    onCheckedChange={(checked) =>
-                      setConfig((prev) => ({ ...prev, show_cashier_name: checked }))
+                    onCheckedChange={checked =>
+                      setConfig(prev => ({ ...prev, show_cashier_name: checked }))
                     }
                   />
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-muted/20">
                   <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-foreground">Tampilkan No. HP Pelanggan</p>
+                    <p className="text-xs font-medium text-foreground">
+                      Tampilkan No. HP Pelanggan
+                    </p>
                     <p className="text-[10px] text-muted-foreground">
                       Mencantumkan kontak telepon pelanggan bila tercatat.
                     </p>
                   </div>
                   <Switch
                     checked={config.show_customer_phone}
-                    onCheckedChange={(checked) =>
-                      setConfig((prev) => ({ ...prev, show_customer_phone: checked }))
+                    onCheckedChange={checked =>
+                      setConfig(prev => ({ ...prev, show_customer_phone: checked }))
                     }
                   />
                 </div>
@@ -253,8 +252,8 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
                   </div>
                   <Switch
                     checked={config.show_notes}
-                    onCheckedChange={(checked) =>
-                      setConfig((prev) => ({ ...prev, show_notes: checked }))
+                    onCheckedChange={checked =>
+                      setConfig(prev => ({ ...prev, show_notes: checked }))
                     }
                   />
                 </div>
@@ -262,8 +261,17 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
 
               {/* Tombol Simpan */}
               <div className="pt-2">
-                <Button data-guidance="save-receipt-btn" type="submit" disabled={isSaving} className="w-full sm:w-auto text-xs font-semibold gap-1.5 h-10">
-                  {isSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                <Button
+                  data-guidance="save-receipt-btn"
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full sm:w-auto text-xs font-semibold gap-1.5 h-10"
+                >
+                  {isSaving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
                   <span>{isSaving ? 'Menyimpan...' : 'Simpan Pengaturan Struk'}</span>
                 </Button>
               </div>
@@ -403,15 +411,21 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
               <div className="space-y-1 text-[11px] border-b border-border/80 pb-2">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal:</span>
-                  <span><CurrencyText value={73000} /></span>
+                  <span>
+                    <CurrencyText value={73000} />
+                  </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Diskon Promo:</span>
-                  <span className="text-destructive">-<CurrencyText value={5000} /></span>
+                  <span className="text-destructive">
+                    -<CurrencyText value={5000} />
+                  </span>
                 </div>
                 <div className="flex justify-between font-bold text-xs pt-1">
                   <span>TOTAL:</span>
-                  <span className="text-foreground"><CurrencyText value={68000} /></span>
+                  <span className="text-foreground">
+                    <CurrencyText value={68000} />
+                  </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground pt-0.5">
                   <span>Metode Bayar:</span>
@@ -419,11 +433,15 @@ export function ReceiptSettingsTab({ store, onUpdated }: ReceiptSettingsTabProps
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Uang Diterima:</span>
-                  <span><CurrencyText value={100000} /></span>
+                  <span>
+                    <CurrencyText value={100000} />
+                  </span>
                 </div>
                 <div className="flex justify-between text-muted-foreground font-semibold">
                   <span>Kembalian:</span>
-                  <span className="text-emerald-600"><CurrencyText value={32000} /></span>
+                  <span className="text-emerald-600">
+                    <CurrencyText value={32000} />
+                  </span>
                 </div>
               </div>
 

@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePermission } from '@/hooks/use-permission';
 import { useAuthStore } from '@/store/use-auth-store';
 import { promotionService } from '../services/promotion-service';
-import { formReadiness, inputFromPromotion, newPromotionInput, promotionError } from '../lib/promotion-form';
+import {
+  formReadiness,
+  inputFromPromotion,
+  newPromotionInput,
+  promotionError,
+} from '../lib/promotion-form';
 import type { PromotionListFilters } from '../lib/promotion-list';
 import type { PendingPromotionAction, Promotion, PromotionEditor, PromotionInput } from '../types';
 
@@ -16,17 +22,46 @@ function useDebounced(value: string, delay = 350) {
   return debounced;
 }
 
-export function usePromotionsMaster(storeId: string, filters: Partial<PromotionListFilters> = {}) {
+export function usePromotionsMaster(
+  storeId: string,
+  filters: Partial<PromotionListFilters> = {},
+  listEnabled = true,
+) {
   const client = useQueryClient();
   const { can } = usePermission();
   const canRead = can('promotions:read');
   const canWrite = can('promotions:write');
   const canDelete = can('promotions:delete');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = searchParams.get('q') || '';
+  const requestedPage = Number(searchParams.get('page') || 1);
+  const page = Number.isSafeInteger(requestedPage)
+    ? Math.min(1_000_000, Math.max(1, requestedPage))
+    : 1;
+
+  function setSearch(value: string) {
+    setSearchParams(
+      previous => {
+        const next = new URLSearchParams(previous);
+        if (value) next.set('q', value);
+        else next.delete('q');
+        next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
+  }
+
+  function setPage(value: number | ((current: number) => number)) {
+    const target = typeof value === 'function' ? value(page) : value;
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      if (target > 1) next.set('page', String(target));
+      else next.delete('page');
+      return next;
+    });
+  }
   const [editor, setEditor] = useState<PromotionEditor | null>(null);
-  const [optionSearch, setOptionSearch] = useState('');
-  const [optionPage, setOptionPage] = useState(1);
   const [pending, setPending] = useState<PendingPromotionAction | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Promotion | null>(null);
   const [busy, setBusy] = useState(false);
@@ -34,16 +69,18 @@ export function usePromotionsMaster(storeId: string, filters: Partial<PromotionL
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const debouncedSearch = useDebounced(search);
-  const debouncedOptions = useDebounced(optionSearch);
   const list = useQuery({
     queryKey: ['promotions', storeId, page, debouncedSearch, filters],
     queryFn: ({ signal }) => promotionService.list(storeId, page, debouncedSearch, signal, filters),
-    enabled: canRead && Boolean(storeId), retry: false,
+    enabled: canRead && Boolean(storeId) && listEnabled,
+    retry: false,
   });
-  const options = useQuery({
-    queryKey: ['promotion-options', storeId, optionPage, debouncedOptions],
-    queryFn: ({ signal }) => promotionService.options(storeId, optionPage, debouncedOptions, signal),
-    enabled: canRead && Boolean(editor), staleTime: 30_000, retry: false,
+  const summary = useQuery({
+    queryKey: ['promotion-summary', storeId],
+    queryFn: ({ signal }) => promotionService.summary(storeId, signal),
+    enabled: canRead && Boolean(storeId) && listEnabled && !editor,
+    staleTime: 30_000,
+    retry: false,
   });
   const serialized = editor ? JSON.stringify(editor.input) : '';
   const debouncedInput = useDebounced(serialized, 500);
@@ -51,40 +88,63 @@ export function usePromotionsMaster(storeId: string, filters: Partial<PromotionL
   const currentSimulation = serialized === debouncedInput;
   const simulationQuery = useQuery({
     queryKey: ['promotion-simulation', storeId, debouncedInput],
-    queryFn: ({ signal }) => promotionService.simulate(storeId, JSON.parse(debouncedInput) as PromotionInput, signal),
+    queryFn: ({ signal }) =>
+      promotionService.simulate(storeId, JSON.parse(debouncedInput) as PromotionInput, signal),
     enabled: Boolean(editor && !editor.readOnly && canWrite && !readiness && currentSimulation),
-    retry: false, staleTime: 0, gcTime: 0, refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: false,
   });
-  const simulation = editor?.readOnly ? editor.snapshot : currentSimulation && !readiness ? simulationQuery.data : undefined;
+  const simulation = editor?.readOnly
+    ? editor.snapshot
+    : currentSimulation && !readiness
+      ? simulationQuery.data
+      : undefined;
   const isCurrentStore = () => useAuthStore.getState().activeStoreId === storeId;
 
   function updateInput(input: PromotionInput) {
-    setEditor(previous => previous ? { ...previous, input: { ...input, loss_leader_confirmed: false } } : null);
+    setEditor(previous =>
+      previous ? { ...previous, input: { ...input, loss_leader_confirmed: false } } : null,
+    );
     setPending(null);
     setError('');
   }
 
   function closeEditor() {
     if (busyRef.current) return;
-    setEditor(null); setPending(null); setError('');
+    setEditor(null);
+    setPending(null);
+    setError('');
   }
 
   function create() {
     if (!canWrite || busyRef.current) return;
     setEditor({ input: newPromotionInput(), readOnly: false });
-    setOptionSearch(''); setOptionPage(1); setError(''); setSuccess('');
+    setError('');
+    setSuccess('');
   }
 
   async function execute(action: () => Promise<void>) {
     if (busyRef.current) return;
-    busyRef.current = true; setBusy(true); setError(''); setSuccess('');
-    try { await action(); }
-    catch (failure) { if (isCurrentStore()) setError(promotionError(failure)); }
-    finally { busyRef.current = false; setBusy(false); }
+    busyRef.current = true;
+    setBusy(true);
+    setError('');
+    setSuccess('');
+    try {
+      await action();
+    } catch (failure) {
+      if (isCurrentStore()) setError(promotionError(failure));
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
   }
 
   async function refresh(message: string) {
     await client.invalidateQueries({ queryKey: ['promotions', storeId] });
+    await client.invalidateQueries({ queryKey: ['promotion-summary', storeId] });
+    await client.invalidateQueries({ queryKey: ['promotion-detail', storeId] });
     if (isCurrentStore()) setSuccess(message);
   }
 
@@ -92,22 +152,41 @@ export function usePromotionsMaster(storeId: string, filters: Partial<PromotionL
     await execute(async () => {
       const latest = await promotionService.get(storeId, promotion.id);
       if (!isCurrentStore()) return;
-      setEditor({ id: latest.id, input: inputFromPromotion(latest), readOnly, snapshot: latest.planning_snapshot });
-      setOptionSearch(''); setOptionPage(1);
+      setEditor({
+        id: latest.id,
+        input: inputFromPromotion(latest),
+        readOnly,
+        snapshot: latest.planning_snapshot,
+        catalogNames: Object.fromEntries(
+          latest.items
+            .filter(item => item.selector_name)
+            .map(item => [
+              item.variant_id || item.product_id || item.category_id || '',
+              item.selector_name!,
+            ]),
+        ),
+      });
     });
   }
 
   async function persist(input: PromotionInput, id?: string) {
     await promotionService.save(storeId, input, id);
     if (!isCurrentStore()) return;
-    setEditor(null); setPending(null);
+    setEditor(null);
+    setPending(null);
     await refresh('Promosi berhasil disimpan.');
   }
 
   async function save() {
     if (!editor || editor.readOnly || !canWrite) return;
-    if (!editor.input.name.trim()) { setError('Nama promosi wajib diisi.'); return; }
-    if (readiness) { setError(readiness); return; }
+    if (!editor.input.name.trim()) {
+      setError('Nama promosi wajib diisi.');
+      return;
+    }
+    if (readiness) {
+      setError(readiness);
+      return;
+    }
     const snapshot = editor;
     await execute(async () => {
       const fresh = await promotionService.simulate(storeId, snapshot.input);
@@ -127,12 +206,17 @@ export function usePromotionsMaster(storeId: string, filters: Partial<PromotionL
       if (!isCurrentStore()) return;
       if (latest.version !== promotion.version) {
         await client.invalidateQueries({ queryKey: ['promotions', storeId] });
-        throw new Error('Promosi telah berubah. Daftar diperbarui; periksa status terbaru sebelum melanjutkan.');
+        throw new Error(
+          'Promosi telah berubah. Daftar diperbarui; periksa status terbaru sebelum melanjutkan.',
+        );
       }
       if (!latest.is_active) {
         const fresh = await promotionService.simulate(storeId, inputFromPromotion(latest));
         if (!isCurrentStore()) return;
-        if (fresh.is_loss_leader) { setPending({ kind: 'activate', promotion: latest, simulation: fresh }); return; }
+        if (fresh.is_loss_leader) {
+          setPending({ kind: 'activate', promotion: latest, simulation: fresh });
+          return;
+        }
       }
       await promotionService.setActive(storeId, latest, !latest.is_active);
       await refresh(latest.is_active ? 'Promosi dinonaktifkan.' : 'Promosi diaktifkan.');
@@ -143,10 +227,12 @@ export function usePromotionsMaster(storeId: string, filters: Partial<PromotionL
     if (!pending || !canWrite) return;
     const action = pending;
     await execute(async () => {
-      if (action.kind === 'save') await persist({ ...action.input, loss_leader_confirmed: true }, action.id);
+      if (action.kind === 'save')
+        await persist({ ...action.input, loss_leader_confirmed: true }, action.id);
       else {
         await promotionService.setActive(storeId, action.promotion, true, true);
-        setPending(null); await refresh('Promosi diaktifkan dengan konfirmasi defisit margin.');
+        setPending(null);
+        await refresh('Promosi diaktifkan dengan konfirmasi defisit margin.');
       }
     });
   }
@@ -164,16 +250,49 @@ export function usePromotionsMaster(storeId: string, filters: Partial<PromotionL
   }
 
   return {
-    canRead, canWrite, canDelete, list, search, page, editor, options, optionSearch, optionPage,
-    pending, archiveTarget, busy, error, success, simulation, readiness,
-    simulationLoading: Boolean(editor && !editor.readOnly && !readiness && (!currentSimulation || simulationQuery.isFetching)),
-    simulationError: currentSimulation && !readiness && simulationQuery.error ? promotionError(simulationQuery.error) : '',
-    setSearch: (value: string) => { setSearch(value); setPage(1); },
-    setPage, setOptionPage,
-    setOptionSearch: (value: string) => { setOptionSearch(value); setOptionPage(1); },
-    updateInput, create, closeEditor, open, save, toggle, confirmRisk, archive,
-    setArchiveTarget, dismissRisk: () => { if (!busyRef.current) setPending(null); },
-    dismissArchive: () => { if (!busyRef.current) setArchiveTarget(null); },
+    canRead,
+    canWrite,
+    canDelete,
+    list,
+    summary,
+    refetchList: () => Promise.all([list.refetch(), summary.refetch()]),
+    search,
+    page,
+    editor,
+    pending,
+    archiveTarget,
+    busy,
+    error,
+    success,
+    simulation,
+    readiness,
+    simulationLoading: Boolean(
+      editor &&
+      !editor.readOnly &&
+      !readiness &&
+      (!currentSimulation || simulationQuery.isFetching),
+    ),
+    simulationError:
+      currentSimulation && !readiness && simulationQuery.error
+        ? promotionError(simulationQuery.error)
+        : '',
+    setSearch,
+    setPage,
+    updateInput,
+    create,
+    closeEditor,
+    open,
+    save,
+    toggle,
+    confirmRisk,
+    archive,
+    setArchiveTarget,
+    dismissRisk: () => {
+      if (!busyRef.current) setPending(null);
+    },
+    dismissArchive: () => {
+      if (!busyRef.current) setArchiveTarget(null);
+    },
     retrySimulation: () => simulationQuery.refetch(),
   };
 }

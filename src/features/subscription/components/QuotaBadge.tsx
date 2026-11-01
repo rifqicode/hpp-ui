@@ -1,4 +1,6 @@
 import React from 'react';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 import { useSubscriptionGuards } from '../hooks/useSubscriptionGuards';
 import type { SubscriptionQuotas } from '../types/subscription';
 
@@ -26,48 +28,60 @@ const BadgeView: React.FC<BadgeViewProps> = ({
   limit,
   percentage,
   onUpgradeClick,
-  className = '',
+  className,
 }) => {
-  // If no quota or uninitialized, don't show
   if (limit === 0) return null;
 
-  // Unlimited tier
-  if (limit === -1) {
-    return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs bg-slate-50 text-slate-700 border-slate-200 dark:bg-muted/40 dark:border-border dark:text-foreground ${className}`}>
-        <span className="font-medium text-muted-foreground">{label}:</span>
-        <span className="font-mono font-bold text-foreground">{current}</span>
-        <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200/50">
-          Tak Terbatas
-        </span>
-      </div>
-    );
-  }
-
-  const isFull = current >= limit;
-  const isNearLimit = percentage >= 80;
-
-  const barColor = isFull ? 'bg-rose-500' : isNearLimit ? 'bg-amber-500' : 'bg-emerald-500';
-  const badgeColor = isFull
-    ? 'bg-rose-50/80 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-300'
+  const isUnlimited = limit === -1;
+  const isFull = !isUnlimited && current >= limit;
+  const isNearLimit = !isUnlimited && !isFull && percentage >= 80;
+  const statusColor = isFull
+    ? 'text-rose-700 dark:text-rose-300'
     : isNearLimit
-    ? 'bg-amber-50/80 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50 dark:text-amber-300'
-    : 'bg-muted/50 text-muted-foreground border-border';
+      ? 'text-amber-700 dark:text-amber-300'
+      : 'text-muted-foreground';
 
   return (
-    <div className={`inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg border text-xs shadow-xs ${badgeColor} ${className}`}>
-      <div>
+    <div
+      data-slot="quota-badge"
+      className={cn(
+        'mt-3 flex w-fit max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground',
+        className,
+      )}
+    >
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-1">
         <span className="font-medium">{label}:</span>{' '}
-        <span className="font-mono font-bold text-foreground">{current} / {limit}</span>
+        <span className="whitespace-nowrap font-semibold tabular-nums text-foreground">
+          {current.toLocaleString('id-ID')}
+          {!isUnlimited && ` / ${limit.toLocaleString('id-ID')}`}
+        </span>
       </div>
-      <div className="w-14 sm:w-16 bg-muted rounded-full h-1.5 overflow-hidden">
-        <div className={`h-1.5 rounded-full transition-all duration-300 ${barColor}`} style={{ width: `${Math.min(100, percentage)}%` }} />
-      </div>
+      {!isUnlimited && (
+        <Progress
+          value={percentage}
+          aria-label={label}
+          aria-valuetext={`${current.toLocaleString('id-ID')} dari ${limit.toLocaleString('id-ID')}`}
+          className="h-1.5 w-16 shrink-0 bg-border"
+          indicatorClassName={cn(
+            'motion-reduce:transition-none',
+            isFull
+              ? 'bg-rose-600 dark:bg-rose-400'
+              : isNearLimit
+                ? 'bg-amber-700 dark:bg-amber-400'
+                : 'bg-primary',
+          )}
+        />
+      )}
+      {(isUnlimited || isFull || isNearLimit) && (
+        <span className={cn('font-medium', statusColor)}>
+          {isUnlimited ? 'Tak Terbatas' : isFull ? 'Batas tercapai' : 'Hampir penuh'}
+        </span>
+      )}
       {isFull && onUpgradeClick && (
         <button
           type="button"
           onClick={onUpgradeClick}
-          className="text-rose-600 dark:text-rose-400 font-semibold hover:underline cursor-pointer ml-0.5"
+          className="-my-3 min-h-11 cursor-pointer rounded px-1 font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Upgrade
         </button>
@@ -97,7 +111,7 @@ const ResourceQuotaBadge: React.FC<QuotaBadgeProps & { resource: keyof Subscript
   );
 };
 
-export const QuotaBadge: React.FC<QuotaBadgeProps> = (props) => {
+export const QuotaBadge: React.FC<QuotaBadgeProps> = props => {
   if (props.current !== undefined && props.limit !== undefined) {
     const percentage = props.limit > 0 ? (props.current / props.limit) * 100 : 0;
     return (

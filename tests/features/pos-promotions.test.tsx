@@ -42,7 +42,7 @@ async function addAndSelect() {
   await user.click(screen.getByRole('button', { name: 'Gunakan Promosi' }));
   const dialog = screen.getByRole('dialog', { name: 'Gunakan Promosi' });
   await user.click(await within(dialog).findByRole('button', { name: 'Pilih promosi' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Proses Pesanan' })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Bayar/ })).toBeEnabled());
   return user;
 }
 
@@ -50,7 +50,7 @@ describe('POS promotion integration', () => {
   it('injects a reward preview but submits only paid items and prints the authoritative snapshot', async () => {
     const user = await addAndSelect();
     expect(screen.getByText('[GRATIS]')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Proses Pesanan' }));
+    await user.click(screen.getByRole('button', { name: /^Bayar/ }));
     await user.click(screen.getByRole('button', { name: 'Selesaikan Transaksi' }));
     await waitFor(() => expect(salesService.createSale).toHaveBeenCalledTimes(1));
     const payload = vi.mocked(salesService.createSale).mock.calls[0][0];
@@ -67,13 +67,13 @@ describe('POS promotion integration', () => {
     const pending = deferred<POSPromotion[]>();
     vi.mocked(posPromotionService.preview).mockImplementationOnce(() => pending.promise);
     await user.click(screen.getByRole('button', { name: 'Tambah Roti Coklat - Regular' }));
-    expect(screen.getByRole('button', { name: 'Proses Pesanan' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Bayar/ })).toBeDisabled();
     expect(screen.queryByText('[GRATIS]')).not.toBeInTheDocument();
     const input = vi.mocked(posPromotionService.preview).mock.calls.at(-1)![1];
     await act(async () => pending.resolve([{ ...candidate(input), eligible: false, reason: 'Remaining promotion budget cannot fund this cart', lines: [] }]));
     expect(await screen.findByRole('alert')).toHaveTextContent('Remaining promotion budget');
     await user.click(screen.getByRole('button', { name: 'Lepas promosi' }));
-    expect(screen.getByRole('button', { name: 'Proses Pesanan' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Bayar/ })).toBeEnabled();
   });
 
   it('clears the selected promotion when its last paid trigger is removed', async () => {
@@ -81,7 +81,7 @@ describe('POS promotion integration', () => {
     await user.click(screen.getByRole('button', { name: 'Hapus Roti Coklat - Regular' }));
     expect(screen.queryByText('[GRATIS]')).not.toBeInTheDocument();
     expect(screen.queryByText('Promo: Bonus Kopi')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Proses Pesanan' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Bayar/ })).toBeDisabled();
   });
 
   it('allows cashier redemption without backoffice promotion permissions and exposes no simulator request', async () => {
@@ -91,13 +91,13 @@ describe('POS promotion integration', () => {
     expect(screen.queryByText('Simulator anggaran')).not.toBeInTheDocument();
   });
 
-  it('preserves fractional cash instead of stripping the decimal separator', async () => {
+  it('rounds a fractional promotion total for cash and sends its exact adjustment', async () => {
     vi.mocked(posPromotionService.preview).mockImplementation(async (_, input) => [{ ...candidate(input), net_sales: '9999.5', discount_amount: '5000.5' }]);
     const user = await addAndSelect();
-    await user.click(screen.getByRole('button', { name: 'Proses Pesanan' }));
-    expect(screen.getByRole('textbox', { name: 'Uang diterima' })).toHaveValue('9.999,5');
+    await user.click(screen.getByRole('button', { name: /^Bayar/ }));
+    expect(screen.getByRole('textbox', { name: 'Uang diterima' })).toHaveValue('10.000');
     await user.click(screen.getByRole('button', { name: 'Selesaikan Transaksi' }));
     await waitFor(() => expect(salesService.createSale).toHaveBeenCalled());
-    expect(vi.mocked(salesService.createSale).mock.calls[0][0].cashReceived).toBe(9999.5);
+    expect(vi.mocked(salesService.createSale).mock.calls[0][0]).toEqual(expect.objectContaining({ cashReceived: 10000, cashRoundingAdjustment: 0.5 }));
   });
 });

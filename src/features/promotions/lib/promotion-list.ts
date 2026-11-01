@@ -66,11 +66,11 @@ export function filterPromotions(
   status: PromotionStatusFilter,
   type: PromotionTypeFilter,
   attention: PromotionAttentionFilter,
-  sort: PromotionSort
+  sort: PromotionSort,
 ): Promotion[] {
   const term = search.trim().toLowerCase();
 
-  const filtered = promotions.filter((promo) => {
+  const filtered = promotions.filter(promo => {
     if (term) {
       const matchName = promo.name.toLowerCase().includes(term);
       const matchCode = promo.code ? promo.code.toLowerCase().includes(term) : false;

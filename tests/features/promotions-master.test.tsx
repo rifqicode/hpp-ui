@@ -11,6 +11,7 @@ import type { PromotionSimulation } from '@/features/promotions/types';
 beforeEach(() => {
   useAuthStore.setState({ activeStoreId: promotionStoreId, permissions: ['menu:promotions', 'promotions:read', 'promotions:write', 'promotions:delete'] });
   vi.spyOn(promotionService, 'list').mockResolvedValue({ data: [promotionFixture()], total: 1, page: 1, per_page: 12, active_count: 0, max_active_promotions: 5 });
+  vi.spyOn(promotionService, 'summary').mockResolvedValue({ active_count: 0, inactive_count: 1 });
   vi.spyOn(promotionService, 'options').mockResolvedValue(promotionOptions);
   vi.spyOn(promotionService, 'get').mockResolvedValue(promotionFixture());
   vi.spyOn(promotionService, 'simulate').mockResolvedValue(simulationFixture());
@@ -27,25 +28,42 @@ async function openCreate() {
   return user;
 }
 
+async function chooseAction(user: ReturnType<typeof userEvent.setup>, action: string) {
+  await user.click(await screen.findByRole('button', { name: 'Aksi untuk Sarapan Hemat' }));
+  await user.click(screen.getByRole('menuitem', { name: action }));
+}
+
+async function chooseCatalog(user: ReturnType<typeof userEvent.setup>, label: string, name = 'Roti / Regular') {
+  await user.click(screen.getByLabelText(label));
+  const picker = screen.getByRole('dialog', { name: `Pilih ${label.toLowerCase()}` });
+  await user.click(await within(picker).findByRole('button', { name }));
+}
+
 describe('promotion master', () => {
   it('requires read permission and makes no catalog or master requests without it', () => {
     useAuthStore.setState({ permissions: ['menu:promotions'] });
     renderPage(<PromotionsPage />);
     expect(screen.getByRole('alert')).toHaveTextContent('tidak memiliki izin');
     expect(promotionService.list).not.toHaveBeenCalled();
+    expect(promotionService.summary).not.toHaveBeenCalled();
     expect(promotionService.options).not.toHaveBeenCalled();
   });
 
   it('loads the list and quota, opens stored details, and hides mutations from a reader', async () => {
     useAuthStore.setState({ permissions: ['promotions:read'] });
-    const user = userEvent.setup(); renderPage(<PromotionsPage />);
+    const user = userEvent.setup(); renderPage(<PromotionsPage />, '/sales/promotions', '/sales/promotions/:promotionId?');
     expect(await screen.findByText('Sarapan Hemat')).toBeVisible();
     expect(screen.getByText('0 / 5')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Buat promosi' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Aktifkan' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Lihat' }));
-    expect(screen.getByLabelText('Nama promosi')).toBeDisabled();
-    await user.click(screen.getByRole('button', { name: /simulasi & terbitkan/i }));
+    await user.click(screen.getByRole('button', { name: 'Aksi untuk Sarapan Hemat' }));
+    expect(screen.queryByRole('menuitem', { name: 'Ubah' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Aktifkan' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Arsipkan' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: 'Lihat detail' }));
+    expect(await screen.findByRole('heading', { name: 'Sarapan Hemat' })).toBeVisible();
+    expect(screen.queryByLabelText('Nama promosi')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ubah promosi' })).not.toBeInTheDocument();
     expect(await screen.findByText('Simulasi tersimpan')).toBeVisible();
     expect(promotionService.simulate).not.toHaveBeenCalled();
   });
@@ -54,15 +72,19 @@ describe('promotion master', () => {
     const user = await openCreate();
     await user.click(screen.getByRole('button', { name: 'Lanjut' }));
     expect(promotionService.simulate).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('radio', { name: /Harga Bahan Baku Sekarang/i }));
     await user.click(screen.getByRole('button', { name: 'Lanjut' }));
-    expect(screen.getByRole('button', { name: 'Simpan promosi' })).toBeDisabled();
-    await user.selectOptions(screen.getByLabelText('Varian simulasi 1'), promotionVariantId);
+    expect(screen.getByRole('button', { name: 'Simpan nonaktif' })).toBeDisabled();
+    await chooseCatalog(user, 'Varian simulasi 1');
+    expect(promotionService.simulate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('radio', { name: /Harga Bahan Baku Sekarang/i }));
+    await user.clear(screen.getByLabelText('Jumlah 1'));
+    await user.type(screen.getByLabelText('Jumlah 1'), '1.125');
     await screen.findByText('Aman & Menguntungkan');
-    await user.click(screen.getByRole('button', { name: 'Simpan promosi' }));
+    await user.click(screen.getByRole('button', { name: 'Simpan nonaktif' }));
     await screen.findByText('Promosi berhasil disimpan.');
     expect(promotionService.save).toHaveBeenCalledWith(promotionStoreId, expect.objectContaining({ name: 'Promo Baru', cost_basis: 'CURRENT_RECIPE', discount_value: '10', is_active: false, loss_leader_confirmed: false }), undefined);
     expect(vi.mocked(promotionService.save).mock.calls[0][1]).not.toHaveProperty('unit_economics');
+    expect(vi.mocked(promotionService.save).mock.calls[0][1].simulation_items).toEqual([{ variant_id: promotionVariantId, quantity: '1.125' }]);
   });
 
   it('switches the four strategy forms and permits category triggers without changing reward selectors', async () => {
@@ -73,7 +95,7 @@ describe('promotion master', () => {
     await user.click(screen.getByRole('button', { name: 'Tambah Menu Bonus / Hadiah' }));
     expect(screen.getByLabelText('Pilihan menu bonus / hadiah 2')).toBeVisible();
     await user.selectOptions(screen.getByLabelText('Jenis pilihan 1'), 'category');
-    await user.selectOptions(screen.getByLabelText('Pilihan persyaratan 1'), 'category-1');
+    await chooseCatalog(user, 'Pilihan persyaratan 1', 'Bakery');
     expect(screen.getByLabelText('Jenis pilihan 1')).toHaveValue('category');
     await user.click(screen.getByRole('radio', { name: /Paket Kombo Hemat/i }));
     expect(screen.getByLabelText('Harga satu paket (Rp)')).toBeVisible();
@@ -85,30 +107,70 @@ describe('promotion master', () => {
     expect(screen.getByLabelText('Jenis diskon')).toBeVisible();
   });
 
+  it('keeps catalog searches local to each picker and retains names after changing steps', async () => {
+    vi.mocked(promotionService.options).mockImplementation(async (_store, _page, search) => {
+      const data = promotionOptions.data.filter(row => row.name.toLowerCase().includes(search.toLowerCase()));
+      return { ...promotionOptions, data, total: data.length };
+    });
+    const user = await openCreate();
+    expect(promotionService.options).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('radio', { name: /Paket Kombo Hemat/i }));
+    await user.click(screen.getByRole('button', { name: 'Tambah Persyaratan' }));
+    await user.click(screen.getByLabelText('Pilihan persyaratan 1'));
+    await user.type(screen.getByRole('searchbox', { name: 'Cari pilihan persyaratan 1' }), 'Roti');
+    const firstPicker = screen.getByRole('dialog', { name: 'Pilih pilihan persyaratan 1' });
+    await user.click(await within(firstPicker).findByRole('button', { name: 'Roti / Regular' }));
+    await user.click(screen.getByRole('button', { name: 'Tambah Persyaratan' }));
+    await user.click(screen.getByLabelText('Pilihan persyaratan 2'));
+    expect(screen.getByRole('searchbox', { name: 'Cari pilihan persyaratan 2' })).toHaveValue('');
+    await user.type(screen.getByRole('searchbox', { name: 'Cari pilihan persyaratan 2' }), 'Kopi');
+    const secondPicker = screen.getByRole('dialog', { name: 'Pilih pilihan persyaratan 2' });
+    await user.click(await within(secondPicker).findByRole('button', { name: 'Kopi / Regular' }));
+    await user.type(screen.getByLabelText('Harga satu paket (Rp)'), '25000');
+    await user.click(screen.getByRole('button', { name: 'Lanjut' }));
+    await user.click(screen.getByRole('button', { name: 'Kembali' }));
+    expect(screen.getByLabelText('Pilihan persyaratan 1')).toHaveTextContent('Roti / Regular');
+    expect(screen.getByLabelText('Pilihan persyaratan 2')).toHaveTextContent('Kopi / Regular');
+  });
+
+  it('requires fresh loss confirmation when creating an active promotion', async () => {
+    vi.mocked(promotionService.simulate).mockResolvedValue(simulationFixture(true));
+    const user = await openCreate();
+    await user.click(screen.getByRole('button', { name: 'Lanjut' }));
+    await user.click(screen.getByRole('button', { name: 'Lanjut' }));
+    await user.click(screen.getByRole('radio', { name: 'HPP produksi terakhir' }));
+    await chooseCatalog(user, 'Varian simulasi 1');
+    await user.click(screen.getByRole('radio', { name: 'Langsung aktifkan' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Simpan & aktifkan' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: 'Simpan & aktifkan' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Konfirmasi promo dengan estimasi rugi' });
+    expect(promotionService.save).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Saya memahami, aktifkan promosi' }));
+    await waitFor(() => expect(promotionService.save).toHaveBeenCalledWith(promotionStoreId, expect.objectContaining({ is_active: true, loss_leader_confirmed: true }), undefined));
+  });
+
   it('discards an outdated simulation response after the form changes', async () => {
     const old = deferred<PromotionSimulation>();
     vi.mocked(promotionService.simulate).mockImplementationOnce(() => old.promise);
     const user = await openCreate();
     await user.click(screen.getByRole('button', { name: 'Lanjut' }));
-    await user.click(screen.getByRole('radio', { name: /Modal Masak\/Produksi Terakhir/i }));
     await user.click(screen.getByRole('button', { name: 'Lanjut' }));
-    await user.selectOptions(screen.getByLabelText('Varian simulasi 1'), promotionVariantId);
+    await user.click(screen.getByRole('radio', { name: 'HPP produksi terakhir' }));
+    await chooseCatalog(user, 'Varian simulasi 1');
     await waitFor(() => expect(promotionService.simulate).toHaveBeenCalledTimes(1));
-    await user.click(screen.getByRole('button', { name: 'Kembali' }));
     await user.click(screen.getByRole('radio', { name: /Harga Bahan Baku Sekarang/i }));
     await waitFor(() => expect(promotionService.simulate).toHaveBeenCalledTimes(2));
-    await user.click(screen.getByRole('button', { name: 'Lanjut' }));
     await screen.findByText('Aman & Menguntungkan');
     await act(async () => old.resolve(simulationFixture(true)));
     expect(screen.queryByText('Strategi Nombok (Bakar Duit)')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Simpan promosi' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Simpan nonaktif' })).toBeEnabled();
   });
 
   it('confirms loss-leader activation against the latest server simulation', async () => {
     vi.mocked(promotionService.simulate).mockResolvedValue(simulationFixture(true));
     const user = userEvent.setup(); renderPage(<PromotionsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Aktifkan' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Konfirmasi strategi penetrasi pasar' });
+    await chooseAction(user, 'Aktifkan');
+    const dialog = await screen.findByRole('dialog', { name: 'Konfirmasi promo dengan estimasi rugi' });
     expect(promotionService.setActive).not.toHaveBeenCalled();
     await user.click(within(dialog).getByRole('button', { name: 'Saya memahami, aktifkan promosi' }));
     await waitFor(() => expect(promotionService.setActive).toHaveBeenCalledWith(promotionStoreId, expect.objectContaining({ version: 1 }), true, true));
@@ -117,10 +179,10 @@ describe('promotion master', () => {
   it('supports cancelling an archive and keeps the dialog open on a failed request', async () => {
     vi.mocked(promotionService.archive).mockRejectedValue(new Error('Archive unavailable'));
     const user = userEvent.setup(); renderPage(<PromotionsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Arsipkan' }));
+    await chooseAction(user, 'Arsipkan');
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Batal' }));
     expect(promotionService.archive).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Arsipkan' }));
+    await chooseAction(user, 'Arsipkan');
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Ya, arsipkan' }));
     expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('Archive unavailable');
   });
@@ -136,7 +198,7 @@ describe('promotion master', () => {
   it('does not toggle the opposite status when another user changed the promotion', async () => {
     vi.mocked(promotionService.get).mockResolvedValue(promotionFixture({ is_active: true, version: 2 }));
     const user = userEvent.setup(); renderPage(<PromotionsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Aktifkan' }));
+    await chooseAction(user, 'Aktifkan');
     expect(await screen.findByRole('alert')).toHaveTextContent('Promosi telah berubah');
     expect(promotionService.setActive).not.toHaveBeenCalled();
     expect(promotionService.simulate).not.toHaveBeenCalled();
@@ -145,15 +207,15 @@ describe('promotion master', () => {
   it('keeps a stale edit open after a server conflict so it can be reviewed', async () => {
     vi.mocked(promotionService.save).mockRejectedValue(new Error('Promotion changed; reload before saving'));
     const user = userEvent.setup(); renderPage(<PromotionsPage />);
-    await user.click(await screen.findByRole('button', { name: 'Ubah' }));
+    await chooseAction(user, 'Ubah');
     await user.type(screen.getByLabelText('Nama promosi'), ' Revisi');
     await user.click(screen.getByRole('button', { name: 'Lanjut' }));
     await user.click(screen.getByRole('button', { name: 'Lanjut' }));
     await screen.findByText('Aman & Menguntungkan');
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Simpan promosi' })).toBeEnabled());
-    await user.click(screen.getByRole('button', { name: 'Simpan promosi' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Simpan nonaktif' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: 'Simpan nonaktif' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Promotion changed');
-    await user.click(screen.getByRole('button', { name: /aturan promosi/i }));
+    await user.click(screen.getByRole('button', { name: /aturan promo/i }));
     expect(screen.getByLabelText('Nama promosi')).toHaveValue('Sarapan Hemat Revisi');
     expect(promotionService.save).toHaveBeenCalledWith(promotionStoreId, expect.objectContaining({ version: 1 }), promotionFixture().id);
   });

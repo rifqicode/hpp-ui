@@ -35,10 +35,7 @@ export const customerService = {
     return res.data;
   },
 
-  updateCustomer: async (
-    id: string,
-    input: UpdateCustomerInput
-  ): Promise<Customer> => {
+  updateCustomer: async (id: string, input: UpdateCustomerInput): Promise<Customer> => {
     const res = await apiClient.put<Customer>(`/customers/${id}`, input);
     return res.data;
   },
@@ -53,9 +50,7 @@ export const customerService = {
       const res = await apiClient.get<PaginatedCustomers>('/customers', {
         params: { search: phone.trim(), per_page: 5 },
       });
-      const exactMatch = res.data?.data?.find(
-        (c) => c.phone.trim() === phone.trim()
-      );
+      const exactMatch = res.data?.data?.find(c => c.phone.trim() === phone.trim());
       return exactMatch || null;
     } catch {
       return null;

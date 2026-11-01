@@ -1,8 +1,9 @@
-import { POCategoryBadge } from '@/features/purchase-orders/components/po-category-badge'
-import { POAttachmentUpload } from '@/features/purchase-orders/components/po-attachment-upload'
-import type { POAttachment } from '@/features/purchase-orders/lib/attachment'
-import * as React from "react"
-import { useParams, Link, useNavigate } from "react-router-dom"
+import { DatePicker } from '@/components/ui/date-picker';
+import { POCategoryBadge } from '@/features/purchase-orders/components/po-category-badge';
+import { POAttachmentUpload } from '@/features/purchase-orders/components/po-attachment-upload';
+import type { POAttachment } from '@/features/purchase-orders/lib/attachment';
+import * as React from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Calendar,
@@ -24,18 +25,13 @@ import {
   Truck,
   CreditCard,
   AlertCircle,
-} from "lucide-react"
+  Receipt,
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CurrencyText, formatCurrency } from "@/components/ui/currency-text"
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { CurrencyText, formatCurrency } from '@/components/ui/currency-text';
 import {
   Table,
   TableBody,
@@ -43,7 +39,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -51,10 +47,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,374 +58,502 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu';
 
-import { purchaseOrderService } from "@/features/purchase-orders/services/po-service"
-import { supplierService } from "@/features/suppliers/services/supplier-service"
+import { purchaseOrderService } from '@/features/purchase-orders/services/po-service';
+import { supplierService } from '@/features/suppliers/services/supplier-service';
 import type {
   PurchaseOrder,
   PurchaseOrderStatus,
   PurchaseOrderPaymentMethod,
   CompletePOPriceItem,
-} from "@/features/purchase-orders/types"
-import type { Supplier } from "@/features/suppliers/types"
-import { useAuthStore } from "@/store/use-auth-store"
-import { usePermission } from "@/hooks/use-permission"
+} from '@/features/purchase-orders/types';
+import type { Supplier } from '@/features/suppliers/types';
+import { useAuthStore } from '@/store/use-auth-store';
+import { usePermission } from '@/hooks/use-permission';
 
 export default function PurchaseOrderDetailPage() {
-  const { poId } = useParams<{ poId: string }>()
-  const navigate = useNavigate()
-  const currentUser = useAuthStore((state) => state.user)
-  const { can } = usePermission()
+  const { poId } = useParams<{ poId: string }>();
+  const navigate = useNavigate();
+  const currentUser = useAuthStore(state => state.user);
+  const { can } = usePermission();
 
-  const [order, setOrder] = React.useState<PurchaseOrder | null>(null)
-  const [loading, setLoading] = React.useState<boolean>(true)
-  const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
-  const [submitting, setSubmitting] = React.useState<boolean>(false)
+  const [order, setOrder] = React.useState<PurchaseOrder | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
+  const [submitting, setSubmitting] = React.useState<boolean>(false);
 
   // Approve modal
-  const [isApproveOpen, setIsApproveOpen] = React.useState<boolean>(false)
-  const [approveSupplierId, setApproveSupplierId] = React.useState<string>("")
-  const [approveNotes, setApproveNotes] = React.useState<string>("")
+  const [isApproveOpen, setIsApproveOpen] = React.useState<boolean>(false);
+  const [approveSupplierId, setApproveSupplierId] = React.useState<string>('');
+  const [approveNotes, setApproveNotes] = React.useState<string>('');
+
+  // Invoice modal
+  const [isInvoiceOpen, setIsInvoiceOpen] = React.useState<boolean>(false);
+  const [invoiceNumber, setInvoiceNumber] = React.useState<string>('');
+  const [invoicePaymentMethod, setInvoicePaymentMethod] =
+    React.useState<PurchaseOrderPaymentMethod>('CASH');
+  const [invoicePaymentDueDate, setInvoicePaymentDueDate] = React.useState<string>('');
+  const [invoicePrices, setInvoicePrices] = React.useState<Record<string, number>>({});
+  const [invoiceNotes, setInvoiceNotes] = React.useState<string>('');
+  const [invoiceError, setInvoiceError] = React.useState<string>('');
 
   // Reject modal
-  const [isRejectOpen, setIsRejectOpen] = React.useState<boolean>(false)
-  const [rejectReason, setRejectReason] = React.useState<string>("")
+  const [isRejectOpen, setIsRejectOpen] = React.useState<boolean>(false);
+  const [rejectReason, setRejectReason] = React.useState<string>('');
 
   // Complete modal
-  const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false)
-  const [completeSupplierId, setCompleteSupplierId] = React.useState<string>("")
-  const [completeError, setCompleteError] = React.useState("")
-  const [completionAttachments, setCompletionAttachments] = React.useState<POAttachment[]>([])
-  const [uploadingCompletionAttachments, setUploadingCompletionAttachments] = React.useState(false)
-  const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({})
+  const [isCompleteOpen, setIsCompleteOpen] = React.useState<boolean>(false);
+  const [completeSupplierId, setCompleteSupplierId] = React.useState<string>('');
+  const [completeError, setCompleteError] = React.useState('');
+  const [completionAttachments, setCompletionAttachments] = React.useState<POAttachment[]>([]);
+  const [uploadingCompletionAttachments, setUploadingCompletionAttachments] = React.useState(false);
+  const [itemTotalPrices, setItemTotalPrices] = React.useState<Record<string, number>>({});
 
   // Receive modal
-  const [isReceiveOpen, setIsReceiveOpen] = React.useState<boolean>(false)
-  const [receiveNotes, setReceiveNotes] = React.useState<string>("")
-  const [receivePrices, setReceivePrices] = React.useState<Record<string, number>>({})
-  const [receiveExpiredAt, setReceiveExpiredAt] = React.useState<Record<string, string>>({})
-  const [receiveError, setReceiveError] = React.useState<string>("")
+  const [isReceiveOpen, setIsReceiveOpen] = React.useState<boolean>(false);
+  const [receiveNotes, setReceiveNotes] = React.useState<string>('');
+  const [receivePrices, setReceivePrices] = React.useState<Record<string, number>>({});
+  const [receiveExpiredAt, setReceiveExpiredAt] = React.useState<Record<string, string>>({});
+  const [receiveError, setReceiveError] = React.useState<string>('');
 
   // Pay modal
-  const [isPayOpen, setIsPayOpen] = React.useState<boolean>(false)
-  const [payMethod, setPayMethod] = React.useState<PurchaseOrderPaymentMethod>("TRANSFER")
-  const [payNotes, setPayNotes] = React.useState<string>("")
+  const [isPayOpen, setIsPayOpen] = React.useState<boolean>(false);
+  const [payMethod, setPayMethod] = React.useState<PurchaseOrderPaymentMethod>('TRANSFER');
+  const [payNotes, setPayNotes] = React.useState<string>('');
 
   // Cancel modal
-  const [isCancelOpen, setIsCancelOpen] = React.useState<boolean>(false)
-  const [cancelReason, setCancelReason] = React.useState<string>("")
+  const [isCancelOpen, setIsCancelOpen] = React.useState<boolean>(false);
+  const [cancelReason, setCancelReason] = React.useState<string>('');
 
-  const canProcess = can("purchases:process")
-  const canRequest = can("purchases:request")
+  const canProcess = can('purchases:process');
+  const canRequest = can('purchases:request');
 
   const canEdit =
-    order?.status === "PURCHASE_REQUEST" &&
+    order?.status === 'PURCHASE_REQUEST' &&
     canRequest &&
     Boolean(currentUser?.id) &&
-    order?.createdByUserId === currentUser?.id
+    order?.createdByUserId === currentUser?.id;
 
   const loadData = React.useCallback(async () => {
-    if (!poId) return
-    setLoading(true)
+    if (!poId) return;
+    setLoading(true);
     try {
       const [data, supData] = await Promise.all([
         purchaseOrderService.getPurchaseOrderById(poId),
         supplierService.getAllSuppliers().catch(() => [] as Supplier[]),
-      ])
-      setOrder(data)
-      setSuppliers(supData)
-      setApproveSupplierId(data.supplierId || "")
-      setCompleteSupplierId(data.supplierId || "")
+      ]);
+      setOrder(data);
+      setSuppliers(supData);
+      setApproveSupplierId(data.supplierId || '');
+      setCompleteSupplierId(data.supplierId || '');
 
-      const initialTotalPrices: Record<string, number> = {}
-      data.items.forEach((it) => {
-        initialTotalPrices[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0)
-      })
-      setItemTotalPrices(initialTotalPrices)
+      const initialTotalPrices: Record<string, number> = {};
+      data.items.forEach(it => {
+        initialTotalPrices[it.id] =
+          it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0);
+      });
+      setItemTotalPrices(initialTotalPrices);
     } catch (err) {
-      console.error("Failed to load PO detail:", err)
+      console.error('Failed to load PO detail:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [poId])
+  }, [poId]);
 
   React.useEffect(() => {
-    loadData()
-  }, [loadData])
+    loadData();
+  }, [loadData]);
+
+  function handleOpenInvoiceModal() {
+    if (!order) return;
+    setInvoiceNumber(order.invoiceNumber || '');
+    setInvoicePaymentMethod(order.paymentMethod || 'CASH');
+    setInvoicePaymentDueDate(order.paymentDueDate ? order.paymentDueDate.slice(0, 10) : '');
+    setInvoiceNotes('');
+    setInvoiceError('');
+    const initialPrices: Record<string, number> = {};
+    order.items.forEach(it => {
+      initialPrices[it.id] = it.unitPrice || 0;
+    });
+    setInvoicePrices(initialPrices);
+    setIsInvoiceOpen(true);
+  }
+
+  const calculatedInvoiceTotal = React.useMemo(() => {
+    if (!order) return 0;
+    return order.items.reduce((sum, it) => {
+      const p = Number(invoicePrices[it.id]) || 0;
+      return sum + it.quantity * p;
+    }, 0);
+  }, [order, invoicePrices]);
+
+  async function handleConfirmInvoice(e: React.FormEvent) {
+    e.preventDefault();
+    if (!order) return;
+
+    for (const it of order.items) {
+      const p = Number(invoicePrices[it.id]) || 0;
+      if (p <= 0) {
+        setInvoiceError(`Harga satuan untuk '${it.stockName}' harus lebih besar dari 0`);
+        return;
+      }
+    }
+
+    if (invoicePaymentMethod === 'TEMPO' && !invoicePaymentDueDate) {
+      setInvoiceError('Tanggal jatuh tempo wajib diisi untuk metode pembayaran TEMPO');
+      return;
+    }
+
+    setSubmitting(true);
+    setInvoiceError('');
+    try {
+      const updated = await purchaseOrderService.createInvoice(order.id, {
+        invoice_number: invoiceNumber.trim() || undefined,
+        payment_method: invoicePaymentMethod,
+        payment_due_date:
+          invoicePaymentMethod === 'TEMPO' && invoicePaymentDueDate
+            ? new Date(invoicePaymentDueDate).toISOString()
+            : undefined,
+        prices: order.items.map(it => ({
+          item_id: it.id,
+          unit_price: Number(invoicePrices[it.id]) || 0,
+        })),
+        notes: invoiceNotes.trim() || undefined,
+      });
+      setOrder(updated);
+      setIsInvoiceOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal menerbitkan purchase invoice';
+      setInvoiceError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   async function handleConfirmApprove(e: React.FormEvent) {
-    e.preventDefault()
-    if (!order) return
+    e.preventDefault();
+    if (!order) return;
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       const updated = await purchaseOrderService.approvePurchaseOrder(order.id, {
         supplier_id: approveSupplierId || undefined,
         notes: approveNotes || undefined,
-      })
-      setOrder(updated)
-      setIsApproveOpen(false)
+      });
+      setOrder(updated);
+      setIsApproveOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyetujui request"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menyetujui request';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleConfirmReject(e: React.FormEvent) {
-    e.preventDefault()
-    if (!order) return
+    e.preventDefault();
+    if (!order) return;
     if (!rejectReason.trim()) {
-      alert("Alasan penolakan wajib diisi")
-      return
+      alert('Alasan penolakan wajib diisi');
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       const updated = await purchaseOrderService.rejectPurchaseOrder(order.id, {
         reason: rejectReason.trim(),
-      })
-      setOrder(updated)
-      setIsRejectOpen(false)
+      });
+      setOrder(updated);
+      setIsRejectOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menolak request"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menolak request';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleConfirmComplete(e: React.FormEvent) {
-    e.preventDefault()
-    if (!order || submitting || uploadingCompletionAttachments) return
+    e.preventDefault();
+    if (!order || submitting || uploadingCompletionAttachments) return;
     if (!completeSupplierId) {
-      setCompleteError("Pilih vendor / supplier final terlebih dahulu")
-      return
+      setCompleteError('Pilih vendor / supplier final terlebih dahulu');
+      return;
     }
 
-    const invalidItem = order.items.find((item) => {
-      const total = Number(itemTotalPrices[item.id])
-      return !Number.isFinite(total) || total <= 0 || item.quantity <= 0 || Number((total / item.quantity).toFixed(4)) <= 0
-    })
+    const invalidItem = order.items.find(item => {
+      const total = Number(itemTotalPrices[item.id]);
+      return (
+        !Number.isFinite(total) ||
+        total <= 0 ||
+        item.quantity <= 0 ||
+        Number((total / item.quantity).toFixed(4)) <= 0
+      );
+    });
     if (invalidItem) {
-      setCompleteError(`Harga faktur untuk "${invalidItem.stockName}" wajib lebih dari 0 dan menghasilkan harga satuan positif.`)
-      return
+      setCompleteError(
+        `Harga faktur untuk "${invalidItem.stockName}" wajib lebih dari 0 dan menghasilkan harga satuan positif.`,
+      );
+      return;
     }
-    setCompleteError("")
-    setSubmitting(true)
+    setCompleteError('');
+    setSubmitting(true);
     try {
-      const prices = order.items.map((it) => {
-        const total = Number(itemTotalPrices[it.id]) || 0
-        const unit_price = it.quantity > 0 ? Number((total / it.quantity).toFixed(4)) : 0
+      const prices = order.items.map(it => {
+        const total = Number(itemTotalPrices[it.id]) || 0;
+        const unit_price = it.quantity > 0 ? Number((total / it.quantity).toFixed(4)) : 0;
         return {
           item_id: it.id,
           unit_price,
           total_price: total,
-        }
-      })
+        };
+      });
       const updated = await purchaseOrderService.completePurchaseOrder(order.id, {
         supplier_id: completeSupplierId,
         prices,
         completion_attachments: completionAttachments,
-      })
-      setOrder(updated)
-      setIsCompleteOpen(false)
+      });
+      setOrder(updated);
+      setIsCompleteOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal menyelesaikan PO"
-      setCompleteError(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal menyelesaikan PO';
+      setCompleteError(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleConfirmReceive(e: React.FormEvent) {
-    e.preventDefault()
-    if (!order) return
+    e.preventDefault();
+    if (!order) return;
 
     // Validation: Check FEFO items have expired_at
-    const missingFefo = order.items.find((it) => it.inventoryMethod === "FEFO" && !receiveExpiredAt[it.id])
+    const missingFefo = order.items.find(
+      it => it.inventoryMethod === 'FEFO' && !receiveExpiredAt[it.id],
+    );
     if (missingFefo) {
-      setReceiveError(`Tanggal kadaluarsa wajib diisi untuk bahan FEFO '${missingFefo.stockName}'`)
-      return
+      setReceiveError(`Tanggal kadaluarsa wajib diisi untuk bahan FEFO '${missingFefo.stockName}'`);
+      return;
     }
 
-    const hasFefo = order.items.some((it) => it.inventoryMethod === "FEFO")
-    const hasExpired = Object.values(receiveExpiredAt).some(Boolean)
-    const hasCustomPrices = Object.values(receivePrices).some((p) => p > 0)
+    const hasFefo = order.items.some(it => it.inventoryMethod === 'FEFO');
+    const hasExpired = Object.values(receiveExpiredAt).some(Boolean);
+    const hasCustomPrices = Object.values(receivePrices).some(p => p > 0);
 
-    let pricesPayload: CompletePOPriceItem[] | undefined
+    let pricesPayload: CompletePOPriceItem[] | undefined;
     if (hasFefo || hasExpired || hasCustomPrices) {
       for (const it of order.items) {
-        const p = receivePrices[it.id] ?? it.unitPrice
+        const p = receivePrices[it.id] ?? it.unitPrice;
         if (!p || p <= 0) {
-          setReceiveError(`Harga satuan untuk '${it.stockName}' harus lebih besar dari 0`)
-          return
+          setReceiveError(`Harga satuan untuk '${it.stockName}' harus lebih besar dari 0`);
+          return;
         }
       }
-      pricesPayload = order.items.map((it) => ({
+      pricesPayload = order.items.map(it => ({
         item_id: it.id,
         unit_price: receivePrices[it.id] ?? it.unitPrice,
-        expired_at: receiveExpiredAt[it.id] ? new Date(receiveExpiredAt[it.id]).toISOString() : undefined,
-      }))
+        expired_at: receiveExpiredAt[it.id]
+          ? new Date(receiveExpiredAt[it.id]).toISOString()
+          : undefined,
+      }));
     }
 
-    setSubmitting(true)
-    setReceiveError("")
+    setSubmitting(true);
+    setReceiveError('');
     try {
       const updated = await purchaseOrderService.receivePurchaseOrder(order.id, {
         notes: receiveNotes.trim() || undefined,
         prices: pricesPayload,
-      })
-      setOrder(updated)
-      setIsReceiveOpen(false)
+      });
+      setOrder(updated);
+      setIsReceiveOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal mencatat penerimaan barang"
-      setReceiveError(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal mencatat penerimaan barang';
+      setReceiveError(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleConfirmPay(e: React.FormEvent) {
-    e.preventDefault()
-    if (!order) return
-    setSubmitting(true)
+    e.preventDefault();
+    if (!order) return;
+    setSubmitting(true);
     try {
       const updated = await purchaseOrderService.payPurchaseOrder(order.id, {
         payment_method: payMethod,
         notes: payNotes.trim() || undefined,
-      })
-      setOrder(updated)
-      setIsPayOpen(false)
+      });
+      setOrder(updated);
+      setIsPayOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memproses pembayaran"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal memproses pembayaran';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleConfirmCancel(e: React.FormEvent) {
-    e.preventDefault()
-    if (!order) return
+    e.preventDefault();
+    if (!order) return;
     if (!cancelReason.trim()) {
-      alert("Alasan pembatalan wajib diisi")
-      return
+      alert('Alasan pembatalan wajib diisi');
+      return;
     }
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       const updated = await purchaseOrderService.cancelPurchaseOrder(order.id, {
         reason: cancelReason.trim(),
-      })
-      setOrder(updated)
-      setIsCancelOpen(false)
+      });
+      setOrder(updated);
+      setIsCancelOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal membatalkan pesanan"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal membatalkan pesanan';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   async function handleCancel() {
-    setCancelReason("")
-    setIsCancelOpen(true)
+    setCancelReason('');
+    setIsCancelOpen(true);
   }
 
   function formatDate(dateStr?: string) {
-    if (!dateStr) return "-"
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(dateStr))
+    if (!dateStr) return '-';
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(dateStr));
   }
 
   function getStatusBadge(status: PurchaseOrderStatus) {
     switch (status) {
-      case "PURCHASE_REQUEST":
+      case 'PURCHASE_REQUEST':
         return (
-          <Badge variant="outline" className="border-blue-500/40 text-blue-600 bg-blue-500/10 flex items-center gap-1">
+          <Badge
+            variant="outline"
+            className="border-blue-500/40 text-blue-600 bg-blue-500/10 flex items-center gap-1"
+          >
             <Clock className="h-3 w-3" /> Purchase Request
           </Badge>
-        )
-      case "PURCHASE_ORDER":
+        );
+      case 'PURCHASE_ORDER':
         return (
           <Badge variant="warning" className="flex items-center gap-1">
             <ReceiptIcon className="h-3 w-3" /> Purchase Order
           </Badge>
-        )
-      case "COMPLETED":
+        );
+      case 'PURCHASE_INVOICE':
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-500/40 text-purple-600 bg-purple-500/10 flex items-center gap-1"
+          >
+            <Receipt className="h-3 w-3" /> Purchase Invoice (PI)
+          </Badge>
+        );
+      case 'COMPLETED':
         return (
           <Badge variant="success" className="flex items-center gap-1">
             <CheckCircle2 className="h-3 w-3" /> Selesai / Diterima
           </Badge>
-        )
-      case "REJECTED":
+        );
+      case 'REJECTED':
         return (
           <Badge variant="destructive" className="flex items-center gap-1">
             <XCircle className="h-3 w-3" /> Ditolak
           </Badge>
-        )
-      case "CANCELLED":
+        );
+      case 'CANCELLED':
         return (
           <Badge variant="outline" className="text-muted-foreground flex items-center gap-1">
             <Ban className="h-3 w-3" /> Dibatalkan
           </Badge>
-        )
+        );
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status}</Badge>;
     }
   }
 
   function ReceiptIcon(props: React.SVGProps<SVGSVGElement>) {
-    return <FileText {...props} />
+    return <FileText {...props} />;
   }
 
   function getLogActionBadge(action: string) {
     switch (action) {
-      case "CREATED":
+      case 'CREATED':
         return (
-          <Badge variant="outline" className="border-blue-500/40 text-blue-600 bg-blue-500/10 text-[11px]">
+          <Badge
+            variant="outline"
+            className="border-blue-500/40 text-blue-600 bg-blue-500/10 text-[11px]"
+          >
             Diajukan
           </Badge>
-        )
-      case "UPDATED":
+        );
+      case 'UPDATED':
         return (
-          <Badge variant="outline" className="border-purple-500/40 text-purple-600 bg-purple-500/10 text-[11px]">
+          <Badge
+            variant="outline"
+            className="border-purple-500/40 text-purple-600 bg-purple-500/10 text-[11px]"
+          >
             Diperbarui
           </Badge>
-        )
-      case "APPROVED":
+        );
+      case 'APPROVED':
         return (
           <Badge variant="warning" className="text-[11px]">
             Disetujui (PO)
           </Badge>
-        )
-      case "REJECTED":
+        );
+      case 'INVOICE_CREATED':
+        return (
+          <Badge
+            variant="outline"
+            className="border-purple-500/40 text-purple-600 bg-purple-500/10 text-[11px]"
+          >
+            Invoice Diterbitkan
+          </Badge>
+        );
+      case 'RECEIVED':
+        return (
+          <Badge
+            variant="outline"
+            className="border-amber-500/40 text-amber-600 bg-amber-500/10 text-[11px]"
+          >
+            Barang Diterima
+          </Badge>
+        );
+      case 'REJECTED':
         return (
           <Badge variant="destructive" className="text-[11px]">
             Ditolak
           </Badge>
-        )
-      case "COMPLETED":
+        );
+      case 'COMPLETED':
         return (
           <Badge variant="success" className="text-[11px]">
             Selesai
           </Badge>
-        )
-      case "CANCELLED":
+        );
+      case 'CANCELLED':
         return (
           <Badge variant="outline" className="text-muted-foreground text-[11px]">
             Dibatalkan
           </Badge>
-        )
+        );
       default:
-        return <Badge variant="outline" className="text-[11px]">{action}</Badge>
+        return (
+          <Badge variant="outline" className="text-[11px]">
+            {action}
+          </Badge>
+        );
     }
   }
 
@@ -439,7 +563,7 @@ export default function PurchaseOrderDetailPage() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2 text-sm text-muted-foreground">Memuat detail Purchase Order...</span>
       </div>
-    )
+    );
   }
 
   if (!order) {
@@ -447,17 +571,17 @@ export default function PurchaseOrderDetailPage() {
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <FileText className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-lg font-semibold">Purchase Order tidak ditemukan</h2>
-        <Button variant="outline" onClick={() => navigate("/inventory/purchase-orders")}>
+        <Button variant="outline" onClick={() => navigate('/inventory/purchase-orders')}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Kembali ke Daftar PO
         </Button>
       </div>
-    )
+    );
   }
 
   const calculatedTotal = order.items.reduce((acc, it) => {
-    const total = Number(itemTotalPrices[it.id]) || 0
-    return acc + total
-  }, 0)
+    const total = Number(itemTotalPrices[it.id]) || 0;
+    return acc + total;
+  }, 0);
 
   return (
     <div className="flex flex-col gap-6 pb-8 animate-in fade-in duration-500 w-full">
@@ -482,36 +606,58 @@ export default function PurchaseOrderDetailPage() {
             </h1>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground">
               <POCategoryBadge category={order.category} />
-              <span>{order.category === "DIRECT_ORDER" ? "Dibeli pada" : "Diajukan pada"} {formatDate(order.orderDate)}</span>
-              {order.createdByName && <span>Oleh: <strong>{order.createdByName}</strong></span>}
+              <span>
+                {order.category === 'DIRECT_ORDER' ? 'Dibeli pada' : 'Diajukan pada'}{' '}
+                {formatDate(order.orderDate)}
+              </span>
+              {order.createdByName && (
+                <span>
+                  Oleh: <strong>{order.createdByName}</strong>
+                </span>
+              )}
             </div>
           </div>
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-3 shadow-2xs lg:items-end">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">
-              {order.status === "PURCHASE_REQUEST" || order.status === "REJECTED" ? "Status pengajuan:" : "Status dokumen:"}
+              {order.status === 'PURCHASE_REQUEST' || order.status === 'REJECTED'
+                ? 'Status pengajuan:'
+                : 'Status dokumen:'}
             </span>
             {getStatusBadge(order.status)}
           </div>
 
-          {(order.status === "PURCHASE_ORDER" || order.status === "COMPLETED") && (
+          {(order.status === 'PURCHASE_ORDER' ||
+            order.status === 'PURCHASE_INVOICE' ||
+            order.status === 'COMPLETED') && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-1 border-t border-border/60 text-xs">
+              {/* Invoice Number Badge */}
+              {order.invoiceNumber && (
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    <Receipt className="h-3 w-3" />
+                    Inv: {order.invoiceNumber}
+                  </span>
+                </div>
+              )}
+
               {/* Receipt Status Badge */}
               <div className="flex items-center gap-1.5">
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-semibold ${
-                    order.receiptStatus === "RECEIVED"
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                    order.receiptStatus === 'RECEIVED'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
                   }`}
                 >
                   <Truck className="h-3 w-3" />
-                  {order.receiptStatus === "RECEIVED" ? "Sudah Diterima" : "Belum Diterima"}
+                  {order.receiptStatus === 'RECEIVED' ? 'Sudah Diterima' : 'Belum Diterima'}
                 </span>
-                {order.receiptStatus === "RECEIVED" && order.receivedAt && (
+                {order.receiptStatus === 'RECEIVED' && order.receivedAt && (
                   <span className="text-[11px] text-muted-foreground">
-                    ({formatDate(order.receivedAt)}{order.receivedByName ? ` oleh ${order.receivedByName}` : ""})
+                    ({formatDate(order.receivedAt)}
+                    {order.receivedByName ? ` oleh ${order.receivedByName}` : ''})
                   </span>
                 )}
               </div>
@@ -520,17 +666,19 @@ export default function PurchaseOrderDetailPage() {
               <div className="flex items-center gap-1.5">
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-semibold ${
-                    order.paymentStatus === "PAID"
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                    order.paymentStatus === 'PAID'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                   }`}
                 >
                   <CreditCard className="h-3 w-3" />
-                  {order.paymentStatus === "PAID" ? "Sudah Dibayar" : "Belum Dibayar"}
+                  {order.paymentStatus === 'PAID' ? 'Sudah Dibayar' : 'Belum Dibayar'}
                 </span>
-                {order.paymentStatus === "PAID" && (
+                {order.paymentStatus === 'PAID' && (
                   <span className="text-[11px] text-muted-foreground">
-                    ({order.paymentMethod || "Transfer"}{order.paidAt ? ` - ${formatDate(order.paidAt)}` : ""}{order.paidByName ? ` oleh ${order.paidByName}` : ""})
+                    ({order.paymentMethod || 'Transfer'}
+                    {order.paidAt ? ` - ${formatDate(order.paidAt)}` : ''}
+                    {order.paidByName ? ` oleh ${order.paidByName}` : ''})
                   </span>
                 )}
               </div>
@@ -540,36 +688,43 @@ export default function PurchaseOrderDetailPage() {
       </div>
 
       {/* Cancellation Reason Alert */}
-      {order.status === "CANCELLED" && (
+      {order.status === 'CANCELLED' && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-xs space-y-1">
           <div className="flex items-center gap-2 font-semibold text-destructive">
             <Ban className="h-4 w-4" />
             Pesanan ini telah dibatalkan
           </div>
           <p className="text-destructive/90 pl-6">
-            Alasan pembatalan: <strong className="text-foreground">{order.cancellationReason || "Tidak ada rincian alasan."}</strong>
+            Alasan pembatalan:{' '}
+            <strong className="text-foreground">
+              {order.cancellationReason || 'Tidak ada rincian alasan.'}
+            </strong>
           </p>
         </div>
       )}
 
-      {order.status === "PURCHASE_REQUEST" && (canEdit || canProcess) && (
+      {order.status === 'PURCHASE_REQUEST' && (canEdit || canProcess) && (
         <section
           aria-labelledby="purchase-request-actions"
           className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 lg:flex-row lg:items-center lg:justify-between"
         >
           <div className="min-w-0">
             <h2 id="purchase-request-actions" className="text-sm font-semibold text-foreground">
-              {canProcess ? "Tinjau pengajuan" : "Perbarui pengajuan"}
+              {canProcess ? 'Tinjau pengajuan' : 'Perbarui pengajuan'}
             </h2>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               {canProcess
-                ? "Periksa rincian pengajuan sebelum menyetujui dan menerbitkan PO."
-                : "Request masih dapat diedit sebelum diproses."}
+                ? 'Periksa rincian pengajuan sebelum menyetujui dan menerbitkan PO.'
+                : 'Request masih dapat diedit sebelum diproses.'}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center lg:shrink-0">
             {canEdit && (
-              <Button asChild variant="outline" className={`h-11 rounded-lg px-4 ${!canProcess ? "col-span-2" : ""}`}>
+              <Button
+                asChild
+                variant="outline"
+                className={`h-11 rounded-lg px-4 ${!canProcess ? 'col-span-2' : ''}`}
+              >
                 <Link to={`/inventory/purchase-orders/${order.id}/edit`}>
                   <Edit3 className="size-4" />
                   Edit Request
@@ -581,7 +736,7 @@ export default function PurchaseOrderDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className={`h-11 rounded-lg border-destructive/30 px-4 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30 ${!canEdit ? "col-span-2" : ""}`}
+                  className={`h-11 rounded-lg border-destructive/30 px-4 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:ring-destructive/30 ${!canEdit ? 'col-span-2' : ''}`}
                   disabled={submitting}
                   onClick={() => setIsRejectOpen(true)}
                 >
@@ -593,8 +748,8 @@ export default function PurchaseOrderDetailPage() {
                   className="col-span-2 h-11 rounded-lg bg-primary px-4 font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
                   disabled={submitting}
                   onClick={() => {
-                    setApproveSupplierId(order.supplierId || "")
-                    setIsApproveOpen(true)
+                    setApproveSupplierId(order.supplierId || '');
+                    setIsApproveOpen(true);
                   }}
                 >
                   <Check className="size-4" />
@@ -606,38 +761,73 @@ export default function PurchaseOrderDetailPage() {
         </section>
       )}
 
-      {order.status === "PURCHASE_ORDER" && canProcess && (
+      {order.status === 'PURCHASE_ORDER' && canProcess && (
         <section
           aria-labelledby="purchase-order-actions"
           className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="min-w-0">
             <h2 id="purchase-order-actions" className="text-sm font-semibold text-foreground">
-              Aksi Pembelian
+              Aksi Purchase Order
             </h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Perbarui status penerimaan barang fisik atau status pelunasan faktur vendor.
+              Tetapkan harga satuan final dan metode pembayaran untuk menerbitkan Purchase Invoice.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {order.receiptStatus !== "RECEIVED" && (
+            <Button
+              className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
+              disabled={submitting}
+              onClick={handleOpenInvoiceModal}
+            >
+              <Receipt className="mr-2 h-4 w-4" />
+              Set Harga & Terbitkan Invoice
+            </Button>
+
+            <Button
+              variant="outline"
+              className="rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+              disabled={submitting}
+              onClick={handleCancel}
+            >
+              <Ban className="mr-2 h-4 w-4" />
+              Batalkan PO
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {order.status === 'PURCHASE_INVOICE' && canProcess && (
+        <section
+          aria-labelledby="purchase-invoice-actions"
+          className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div className="min-w-0">
+            <h2 id="purchase-invoice-actions" className="text-sm font-semibold text-foreground">
+              Aksi Purchase Invoice
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Catat penerimaan barang fisik ke inventaris atau pelunasan pembayaran invoice.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {order.receiptStatus !== 'RECEIVED' && (
               <Button
                 type="button"
-                variant="outline"
-                className="rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40"
+                className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
                 disabled={submitting}
                 onClick={() => {
-                  setReceiveNotes("")
-                  const initialPrices: Record<string, number> = {}
-                  const initialExpired: Record<string, string> = {}
-                  order.items.forEach((it) => {
-                    initialPrices[it.id] = it.unitPrice || 0
-                    initialExpired[it.id] = ""
-                  })
-                  setReceivePrices(initialPrices)
-                  setReceiveExpiredAt(initialExpired)
-                  setReceiveError("")
-                  setIsReceiveOpen(true)
+                  setReceiveNotes('');
+                  const initialPrices: Record<string, number> = {};
+                  const initialExpired: Record<string, string> = {};
+                  order.items.forEach(it => {
+                    initialPrices[it.id] = it.unitPrice || 0;
+                    initialExpired[it.id] = '';
+                  });
+                  setReceivePrices(initialPrices);
+                  setReceiveExpiredAt(initialExpired);
+                  setReceiveError('');
+                  setIsReceiveOpen(true);
                 }}
               >
                 <Truck className="mr-2 h-4 w-4" />
@@ -645,41 +835,20 @@ export default function PurchaseOrderDetailPage() {
               </Button>
             )}
 
-            {order.paymentStatus !== "PAID" && (
+            {order.paymentStatus !== 'PAID' && (
               <Button
                 type="button"
                 variant="outline"
                 className="rounded-xl border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
                 disabled={submitting}
                 onClick={() => {
-                  setPayMethod("TRANSFER")
-                  setPayNotes("")
-                  setIsPayOpen(true)
+                  setPayMethod(order.paymentMethod || 'TRANSFER');
+                  setPayNotes('');
+                  setIsPayOpen(true);
                 }}
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 Tandai Lunas
-              </Button>
-            )}
-
-            {order.receiptStatus !== "RECEIVED" && (
-              <Button
-                className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-                disabled={submitting}
-                onClick={() => {
-                  setCompleteSupplierId(order.supplierId || "")
-                  setCompletionAttachments([])
-                  setCompleteError("")
-                  const initialTotalPrices: Record<string, number> = {}
-                  order.items.forEach((it) => {
-                    initialTotalPrices[it.id] = it.totalPrice || (it.unitPrice ? it.unitPrice * it.quantity : 0)
-                  })
-                  setItemTotalPrices(initialTotalPrices)
-                  setIsCompleteOpen(true)
-                }}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Set Harga & Selesaikan PO
               </Button>
             )}
 
@@ -690,7 +859,7 @@ export default function PurchaseOrderDetailPage() {
               onClick={handleCancel}
             >
               <Ban className="mr-2 h-4 w-4" />
-              Batalkan PO
+              Batalkan Invoice
             </Button>
           </div>
         </section>
@@ -707,7 +876,7 @@ export default function PurchaseOrderDetailPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="font-semibold text-base text-foreground">
-              {order.supplierName && order.supplierName !== "-" ? (
+              {order.supplierName && order.supplierName !== '-' ? (
                 order.supplierName
               ) : (
                 <span className="text-muted-foreground font-normal italic text-sm">
@@ -742,10 +911,26 @@ export default function PurchaseOrderDetailPage() {
               <span className="text-muted-foreground">Order Diajukan:</span>
               <span className="font-medium text-foreground">{formatDate(order.orderDate)}</span>
             </div>
+            {order.requiredDate && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Tgl Dibutuhkan:</span>
+                <span className="font-medium text-amber-600 dark:text-amber-400">
+                  {formatDate(order.requiredDate)}
+                </span>
+              </div>
+            )}
+            {order.purchaseReason && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Alasan Pembelian:</span>
+                <span className="font-medium text-foreground">{order.purchaseReason}</span>
+              </div>
+            )}
             {order.completedDate && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Diselesaikan:</span>
-                <span className="font-medium text-emerald-600">{formatDate(order.completedDate)}</span>
+                <span className="font-medium text-emerald-600">
+                  {formatDate(order.completedDate)}
+                </span>
               </div>
             )}
           </CardContent>
@@ -760,38 +945,59 @@ export default function PurchaseOrderDetailPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="font-bold text-xl font-mono text-primary">
-              {order.status === "PURCHASE_REQUEST" || order.totalAmount === 0 ? (
-                <span className="text-sm font-normal text-amber-600 italic">Menunggu penetapan harga</span>
+              {order.status === 'PURCHASE_REQUEST' || order.totalAmount === 0 ? (
+                <span className="text-sm font-normal text-amber-600 italic">
+                  Menunggu penetapan harga
+                </span>
               ) : (
                 <CurrencyText value={order.totalAmount} />
               )}
             </div>
-            <p className="text-xs text-muted-foreground">{order.items.length} macam item bahan baku</p>
+            <p className="text-xs text-muted-foreground">
+              {order.items.length} macam item bahan baku
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {[
-        { title: "Dokumen Lampiran", documents: order.attachments },
-        { title: "Lampiran Penyelesaian", documents: order.completionAttachments },
-      ].filter((group) => group.documents.length > 0).map((group) => (
-        <Card key={group.title} className="rounded-xl border-primary/20 bg-primary/5 shadow-sm">
-          <CardHeader className="px-4 pb-2 pt-4 sm:px-5"><CardTitle className="text-sm">{group.title}</CardTitle></CardHeader>
-          <CardContent className="space-y-3 p-4 pt-0 sm:px-5 sm:pb-5">
-            {group.documents.map((document) => (
-              <div key={document.url} className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-2">
-                  <FileText className="size-4 shrink-0 text-primary" />
-                  <p className="truncate text-sm text-muted-foreground" title={document.name}>{document.name}</p>
+        { title: 'Dokumen Lampiran', documents: order.attachments },
+        { title: 'Lampiran Penyelesaian', documents: order.completionAttachments },
+      ]
+        .filter(group => group.documents.length > 0)
+        .map(group => (
+          <Card key={group.title} className="rounded-xl border-primary/20 bg-primary/5 shadow-sm">
+            <CardHeader className="px-4 pb-2 pt-4 sm:px-5">
+              <CardTitle className="text-sm">{group.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 p-4 pt-0 sm:px-5 sm:pb-5">
+              {group.documents.map(document => (
+                <div
+                  key={document.url}
+                  className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileText className="size-4 shrink-0 text-primary" />
+                    <p className="truncate text-sm text-muted-foreground" title={document.name}>
+                      {document.name}
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="shrink-0">
+                    <a
+                      href={document.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Buka / Unduh ${document.name}`}
+                    >
+                      <ExternalLink className="size-4" />
+                      Buka / Unduh dokumen
+                    </a>
+                  </Button>
                 </div>
-                <Button asChild variant="outline" size="sm" className="shrink-0">
-                  <a href={document.url} target="_blank" rel="noopener noreferrer" aria-label={`Buka / Unduh ${document.name}`}><ExternalLink className="size-4" />Buka / Unduh dokumen</a>
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ))}
+              ))}
+            </CardContent>
+          </Card>
+        ))}
 
       {/* Item Table Card */}
       <Card className="rounded-xl shadow-sm border-border">
@@ -819,9 +1025,7 @@ export default function PurchaseOrderDetailPage() {
                     <TableCell className="text-center font-mono text-xs text-muted-foreground">
                       {idx + 1}
                     </TableCell>
-                    <TableCell className="font-medium text-foreground">
-                      {it.stockName}
-                    </TableCell>
+                    <TableCell className="font-medium text-foreground">{it.stockName}</TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {it.quantity} {it.baseUnit}
                     </TableCell>
@@ -873,14 +1077,14 @@ export default function PurchaseOrderDetailPage() {
             </div>
           ) : (
             <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
-              {order.logs.map((log) => (
+              {order.logs.map(log => (
                 <div key={log.id} className="relative flex flex-col gap-1 text-sm">
                   <div className="absolute -left-6 top-1 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background" />
                   <div className="flex flex-wrap items-center gap-2">
                     {getLogActionBadge(log.action)}
                     <span className="font-semibold text-foreground flex items-center gap-1 text-xs">
                       <User className="h-3 w-3 text-muted-foreground" />
-                      {log.userName || "Sistem"}
+                      {log.userName || 'Sistem'}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       &bull; {formatDate(log.createdAt)}
@@ -907,8 +1111,9 @@ export default function PurchaseOrderDetailPage() {
               Setujui Purchase Request
             </DialogTitle>
             <DialogDescription>
-              Ubah status <strong className="text-foreground">{order.poNumber}</strong> menjadi{" "}
-              <strong>Purchase Order</strong>. Anda dapat menetapkan supplier kandidat sekarang atau nanti.
+              Ubah status <strong className="text-foreground">{order.poNumber}</strong> menjadi{' '}
+              <strong>Purchase Order</strong>. Anda dapat menetapkan supplier kandidat sekarang atau
+              nanti.
             </DialogDescription>
           </DialogHeader>
 
@@ -923,23 +1128,27 @@ export default function PurchaseOrderDetailPage() {
                     className="w-full justify-between rounded-xl h-10"
                   >
                     <span className="truncate">
-                      {suppliers.find((s) => s.id === approveSupplierId)?.name || "Pilih Supplier (Bisa nanti)"}
+                      {suppliers.find(s => s.id === approveSupplierId)?.name ||
+                        'Pilih Supplier'}
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] max-h-60 overflow-y-auto" align="start">
+                <DropdownMenuContent
+                  className="w-[--radix-dropdown-menu-trigger-width] max-h-60 overflow-y-auto"
+                  align="start"
+                >
                   <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
                     Pilihan Supplier
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => setApproveSupplierId("")}
+                    onClick={() => setApproveSupplierId('')}
                     className="cursor-pointer italic text-muted-foreground"
                   >
-                    -- Belum Ditentukan (Nanti) --
+                    -- Belum Ditentukan --
                   </DropdownMenuItem>
-                  {suppliers.map((s) => (
+                  {suppliers.map(s => (
                     <DropdownMenuItem
                       key={s.id}
                       onClick={() => setApproveSupplierId(s.id)}
@@ -959,7 +1168,7 @@ export default function PurchaseOrderDetailPage() {
               <Textarea
                 id="approve-notes-detail"
                 value={approveNotes}
-                onChange={(e) => setApproveNotes(e.target.value)}
+                onChange={e => setApproveNotes(e.target.value)}
                 placeholder="e.g. Disetujui untuk PO, vendor sudah dikonfirmasi ketersediaannya."
                 className="rounded-xl min-h-[80px]"
               />
@@ -988,6 +1197,181 @@ export default function PurchaseOrderDetailPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal Terbitkan Purchase Invoice */}
+      <Dialog
+        open={isInvoiceOpen}
+        onOpenChange={open => !open && !submitting && setIsInvoiceOpen(false)}
+      >
+        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-purple-600" />
+              Terbitkan Purchase Invoice
+            </DialogTitle>
+            <DialogDescription>
+              Tetapkan harga final per item dan syarat pembayaran untuk PO{' '}
+              <strong className="text-foreground">{order.poNumber}</strong> sebelum barang dapat
+              diterima.
+            </DialogDescription>
+          </DialogHeader>
+
+          {invoiceError && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{invoiceError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleConfirmInvoice} className="space-y-4 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="invoice-number-detail" className="text-sm font-semibold">
+                  Nomor Invoice Supplier (Opsional)
+                </Label>
+                <Input
+                  id="invoice-number-detail"
+                  value={invoiceNumber}
+                  onChange={e => setInvoiceNumber(e.target.value)}
+                  placeholder="e.g. INV/2026/10/001"
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Metode Pembayaran</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['CASH', 'TRANSFER', 'TEMPO'] as const).map(method => (
+                    <Button
+                      key={method}
+                      type="button"
+                      variant={invoicePaymentMethod === method ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setInvoicePaymentMethod(method)}
+                      className={`text-xs ${
+                        invoicePaymentMethod === method
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                          : ''
+                      }`}
+                    >
+                      {method}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {invoicePaymentMethod === 'TEMPO' && (
+              <div className="space-y-2 p-3 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <Label
+                  htmlFor="invoice-due-date-detail"
+                  className="text-sm font-semibold text-purple-900 dark:text-purple-300"
+                >
+                  Tanggal Jatuh Tempo <span className="text-destructive">*</span>
+                </Label>
+                <DatePicker
+                  id="invoice-due-date-detail"
+                  value={invoicePaymentDueDate}
+                  onChange={setInvoicePaymentDueDate}
+                  className="h-9 w-full sm:w-1/2 bg-background"
+                  required
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Daftar Item & Penetapan Harga Satuan</Label>
+              <div className="rounded-xl border border-border overflow-x-auto">
+                <table className="w-full min-w-[500px] text-sm text-left">
+                  <thead className="bg-muted/40 text-muted-foreground text-xs uppercase font-semibold border-b border-border">
+                    <tr>
+                      <th className="py-2 px-3 text-left">Bahan Baku</th>
+                      <th className="py-2 px-3 text-right">Qty</th>
+                      <th className="py-2 px-3 w-[160px] text-right">Harga Satuan (Rp)</th>
+                      <th className="py-2 px-3 w-[150px] text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/70">
+                    {order.items.map(it => {
+                      const unitPrice = Number(invoicePrices[it.id]) || 0;
+                      const subtotal = it.quantity * unitPrice;
+                      return (
+                        <tr key={it.id}>
+                          <td className="align-middle py-2 px-3 font-medium text-sm text-foreground">
+                            {it.stockName}
+                          </td>
+                          <td className="align-middle py-2 px-3 text-right font-mono text-sm text-muted-foreground whitespace-nowrap">
+                            {it.quantity} {it.baseUnit}
+                          </td>
+                          <td className="align-middle py-2 px-3">
+                            <Input
+                              type="number"
+                              min="1"
+                              step="any"
+                              value={invoicePrices[it.id] ?? ''}
+                              onChange={e =>
+                                setInvoicePrices({
+                                  ...invoicePrices,
+                                  [it.id]: Number(e.target.value),
+                                })
+                              }
+                              placeholder="0"
+                              className="h-8 text-right font-mono text-sm"
+                              required
+                            />
+                          </td>
+                          <td className="align-middle py-2 px-3 text-right font-mono text-xs text-foreground whitespace-nowrap font-semibold">
+                            {subtotal > 0 ? <CurrencyText value={subtotal} /> : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Total Summary */}
+            <div className="p-3 rounded-xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">Total Nilai Invoice:</span>
+              <span className="text-base font-bold font-mono text-purple-700 dark:text-purple-300">
+                <CurrencyText value={calculatedInvoiceTotal} />
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="invoice-notes-detail" className="text-sm font-semibold">
+                Catatan Invoice (Opsional)
+              </Label>
+              <Textarea
+                id="invoice-notes-detail"
+                value={invoiceNotes}
+                onChange={e => setInvoiceNotes(e.target.value)}
+                placeholder="e.g. Disepakati diskon tempo 14 hari."
+                className="min-h-[60px]"
+              />
+            </div>
+
+            <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsInvoiceOpen(false)}
+                disabled={submitting}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                disabled={submitting}
+              >
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Terbitkan Invoice
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal 2: Reject PR */}
       <Dialog open={isRejectOpen} onOpenChange={setIsRejectOpen}>
         <DialogContent className="sm:max-w-[450px] rounded-xl">
@@ -997,7 +1381,8 @@ export default function PurchaseOrderDetailPage() {
               Tolak Purchase Request
             </DialogTitle>
             <DialogDescription>
-              Pengajuan <strong className="text-foreground">{order.poNumber}</strong> akan ditolak. Masukkan alasan penolakan untuk catatan riwayat.
+              Pengajuan <strong className="text-foreground">{order.poNumber}</strong> akan ditolak.
+              Masukkan alasan penolakan untuk catatan riwayat.
             </DialogDescription>
           </DialogHeader>
 
@@ -1009,7 +1394,7 @@ export default function PurchaseOrderDetailPage() {
               <Textarea
                 id="reject-reason-detail"
                 value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
+                onChange={e => setRejectReason(e.target.value)}
                 placeholder="e.g. Anggaran belanja bahan baku bulan ini sudah melebihi kuota."
                 className="rounded-xl min-h-[90px]"
                 required
@@ -1041,7 +1426,15 @@ export default function PurchaseOrderDetailPage() {
       </Dialog>
 
       {/* Modal 3: Set Harga & Selesaikan */}
-      <Dialog open={isCompleteOpen} onOpenChange={(open) => { if (!submitting && !uploadingCompletionAttachments) { setIsCompleteOpen(open); setCompleteError("") } }}>
+      <Dialog
+        open={isCompleteOpen}
+        onOpenChange={open => {
+          if (!submitting && !uploadingCompletionAttachments) {
+            setIsCompleteOpen(open);
+            setCompleteError('');
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[660px] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1050,12 +1443,17 @@ export default function PurchaseOrderDetailPage() {
             </DialogTitle>
             <DialogDescription>
               Pesanan <strong className="text-foreground">{order.poNumber}</strong> telah tiba.
-              Pilih supplier final dan masukkan total harga faktur untuk memasukkan barang ke stok bahan baku.
+              Pilih supplier final dan masukkan total harga faktur untuk memasukkan barang ke stok
+              bahan baku.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleConfirmComplete} className="space-y-4 py-2">
-            {completeError && <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{completeError}</p>}
+            {completeError && (
+              <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {completeError}
+              </p>
+            )}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">
                 Vendor / Supplier Final <span className="text-destructive">*</span>
@@ -1068,17 +1466,21 @@ export default function PurchaseOrderDetailPage() {
                     className="w-full justify-between rounded-xl h-10"
                   >
                     <span className="truncate">
-                      {suppliers.find((s) => s.id === completeSupplierId)?.name || "Pilih Vendor Final..."}
+                      {suppliers.find(s => s.id === completeSupplierId)?.name ||
+                        'Pilih Vendor Final...'}
                     </span>
                     <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] max-h-60 overflow-y-auto" align="start">
+                <DropdownMenuContent
+                  className="w-[--radix-dropdown-menu-trigger-width] max-h-60 overflow-y-auto"
+                  align="start"
+                >
                   <DropdownMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground/70">
                     Daftar Supplier
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {suppliers.map((s) => (
+                  {suppliers.map(s => (
                     <DropdownMenuItem
                       key={s.id}
                       onClick={() => setCompleteSupplierId(s.id)}
@@ -1097,14 +1499,18 @@ export default function PurchaseOrderDetailPage() {
                   <TableRow className="bg-muted/40">
                     <TableHead className="py-2.5 px-3 text-left">Bahan Baku</TableHead>
                     <TableHead className="py-2.5 px-3 text-right">Qty</TableHead>
-                    <TableHead className="py-2.5 px-3 w-[170px] text-right">Total Faktur (Rp)</TableHead>
-                    <TableHead className="py-2.5 px-3 w-[150px] text-right">Harga Satuan (Kalkulasi)</TableHead>
+                    <TableHead className="py-2.5 px-3 w-[170px] text-right">
+                      Total Faktur (Rp)
+                    </TableHead>
+                    <TableHead className="py-2.5 px-3 w-[150px] text-right">
+                      Harga Satuan (Kalkulasi)
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {order.items.map((it) => {
-                    const total = Number(itemTotalPrices[it.id]) || 0
-                    const unitPrice = it.quantity > 0 ? total / it.quantity : 0
+                  {order.items.map(it => {
+                    const total = Number(itemTotalPrices[it.id]) || 0;
+                    const unitPrice = it.quantity > 0 ? total / it.quantity : 0;
                     return (
                       <TableRow key={it.id}>
                         <TableCell className="align-middle py-2.5 px-3 font-medium text-sm text-foreground">
@@ -1119,8 +1525,8 @@ export default function PurchaseOrderDetailPage() {
                             min="0.0001"
                             step="any"
                             aria-label={`Total faktur ${it.stockName}`}
-                            value={itemTotalPrices[it.id] || ""}
-                            onChange={(e) =>
+                            value={itemTotalPrices[it.id] || ''}
+                            onChange={e =>
                               setItemTotalPrices({
                                 ...itemTotalPrices,
                                 [it.id]: Number(e.target.value),
@@ -1132,10 +1538,12 @@ export default function PurchaseOrderDetailPage() {
                           />
                         </TableCell>
                         <TableCell className="align-middle py-2.5 px-3 text-right font-mono text-xs text-muted-foreground whitespace-nowrap font-medium">
-                          {unitPrice > 0 ? `${formatCurrency(Math.round(unitPrice))} / ${it.baseUnit}` : "-"}
+                          {unitPrice > 0
+                            ? `${formatCurrency(Math.round(unitPrice))} / ${it.baseUnit}`
+                            : '-'}
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
@@ -1149,9 +1557,20 @@ export default function PurchaseOrderDetailPage() {
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold">Lampiran penyelesaian <span className="font-normal text-muted-foreground">(Opsional)</span></h3>
-              <p className="text-xs text-muted-foreground">Tambahkan faktur, nota, atau bukti penerimaan. Lampiran awal tetap tersimpan.</p>
-              <POAttachmentUpload value={completionAttachments} onChange={setCompletionAttachments} onUploadingChange={setUploadingCompletionAttachments} purpose="completion" disabled={submitting} />
+              <h3 className="text-sm font-semibold">
+                Lampiran penyelesaian{' '}
+                <span className="font-normal text-muted-foreground">(Opsional)</span>
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Tambahkan faktur, nota, atau bukti penerimaan. Lampiran awal tetap tersimpan.
+              </p>
+              <POAttachmentUpload
+                value={completionAttachments}
+                onChange={setCompletionAttachments}
+                onUploadingChange={setUploadingCompletionAttachments}
+                purpose="completion"
+                disabled={submitting}
+              />
             </div>
 
             <DialogFooter className="pt-2 gap-2 sm:gap-0 sm:space-x-2">
@@ -1181,7 +1600,7 @@ export default function PurchaseOrderDetailPage() {
       {order && (
         <Dialog
           open={isReceiveOpen}
-          onOpenChange={(open) => !open && !submitting && setIsReceiveOpen(false)}
+          onOpenChange={open => !open && !submitting && setIsReceiveOpen(false)}
         >
           <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto rounded-xl">
             <DialogHeader>
@@ -1190,9 +1609,9 @@ export default function PurchaseOrderDetailPage() {
                 Terima Barang Fisik
               </DialogTitle>
               <DialogDescription>
-                Catat kedatangan barang fisik untuk PO{" "}
-                <strong className="text-foreground">{order.poNumber}</strong>. Status penerimaan akan ditandai{" "}
-                <strong>Sudah Diterima</strong>.
+                Catat kedatangan barang fisik untuk PO{' '}
+                <strong className="text-foreground">{order.poNumber}</strong>. Status penerimaan
+                akan ditandai <strong>Sudah Diterima</strong>.
               </DialogDescription>
             </DialogHeader>
 
@@ -1207,9 +1626,7 @@ export default function PurchaseOrderDetailPage() {
               <div className="rounded-lg border border-border p-3 bg-muted/30 text-xs space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Supplier:</span>
-                  <span className="font-semibold text-foreground">
-                    {order.supplierName || "-"}
-                  </span>
+                  <span className="font-semibold text-foreground">{order.supplierName || '-'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Item:</span>
@@ -1225,8 +1642,8 @@ export default function PurchaseOrderDetailPage() {
                   Daftar Bahan & Informasi Penerimaan
                 </Label>
                 <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
-                  {order.items.map((it) => {
-                    const isFefo = it.inventoryMethod === "FEFO"
+                  {order.items.map(it => {
+                    const isFefo = it.inventoryMethod === 'FEFO';
                     return (
                       <div
                         key={it.id}
@@ -1236,7 +1653,10 @@ export default function PurchaseOrderDetailPage() {
                           <span className="font-medium text-foreground">{it.stockName}</span>
                           <div className="flex items-center gap-1.5">
                             {isFefo && (
-                              <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                              >
                                 FEFO
                               </Badge>
                             )}
@@ -1248,7 +1668,10 @@ export default function PurchaseOrderDetailPage() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div>
-                            <Label htmlFor={`price-${it.id}`} className="text-[11px] text-muted-foreground">
+                            <Label
+                              htmlFor={`price-${it.id}`}
+                              className="text-[11px] text-muted-foreground"
+                            >
                               Harga Satuan (Rp)
                             </Label>
                             <Input
@@ -1256,10 +1679,10 @@ export default function PurchaseOrderDetailPage() {
                               type="number"
                               min="0"
                               step="any"
-                              value={receivePrices[it.id] ?? (it.unitPrice || "")}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value) || 0
-                                setReceivePrices((prev) => ({ ...prev, [it.id]: val }))
+                              value={receivePrices[it.id] ?? (it.unitPrice || '')}
+                              onChange={e => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setReceivePrices(prev => ({ ...prev, [it.id]: val }));
                               }}
                               placeholder="Harga per unit"
                               className="h-8 text-xs font-mono mt-1"
@@ -1267,24 +1690,26 @@ export default function PurchaseOrderDetailPage() {
                           </div>
 
                           <div>
-                            <Label htmlFor={`expired-${it.id}`} className="text-[11px] text-muted-foreground flex items-center gap-1">
-                              Tanggal Kadaluarsa {isFefo && <span className="text-destructive font-bold">*</span>}
+                            <Label
+                              htmlFor={`expired-${it.id}`}
+                              className="text-[11px] text-muted-foreground flex items-center gap-1"
+                            >
+                              Tanggal Kadaluarsa{' '}
+                              {isFefo && <span className="text-destructive font-bold">*</span>}
                             </Label>
-                            <Input
+                            <DatePicker
                               id={`expired-${it.id}`}
-                              type="date"
                               required={isFefo}
-                              value={receiveExpiredAt[it.id] || ""}
-                              onChange={(e) => {
-                                const val = e.target.value
-                                setReceiveExpiredAt((prev) => ({ ...prev, [it.id]: val }))
+                              value={receiveExpiredAt[it.id] || ''}
+                              onChange={val => {
+                                setReceiveExpiredAt(prev => ({ ...prev, [it.id]: val }));
                               }}
                               className="h-8 text-xs mt-1"
                             />
                           </div>
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
@@ -1296,7 +1721,7 @@ export default function PurchaseOrderDetailPage() {
                 <Textarea
                   id="detail-receive-notes"
                   value={receiveNotes}
-                  onChange={(e) => setReceiveNotes(e.target.value)}
+                  onChange={e => setReceiveNotes(e.target.value)}
                   placeholder="e.g. Kondisi barang baik, diterima oleh staf gudang."
                   className="min-h-[70px]"
                 />
@@ -1327,10 +1752,7 @@ export default function PurchaseOrderDetailPage() {
 
       {/* Modal 5: Tandai Lunas */}
       {order && (
-        <Dialog
-          open={isPayOpen}
-          onOpenChange={(open) => !open && !submitting && setIsPayOpen(false)}
-        >
+        <Dialog open={isPayOpen} onOpenChange={open => !open && !submitting && setIsPayOpen(false)}>
           <DialogContent className="sm:max-w-[480px] rounded-xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -1338,9 +1760,9 @@ export default function PurchaseOrderDetailPage() {
                 Tandai Lunas Pembayaran
               </DialogTitle>
               <DialogDescription>
-                Catat penyelesaian pembayaran untuk PO{" "}
-                <strong className="text-foreground">{order.poNumber}</strong>. Status pembayaran akan ditandai{" "}
-                <strong>Lunas</strong>.
+                Catat penyelesaian pembayaran untuk PO{' '}
+                <strong className="text-foreground">{order.poNumber}</strong>. Status pembayaran
+                akan ditandai <strong>Lunas</strong>.
               </DialogDescription>
             </DialogHeader>
 
@@ -1354,29 +1776,27 @@ export default function PurchaseOrderDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Supplier:</span>
-                  <span className="font-semibold text-foreground">
-                    {order.supplierName || "-"}
-                  </span>
+                  <span className="font-semibold text-foreground">{order.supplierName || '-'}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Metode Pembayaran</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["TRANSFER", "CASH", "TEMPO"] as const).map((method) => (
+                  {(['TRANSFER', 'CASH', 'TEMPO'] as const).map(method => (
                     <Button
                       key={method}
                       type="button"
-                      variant={payMethod === method ? "default" : "outline"}
+                      variant={payMethod === method ? 'default' : 'outline'}
                       size="sm"
                       className="text-xs font-semibold"
                       onClick={() => setPayMethod(method)}
                     >
-                      {method === "TRANSFER"
-                        ? "Transfer Bank"
-                        : method === "CASH"
-                        ? "Tunai"
-                        : "Tempo"}
+                      {method === 'TRANSFER'
+                        ? 'Transfer Bank'
+                        : method === 'CASH'
+                          ? 'Tunai'
+                          : 'Tempo'}
                     </Button>
                   ))}
                 </div>
@@ -1389,7 +1809,7 @@ export default function PurchaseOrderDetailPage() {
                 <Textarea
                   id="detail-pay-notes"
                   value={payNotes}
-                  onChange={(e) => setPayNotes(e.target.value)}
+                  onChange={e => setPayNotes(e.target.value)}
                   placeholder="e.g. Bukti transfer BCA #TRX-123456"
                   className="min-h-[80px]"
                 />
@@ -1422,7 +1842,7 @@ export default function PurchaseOrderDetailPage() {
       {order && (
         <Dialog
           open={isCancelOpen}
-          onOpenChange={(open) => !open && !submitting && setIsCancelOpen(false)}
+          onOpenChange={open => !open && !submitting && setIsCancelOpen(false)}
         >
           <DialogContent className="sm:max-w-[480px] rounded-xl">
             <DialogHeader>
@@ -1431,8 +1851,9 @@ export default function PurchaseOrderDetailPage() {
                 Batalkan Purchase Order
               </DialogTitle>
               <DialogDescription>
-                Apakah Anda yakin ingin membatalkan pesanan{" "}
-                <strong className="text-foreground">{order.poNumber}</strong>? Alasan pembatalan wajib dicatat.
+                Apakah Anda yakin ingin membatalkan pesanan{' '}
+                <strong className="text-foreground">{order.poNumber}</strong>? Alasan pembatalan
+                wajib dicatat.
               </DialogDescription>
             </DialogHeader>
 
@@ -1444,7 +1865,7 @@ export default function PurchaseOrderDetailPage() {
                 <Textarea
                   id="detail-cancel-reason"
                   value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
+                  onChange={e => setCancelReason(e.target.value)}
                   placeholder="e.g. Stok supplier habis / spesifikasi bahan diubah"
                   className="min-h-[90px]"
                   required
@@ -1474,5 +1895,5 @@ export default function PurchaseOrderDetailPage() {
         </Dialog>
       )}
     </div>
-  )
+  );
 }

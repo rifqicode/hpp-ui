@@ -68,24 +68,19 @@ export function OnlineOrdersDrawer({
   storeName = 'Toko Kami',
   storeSlug = '',
 }: OnlineOrdersDrawerProps) {
-  const [activeTab, setActiveTab] = React.useState<'pending' | 'processing'>(
-    'pending'
-  );
+  const [activeTab, setActiveTab] = React.useState<'pending' | 'processing'>('pending');
   const [actionError, setActionError] = React.useState('');
 
   // Accept Modal State
   const [acceptingOrder, setAcceptingOrder] = React.useState<Sale | null>(null);
-  const [acceptPaymentMethod, setAcceptPaymentMethod] =
-    React.useState<PaymentMethod>('CASH');
+  const [acceptPaymentMethod, setAcceptPaymentMethod] = React.useState<PaymentMethod>('CASH');
   const [acceptCashReceived, setAcceptCashReceived] = React.useState('');
   const [acceptPaymentRef, setAcceptPaymentRef] = React.useState('');
   const [acceptDeliveryFee, setAcceptDeliveryFee] = React.useState('');
   const [isAccepting, setIsAccepting] = React.useState(false);
 
   // Fulfill / Courier Modal State
-  const [fulfillingOrder, setFulfillingOrder] = React.useState<Sale | null>(
-    null
-  );
+  const [fulfillingOrder, setFulfillingOrder] = React.useState<Sale | null>(null);
   const [courierName, setCourierName] = React.useState('');
   const [trackingInfo, setTrackingInfo] = React.useState('');
   const [fulfillDeliveryFee, setFulfillDeliveryFee] = React.useState('');
@@ -135,8 +130,7 @@ export function OnlineOrdersDrawer({
             ? Math.max(cashNum, acceptingOrder.totalAmount)
             : undefined,
         payment_reference: acceptPaymentRef.trim() || undefined,
-        delivery_fee:
-          acceptingOrder.fulfillmentType === 'DELIVERY' ? feeNum : undefined,
+        delivery_fee: acceptingOrder.fulfillmentType === 'DELIVERY' ? feeNum : undefined,
       });
 
       setAcceptingOrder(null);
@@ -146,7 +140,7 @@ export function OnlineOrdersDrawer({
       setActionError(
         err instanceof Error
           ? err.message
-          : 'Gagal menerima pesanan online. Periksa ketersediaan stok.'
+          : 'Gagal menerima pesanan online. Periksa ketersediaan stok.',
       );
     } finally {
       setIsAccepting(false);
@@ -161,24 +155,18 @@ export function OnlineOrdersDrawer({
       setActionError('');
       const feeNum = Number(fulfillDeliveryFee.replace(/\D/g, '')) || 0;
 
-      const updated = await salesService.fulfillOnlineOrder(
-        fulfillingOrder.id,
-        {
-          delivery_courier_name: courierName.trim() || undefined,
-          delivery_tracking_info: trackingInfo.trim() || undefined,
-          delivery_fee:
-            fulfillingOrder.fulfillmentType === 'DELIVERY' ? feeNum : undefined,
-        }
-      );
+      const updated = await salesService.fulfillOnlineOrder(fulfillingOrder.id, {
+        delivery_courier_name: courierName.trim() || undefined,
+        delivery_tracking_info: trackingInfo.trim() || undefined,
+        delivery_fee: fulfillingOrder.fulfillmentType === 'DELIVERY' ? feeNum : undefined,
+      });
 
       setFulfillingOrder(null);
       onOrderProcessed(updated);
       onRefresh();
     } catch (err) {
       setActionError(
-        err instanceof Error
-          ? err.message
-          : 'Gagal menyelesaikan pengiriman pesanan.'
+        err instanceof Error ? err.message : 'Gagal menyelesaikan pengiriman pesanan.',
       );
     } finally {
       setIsFulfilling(false);
@@ -202,9 +190,7 @@ export function OnlineOrdersDrawer({
       onOrderProcessed(updated);
       onRefresh();
     } catch (err) {
-      setActionError(
-        err instanceof Error ? err.message : 'Gagal menolak pesanan online.'
-      );
+      setActionError(err instanceof Error ? err.message : 'Gagal menolak pesanan online.');
     } finally {
       setIsRejecting(false);
     }
@@ -263,19 +249,13 @@ export function OnlineOrdersDrawer({
             )}
           </div>
           {order.customerEmail && (
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Email: {order.customerEmail}
-            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Email: {order.customerEmail}</p>
           )}
           {order.fulfillmentType === 'DINE_IN' && order.tableNumber && (
-            <p className="mt-1 font-medium text-foreground">
-              Meja: {order.tableNumber}
-            </p>
+            <p className="mt-1 font-medium text-foreground">Meja: {order.tableNumber}</p>
           )}
           {order.fulfillmentType === 'PICKUP' && order.pickupTime && (
-            <p className="mt-1 font-medium text-foreground">
-              Waktu Ambil: {order.pickupTime}
-            </p>
+            <p className="mt-1 font-medium text-foreground">Waktu Ambil: {order.pickupTime}</p>
           )}
           {order.fulfillmentType === 'DELIVERY' && order.deliveryAddress && (
             <p className="mt-1 flex items-start gap-1 text-foreground">
@@ -285,9 +265,7 @@ export function OnlineOrdersDrawer({
           )}
           {order.customFieldLabel && order.customFieldValue && (
             <p className="mt-1 text-[11px] text-muted-foreground">
-              <strong className="text-foreground">
-                {order.customFieldLabel}:
-              </strong>{' '}
+              <strong className="text-foreground">{order.customFieldLabel}:</strong>{' '}
               {order.customFieldValue}
             </p>
           )}
@@ -298,25 +276,21 @@ export function OnlineOrdersDrawer({
           )}
           {order.paymentReference && (
             <p className="mt-1 text-[11px] text-muted-foreground">
-              <strong className="text-foreground">Ref Bayar:</strong>{' '}
-              {order.paymentReference}
+              <strong className="text-foreground">Ref Bayar:</strong> {order.paymentReference}
             </p>
           )}
         </div>
 
         <div className="divide-y divide-border text-xs">
-          {order.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start justify-between gap-2 py-1.5"
-            >
+          {order.items.map(item => (
+            <div key={item.id} className="flex items-start justify-between gap-2 py-1.5">
               <div>
                 <span className="font-medium text-foreground">
                   {item.quantity}x {item.productName}
                 </span>
                 {item.modifiers && item.modifiers.length > 0 && (
                   <p className="text-[11px] text-muted-foreground">
-                    + {item.modifiers.map((m) => m.name).join(', ')}
+                    + {item.modifiers.map(m => m.name).join(', ')}
                   </p>
                 )}
               </div>
@@ -386,17 +360,8 @@ export function OnlineOrdersDrawer({
             )}
             <div className="flex flex-wrap items-center gap-2">
               {buyerWaUrl && (
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="h-9 flex-1 gap-1.5 text-xs"
-                >
-                  <a
-                    href={buyerWaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                <Button asChild variant="outline" size="sm" className="h-9 flex-1 gap-1.5 text-xs">
+                  <a href={buyerWaUrl} target="_blank" rel="noopener noreferrer">
                     <MessageCircle className="size-3.5 text-success-text" />
                     Hubungi WA
                   </a>
@@ -423,15 +388,10 @@ export function OnlineOrdersDrawer({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="right"
-          className="flex w-full flex-col gap-0 p-0 sm:max-w-lg"
-        >
+        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
           <SheetHeader className="border-b border-border p-4">
             <div className="flex items-center justify-between gap-2 pr-6">
-              <SheetTitle className="text-base">
-                Antrean Pesanan Online
-              </SheetTitle>
+              <SheetTitle className="text-base">Antrean Pesanan Online</SheetTitle>
               <Button
                 type="button"
                 variant="outline"
@@ -440,24 +400,20 @@ export function OnlineOrdersDrawer({
                 disabled={isLoading}
                 className="h-8 gap-1.5 text-xs"
               >
-                <RefreshCw
-                  className={`size-3.5 ${isLoading ? 'animate-spin' : ''}`}
-                />
+                <RefreshCw className={`size-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                 Segarkan
               </Button>
             </div>
             <SheetDescription className="text-xs">
-              Verifikasi pesanan dari toko online (/s/{storeSlug || 'toko'}),
-              potong stok otomatis, dan kirim info kurir ke pelanggan.
+              Verifikasi pesanan dari toko online (/s/{storeSlug || 'toko'}), potong stok otomatis,
+              dan kirim info kurir ke pelanggan.
             </SheetDescription>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto p-4">
             <Tabs
               value={activeTab}
-              onValueChange={(v) =>
-                setActiveTab(v as 'pending' | 'processing')
-              }
+              onValueChange={v => setActiveTab(v as 'pending' | 'processing')}
               className="space-y-4"
             >
               <TabsList className="grid w-full grid-cols-2">
@@ -483,9 +439,7 @@ export function OnlineOrdersDrawer({
                     </p>
                   </div>
                 ) : (
-                  pendingOrders.map((order) =>
-                    renderOrderCard(order, 'pending')
-                  )
+                  pendingOrders.map(order => renderOrderCard(order, 'pending'))
                 )}
               </TabsContent>
 
@@ -497,13 +451,12 @@ export function OnlineOrdersDrawer({
                       Tidak ada pesanan yang sedang disiapkan
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Pesanan pre-order atau pengiriman kurir yang sedang berjalan akan tampil di sini.
+                      Pesanan pre-order atau pengiriman kurir yang sedang berjalan akan tampil di
+                      sini.
                     </p>
                   </div>
                 ) : (
-                  activeOrders.map((order) =>
-                    renderOrderCard(order, 'processing')
-                  )
+                  activeOrders.map(order => renderOrderCard(order, 'processing'))
                 )}
               </TabsContent>
             </Tabs>
@@ -512,15 +465,13 @@ export function OnlineOrdersDrawer({
       </Sheet>
 
       {/* Dialog Terima & Proses Pesanan Online */}
-      <Dialog
-        open={Boolean(acceptingOrder)}
-        onOpenChange={(o) => !o && setAcceptingOrder(null)}
-      >
+      <Dialog open={Boolean(acceptingOrder)} onOpenChange={o => !o && setAcceptingOrder(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Terima & Proses Pesanan Online</DialogTitle>
             <DialogDescription className="text-xs">
-              Stok bahan/produk akan langsung dipotong (FIFO) dan pelanggan akan menerima email konfirmasi.
+              Stok bahan/produk akan langsung dipotong (FIFO) dan pelanggan akan menerima email
+              konfirmasi.
             </DialogDescription>
           </DialogHeader>
 
@@ -551,22 +502,20 @@ export function OnlineOrdersDrawer({
               <div className="space-y-1.5">
                 <Label className="text-xs">Metode Pembayaran Terverifikasi</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(['CASH', 'QRIS', 'TRANSFER'] as PaymentMethod[]).map(
-                    (m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setAcceptPaymentMethod(m)}
-                        className={`min-h-9 rounded-md border text-xs font-semibold ${
-                          acceptPaymentMethod === m
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-border bg-card text-foreground'
-                        }`}
-                      >
-                        {m}
-                      </button>
-                    )
-                  )}
+                  {(['CASH', 'QRIS', 'TRANSFER'] as PaymentMethod[]).map(m => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setAcceptPaymentMethod(m)}
+                      className={`min-h-9 rounded-md border text-xs font-semibold ${
+                        acceptPaymentMethod === m
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-card text-foreground'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -578,7 +527,7 @@ export function OnlineOrdersDrawer({
                   <FormattedNumberInput
                     id="accept-delivery-fee"
                     value={acceptDeliveryFee}
-                    onValueChange={(vals) => setAcceptDeliveryFee(vals.rawString)}
+                    onValueChange={vals => setAcceptDeliveryFee(vals.rawString)}
                     placeholder="0"
                   />
                 </div>
@@ -592,7 +541,7 @@ export function OnlineOrdersDrawer({
                   <FormattedNumberInput
                     id="accept-cash-received"
                     value={acceptCashReceived}
-                    onValueChange={(vals) => setAcceptCashReceived(vals.rawString)}
+                    onValueChange={vals => setAcceptCashReceived(vals.rawString)}
                     placeholder="0"
                   />
                 </div>
@@ -604,7 +553,7 @@ export function OnlineOrdersDrawer({
                   <Input
                     id="accept-pay-ref"
                     value={acceptPaymentRef}
-                    onChange={(e) => setAcceptPaymentRef(e.target.value)}
+                    onChange={e => setAcceptPaymentRef(e.target.value)}
                     placeholder="Contoh: Mutasi QRIS / BCA Terverifikasi"
                     className="h-9 text-xs"
                   />
@@ -636,15 +585,13 @@ export function OnlineOrdersDrawer({
       </Dialog>
 
       {/* Dialog Selesaikan & Input Info Kurir */}
-      <Dialog
-        open={Boolean(fulfillingOrder)}
-        onOpenChange={(o) => !o && setFulfillingOrder(null)}
-      >
+      <Dialog open={Boolean(fulfillingOrder)} onOpenChange={o => !o && setFulfillingOrder(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Selesaikan Pesanan & Informasi Kurir</DialogTitle>
             <DialogDescription className="text-xs">
-              Masukkan nama kurir dan tautan live tracking / nomor resi. Pelanggan akan menerima notifikasi email otomatis.
+              Masukkan nama kurir dan tautan live tracking / nomor resi. Pelanggan akan menerima
+              notifikasi email otomatis.
             </DialogDescription>
           </DialogHeader>
 
@@ -664,7 +611,7 @@ export function OnlineOrdersDrawer({
                 <Input
                   id="fulfill-courier"
                   value={courierName}
-                  onChange={(e) => setCourierName(e.target.value)}
+                  onChange={e => setCourierName(e.target.value)}
                   placeholder="Contoh: GoSend Instant - Pak Budi / Kurir Toko"
                   className="h-9 text-xs"
                 />
@@ -677,7 +624,7 @@ export function OnlineOrdersDrawer({
                 <Input
                   id="fulfill-tracking"
                   value={trackingInfo}
-                  onChange={(e) => setTrackingInfo(e.target.value)}
+                  onChange={e => setTrackingInfo(e.target.value)}
                   placeholder="Contoh: https://track.gosend.id/... atau Nomor Resi"
                   className="h-9 text-xs"
                 />
@@ -691,7 +638,7 @@ export function OnlineOrdersDrawer({
                   <FormattedNumberInput
                     id="fulfill-fee"
                     value={fulfillDeliveryFee}
-                    onValueChange={(vals) => setFulfillDeliveryFee(vals.rawString)}
+                    onValueChange={vals => setFulfillDeliveryFee(vals.rawString)}
                     placeholder="0"
                   />
                 </div>
@@ -712,9 +659,7 @@ export function OnlineOrdersDrawer({
                   disabled={isFulfilling}
                   className="gap-1.5 text-xs font-semibold"
                 >
-                  {isFulfilling && (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  )}
+                  {isFulfilling && <Loader2 className="size-3.5 animate-spin" />}
                   Selesaikan & Kirim Info
                 </Button>
               </DialogFooter>
@@ -724,15 +669,10 @@ export function OnlineOrdersDrawer({
       </Dialog>
 
       {/* Dialog Tolak Pesanan Online */}
-      <Dialog
-        open={Boolean(rejectingOrder)}
-        onOpenChange={(o) => !o && setRejectingOrder(null)}
-      >
+      <Dialog open={Boolean(rejectingOrder)} onOpenChange={o => !o && setRejectingOrder(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-destructive">
-              Tolak Pesanan Online
-            </DialogTitle>
+            <DialogTitle className="text-destructive">Tolak Pesanan Online</DialogTitle>
             <DialogDescription className="text-xs">
               Berikan alasan pembatalan yang jelas untuk diinformasikan kepada pelanggan.
             </DialogDescription>
@@ -754,7 +694,7 @@ export function OnlineOrdersDrawer({
                 <Textarea
                   id="reject-reason"
                   value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
+                  onChange={e => setRejectionReason(e.target.value)}
                   placeholder="Contoh: Mohon maaf, stok varian ini baru saja habis di outlet kami."
                   rows={3}
                   className="text-xs"

@@ -18,7 +18,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    set => ({
       user: null,
       token: null,
       activeStoreId: null,
@@ -29,20 +29,27 @@ export const useAuthStore = create<AuthState>()(
         clearPermissionCache();
         set({ user, token, activeStoreId: null, activeStoreName: null, permissions: [] });
       },
-      setActiveStoreId: (activeStoreId) => set((state) => (
-        state.activeStoreId === activeStoreId ? {} : { activeStoreId, permissions: [] }
-      )),
-      setActiveStoreName: (activeStoreName) => set({ activeStoreName }),
-      setPermissions: (permissions) => set({ permissions }),
+      setActiveStoreId: activeStoreId =>
+        set(state =>
+          state.activeStoreId === activeStoreId ? {} : { activeStoreId, permissions: [] },
+        ),
+      setActiveStoreName: activeStoreName => set({ activeStoreName }),
+      setPermissions: permissions => set({ permissions }),
       logout: () => {
         localStorage.removeItem('token');
         clearPermissionCache();
-        set({ user: null, token: null, activeStoreId: null, activeStoreName: null, permissions: [] });
+        set({
+          user: null,
+          token: null,
+          activeStoreId: null,
+          activeStoreName: null,
+          permissions: [],
+        });
       },
     }),
     {
       name: 'auth-storage',
       partialize: ({ permissions: _permissions, ...rest }) => rest,
-    }
-  )
+    },
+  ),
 );

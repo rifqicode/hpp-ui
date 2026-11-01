@@ -53,4 +53,3 @@ export interface SupplierSummary {
   active_suppliers: number;
   total_purchases_amount: string | number;
 }
-

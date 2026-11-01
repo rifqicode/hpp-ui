@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CurrencyText } from '@/components/ui/currency-text';
 import { FeedbackAlert } from '@/components/ui/feedback-alert';
@@ -47,7 +54,7 @@ export function PriceReviewDialog({
   const initialVariant = useMemo(() => {
     if (!variants.length) return null;
     if (initialVariantId) {
-      const found = variants.find((v) => v.id === initialVariantId);
+      const found = variants.find(v => v.id === initialVariantId);
       if (found) return found;
     }
     return variants.find(needsPriceReview) ?? variants[0] ?? null;
@@ -75,14 +82,17 @@ export function PriceReviewDialog({
   if (!product) return null;
 
   const selectedVariant: ProductVariant | undefined =
-    variants.find((v) => v.id === selectedVariantId) ?? initialVariant ?? variants[0];
+    variants.find(v => v.id === selectedVariantId) ?? initialVariant ?? variants[0];
 
   if (!selectedVariant) return null;
 
   const currentEdit = edits[selectedVariant.id] ?? {
     sellingPrice: selectedVariant.sellingPrice,
     targetMargin: selectedVariant.targetMargin,
-    marginText: selectedVariant.targetMargin === 0 ? '' : String(Number((selectedVariant.targetMargin * 100).toFixed(2))),
+    marginText:
+      selectedVariant.targetMargin === 0
+        ? ''
+        : String(Number((selectedVariant.targetMargin * 100).toFixed(2))),
   };
 
   const cost =
@@ -103,8 +113,13 @@ export function PriceReviewDialog({
   function updateMargin(text: string) {
     if (!selectedVariant) return;
     const num = Number(text);
-    const targetMargin = Number.isFinite(num) && num >= 0 && num < 100 ? num / 100 : (Number.isFinite(num) && num >= 100 ? 1 : 0);
-    setEdits((prev) => ({
+    const targetMargin =
+      Number.isFinite(num) && num >= 0 && num < 100
+        ? num / 100
+        : Number.isFinite(num) && num >= 100
+          ? 1
+          : 0;
+    setEdits(prev => ({
       ...prev,
       [selectedVariant.id]: {
         ...(prev[selectedVariant.id] ?? { sellingPrice: selectedVariant.sellingPrice }),
@@ -116,10 +131,13 @@ export function PriceReviewDialog({
 
   function updateSellingPrice(price: number) {
     if (!selectedVariant) return;
-    setEdits((prev) => ({
+    setEdits(prev => ({
       ...prev,
       [selectedVariant.id]: {
-        ...(prev[selectedVariant.id] ?? { targetMargin: selectedVariant.targetMargin, marginText: '' }),
+        ...(prev[selectedVariant.id] ?? {
+          targetMargin: selectedVariant.targetMargin,
+          marginText: '',
+        }),
         sellingPrice: price,
       },
     }));
@@ -162,7 +180,12 @@ export function PriceReviewDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen && !saving) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={isOpen => {
+        if (!isOpen && !saving) onClose();
+      }}
+    >
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Tinjau harga {product.name}</DialogTitle>
@@ -172,7 +195,10 @@ export function PriceReviewDialog({
         </DialogHeader>
 
         {error && (
-          <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-red-700 dark:text-red-300">
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-red-700 dark:text-red-300"
+          >
             <p className="font-medium">{error}</p>
           </div>
         )}
@@ -182,10 +208,11 @@ export function PriceReviewDialog({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Pilih varian untuk ditinjau</Label>
               <div className="flex flex-wrap gap-2" role="tablist" aria-label="Daftar varian">
-                {variants.map((v) => {
+                {variants.map(v => {
                   const isSelected = v.id === selectedVariant.id;
                   const vNeedsReview = needsPriceReview(v);
-                  const vCost = v.estimatedHpp > 0 ? v.estimatedHpp : (v.latestHpp > 0 ? v.latestHpp : null);
+                  const vCost =
+                    v.estimatedHpp > 0 ? v.estimatedHpp : v.latestHpp > 0 ? v.latestHpp : null;
                   const vPrice = edits[v.id]?.sellingPrice ?? v.sellingPrice;
                   const vLoss = vCost !== null && vPrice < vCost;
 
@@ -197,13 +224,18 @@ export function PriceReviewDialog({
                       variant={isSelected ? 'secondary' : 'outline'}
                       className={cn(
                         'h-9 gap-1.5 text-xs',
-                        (vNeedsReview || vLoss) && !isSelected && 'border-amber-500/60 text-amber-700 dark:text-amber-400'
+                        (vNeedsReview || vLoss) &&
+                          !isSelected &&
+                          'border-amber-500/60 text-amber-700 dark:text-amber-400',
                       )}
                       aria-pressed={isSelected}
                       onClick={() => setSelectedVariantId(v.id)}
                     >
                       {(vNeedsReview || vLoss) && (
-                        <AlertCircle className="size-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                        <AlertCircle
+                          className="size-3 text-amber-600 dark:text-amber-400"
+                          aria-hidden="true"
+                        />
                       )}
                       <span>{v.variantName}</span>
                     </Button>
@@ -275,7 +307,11 @@ export function PriceReviewDialog({
               <div>
                 <p className="text-xs text-muted-foreground">Saran harga jual</p>
                 <p className="mt-1 text-lg font-semibold tabular-nums">
-                  {suggestedPrice === null ? 'Lengkapi biaya bahan dulu' : <CurrencyText value={suggestedPrice} />}
+                  {suggestedPrice === null ? (
+                    'Lengkapi biaya bahan dulu'
+                  ) : (
+                    <CurrencyText value={suggestedPrice} />
+                  )}
                 </p>
               </div>
               <Button
@@ -304,19 +340,21 @@ export function PriceReviewDialog({
                 allowDecimal
                 maxDecimals={4}
                 value={currentEdit.sellingPrice}
-                onChange={(value) => updateSellingPrice(Number(value))}
+                onChange={value => updateSellingPrice(Number(value))}
               />
             </ProductField>
 
             <div className="rounded-lg border bg-card p-3 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Proyeksi Laba & Margin Baru</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Proyeksi Laba & Margin Baru
+              </p>
               <dl className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <dt className="text-xs text-muted-foreground">Selisih laba kotor</dt>
                   <dd
                     className={cn(
                       'mt-0.5 font-semibold tabular-nums',
-                      profitDiff !== null && profitDiff < 0 && 'text-red-700 dark:text-red-300'
+                      profitDiff !== null && profitDiff < 0 && 'text-red-700 dark:text-red-300',
                     )}
                   >
                     {profitDiff === null ? 'Belum tersedia' : <CurrencyText value={profitDiff} />}
@@ -327,7 +365,7 @@ export function PriceReviewDialog({
                   <dd
                     className={cn(
                       'mt-0.5 font-semibold tabular-nums',
-                      profitMargin !== null && profitMargin < 0 && 'text-red-700 dark:text-red-300'
+                      profitMargin !== null && profitMargin < 0 && 'text-red-700 dark:text-red-300',
                     )}
                   >
                     {profitMargin === null

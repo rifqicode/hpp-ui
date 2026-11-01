@@ -4,13 +4,21 @@ import { useProductsQuery } from './use-recipes-query';
 import { useDeleteProduct } from './use-products';
 import { useSubscriptionGuards } from '@/features/subscription';
 import { usePermission } from '@/hooks/use-permission';
-import { filterProducts, getProductMetrics, PRODUCT_SORTS, type ProductAttentionFilter, type ProductSort } from '../lib/product-list';
+import {
+  filterProducts,
+  getProductMetrics,
+  PRODUCT_SORTS,
+  type ProductAttentionFilter,
+  type ProductSort,
+} from '../lib/product-list';
 import type { Product } from '../types';
 
 export function useProductList() {
   const [params, setParams] = useSearchParams();
   const paramsRef = useRef(params);
-  useLayoutEffect(() => { paramsRef.current = params; }, [params]);
+  useLayoutEffect(() => {
+    paramsRef.current = params;
+  }, [params]);
   const location = useLocation();
   const navigate = useNavigate();
   const query = useProductsQuery();
@@ -18,23 +26,48 @@ export function useProductList() {
   const { can } = usePermission();
   const { isQuotaReached } = useSubscriptionGuards();
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [reviewProductState, setReviewProductState] = useState<{ product: Product; variantId?: string } | null>(null);
+  const [reviewProductState, setReviewProductState] = useState<{
+    product: Product;
+    variantId?: string;
+  } | null>(null);
   const products = query.data || [];
   const search = params.get('q') || '';
   const category = params.get('category') || '';
   const attentionValue = params.get('attention') || 'all';
-  const attention: ProductAttentionFilter = ['needs-attention', 'low-stock', 'no-hpp', 'loss', 'price-review'].includes(attentionValue) ? attentionValue as ProductAttentionFilter : 'all';
+  const attention: ProductAttentionFilter = [
+    'needs-attention',
+    'low-stock',
+    'no-hpp',
+    'loss',
+    'price-review',
+  ].includes(attentionValue)
+    ? (attentionValue as ProductAttentionFilter)
+    : 'all';
   const sortValue = params.get('sort') || 'name-asc';
-  const sort: ProductSort = Object.hasOwn(PRODUCT_SORTS, sortValue) ? sortValue as ProductSort : 'name-asc';
+  const sort: ProductSort = Object.hasOwn(PRODUCT_SORTS, sortValue)
+    ? (sortValue as ProductSort)
+    : 'name-asc';
   const view = params.get('view') === 'grid' ? 'grid' : 'table';
   const filtered = filterProducts(products, search, category, attention, sort);
   const pageSize = 12;
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageValue = Number(params.get('page') || 1);
-  const page = Math.min(totalPages, Number.isSafeInteger(pageValue) && pageValue > 0 ? pageValue : 1);
-  const categories = [...new Set(products.map((product) => product.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id-ID'));
+  const page = Math.min(
+    totalPages,
+    Number.isSafeInteger(pageValue) && pageValue > 0 ? pageValue : 1,
+  );
+  const categories = [...new Set(products.map(product => product.category).filter(Boolean))].sort(
+    (a, b) => a.localeCompare(b, 'id-ID'),
+  );
   const metrics = products.map(getProductMetrics);
-  const stats = { total: products.length, attention: metrics.filter(m => m.needsAttention).length, lowStock: metrics.filter(m => m.lowStock).length, noHpp: metrics.filter(m => !m.hasActualHpp).length, loss: metrics.filter(m => m.loss).length, priceReview: metrics.filter(m => m.priceReview).length };
+  const stats = {
+    total: products.length,
+    attention: metrics.filter(m => m.needsAttention).length,
+    lowStock: metrics.filter(m => m.lowStock).length,
+    noHpp: metrics.filter(m => !m.hasActualHpp).length,
+    loss: metrics.filter(m => m.loss).length,
+    priceReview: metrics.filter(m => m.priceReview).length,
+  };
 
   function update(values: Record<string, string | undefined>, resetPage = true) {
     // Preserve rapid successive edits while router navigation is still rendering.
@@ -49,7 +82,13 @@ export function useProductList() {
   }
 
   function requestUpgrade() {
-    window.dispatchEvent(new CustomEvent('open-upgrade-modal', { detail: { message: 'Tingkatkan paket Anda untuk menambah kapasitas produk dan bahan baku.' } }));
+    window.dispatchEvent(
+      new CustomEvent('open-upgrade-modal', {
+        detail: {
+          message: 'Tingkatkan paket Anda untuk menambah kapasitas produk dan bahan baku.',
+        },
+      }),
+    );
   }
 
   function createProduct() {
@@ -71,7 +110,9 @@ export function useProductList() {
     try {
       await deletion.mutateAsync(productToDelete.id);
       setProductToDelete(null);
-    } catch { /* The mutation error remains visible in the confirmation dialog. */ }
+    } catch {
+      /* The mutation error remains visible in the confirmation dialog. */
+    }
   }
 
   function openPriceReview(product: Product, variantId?: string) {
@@ -83,14 +124,35 @@ export function useProductList() {
   }
 
   return {
-    ...query, search, category, attention, sort, view, categories, stats, page, pageSize, totalPages,
-    total: filtered.length, items: filtered.slice((page - 1) * pageSize, page * pageSize),
-    hasFilters: Boolean(search || category || attention !== 'all'), update,
+    ...query,
+    search,
+    category,
+    attention,
+    sort,
+    view,
+    categories,
+    stats,
+    page,
+    pageSize,
+    totalPages,
+    total: filtered.length,
+    items: filtered.slice((page - 1) * pageSize, page * pageSize),
+    hasFilters: Boolean(search || category || attention !== 'all'),
+    update,
     resetFilters: () => update({ q: undefined, category: undefined, attention: undefined }),
-    createProduct, requestUpgrade, canCreate: can('products:write'), canDelete: can('products:delete'),
-    productToDelete, selectDelete, closeDelete, confirmDelete,
-    isDeleting: deletion.isPending, deleteError: deletion.error,
+    createProduct,
+    requestUpgrade,
+    canCreate: can('products:write'),
+    canDelete: can('products:delete'),
+    productToDelete,
+    selectDelete,
+    closeDelete,
+    confirmDelete,
+    isDeleting: deletion.isPending,
+    deleteError: deletion.error,
     returnTo: location.pathname + location.search,
-    reviewProductState, openPriceReview, closePriceReview,
+    reviewProductState,
+    openPriceReview,
+    closePriceReview,
   };
 }

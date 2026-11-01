@@ -23,6 +23,26 @@ async function addIngredient(user:ReturnType<typeof userEvent.setup>,quantity='1
  await user.click(screen.getByRole('button',{name:'Tambah bahan'}));await user.selectOptions(screen.getByLabelText('Bahan 1'),'stock-1');change(screen.getByLabelText('Takaran (g)'),quantity);
 }
 describe('guided variant builder',()=>{
+ it('formats fractional costs and prices as whole Rupiah while preserving the applied and submitted price', async () => {
+  vi.mocked(recipeService.getAvailableMaterials).mockResolvedValue([
+   { id: 'stock-1', name: 'Tepung Terigu', baseUnit: 'g', currentStock: 5000, avgCostPerUnit: 51344.9994 },
+  ]);
+  const user = await start();
+  await addIngredient(user, '1');
+  change(screen.getByLabelText('Margin (%)'), '50');
+  const estimate = within(screen.getByRole('complementary', { name: 'Estimasi varian' }));
+  expect(estimate.getByText('Biaya bahan per pcs').nextElementSibling).toHaveTextContent('Rp 51.345');
+  expect(estimate.getByText('Selisih dari biaya bahan').nextElementSibling).toHaveTextContent('-Rp 51.345');
+  expect(screen.getByText('Saran harga jual').nextElementSibling).toHaveTextContent('Rp 102.690');
+  expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('0');
+  await user.click(screen.getByRole('button', { name: 'Pakai hasil perhitungan' }));
+  expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('102.689,9988');
+  expect(estimate.getByText('Harga jual').nextElementSibling).toHaveTextContent('Rp 102.690');
+  await user.click(screen.getByRole('button', { name: 'Simpan produk' }));
+  await waitFor(() => expect(recipeService.createProduct).toHaveBeenCalledWith(expect.objectContaining({
+   variants: [expect.objectContaining({ sellingPrice: 102689.9988, targetMargin: 0.5 })],
+  })));
+ });
  it('requires identity and recipe before persistence',async()=>{const user=userEvent.setup();renderPage(<RecipeCreatePage/>,'/production/products/new');await user.click(screen.getByRole('button',{name:'Lanjut'}));expect(screen.getByRole('alert')).toHaveTextContent('Nama produk wajib');change(screen.getByLabelText('Nama produk'),'Latte');await user.click(screen.getByRole('button',{name:'Lanjut'}));await screen.findByRole('button',{name:'Tambah bahan'});await user.click(screen.getByRole('button',{name:'Simpan produk'}));expect(screen.getByRole('alert')).toHaveTextContent('minimal satu bahan');expect(recipeService.createProduct).not.toHaveBeenCalled();});
  it('saves a single per-unit variant and skips addons for MTS',async()=>{const user=await start();await addIngredient(user);change(screen.getByLabelText('Margin (%)'),'20');await user.click(screen.getByRole('button',{name:'Pakai hasil perhitungan'}));expect(screen.getByLabelText('Harga jual (Rp)')).not.toHaveAttribute('readonly');expect(screen.getByLabelText('Harga jual (Rp)')).toHaveValue('187,5');expect(screen.queryByText('3. Add-on & topping')).not.toBeInTheDocument();await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.createProduct).toHaveBeenCalledWith(expect.objectContaining({name:'Latte Baru',mode:'MAKE_TO_STOCK',modifierGroupIds:[],variants:[expect.objectContaining({variantName:'Regular',sellingPrice:187.5,targetMargin:0.2,ingredients:[{stockId:'stock-1',quantity:15,unit:'g'}]})]})));});
  it('copies a recipe into another variant without mutating the source',async()=>{const user=await start();await addIngredient(user);await user.click(screen.getByRole('button',{name:'Tambah varian'}));change(screen.getByLabelText('Nama varian'),'Large');await user.selectOptions(screen.getByLabelText('Salin bahan baku dari varian lain'),'0');change(screen.getByLabelText('Takaran (g)'),'20');await user.click(screen.getByRole('button',{name:'Regular'}));expect(screen.getByLabelText('Takaran (g)')).toHaveValue('15');await user.click(screen.getByRole('button',{name:'Simpan produk'}));await waitFor(()=>expect(recipeService.createProduct).toHaveBeenCalled());const payload=vi.mocked(recipeService.createProduct).mock.calls[0][0];expect(payload.variants.map(v=>v.ingredients[0].quantity)).toEqual([15,20]);});

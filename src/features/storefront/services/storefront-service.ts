@@ -53,19 +53,14 @@ export function normalizePublicProduct(raw: any): PublicCatalogProduct {
   return {
     id,
     name: String(raw?.name || ''),
-    category: String(
-      raw?.category_model?.name || raw?.category || 'Lainnya'
-    ),
+    category: String(raw?.category_model?.name || raw?.category || 'Lainnya'),
     category_id: raw?.category_id || raw?.categoryId,
-    mode:
-      raw?.mode === 'MAKE_TO_ORDER' ? 'MAKE_TO_ORDER' : 'MAKE_TO_STOCK',
+    mode: raw?.mode === 'MAKE_TO_ORDER' ? 'MAKE_TO_ORDER' : 'MAKE_TO_STOCK',
     image_url: raw?.image_url || raw?.imageUrl || null,
     description: String(raw?.description || ''),
     variants,
     modifier_groups: Array.isArray(raw?.modifier_groups || raw?.modifierGroups)
-      ? (raw.modifier_groups || raw.modifierGroups).map(
-          normalizePublicModifierGroup
-        )
+      ? (raw.modifier_groups || raw.modifierGroups).map(normalizePublicModifierGroup)
       : [],
   };
 }
@@ -91,16 +86,12 @@ export function normalizePublicStoreProfile(raw: any): PublicStoreProfile {
     address: String(raw?.address || raw?.location || ''),
     phone,
     description: String(raw?.description || ''),
-    is_storefront_active: Boolean(
-      raw?.is_storefront_active ?? raw?.isStorefrontActive ?? false
-    ),
+    is_storefront_active: Boolean(raw?.is_storefront_active ?? raw?.isStorefrontActive ?? false),
     storefront_config: normalizeStorefrontConfig(parsedConfig, name, phone),
   };
 }
 
-export function normalizePublicStorefrontResponse(
-  raw: any
-): PublicStorefrontResponse {
+export function normalizePublicStorefrontResponse(raw: any): PublicStorefrontResponse {
   const storeRaw = raw?.store || raw || {};
   const store = normalizePublicStoreProfile(storeRaw);
   const rawProducts = Array.isArray(raw?.products) ? raw.products : [];
@@ -126,9 +117,7 @@ export function normalizePublicStorefrontResponse(
   };
 }
 
-export function normalizePublicOrderTracking(
-  raw: any
-): PublicOrderTrackingResponse {
+export function normalizePublicOrderTracking(raw: any): PublicOrderTrackingResponse {
   const orderRaw = raw?.sale || raw?.order || raw || {};
   const storeRaw = raw?.store || orderRaw?.store || {};
   const store = normalizePublicStoreProfile(storeRaw);
@@ -138,16 +127,10 @@ export function normalizePublicOrderTracking(
         id: String(it?.id || ''),
         variant_id: String(it?.variant_id || it?.variantId || ''),
         product_name: String(
-          it?.product_name ||
-            it?.productName ||
-            it?.variant?.product?.name ||
-            'Produk'
+          it?.product_name || it?.productName || it?.variant?.product?.name || 'Produk',
         ),
         variant_name: String(
-          it?.variant_name ||
-            it?.variantName ||
-            it?.variant?.variant_name ||
-            'Reguler'
+          it?.variant_name || it?.variantName || it?.variant?.variant_name || 'Reguler',
         ),
         unit: String(it?.unit || it?.variant?.unit || 'pcs'),
         quantity: Number(it?.quantity ?? 0),
@@ -163,15 +146,9 @@ export function normalizePublicOrderTracking(
       }))
     : [];
 
-  const totalAmount = Number(
-    orderRaw?.total_amount ?? orderRaw?.totalAmount ?? 0
-  );
-  const deliveryFee = Number(
-    orderRaw?.delivery_fee ?? orderRaw?.deliveryFee ?? 0
-  );
-  const discountAmount = Number(
-    orderRaw?.discount_amount ?? orderRaw?.discountAmount ?? 0
-  );
+  const totalAmount = Number(orderRaw?.total_amount ?? orderRaw?.totalAmount ?? 0);
+  const deliveryFee = Number(orderRaw?.delivery_fee ?? orderRaw?.deliveryFee ?? 0);
+  const discountAmount = Number(orderRaw?.discount_amount ?? orderRaw?.discountAmount ?? 0);
   const taxAmount = Number(orderRaw?.tax_amount ?? orderRaw?.taxAmount ?? 0);
   const computedSubtotal =
     items.reduce((acc, item) => acc + item.subtotal, 0) ||
@@ -179,59 +156,35 @@ export function normalizePublicOrderTracking(
 
   return {
     id: String(orderRaw?.id || ''),
-    invoice_number: String(
-      orderRaw?.invoice_number || orderRaw?.invoiceNumber || ''
-    ),
+    invoice_number: String(orderRaw?.invoice_number || orderRaw?.invoiceNumber || ''),
     public_tracking_token: String(
       orderRaw?.public_tracking_token ||
         orderRaw?.publicTrackingToken ||
         raw?.public_tracking_token ||
-        ''
+        '',
     ),
     status: orderRaw?.status || 'PENDING_CONFIRMATION',
-    order_source: String(
-      orderRaw?.order_source || orderRaw?.orderSource || 'ONLINE'
-    ),
-    fulfillment_type:
-      orderRaw?.fulfillment_type || orderRaw?.fulfillmentType || 'PICKUP',
-    customer_name: String(
-      orderRaw?.customer_name || orderRaw?.customerName || 'Pelanggan'
-    ),
-    customer_phone: String(
-      orderRaw?.customer_phone || orderRaw?.customerPhone || ''
-    ),
-    customer_email: String(
-      orderRaw?.customer_email || orderRaw?.customerEmail || ''
-    ),
-    table_number: String(
-      orderRaw?.table_number || orderRaw?.tableNumber || ''
-    ),
-    delivery_address: String(
-      orderRaw?.delivery_address || orderRaw?.deliveryAddress || ''
-    ),
+    order_source: String(orderRaw?.order_source || orderRaw?.orderSource || 'ONLINE'),
+    fulfillment_type: orderRaw?.fulfillment_type || orderRaw?.fulfillmentType || 'PICKUP',
+    customer_name: String(orderRaw?.customer_name || orderRaw?.customerName || 'Pelanggan'),
+    customer_phone: String(orderRaw?.customer_phone || orderRaw?.customerPhone || ''),
+    customer_email: String(orderRaw?.customer_email || orderRaw?.customerEmail || ''),
+    table_number: String(orderRaw?.table_number || orderRaw?.tableNumber || ''),
+    delivery_address: String(orderRaw?.delivery_address || orderRaw?.deliveryAddress || ''),
     delivery_fee: deliveryFee,
     delivery_courier_name: String(
-      orderRaw?.delivery_courier_name || orderRaw?.deliveryCourierName || ''
+      orderRaw?.delivery_courier_name || orderRaw?.deliveryCourierName || '',
     ),
     delivery_tracking_info: String(
-      orderRaw?.delivery_tracking_info || orderRaw?.deliveryTrackingInfo || ''
+      orderRaw?.delivery_tracking_info || orderRaw?.deliveryTrackingInfo || '',
     ),
     pickup_time: String(orderRaw?.pickup_time || orderRaw?.pickupTime || ''),
-    custom_field_label: String(
-      orderRaw?.custom_field_label || orderRaw?.customFieldLabel || ''
-    ),
-    custom_field_value: String(
-      orderRaw?.custom_field_value || orderRaw?.customFieldValue || ''
-    ),
-    payment_method:
-      orderRaw?.payment_method || orderRaw?.paymentMethod || 'CASH',
-    payment_reference: String(
-      orderRaw?.payment_reference || orderRaw?.paymentReference || ''
-    ),
+    custom_field_label: String(orderRaw?.custom_field_label || orderRaw?.customFieldLabel || ''),
+    custom_field_value: String(orderRaw?.custom_field_value || orderRaw?.customFieldValue || ''),
+    payment_method: orderRaw?.payment_method || orderRaw?.paymentMethod || 'CASH',
+    payment_reference: String(orderRaw?.payment_reference || orderRaw?.paymentReference || ''),
     notes: String(orderRaw?.notes || ''),
-    rejection_reason: String(
-      orderRaw?.rejection_reason || orderRaw?.rejectionReason || ''
-    ),
+    rejection_reason: String(orderRaw?.rejection_reason || orderRaw?.rejectionReason || ''),
     subtotal_amount: Number(orderRaw?.subtotal_amount ?? computedSubtotal),
     discount_amount: discountAmount,
     tax_amount: taxAmount,
@@ -240,54 +193,47 @@ export function normalizePublicOrderTracking(
       orderRaw?.transaction_date ||
         orderRaw?.transactionDate ||
         orderRaw?.created_at ||
-        new Date().toISOString()
+        new Date().toISOString(),
     ),
-    created_at: String(
-      orderRaw?.created_at ||
-        orderRaw?.createdAt ||
-        new Date().toISOString()
-    ),
+    created_at: String(orderRaw?.created_at || orderRaw?.createdAt || new Date().toISOString()),
     items,
     store,
   };
 }
 
 export const storefrontService = {
-  getPublicStorefront: async (
-    slug: string
-  ): Promise<PublicStorefrontResponse> => {
-    const res = await apiClient.get<any>(
-      `/public/stores/${encodeURIComponent(slug)}`,
-      { skipLoading: true }
-    );
+  getPublicStorefront: async (slug: string): Promise<PublicStorefrontResponse> => {
+    const res = await apiClient.get<any>(`/public/stores/${encodeURIComponent(slug)}`, {
+      skipLoading: true,
+    });
     return normalizePublicStorefrontResponse(res.data);
   },
 
   createOnlineOrder: async (
     slug: string,
-    payload: CreateOnlineOrderRequest
+    payload: CreateOnlineOrderRequest,
   ): Promise<PublicOrderTrackingResponse> => {
     const res = await apiClient.post<any>(
       `/public/stores/${encodeURIComponent(slug)}/orders`,
       payload,
-      { skipLoading: true }
+      { skipLoading: true },
     );
     return normalizePublicOrderTracking(res.data);
   },
 
   getPublicOrderTracking: async (
     slug: string,
-    token: string
+    token: string,
   ): Promise<PublicOrderTrackingResponse> => {
     const res = await apiClient.get<any>(
       `/public/stores/${encodeURIComponent(slug)}/orders/${encodeURIComponent(token)}`,
-      { skipLoading: true }
+      { skipLoading: true },
     );
     return normalizePublicOrderTracking(res.data);
   },
 
   checkSlugAvailability: async (
-    slug: string
+    slug: string,
   ): Promise<{ available: boolean; slug: string; message?: string }> => {
     const res = await apiClient.get<any>('/store/storefront/check-slug', {
       params: { slug },
@@ -301,7 +247,7 @@ export const storefrontService = {
   },
 
   updateStorefrontSettings: async (
-    payload: UpdateStorefrontSettingsPayload
+    payload: UpdateStorefrontSettingsPayload,
   ): Promise<PublicStoreProfile> => {
     const res = await apiClient.put<any>('/store/storefront', payload);
     return normalizePublicStoreProfile(res.data);
@@ -319,10 +265,8 @@ export const storefrontService = {
       file_size: file.size,
     });
 
-    const uploadUrl =
-      presignedRes.data?.upload_url || presignedRes.data?.uploadUrl || '';
-    const publicUrl =
-      presignedRes.data?.public_url || presignedRes.data?.publicUrl || '';
+    const uploadUrl = presignedRes.data?.upload_url || presignedRes.data?.uploadUrl || '';
+    const publicUrl = presignedRes.data?.public_url || presignedRes.data?.publicUrl || '';
 
     if (!uploadUrl) {
       throw new Error('Gagal mendapatkan izin unggah gambar dari server');

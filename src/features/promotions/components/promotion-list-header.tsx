@@ -25,53 +25,46 @@ export function PromotionListHeader({
   onUpgrade,
 }: PromotionListHeaderProps) {
   return (
-    <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+    <header className="flex flex-col items-start justify-between gap-4 border-b pb-6 sm:flex-row">
       <div className="min-w-0">
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-          Promosi & Diskon
-        </h1>
-        <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
-          Atur model promosi dan batas anggaran, lalu pantau keuntungan bersih toko.
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Promosi & Diskon</h1>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          Kelola aturan promo, periode berlaku, dan pemakaian anggaran.
         </p>
+        <QuotaBadge
+          label="Kuota promo aktif"
+          current={activeCount}
+          limit={maxActive}
+          onUpgradeClick={onUpgrade}
+        />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-9 rounded-lg"
+          variant="outline"
+          className="h-11 sm:h-10"
           onClick={onRefresh}
           disabled={isFetching || busy}
           aria-label="Refresh promosi"
         >
           <RefreshCw
-            className={cn(
-              'mr-1.5 h-3.5 w-3.5',
-              (isFetching || busy) && 'animate-spin'
-            )}
+            aria-hidden="true"
+            className={cn('size-4', isFetching && 'animate-spin motion-reduce:animate-none')}
           />
-          Refresh
+          Muat ulang
         </Button>
 
         {canWrite && (
           <Button
-            className="h-9 rounded-lg"
+            className="h-11 flex-1 sm:h-10 sm:flex-none"
             disabled={busy}
             onClick={onCreate}
             aria-label="Buat promosi"
           >
             <Plus className="mr-1.5 h-4 w-4" />
-            Tambah Promosi
+            Buat promosi
           </Button>
         )}
-
-        <QuotaBadge
-          label="Promo Aktif"
-          current={activeCount}
-          limit={maxActive}
-          className="ml-auto"
-          onUpgradeClick={onUpgrade}
-        />
       </div>
     </header>
   );

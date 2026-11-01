@@ -8,19 +8,22 @@ const config = (storeId: string, signal?: AbortSignal) => ({
 
 export const guidanceService = {
   list: async (storeId: string, signal?: AbortSignal): Promise<GuidanceItem[]> => {
-    const response = await apiClient.get<GuidanceItem[]>('/onboarding/guidances', config(storeId, signal));
+    const response = await apiClient.get<GuidanceItem[]>(
+      '/onboarding/guidances',
+      config(storeId, signal),
+    );
     return response.data ?? [];
   },
 
   complete: async (
     storeId: string,
     key: string,
-    payload?: CompleteGuidancePayload
+    payload?: CompleteGuidancePayload,
   ): Promise<GuidanceItem> => {
     const response = await apiClient.patch<GuidanceItem>(
       `/onboarding/guidances/${encodeURIComponent(key)}/complete`,
       payload ?? {},
-      config(storeId)
+      config(storeId),
     );
     return response.data;
   },

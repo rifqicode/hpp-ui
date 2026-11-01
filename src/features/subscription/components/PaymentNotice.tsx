@@ -1,14 +1,14 @@
-import { Link } from 'react-router-dom'
-import { AlertCircle, ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useSubscriptionPayment } from '../hooks/useSubscriptionPayment'
+import { Link } from 'react-router-dom';
+import { AlertCircle, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useSubscriptionPayment } from '../hooks/useSubscriptionPayment';
 
 export function PaymentNotice({ compact = false }: { compact?: boolean }) {
-  const payment = useSubscriptionPayment()
-  if (payment.phase === 'idle' || payment.phase === 'confirmed') return null
-  const isChecking = !!payment.isChecking
-  const isError = payment.phase === 'error'
-  const title = isError ? 'Kendala Pembayaran' : 'Menunggu Konfirmasi Pembayaran'
+  const payment = useSubscriptionPayment();
+  if (payment.phase === 'idle' || payment.phase === 'confirmed') return null;
+  const isChecking = !!payment.isChecking;
+  const isError = payment.phase === 'error';
+  const title = isError ? 'Kendala Pembayaran' : 'Menunggu Konfirmasi Pembayaran';
 
   return (
     <div
@@ -16,13 +16,21 @@ export function PaymentNotice({ compact = false }: { compact?: boolean }) {
       className="border border-amber-500/40 bg-amber-500/10 dark:bg-amber-500/15 p-4 rounded-xl shadow-xs space-y-2.5"
     >
       <div className="flex items-center gap-2">
-        <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+        <AlertCircle
+          className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400"
+          aria-hidden="true"
+        />
         <h4 className="font-semibold text-sm text-foreground">{title}</h4>
       </div>
       <p className="text-sm text-foreground/90 leading-relaxed">{payment.message}</p>
       {compact ? (
         <div className="pt-1">
-          <Button asChild size="sm" variant="outline" className="h-8 gap-1.5 border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-foreground font-medium">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-foreground font-medium"
+          >
             <Link to="/subscription">
               Lihat langganan dan tagihan
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
@@ -52,5 +60,5 @@ export function PaymentNotice({ compact = false }: { compact?: boolean }) {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,66 +1,66 @@
-import { Link } from "react-router-dom"
-import { Bell, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Link } from 'react-router-dom';
+import { Bell, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useNotifications } from "@/features/subscription"
+} from '@/components/ui/dropdown-menu';
+import { useNotifications } from '@/features/subscription';
 
 export function NotificationDropdown() {
-  const { notifications, unreadCount, markAsRead } = useNotifications()
+  const { notifications, unreadCount, markAsRead } = useNotifications();
 
   const handleMarkAllRead = async () => {
-    const unread = notifications.filter((n) => !n.is_read)
+    const unread = notifications.filter(n => !n.is_read);
     for (const notif of unread) {
-      await markAsRead(notif.id)
+      await markAsRead(notif.id);
     }
-  }
+  };
 
   const getNotifIcon = (type: string) => {
     switch (type) {
-      case "SUBSCRIPTION_EXPIRING_SOON":
-      case "SUBSCRIPTION_IN_GRACE_PERIOD":
+      case 'SUBSCRIPTION_EXPIRING_SOON':
+      case 'SUBSCRIPTION_IN_GRACE_PERIOD':
         return (
           <div className="h-8 w-8 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/20">
             <AlertTriangle className="h-4 w-4" />
           </div>
-        )
-      case "SUBSCRIPTION_EXPIRED":
+        );
+      case 'SUBSCRIPTION_EXPIRED':
         return (
           <div className="h-8 w-8 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 border border-rose-500/20">
             <ShieldAlert className="h-4 w-4" />
           </div>
-        )
-      case "SUBSCRIPTION_RENEWED":
+        );
+      case 'SUBSCRIPTION_RENEWED':
         return (
           <div className="h-8 w-8 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/20">
             <CheckCircle2 className="h-4 w-4" />
           </div>
-        )
+        );
       default:
         return (
           <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 border border-primary/20">
             <Sparkles className="h-4 w-4" />
           </div>
-        )
+        );
     }
-  }
+  };
 
   const formatTimeAgo = (dateStr: string) => {
     try {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } catch {
-      return dateStr
+      return dateStr;
     }
-  }
+  };
 
   return (
     <DropdownMenu>
@@ -80,7 +80,10 @@ export function NotificationDropdown() {
           <span className="sr-only">Notifikasi</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80 sm:w-[22rem] max-w-[calc(100vw-1rem)] p-0 shadow-xl border border-border bg-popover" align="end">
+      <DropdownMenuContent
+        className="w-80 sm:w-[22rem] max-w-[calc(100vw-1rem)] p-0 shadow-xl border border-border bg-popover"
+        align="end"
+      >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/70 bg-muted/40">
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-semibold text-foreground">Notifikasi</h4>
@@ -109,18 +112,20 @@ export function NotificationDropdown() {
               Tidak ada notifikasi saat ini
             </div>
           ) : (
-            notifications.map((item) => (
+            notifications.map(item => (
               <div
                 key={item.id}
                 onClick={() => !item.is_read && markAsRead(item.id)}
                 className={`flex items-start gap-3 p-3.5 hover:bg-muted/40 transition-colors cursor-pointer ${
-                  !item.is_read ? "bg-muted/20" : ""
+                  !item.is_read ? 'bg-muted/20' : ''
                 }`}
               >
                 {getNotifIcon(item.type)}
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center justify-between gap-1">
-                    <p className={`text-xs truncate ${!item.is_read ? "font-bold text-foreground" : "font-medium text-muted-foreground"}`}>
+                    <p
+                      className={`text-xs truncate ${!item.is_read ? 'font-bold text-foreground' : 'font-medium text-muted-foreground'}`}
+                    >
                       {item.title}
                     </p>
                     {!item.is_read && (
@@ -150,5 +155,5 @@ export function NotificationDropdown() {
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

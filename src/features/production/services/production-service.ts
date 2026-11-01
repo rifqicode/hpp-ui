@@ -7,7 +7,7 @@ import type {
   ProductionPreviewResponse,
 } from '../types';
 
-function mapBackendLogToProductionBatch(log: any): ProductionBatch {
+export function mapBackendLogToProductionBatch(log: any): ProductionBatch {
   if (!log) return {} as ProductionBatch;
 
   const snapshot = log.recipe_snapshot;
@@ -17,10 +17,18 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
   const ingredients: ConsumedIngredient[] = [];
   if (hasActualConsumptions) {
     for (const c of log.consumptions) {
-      const snapshotItem = snapshot?.items?.find((item: { stock_id: string }) => item.stock_id === c.stock_id);
+      const snapshotItem = snapshot?.items?.find(
+        (item: { stock_id: string }) => item.stock_id === c.stock_id,
+      );
       ingredients.push({
         stockId: c.stock_id,
-        stockName: c.sale_item_modifier_id ? 'Add-on: '+(snapshot?.modifiers?.find((m: {id:string})=>m.id===c.sale_item_modifier_id)?.name ?? c.stock?.name ?? 'Bahan') : snapshotItem?.stock_name || c.stock?.name || 'Bahan',
+        stockName: c.sale_item_modifier_id
+          ? 'Add-on: ' +
+            (snapshot?.modifiers?.find((m: { id: string }) => m.id === c.sale_item_modifier_id)
+              ?.name ??
+              c.stock?.name ??
+              'Bahan')
+          : snapshotItem?.stock_name || c.stock?.name || 'Bahan',
         baseUnit: snapshotItem?.unit || c.stock?.base_unit || 'unit',
         quantity: Number(c.quantity || 0),
         cost: Number(c.subtotal_cost || 0),
@@ -42,12 +50,26 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
   }
 
   if (!hasActualConsumptions && Array.isArray(snapshot?.modifiers)) {
-   const planned=Number(log.qty_planned||log.target_quantity||0);
-   for(const m of snapshot.modifiers){if(m.stock_id)ingredients.push({stockId:m.stock_id,stockName:'Add-on: '+m.name,baseUnit:m.unit,quantity:Number(m.ingredient_quantity)*planned,cost:0});}
+    const planned = Number(log.qty_planned || log.target_quantity || 0);
+    for (const m of snapshot.modifiers) {
+      if (m.stock_id)
+        ingredients.push({
+          stockId: m.stock_id,
+          stockName: 'Add-on: ' + m.name,
+          baseUnit: m.unit,
+          quantity: Number(m.ingredient_quantity) * planned,
+          cost: 0,
+        });
+    }
   }
 
   // Map overhead breakdown
-  const overheadBreakdown = { labor: Number(log.labor_cost||0), energy: 0, packaging: 0, other: 0 };
+  const overheadBreakdown = {
+    labor: Number(log.labor_cost || 0),
+    energy: 0,
+    packaging: 0,
+    other: 0,
+  };
   if (Array.isArray(log.overheads) && log.overheads.length > 0) {
     for (const oh of log.overheads) {
       const amt = Number(oh.amount || 0);
@@ -70,10 +92,15 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
     storeId: log.store_id,
     saleId: log.sale_id || log.saleId || undefined,
     saleItemId: log.sale_item_id || log.saleItemId || undefined,
-    variantId:log.variant_id,
- productId: log.variant?.product_id??'',
-    productName: (snapshot?.product_name || log.variant?.product?.name || 'Produk')+' - '+(snapshot?.variant_name || log.variant?.variant_name || 'Varian'),
-    productCategory: snapshot?.product_category ?? (log.variant?.product?.category_model?.name || log.variant?.product?.category || 'Umum'),
+    variantId: log.variant_id,
+    productId: log.variant?.product_id ?? '',
+    productName:
+      (snapshot?.product_name || log.variant?.product?.name || 'Produk') +
+      ' - ' +
+      (snapshot?.variant_name || log.variant?.variant_name || 'Varian'),
+    productCategory:
+      snapshot?.product_category ??
+      (log.variant?.product?.category_model?.name || log.variant?.product?.category || 'Umum'),
     productUnit: snapshot?.product_unit ?? (log.variant?.unit || 'pcs'),
     sellingPrice: Number(snapshot?.selling_price ?? log.variant?.selling_price ?? 0),
     status: log.status,
@@ -82,6 +109,7 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
     wasteQuantity: Number(log.waste_quantity || 0),
     stockCost: Number(log.bom_cost || log.stock_cost || 0),
     overheadCost: Number(log.overhead_cost || 0),
+    laborCost: Number(log.labor_cost || 0),
     overheadBreakdown,
     totalCost: Number(log.total_cost || 0),
     hppPerUnit: Number(log.hpp_per_unit || 0),
@@ -106,15 +134,18 @@ function mapBackendLogToProductionBatch(log: any): ProductionBatch {
 
 export const productionService = {
   getBatches: async (): Promise<ProductionBatch[]> => {
-    const batches:ProductionBatch[]=[];let page=1;let pages:number;
-    do{
-      const response=await apiClient.get('/production',{params:{page,page_size:100}});
-      const data=response.data;
-      const rows=Array.isArray(data)?data:data?.items??[];
+    const batches: ProductionBatch[] = [];
+    let page = 1;
+    let pages: number;
+    do {
+      const response = await apiClient.get('/production', { params: { page, page_size: 100 } });
+      const data = response.data;
+      const rows = Array.isArray(data) ? data : (data?.items ?? []);
       batches.push(...rows.map(mapBackendLogToProductionBatch));
-      pages=Array.isArray(data)?1:Number(data?.total_pages??1);
-      if(page<pages&&!rows.length)throw new Error('Daftar produksi tidak lengkap');page++;
-    }while(page<=pages);
+      pages = Array.isArray(data) ? 1 : Number(data?.total_pages ?? 1);
+      if (page < pages && !rows.length) throw new Error('Daftar produksi tidak lengkap');
+      page++;
+    } while (page <= pages);
     return batches;
   },
 
@@ -128,7 +159,10 @@ export const productionService = {
     return mapBackendLogToProductionBatch(response.data);
   },
 
-  previewProduction: async (input: { variantId: string; quantity: number }): Promise<ProductionPreviewResponse> => {
+  previewProduction: async (input: {
+    variantId: string;
+    quantity: number;
+  }): Promise<ProductionPreviewResponse> => {
     const response = await apiClient.post<ProductionPreviewResponse>('/production/preview', {
       variant_id: input.variantId,
       quantity: input.quantity,
@@ -145,11 +179,14 @@ export const productionService = {
     return mapBackendLogToProductionBatch(response.data);
   },
 
-  completeProduction: async (id: string, input: CompleteProductionInput): Promise<ProductionBatch> => {
+  completeProduction: async (
+    id: string,
+    input: CompleteProductionInput,
+  ): Promise<ProductionBatch> => {
     let overheads: Array<{ overhead_type_id?: string; name: string; amount: number }> = [];
 
     if (Array.isArray(input.overheads) && input.overheads.length > 0) {
-      overheads = input.overheads.map((oh) => ({
+      overheads = input.overheads.map(oh => ({
         overhead_type_id: oh.overheadTypeId,
         name: oh.name,
         amount: oh.amount,

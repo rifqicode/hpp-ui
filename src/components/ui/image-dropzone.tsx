@@ -77,7 +77,7 @@ export function ImageDropzone({
         type="file"
         accept={ACCEPT_ATTR}
         className="hidden"
-        onChange={(e) => void handleFile(e.target.files?.[0])}
+        onChange={e => void handleFile(e.target.files?.[0])}
       />
 
       {value ? (
@@ -105,7 +105,11 @@ export function ImageDropzone({
                 onClick={openPicker}
                 disabled={disabled || isUploading}
               >
-                {isUploading ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+                {isUploading ? (
+                  <Loader2 className="size-3 animate-spin" />
+                ) : (
+                  <RefreshCw className="size-3" />
+                )}
                 Ganti Gambar
               </Button>
               <Button
@@ -128,24 +132,26 @@ export function ImageDropzone({
           tabIndex={0}
           aria-label={label}
           onClick={openPicker}
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               openPicker();
             }
           }}
-          onDragOver={(e) => {
+          onDragOver={e => {
             e.preventDefault();
             if (!disabled) setIsDragging(true);
           }}
           onDragLeave={() => setIsDragging(false)}
-          onDrop={(e) => {
+          onDrop={e => {
             e.preventDefault();
             setIsDragging(false);
             void handleFile(e.dataTransfer.files?.[0]);
           }}
           className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-            isDragging ? 'border-primary bg-primary/5' : 'border-border bg-muted/30 hover:bg-muted/50'
+            isDragging
+              ? 'border-primary bg-primary/5'
+              : 'border-border bg-muted/30 hover:bg-muted/50'
           } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
         >
           {isUploading ? (
@@ -153,8 +159,12 @@ export function ImageDropzone({
           ) : (
             <ImagePlus className="size-6 text-muted-foreground" />
           )}
-          <p className="text-xs font-medium text-foreground">{isUploading ? 'Mengunggah gambar…' : label}</p>
-          <p className="text-[11px] text-muted-foreground">PNG, JPG, JPEG, atau WEBP. Maksimal 5 MB.</p>
+          <p className="text-xs font-medium text-foreground">
+            {isUploading ? 'Mengunggah gambar…' : label}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            PNG, JPG, JPEG, atau WEBP. Maksimal 5 MB.
+          </p>
         </div>
       )}
 

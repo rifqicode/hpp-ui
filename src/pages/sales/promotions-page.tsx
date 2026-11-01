@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CurrencyText } from '@/components/ui/currency-text';
 import { TablePagination } from '@/components/ui/table-pagination';
@@ -15,73 +16,98 @@ import { usePromotionsMaster } from '@/features/promotions/hooks/use-promotions-
 import { PromotionForm } from '@/features/promotions/components/promotion-form';
 import { PromotionListHeader } from '@/features/promotions/components/promotion-list-header';
 import { PromotionPageHeader } from '@/features/promotions/components/promotion-page-header';
-import { PromotionListStats } from '@/features/promotions/components/promotion-list-stats';
 import { PromotionListFilters } from '@/features/promotions/components/promotion-list-filters';
+import { PromotionListStats } from '@/features/promotions/components/promotion-list-stats';
 import {
   PromotionCompactCard,
   PromotionEmptyState,
   PromotionTableRow,
 } from '@/features/promotions/components/promotion-list-items';
 import {
-  getPromotionMetrics,
+  PROMO_SORTS,
   type PromotionAttentionFilter,
   type PromotionSort,
   type PromotionStatusFilter,
   type PromotionTypeFilter,
 } from '@/features/promotions/lib/promotion-list';
 import { promotionError } from '@/features/promotions/lib/promotion-form';
+import PromotionDetailPage from './promotion-detail-page';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+const STATUS_FILTERS: PromotionStatusFilter[] = ['all', 'active', 'inactive', 'scheduled', 'ended'];
+const TYPE_FILTERS: PromotionTypeFilter[] = [
+  'all',
+  'DIRECT_DISCOUNT',
+  'BUY_X_GET_Y',
+  'BUNDLE',
+  'SPECIAL_PRICE',
+];
+const ATTENTION_FILTERS: PromotionAttentionFilter[] = ['all', 'active', 'budget', 'attention'];
 
 export default function PromotionsPage() {
-  const storeId = useAuthStore((state) => state.activeStoreId);
+  const storeId = useAuthStore(state => state.activeStoreId);
+  const { promotionId } = useParams<{ promotionId: string }>();
   return storeId ? (
-    <PromotionWorkspace key={storeId} storeId={storeId} />
+    <PromotionWorkspace
+      key={`${storeId}:${promotionId || 'list'}`}
+      storeId={storeId}
+      promotionId={promotionId}
+    />
   ) : (
-    <div className="p-6 text-sm text-muted-foreground">Pilih toko untuk mengelola promosi.</div>
+    <div className="text-sm text-muted-foreground">Pilih toko untuk mengelola promosi.</div>
   );
 }
 
-function PromotionWorkspace({ storeId }: { storeId: string }) {
-  // Filters, search, sort, and view states
-  const [statusFilter, setStatusFilter] = useState<PromotionStatusFilter>('all');
-  const [typeFilter, setTypeFilter] = useState<PromotionTypeFilter>('all');
-  const [attentionFilter, setAttentionFilter] = useState<PromotionAttentionFilter>('all');
-  const [sort, setSort] = useState<PromotionSort>('created-desc');
-  const [view, setView] = useState<'table' | 'grid'>('table');
-  const master = usePromotionsMaster(storeId, {
-    status: statusFilter, type: typeFilter, attention: attentionFilter, sort,
-  });
+function PromotionWorkspace({ storeId, promotionId }: { storeId: string; promotionId?: string }) {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const compact = useIsMobile(1280);
+  const statusFilter = STATUS_FILTERS.find(value => value === searchParams.get('status')) || 'all';
+  const typeFilter = TYPE_FILTERS.find(value => value === searchParams.get('type')) || 'all';
+  const attentionFilter =
+    ATTENTION_FILTERS.find(value => value === searchParams.get('attention')) || 'all';
+  const sort =
+    (Object.keys(PROMO_SORTS).find(value => value === searchParams.get('sort')) as
+      PromotionSort | undefined) || 'created-desc';
+  const view = searchParams.get('view') === 'grid' ? 'grid' : 'table';
+
+  const updateFilters = (values: Record<string, string>, resetPage = true) => {
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      for (const [key, value] of Object.entries(values)) {
+        if (value && value !== 'all') next.set(key, value);
+        else next.delete(key);
+      }
+      if (resetPage) next.delete('page');
+      return next;
+    });
+  };
+
+  const openDetail = (promotion: { id: string }) =>
+    navigate(`/sales/promotions/${promotion.id}${searchParams.size ? `?${searchParams}` : ''}`);
+  const master = usePromotionsMaster(
+    storeId,
+    {
+      status: statusFilter,
+      type: typeFilter,
+      attention: attentionFilter,
+      sort,
+    },
+    !promotionId,
+  );
 
   const names = useMemo(() => {
-    const result = new Map<string, string>();
-    for (const option of master.options.data?.data || []) {
-      result.set(option.id, option.name);
-      result.set(option.product_id, option.product_name);
-      result.set(option.category_id, option.category_name);
-    }
+    const result = new Map<string, string>(Object.entries(master.editor?.catalogNames || {}));
     for (const line of master.editor?.snapshot?.lines || []) {
       if (!result.has(line.variant_id)) result.set(line.variant_id, line.name);
     }
     return result;
-  }, [master.options.data, master.editor?.snapshot]);
+  }, [master.editor?.catalogNames, master.editor?.snapshot]);
 
   const rawList = master.list.data?.data || [];
-  const metrics = useMemo(() => getPromotionMetrics(rawList), [rawList]);
-
-  const stats = useMemo(
-    () => ({
-      total: master.list.data?.total || rawList.length,
-      active: master.list.data?.active_count ?? metrics.active,
-      budgetSpent: metrics.budgetSpent,
-      attention: metrics.attention,
-    }),
-    [master.list.data, rawList.length, metrics]
-  );
 
   const hasFilters = Boolean(
-    master.search ||
-      statusFilter !== 'all' ||
-      typeFilter !== 'all' ||
-      attentionFilter !== 'all'
+    master.search || statusFilter !== 'all' || typeFilter !== 'all' || attentionFilter !== 'all',
   );
 
   const displayedItems = rawList;
@@ -90,26 +116,12 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
   const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
 
   const resetFilters = () => {
-    master.setSearch('');
-    setStatusFilter('all');
-    setTypeFilter('all');
-    setAttentionFilter('all');
-    master.setPage(1);
-  };
-
-  const handleStatCardFilter = (filter: PromotionAttentionFilter) => {
-    setAttentionFilter(filter);
-    if (filter === 'active') {
-      setStatusFilter('active');
-    } else if (filter === 'all') {
-      setStatusFilter('all');
-    }
-    master.setPage(1);
+    updateFilters({ q: '', status: '', type: '', attention: '' });
   };
 
   if (!master.canRead) {
     return (
-      <div role="alert" className="p-6 text-sm">
+      <div role="alert" className="text-sm">
         Anda tidak memiliki izin untuk melihat master promosi.
       </div>
     );
@@ -119,24 +131,30 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
     window.dispatchEvent(
       new CustomEvent('open-upgrade-modal', {
         detail: { message: 'Tingkatkan paket Anda untuk menambah kapasitas promosi aktif.' },
-      })
+      }),
     );
   };
 
   const editor = master.editor;
   const disabled = master.busy || Boolean(editor?.readOnly) || !master.canWrite;
 
+  if (promotionId && !editor) {
+    return (
+      <PromotionDetailPage
+        storeId={storeId}
+        promotionId={promotionId}
+        onEdit={promotion => void master.open(promotion, false)}
+        busy={master.busy}
+        actionError={master.error}
+      />
+    );
+  }
+
   return (
-    <div className="w-full min-w-0 space-y-5 p-3 sm:p-6">
+    <div className="w-full min-w-0 space-y-5 pb-6">
       {editor ? (
         <PromotionPageHeader
-          title={
-            editor.readOnly
-              ? 'Detail Promosi'
-              : editor.id
-              ? 'Ubah Promosi'
-              : 'Tambah Promosi'
-          }
+          title={editor.readOnly ? 'Detail Promosi' : editor.id ? 'Ubah Promosi' : 'Tambah Promosi'}
           description={
             editor.readOnly
               ? 'Lihat konfigurasi aturan, dasar HPP, dan simulasi proyeksi laba kotor promosi.'
@@ -147,9 +165,9 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
         />
       ) : (
         <PromotionListHeader
-          onRefresh={() => void master.list.refetch()}
+          onRefresh={() => void master.refetchList()}
           onCreate={master.create}
-          isFetching={master.list.isFetching}
+          isFetching={master.list.isFetching || master.summary.isFetching}
           busy={master.busy}
           canWrite={master.canWrite}
           activeCount={master.list.data?.active_count ?? 0}
@@ -180,12 +198,6 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
         <PromotionForm
           input={editor.input}
           onChange={master.updateInput}
-          options={master.options.data?.data || []}
-          optionsQuery={master.options}
-          optionSearch={master.optionSearch}
-          onOptionSearchChange={master.setOptionSearch}
-          optionPage={master.optionPage}
-          onOptionPageChange={master.setOptionPage}
           names={names}
           disabled={disabled}
           readOnly={Boolean(editor.readOnly)}
@@ -198,41 +210,27 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
           simulationError={master.simulationError}
           readiness={master.readiness}
           retrySimulation={() => void master.retrySimulation()}
-          existingPromotion={rawList.find((p) => p.id === editor.id)}
         />
       ) : (
         <div className="space-y-4">
           <PromotionListStats
-            stats={stats}
-            activeFilter={attentionFilter}
-            hasFilters={hasFilters}
-            onSelectFilter={handleStatCardFilter}
-            isLoading={master.list.isPending}
-            isError={master.list.isError}
+            summary={master.summary.data}
+            isLoading={master.summary.isPending}
+            isError={master.summary.isError}
+            onRetry={() => void master.summary.refetch()}
           />
-
           <PromotionListFilters
             search={master.search}
-            onSearchChange={(val) => {
-              master.setSearch(val);
-              master.setPage(1);
-            }}
+            onSearchChange={master.setSearch}
             status={statusFilter}
-            onStatusChange={(val) => {
-              setStatusFilter(val);
-              master.setPage(1);
-            }}
+            onStatusChange={status => updateFilters({ status, attention: 'all' })}
             type={typeFilter}
-            onTypeChange={(val) => {
-              setTypeFilter(val);
-              master.setPage(1);
-            }}
+            onTypeChange={type => updateFilters({ type })}
             sort={sort}
-            onSortChange={(value) => { setSort(value); master.setPage(1); }}
+            onSortChange={sort => updateFilters({ sort })}
             view={view}
-            onViewChange={setView}
+            onViewChange={view => updateFilters({ view }, false)}
             filteredCount={filteredCount}
-            totalCount={stats.total}
             hasFilters={hasFilters}
             onResetFilters={resetFilters}
             isLoading={master.list.isPending}
@@ -284,26 +282,23 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
               aria-busy={master.list.isFetching}
               className="space-y-3"
             >
-              {view === 'table' ? (
-                <div className="overflow-hidden rounded-xl border bg-card">
+              {view === 'table' && !compact ? (
+                <div className="rounded-xl border bg-card">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left" aria-label="Tabel promosi">
-                      <thead className="border-b bg-muted/40 text-xs font-medium text-muted-foreground">
+                    <table className="w-full text-left text-sm" aria-label="Tabel promosi">
+                      <thead className="border-b text-xs font-medium text-muted-foreground">
                         <tr>
-                          <th scope="col" className="px-4 py-3">
+                          <th scope="col" className="w-[38%] px-5 py-4">
                             Promosi
                           </th>
                           <th scope="col" className="px-3 py-3">
-                            Model Promo
-                          </th>
-                          <th scope="col" className="px-3 py-3">
-                            Hitung Modal
-                          </th>
-                          <th scope="col" className="px-3 py-3">
-                            Batas Anggaran & Transaksi
-                          </th>
-                          <th scope="col" className="px-3 py-3">
                             Status
+                          </th>
+                          <th scope="col" className="px-3 py-3">
+                            Periode
+                          </th>
+                          <th scope="col" className="px-3 py-3">
+                            Pemakaian anggaran
                           </th>
                           <th scope="col" className="w-auto px-4 py-3 text-right">
                             Aksi
@@ -311,14 +306,15 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {displayedItems.map((promotion) => (
+                        {displayedItems.map(promotion => (
                           <PromotionTableRow
                             key={promotion.id}
                             promotion={promotion}
                             canWrite={master.canWrite}
                             canDelete={master.canDelete}
                             busy={master.busy}
-                            onOpen={master.open}
+                            onOpen={openDetail}
+                            onEdit={promotion => void master.open(promotion, false)}
                             onToggle={master.toggle}
                             onArchive={master.setArchiveTarget}
                           />
@@ -332,14 +328,15 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
                   className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
                   aria-label="Kartu promosi"
                 >
-                  {displayedItems.map((promotion) => (
+                  {displayedItems.map(promotion => (
                     <PromotionCompactCard
                       key={promotion.id}
                       promotion={promotion}
                       canWrite={master.canWrite}
                       canDelete={master.canDelete}
                       busy={master.busy}
-                      onOpen={master.open}
+                      onOpen={openDetail}
+                      onEdit={promotion => void master.open(promotion, false)}
                       onToggle={master.toggle}
                       onArchive={master.setArchiveTarget}
                     />
@@ -355,8 +352,8 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
                   totalPages={totalPages}
                   disabled={master.list.isFetching || master.busy}
                   label="promosi"
-                  onPrev={() => master.setPage((p) => Math.max(1, p - 1))}
-                  onNext={() => master.setPage((p) => Math.min(totalPages, p + 1))}
+                  onPrev={() => master.setPage(p => Math.max(1, p - 1))}
+                  onNext={() => master.setPage(p => Math.min(totalPages, p + 1))}
                 />
               )}
             </section>
@@ -367,7 +364,7 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
       {/* Confirmation modal for margin deficit */}
       <Dialog
         open={Boolean(master.pending)}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (!open) master.dismissRisk();
         }}
       >
@@ -376,16 +373,16 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
           closeButtonClassName="flex h-11 w-11 items-center justify-center right-2 top-2"
         >
           <DialogHeader>
-            <DialogTitle>Konfirmasi strategi penetrasi pasar</DialogTitle>
+            <DialogTitle>Konfirmasi promo dengan estimasi rugi</DialogTitle>
             <DialogDescription>
-              Promosi ini menghasilkan defisit margin pada simulasi terbaru. Pastikan biaya
-              tersebut telah sesuai dengan anggaran dan tujuan strategi promosi Anda.
+              Simulasi terbaru menghasilkan rugi kotor. Periksa nominalnya dan pastikan risiko ini
+              sesuai dengan anggaran promosi sebelum mengaktifkan.
             </DialogDescription>
           </DialogHeader>
           {master.pending && (
             <div className="space-y-2 rounded-xl border bg-muted/20 p-3.5 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Keuntungan bersih per transaksi:</span>
+                <span className="text-muted-foreground">Estimasi laba kotor per transaksi:</span>
                 <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">
                   <CurrencyText
                     value={master.pending.simulation.unit_economics.gross_profit}
@@ -432,7 +429,7 @@ function PromotionWorkspace({ storeId }: { storeId: string }) {
       {/* Archive confirmation modal */}
       <Dialog
         open={Boolean(master.archiveTarget)}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (!open) master.dismissArchive();
         }}
       >

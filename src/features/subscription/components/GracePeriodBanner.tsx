@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_TIER_LABELS } from "../types/subscription";
+import { SUBSCRIPTION_TIER_LABELS } from '../types/subscription';
 import React from 'react';
 import { useSubscriptionGuards } from '../hooks/useSubscriptionGuards';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,10 @@ export const GracePeriodBanner: React.FC<GracePeriodBannerProps> = ({ onUpgradeC
 
   const expiryDate = new Date(gracePeriodUntil);
   const now = new Date();
-  const diffDays = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  const diffDays = Math.max(
+    0,
+    Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+  );
 
   return (
     <div className="bg-amber-500 text-amber-950 px-3.5 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm font-medium border-b border-amber-600 shadow-sm transition-all duration-200">
@@ -29,7 +32,9 @@ export const GracePeriodBanner: React.FC<GracePeriodBannerProps> = ({ onUpgradeC
           </span>
         </div>
         <span className="sm:truncate leading-snug">
-          Paket <strong>{SUBSCRIPTION_TIER_LABELS[tier]}</strong> kedaluwarsa. Sisa <strong>{diffDays} hari</strong> ({expiryDate.toLocaleDateString('id-ID')}) sebelum akses staf dan fitur lanjutan ditangguhkan.
+          Paket <strong>{SUBSCRIPTION_TIER_LABELS[tier]}</strong> kedaluwarsa. Sisa{' '}
+          <strong>{diffDays} hari</strong> ({expiryDate.toLocaleDateString('id-ID')}) sebelum akses
+          staf dan fitur lanjutan ditangguhkan.
         </span>
       </div>
       <Button

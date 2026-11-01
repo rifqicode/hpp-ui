@@ -16,7 +16,7 @@ import {
 import { recipeService } from '../services/recipe-service';
 
 export function CategoryHub() {
-  const storeId = useAuthStore((s) => s.activeStoreId);
+  const storeId = useAuthStore(s => s.activeStoreId);
   const client = useQueryClient();
   const { can } = usePermission();
   const query = useQuery({
@@ -33,7 +33,7 @@ export function CategoryHub() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
-  const categoryToDelete = query.data?.find((c) => c.id === deletingId);
+  const categoryToDelete = query.data?.find(c => c.id === deletingId);
 
   async function create(event: React.FormEvent) {
     event.preventDefault();
@@ -96,7 +96,7 @@ export function CategoryHub() {
                   type="text"
                   placeholder="Contoh: Kopi, Makanan Utama, Pastry..."
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={e => setName(e.target.value)}
                   disabled={busy}
                   className="h-10"
                   required
@@ -171,7 +171,7 @@ export function CategoryHub() {
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {query.data.map((category) => (
+            {query.data.map(category => (
               <div
                 key={category.id}
                 className="group flex items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-2xs transition-colors hover:border-primary/40"
@@ -180,10 +180,7 @@ export function CategoryHub() {
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Tag className="size-4" />
                   </div>
-                  <span
-                    className="truncate font-semibold text-foreground"
-                    title={category.name}
-                  >
+                  <span className="truncate font-semibold text-foreground" title={category.name}>
                     {category.name}
                   </span>
                 </div>
@@ -211,7 +208,7 @@ export function CategoryHub() {
 
       <Dialog
         open={Boolean(deletingId)}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (!open && !isDeleting) {
             setDeletingId(null);
             setDeleteError('');
@@ -222,10 +219,8 @@ export function CategoryHub() {
           <DialogHeader>
             <DialogTitle>Hapus Kategori?</DialogTitle>
             <DialogDescription>
-              Kategori{' '}
-              <strong className="text-foreground">{categoryToDelete?.name}</strong> akan
-              dihapus. Produk yang sebelumnya menggunakan kategori ini tidak akan
-              terhapus.
+              Kategori <strong className="text-foreground">{categoryToDelete?.name}</strong> akan
+              dihapus. Produk yang sebelumnya menggunakan kategori ini tidak akan terhapus.
             </DialogDescription>
           </DialogHeader>
           {deleteError && (

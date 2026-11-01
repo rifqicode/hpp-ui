@@ -1,25 +1,13 @@
 import type { PaymentMethod, SaleStatus } from '../sales/types';
 
-export type StorefrontTemplateStyle =
-  | 'EXPRESS_MENU'
-  | 'VISUAL_CATALOG'
-  | 'PRE_ORDER_STORY';
+export type StorefrontTemplateStyle = 'EXPRESS_MENU' | 'VISUAL_CATALOG' | 'PRE_ORDER_STORY';
 
-export type StorefrontAccentColor =
-  | 'default'
-  | 'emerald'
-  | 'teal'
-  | 'amber'
-  | 'rose'
-  | 'slate';
+export type StorefrontAccentColor = 'default' | 'emerald' | 'teal' | 'amber' | 'rose' | 'slate';
 
 export type StorefrontSurfaceMode = 'light' | 'warm' | 'dark';
 export type StorefrontBorderRadius = 'sharp' | 'rounded' | 'pill';
 export type StorefrontCatalogLayout = 'grid' | 'list';
-export type StorefrontHeroLayout =
-  | 'SPLIT_SHOWCASE'
-  | 'COVER_BANNER'
-  | 'CENTERED_STORY';
+export type StorefrontHeroLayout = 'SPLIT_SHOWCASE' | 'COVER_BANNER' | 'CENTERED_STORY';
 export type StorefrontDeliveryFeeMode = 'FLAT_RATE' | 'COURIER_CONFIRMATION';
 export type FulfillmentType = 'DINE_IN' | 'PICKUP' | 'DELIVERY';
 

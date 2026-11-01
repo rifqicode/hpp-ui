@@ -1,120 +1,121 @@
-import * as React from "react"
-import { supplierService } from "../services/supplier-service"
-import type { Supplier, SupplierPurchaseRecord, UpdateSupplierInput } from "../types"
+import * as React from 'react';
+import { supplierService } from '../services/supplier-service';
+import type { Supplier, SupplierPurchaseRecord, UpdateSupplierInput } from '../types';
 
 export function useSupplierDetail(supplierId?: string) {
-  const [supplier, setSupplier] = React.useState<Supplier | null>(null)
-  const [purchases, setPurchases] = React.useState<SupplierPurchaseRecord[]>([])
-  const [loading, setLoading] = React.useState<boolean>(true)
-  const [error, setError] = React.useState<string>("")
+  const [supplier, setSupplier] = React.useState<Supplier | null>(null);
+  const [purchases, setPurchases] = React.useState<SupplierPurchaseRecord[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string>('');
 
   // Edit modal state
-  const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false)
+  const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false);
   const [editData, setEditData] = React.useState<UpdateSupplierInput>({
-    name: "",
-    contact: "",
-    address: "",
-  })
-  const [submitting, setSubmitting] = React.useState<boolean>(false)
+    name: '',
+    contact: '',
+    address: '',
+  });
+  const [submitting, setSubmitting] = React.useState<boolean>(false);
 
   const loadData = React.useCallback(async () => {
-    if (!supplierId) return
-    setLoading(true)
-    setError("")
+    if (!supplierId) return;
+    setLoading(true);
+    setError('');
     try {
-      const sup = await supplierService.getSupplierById(supplierId)
-      setSupplier(sup)
+      const sup = await supplierService.getSupplierById(supplierId);
+      setSupplier(sup);
       setEditData({
         name: sup.name,
         contact: sup.contact,
         address: sup.address,
-      })
+      });
 
       try {
-        const history = await supplierService.getSupplierPurchases(supplierId)
-        setPurchases(history)
+        const history = await supplierService.getSupplierPurchases(supplierId);
+        setPurchases(history);
       } catch {
-        setPurchases([])
+        setPurchases([]);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memuat rincian supplier"
-      setError(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal memuat rincian supplier';
+      setError(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [supplierId])
+  }, [supplierId]);
 
   React.useEffect(() => {
-    if (!supplierId) return
-    let ignore = false
+    if (!supplierId) return;
+    let ignore = false;
 
     supplierService
       .getSupplierById(supplierId)
-      .then((sup) => {
+      .then(sup => {
         if (!ignore) {
-          setSupplier(sup)
+          setSupplier(sup);
           setEditData({
             name: sup.name,
             contact: sup.contact,
             address: sup.address,
-          })
-          setLoading(false)
+          });
+          setLoading(false);
 
           supplierService
             .getSupplierPurchases(supplierId)
-            .then((history) => {
+            .then(history => {
               if (!ignore) {
-                setPurchases(history)
+                setPurchases(history);
               }
             })
             .catch(() => {
               if (!ignore) {
-                setPurchases([])
+                setPurchases([]);
               }
-            })
+            });
         }
       })
       .catch((err: unknown) => {
         if (!ignore) {
-          const msg = err instanceof Error ? err.message : "Gagal memuat rincian supplier"
-          setError(msg)
-          setLoading(false)
+          const msg = err instanceof Error ? err.message : 'Gagal memuat rincian supplier';
+          setError(msg);
+          setLoading(false);
         }
-      })
+      });
 
     return () => {
-      ignore = true
-    }
-  }, [supplierId])
+      ignore = true;
+    };
+  }, [supplierId]);
 
   async function handleUpdateSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!supplierId || !editData.name?.trim()) return
+    e.preventDefault();
+    if (!supplierId || !editData.name?.trim()) return;
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      const updated = await supplierService.updateSupplier(supplierId, editData)
-      setSupplier(updated)
-      setIsEditOpen(false)
+      const updated = await supplierService.updateSupplier(supplierId, editData);
+      setSupplier(updated);
+      setIsEditOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Gagal memperbarui profil supplier"
-      alert(msg)
+      const msg = err instanceof Error ? err.message : 'Gagal memperbarui profil supplier';
+      alert(msg);
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
   }
 
   function formatDate(dateStr?: string) {
-    if (!dateStr) return "-"
-    return new Intl.DateTimeFormat("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(dateStr))
+    if (!dateStr) return '-';
+    return new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date(dateStr));
   }
 
-  const totalSpent = purchases.reduce((acc, p) => acc + p.totalPrice, 0) || (supplier?.totalPurchases || 0)
-  const averageOrder = purchases.length > 0 ? totalSpent / purchases.length : 0
+  const totalSpent =
+    purchases.reduce((acc, p) => acc + p.totalPrice, 0) || supplier?.totalPurchases || 0;
+  const averageOrder = purchases.length > 0 ? totalSpent / purchases.length : 0;
 
   return {
     supplier,
@@ -131,5 +132,5 @@ export function useSupplierDetail(supplierId?: string) {
     formatDate,
     totalSpent,
     averageOrder,
-  }
+  };
 }

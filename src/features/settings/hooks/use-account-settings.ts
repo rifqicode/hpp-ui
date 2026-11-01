@@ -1,142 +1,145 @@
-import * as React from "react"
-import { useNavigate } from "react-router-dom"
-import { useAuthStore } from "@/store/use-auth-store"
-import { authService } from "@/features/auth/services/auth-service"
-import { settingsService } from "@/features/settings/services/settings-service"
-import { validatePassword } from "@/components/ui/password-strength-indicator"
-import type { DeviceSession } from "@/features/settings/types"
-import type { User as UserType } from "@/features/auth/types"
+import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/use-auth-store';
+import { authService } from '@/features/auth/services/auth-service';
+import { settingsService } from '@/features/settings/services/settings-service';
+import { validatePassword } from '@/components/ui/password-strength-indicator';
+import type { DeviceSession } from '@/features/settings/types';
+import type { User as UserType } from '@/features/auth/types';
 
 function formatAccountErrorMessage(err: unknown, fallback: string): string {
-  const msg = err instanceof Error ? err.message : fallback
-  if (!msg || msg.startsWith("Request failed with status code")) {
-    return fallback
+  const msg = err instanceof Error ? err.message : fallback;
+  if (!msg || msg.startsWith('Request failed with status code')) {
+    return fallback;
   }
 
-  const lower = msg.toLowerCase()
-  if (lower.includes("current password does not match") || lower.includes("current password is incorrect")) {
-    return "Kata sandi saat ini salah atau tidak sesuai."
+  const lower = msg.toLowerCase();
+  if (
+    lower.includes('current password does not match') ||
+    lower.includes('current password is incorrect')
+  ) {
+    return 'Kata sandi saat ini salah atau tidak sesuai.';
   }
-  if (lower.includes("new password must be at least 6 characters")) {
-    return "Kata sandi baru minimal 6 karakter."
+  if (lower.includes('new password must be at least 6 characters')) {
+    return 'Kata sandi baru minimal 6 karakter.';
   }
-  if (lower.includes("new password must be different")) {
-    return "Kata sandi baru harus berbeda dari kata sandi saat ini."
+  if (lower.includes('new password must be different')) {
+    return 'Kata sandi baru harus berbeda dari kata sandi saat ini.';
   }
-  if (lower.includes("email is already registered") || lower.includes("email is already in use")) {
-    return "Email sudah digunakan oleh akun lain."
+  if (lower.includes('email is already registered') || lower.includes('email is already in use')) {
+    return 'Email sudah digunakan oleh akun lain.';
   }
-  if (lower.includes("invalid password payload")) {
-    return "Data kata sandi tidak valid. Periksa kembali input Anda."
+  if (lower.includes('invalid password payload')) {
+    return 'Data kata sandi tidak valid. Periksa kembali input Anda.';
   }
-  if (lower.includes("user not found")) {
-    return "Akun pengguna tidak ditemukan."
+  if (lower.includes('user not found')) {
+    return 'Akun pengguna tidak ditemukan.';
   }
 
-  return msg
+  return msg;
 }
 
 export function useAccountSettings() {
-  const navigate = useNavigate()
-  const currentUser = useAuthStore((state) => state.user)
-  const token = useAuthStore((state) => state.token)
-  const setAuth = useAuthStore((state) => state.setAuth)
-  const logout = useAuthStore((state) => state.logout)
+  const navigate = useNavigate();
+  const currentUser = useAuthStore(state => state.user);
+  const token = useAuthStore(state => state.token);
+  const setAuth = useAuthStore(state => state.setAuth);
+  const logout = useAuthStore(state => state.logout);
 
-  const [loadingInitial, setLoadingInitial] = React.useState<boolean>(true)
+  const [loadingInitial, setLoadingInitial] = React.useState<boolean>(true);
 
   // Profile States
-  const [name, setName] = React.useState<string>(currentUser?.name || "")
-  const [email, setEmail] = React.useState<string>(currentUser?.email || "")
-  const [phone, setPhone] = React.useState<string>(currentUser?.phone || "")
-  const [bio, setBio] = React.useState<string>(currentUser?.bio || "")
-  const [avatarUrl, setAvatarUrl] = React.useState<string>(currentUser?.avatar || "")
+  const [name, setName] = React.useState<string>(currentUser?.name || '');
+  const [email, setEmail] = React.useState<string>(currentUser?.email || '');
+  const [phone, setPhone] = React.useState<string>(currentUser?.phone || '');
+  const [bio, setBio] = React.useState<string>(currentUser?.bio || '');
+  const [avatarUrl, setAvatarUrl] = React.useState<string>(currentUser?.avatar || '');
 
-  const [isSavingProfile, setIsSavingProfile] = React.useState<boolean>(false)
-  const [profileMsg, setProfileMsg] = React.useState<string>("")
-  const [profileError, setProfileError] = React.useState<string>("")
+  const [isSavingProfile, setIsSavingProfile] = React.useState<boolean>(false);
+  const [profileMsg, setProfileMsg] = React.useState<string>('');
+  const [profileError, setProfileError] = React.useState<string>('');
 
   // Password States
-  const [currentPassword, setCurrentPassword] = React.useState<string>("")
-  const [newPassword, setNewPassword] = React.useState<string>("")
-  const [confirmPassword, setConfirmPassword] = React.useState<string>("")
-  const [passwordLoading, setPasswordLoading] = React.useState<boolean>(false)
-  const [passwordMsg, setPasswordMsg] = React.useState<string>("")
-  const [passwordError, setPasswordError] = React.useState<string>("")
+  const [currentPassword, setCurrentPassword] = React.useState<string>('');
+  const [newPassword, setNewPassword] = React.useState<string>('');
+  const [confirmPassword, setConfirmPassword] = React.useState<string>('');
+  const [passwordLoading, setPasswordLoading] = React.useState<boolean>(false);
+  const [passwordMsg, setPasswordMsg] = React.useState<string>('');
+  const [passwordError, setPasswordError] = React.useState<string>('');
 
   // Sessions States
-  const [sessions, setSessions] = React.useState<DeviceSession[]>([])
-  const [sessionsLoading, setSessionsLoading] = React.useState<boolean>(false)
+  const [sessions, setSessions] = React.useState<DeviceSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = React.useState<boolean>(false);
 
   // Danger Zone States
-  const [deleteConfirmText, setDeleteConfirmText] = React.useState<string>("")
-  const [isDeletingAccount, setIsDeletingAccount] = React.useState<boolean>(false)
-  const [deleteError, setDeleteError] = React.useState<string>("")
+  const [deleteConfirmText, setDeleteConfirmText] = React.useState<string>('');
+  const [isDeletingAccount, setIsDeletingAccount] = React.useState<boolean>(false);
+  const [deleteError, setDeleteError] = React.useState<string>('');
 
   // Load Sessions
   const loadSessions = React.useCallback(async () => {
     try {
-      setSessionsLoading(true)
-      const data = await settingsService.getSessions()
+      setSessionsLoading(true);
+      const data = await settingsService.getSessions();
       if (data && data.length > 0) {
-        setSessions(data)
+        setSessions(data);
       } else {
         setSessions([
           {
-            id: "current-sess",
-            device: "Perangkat Ini (Aktif)",
-            browser: "Browser",
-            location: "Indonesia",
-            lastActive: "Sekarang",
+            id: 'current-sess',
+            device: 'Perangkat Ini (Aktif)',
+            browser: 'Browser',
+            location: 'Indonesia',
+            lastActive: 'Sekarang',
             isCurrent: true,
-            type: "desktop",
+            type: 'desktop',
           },
-        ])
+        ]);
       }
     } catch {
       // Keep existing sessions on error
     } finally {
-      setSessionsLoading(false)
+      setSessionsLoading(false);
     }
-  }, [])
+  }, []);
 
   // Initial Data Load
   React.useEffect(() => {
     async function loadData() {
-      setLoadingInitial(true)
+      setLoadingInitial(true);
       try {
-        const usr = await authService.getCurrentUser().catch(() => null)
+        const usr = await authService.getCurrentUser().catch(() => null);
 
         if (usr?.user) {
-          setName(usr.user.name || "")
-          setEmail(usr.user.email || "")
-          setPhone(usr.user.phone || "")
-          setBio(usr.user.bio || "")
-          if (usr.user.avatar) setAvatarUrl(usr.user.avatar)
+          setName(usr.user.name || '');
+          setEmail(usr.user.email || '');
+          setPhone(usr.user.phone || '');
+          setBio(usr.user.bio || '');
+          if (usr.user.avatar) setAvatarUrl(usr.user.avatar);
         }
 
-        await loadSessions()
+        await loadSessions();
       } catch (err) {
-        console.error("Failed to load settings data:", err)
+        console.error('Failed to load settings data:', err);
       } finally {
-        setLoadingInitial(false)
+        setLoadingInitial(false);
       }
     }
 
-    loadData()
-  }, [loadSessions])
+    loadData();
+  }, [loadSessions]);
 
   // Save Profile Handler
   const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!name.trim() || (!currentUser?.username && !email.trim())) {
-      setProfileError("Nama dan email wajib diisi.")
-      return
+      setProfileError('Nama dan email wajib diisi.');
+      return;
     }
 
-    setIsSavingProfile(true)
-    setProfileError("")
-    setProfileMsg("")
+    setIsSavingProfile(true);
+    setProfileError('');
+    setProfileMsg('');
 
     try {
       const updated = await authService.updateProfile({
@@ -145,26 +148,26 @@ export function useAccountSettings() {
         phone,
         bio,
         avatar: avatarUrl,
-      })
+      });
 
       if (token) {
-        setAuth(updated as UserType, token)
+        setAuth(updated as UserType, token);
       }
-      setProfileMsg("Profil pengguna berhasil disimpan!")
-      setTimeout(() => setProfileMsg(""), 3500)
+      setProfileMsg('Profil pengguna berhasil disimpan!');
+      setTimeout(() => setProfileMsg(''), 3500);
     } catch (err: unknown) {
-      const msg = formatAccountErrorMessage(err, "Gagal menyimpan perubahan profil.")
-      setProfileError(msg)
+      const msg = formatAccountErrorMessage(err, 'Gagal menyimpan perubahan profil.');
+      setProfileError(msg);
     } finally {
-      setIsSavingProfile(false)
+      setIsSavingProfile(false);
     }
-  }
+  };
 
   // Update Avatar Handler
   const handleUpdateAvatar = async (newUrl: string) => {
-    setIsSavingProfile(true)
-    setProfileError("")
-    setProfileMsg("")
+    setIsSavingProfile(true);
+    setProfileError('');
+    setProfileMsg('');
     try {
       const updated = await authService.updateProfile({
         name,
@@ -172,100 +175,103 @@ export function useAccountSettings() {
         phone,
         bio,
         avatar: newUrl,
-      })
-      setAvatarUrl(newUrl)
+      });
+      setAvatarUrl(newUrl);
       if (token) {
-        setAuth(updated as UserType, token)
+        setAuth(updated as UserType, token);
       }
-      setProfileMsg(newUrl ? "Foto profil berhasil diperbarui." : "Foto profil berhasil dihapus.")
-      setTimeout(() => setProfileMsg(""), 3500)
+      setProfileMsg(newUrl ? 'Foto profil berhasil diperbarui.' : 'Foto profil berhasil dihapus.');
+      setTimeout(() => setProfileMsg(''), 3500);
     } catch (err: unknown) {
-      const msg = formatAccountErrorMessage(err, "Gagal memperbarui foto profil.")
-      setProfileError(msg)
-      throw err
+      const msg = formatAccountErrorMessage(err, 'Gagal memperbarui foto profil.');
+      setProfileError(msg);
+      throw err;
     } finally {
-      setIsSavingProfile(false)
+      setIsSavingProfile(false);
     }
-  }
+  };
 
   // Change Password Handler
   const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPasswordError("")
-    setPasswordMsg("")
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordMsg('');
 
-    const passErr = validatePassword(newPassword)
+    const passErr = validatePassword(newPassword);
     if (passErr) {
-      setPasswordError(passErr)
-      return
+      setPasswordError(passErr);
+      return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError("Konfirmasi kata sandi baru tidak cocok.")
-      return
+      setPasswordError('Konfirmasi kata sandi baru tidak cocok.');
+      return;
     }
 
-    setPasswordLoading(true)
+    setPasswordLoading(true);
     try {
-      await settingsService.changePassword(currentPassword, newPassword)
-      setPasswordMsg("Kata sandi akun Anda berhasil diperbarui!")
-      setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
-      setTimeout(() => setPasswordMsg(""), 4000)
+      await settingsService.changePassword(currentPassword, newPassword);
+      setPasswordMsg('Kata sandi akun Anda berhasil diperbarui!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordMsg(''), 4000);
     } catch (err: unknown) {
-      const msg = formatAccountErrorMessage(err, "Gagal memperbarui kata sandi. Periksa kata sandi saat ini.")
-      setPasswordError(msg)
+      const msg = formatAccountErrorMessage(
+        err,
+        'Gagal memperbarui kata sandi. Periksa kata sandi saat ini.',
+      );
+      setPasswordError(msg);
     } finally {
-      setPasswordLoading(false)
+      setPasswordLoading(false);
     }
-  }
+  };
 
-  const [revokingSessionId, setRevokingSessionId] = React.useState<string | null>(null)
+  const [revokingSessionId, setRevokingSessionId] = React.useState<string | null>(null);
 
   // Revoke Single Session
   const handleRevokeSession = async (sessionId: string) => {
-    setRevokingSessionId(sessionId)
+    setRevokingSessionId(sessionId);
     try {
-      await settingsService.revokeSession(sessionId)
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+      await settingsService.revokeSession(sessionId);
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
     } catch (err) {
-      const msg = formatAccountErrorMessage(err, "Gagal menghapus sesi.")
-      console.error(msg)
-      alert(msg)
+      const msg = formatAccountErrorMessage(err, 'Gagal menghapus sesi.');
+      console.error(msg);
+      alert(msg);
     } finally {
-      setRevokingSessionId(null)
+      setRevokingSessionId(null);
     }
-  }
+  };
 
   // Revoke All Other Sessions
   const handleRevokeOtherSessions = async () => {
     try {
-      await settingsService.revokeOtherSessions()
-      setSessions((prev) => prev.filter((s) => s.isCurrent))
-      alert("Semua sesi di perangkat lain berhasil dinonaktifkan.")
+      await settingsService.revokeOtherSessions();
+      setSessions(prev => prev.filter(s => s.isCurrent));
+      alert('Semua sesi di perangkat lain berhasil dinonaktifkan.');
     } catch (err) {
-      const msg = formatAccountErrorMessage(err, "Gagal membatalkan sesi perangkat lain.")
-      console.error(msg)
-      alert(msg)
+      const msg = formatAccountErrorMessage(err, 'Gagal membatalkan sesi perangkat lain.');
+      console.error(msg);
+      alert(msg);
     }
-  }
+  };
 
   // Delete Account
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== "HAPUS AKUN") return
-    setIsDeletingAccount(true)
-    setDeleteError("")
+    if (deleteConfirmText !== 'HAPUS AKUN') return;
+    setIsDeletingAccount(true);
+    setDeleteError('');
     try {
-      await settingsService.deleteAccount()
-      logout()
-      navigate("/login", { replace: true })
+      await settingsService.deleteAccount();
+      logout();
+      navigate('/login', { replace: true });
     } catch (err) {
-      const msg = formatAccountErrorMessage(err, "Gagal menghapus akun.")
-      setDeleteError(msg)
-      setIsDeletingAccount(false)
+      const msg = formatAccountErrorMessage(err, 'Gagal menghapus akun.');
+      setDeleteError(msg);
+      setIsDeletingAccount(false);
     }
-  }
+  };
 
   return {
     currentUser,
@@ -314,5 +320,5 @@ export function useAccountSettings() {
     isDeletingAccount,
     deleteError,
     handleDeleteAccount,
-  }
+  };
 }

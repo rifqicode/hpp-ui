@@ -1,78 +1,45 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import BatchListPage from '@/pages/production/batch-list-page'
-import { productionService } from '@/features/production/services/production-service'
+import { productionBatchService } from '@/features/production/services/production-batch-service'
+import { useAuthStore } from '@/store/use-auth-store'
 import { mockPageServices, resetSession } from '../support/page-services'
-import { mockPopulatedPages } from '../support/populated-pages'
-import { batch } from '../support/fixtures'
+import { productionHead, productionLog } from '../support/production-batch-fixture'
 import { renderPage } from '../support/render'
-const change = (el: HTMLElement, value: string) => fireEvent.change(el, { target: { value } })
+
 beforeEach(() => {
-  resetSession(); mockPageServices(); mockPopulatedPages()
-  vi.spyOn(productionService, 'pickupProduction').mockResolvedValue(batch)
-  vi.spyOn(productionService, 'completeProduction').mockResolvedValue(batch)
-  vi.spyOn(productionService, 'cancelProduction').mockResolvedValue(batch)
+  resetSession(); mockPageServices()
+  useAuthStore.setState({ permissions: ['production:read', 'production:write'] })
+  vi.spyOn(productionBatchService, 'list').mockResolvedValue([productionHead({ logs: [productionLog(), productionLog({ id: 'log-2' })] })])
 })
-async function setup() { const user = userEvent.setup(); renderPage(<BatchListPage />, '/production/batches?tab=list'); await screen.findAllByText('BATCH-TEST-003'); return user }
-describe('production list actions', () => {
-  it('starts queued batches and reports a pickup error', async () => {
-    const user = await setup()
-    await user.click(screen.getAllByRole('button', { name: 'Mulai proses' })[0])
-    await waitFor(() => expect(productionService.pickupProduction).toHaveBeenCalledWith('batch-0'))
-    vi.mocked(productionService.pickupProduction).mockRejectedValueOnce(new Error('Stok kurang'))
-    await user.click(screen.getAllByRole('button', { name: 'Mulai proses' })[1])
-    expect(await screen.findByText('Stok kurang')).toBeVisible()
+describe('production heads list', () => {
+  it('shows one head with multiple variant details and links to head', async () => {
+    vi.spyOn(productionBatchService, 'list').mockResolvedValue([
+      productionHead({ source: 'MANUAL', logs: [productionLog(), productionLog({ id: 'log-2' })] }),
+      productionHead({ id: 'head-pos', batch_number: 'PB-20261031-000002', source: 'POS', logs: [productionLog({ id: 'log-pos' })] }),
+    ])
+    renderPage(<BatchListPage />, '/production/batches?tab=list')
+    expect((await screen.findAllByRole('link', { name: '2 varian produksi' }))[0]).toHaveAttribute('href', '/production/batches/head-1')
+    expect(screen.getByRole('table')).toBeVisible()
+    expect(screen.getAllByText(/Brownies - Original/).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getAllByText('Manual').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('POS').length).toBeGreaterThanOrEqual(1)
   })
-  it('validates harvest totals and saves actual overhead costs', async () => {
-    const user = await setup(); await user.click(screen.getAllByRole('button', { name: 'Selesaikan' })[0])
-    const dialog = screen.getByRole('dialog'), fields = within(dialog).getAllByRole('spinbutton')
-    change(fields[0], '')
-    fireEvent.submit(fields[0].closest('form')!)
-    expect(screen.getByText('Jumlah unit bagus harus lebih dari 0')).toBeVisible()
-    fireEvent.blur(fields[0]); expect(fields[0]).toHaveValue(1)
-    change(fields[0], '8'); change(fields[1], ''); fireEvent.blur(fields[1]); expect(fields[1]).toHaveValue(0)
-    change(fields[1], '2')
-    for (const cost of fields.slice(2)) { change(cost, ''); fireEvent.blur(cost); change(cost, '1000') }
-    await user.click(within(dialog).getByRole('button', { name: 'Simpan & Masukkan ke Stok Jadi' }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(productionService.completeProduction).toHaveBeenCalledWith('batch-2', expect.objectContaining({ goodQuantity: 8, wasteQuantity: 2, overheads: [expect.objectContaining({ name: 'Gas Dapur', amount: 1000 })] }))
-  })
-  it('keeps completion open on backend failure and allows cancellation', async () => {
-    const user = await setup(); vi.mocked(productionService.completeProduction).mockRejectedValueOnce(new Error('Tidak bisa selesai'))
-    await user.click(screen.getAllByRole('button', { name: 'Selesaikan' })[0])
-    await user.click(screen.getByRole('button', { name: 'Simpan & Masukkan ke Stok Jadi' }))
-    expect(await screen.findByText('Tidak bisa selesai')).toBeVisible()
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Batal' }))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-  })
-  it('confirms cancellation with a reason and handles server errors', async () => {
-    const user = await setup()
-    async function open() { await user.click(screen.getAllByRole('button', { name: /Aksi lainnya untuk BATCH-TEST-003/ })[0]); await user.click(screen.getByRole('menuitem', { name: 'Batalkan batch' })) }
-    await open(); await user.click(screen.getByRole('button', { name: 'Kembali' })); expect(productionService.cancelProduction).not.toHaveBeenCalled()
-    await open(); change(screen.getByPlaceholderText('Contoh: Oven mati, adonan rusak/terkontaminasi...'), 'Oven mati')
-    vi.mocked(productionService.cancelProduction).mockRejectedValueOnce(new Error('Gagal server'))
-    await user.click(screen.getByRole('button', { name: 'Batalkan & Pulihkan Stok' }))
-    expect(await screen.findByText('Gagal server')).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Batalkan & Pulihkan Stok' }))
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(productionService.cancelProduction).toHaveBeenLastCalledWith('batch-2', 'Oven mati')
-  })
-  it('filters status and searches names, products, and notes', async () => {
-    const user = await setup()
-    const filters = screen.getByLabelText('Filter status batch')
-    for (const button of within(filters).getAllByRole('button')) await user.click(button)
-    const search = screen.getByRole('textbox', { name: 'Cari batch produksi' })
-    change(search, 'NO-MATCH'); expect(screen.getByText(/Batch tidak ditemukan/)).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Hapus pencarian' }))
-    const summaries = screen.getByLabelText('Ringkasan produksi')
-    for (const button of within(summaries).getAllByRole('button')) await user.click(button)
-    await user.click(within(summaries).getByRole('button', { name: /Semua batch/ }))
-    change(search, 'Pesanan pelanggan'); expect(screen.queryAllByText('BATCH-TEST-001')).toHaveLength(0)
-    await user.click(screen.getByRole('button', { name: 'Hapus pencarian' }))
-    await user.click(screen.getByRole('button', { name: /Perbarui/ }))
-    expect(productionService.getBatches).toHaveBeenCalledTimes(2)
+  it('searches variants and switches kanban/list views', async () => {
+    const user = userEvent.setup(); renderPage(<BatchListPage />, '/production/batches?tab=list')
+    await screen.findAllByText('PB-20261031-000001')
+    fireEvent.change(screen.getByLabelText('Cari batch produksi'), { target: { value: 'NO-MATCH' } })
+    expect(screen.getByText('Batch tidak ditemukan')).toBeVisible()
+    fireEvent.change(screen.getByLabelText('Cari batch produksi'), { target: { value: '' } })
     await user.click(screen.getByRole('tab', { name: 'Papan Kanban' }))
-    expect(screen.getByRole('tab', { name: 'Papan Kanban' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('Lokasi halaman')).toHaveTextContent('tab=kanban')
+    expect(screen.getByRole('heading', { name: /Antrian/ })).toBeVisible()
+  })
+  it('shows API failures with retry instead of an empty success state', async () => {
+    vi.mocked(productionBatchService.list).mockRejectedValue(new Error('Offline'))
+    renderPage(<BatchListPage />, '/production/batches')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Data produksi belum berhasil dimuat')
+    expect(screen.getByRole('button', { name: 'Coba lagi' })).toBeVisible()
   })
 })

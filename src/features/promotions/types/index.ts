@@ -11,7 +11,10 @@ export interface PromotionItemInput {
   reward_price: string;
 }
 
-export interface BasketItem { variant_id: string; quantity: string }
+export interface BasketItem {
+  variant_id: string;
+  quantity: string;
+}
 
 export interface PromotionInput {
   name: string;
@@ -77,6 +80,7 @@ export interface PromotionSimulation {
 }
 
 export interface Promotion extends PromotionInput {
+  items: (PromotionItemInput & { selector_name?: string })[];
   id: string;
   store_id: string;
   usage_limit: number;
@@ -86,6 +90,11 @@ export interface Promotion extends PromotionInput {
   planning_snapshot: PromotionSimulation | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PromotionSummary {
+  active_count: number;
+  inactive_count: number;
 }
 
 export interface PromotionList {
@@ -107,8 +116,19 @@ export interface PromotionOption {
   selling_price: string;
 }
 
-export interface PromotionOptions { data: PromotionOption[]; total: number; page: number; per_page: number }
-export interface PromotionEditor { id?: string; input: PromotionInput; readOnly: boolean; snapshot?: PromotionSimulation | null }
+export interface PromotionOptions {
+  data: PromotionOption[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+export interface PromotionEditor {
+  id?: string;
+  input: PromotionInput;
+  readOnly: boolean;
+  snapshot?: PromotionSimulation | null;
+  catalogNames?: Record<string, string>;
+}
 export type PendingPromotionAction =
   | { kind: 'save'; id?: string; input: PromotionInput; simulation: PromotionSimulation }
   | { kind: 'activate'; promotion: Promotion; simulation: PromotionSimulation };

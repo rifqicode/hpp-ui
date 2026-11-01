@@ -1,7 +1,7 @@
-import { AuthBrandPanel } from "@/features/auth/components/auth-brand-panel"
-import { EkatraBrand } from "@/components/brand/ekatra-logo"
-import * as React from "react"
-import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom"
+import { AuthBrandPanel } from '@/features/auth/components/auth-brand-panel';
+import { EkatraBrand } from '@/components/brand/ekatra-logo';
+import * as React from 'react';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   Mail,
   ArrowRight,
@@ -11,212 +11,211 @@ import {
   Loader2,
   ShieldCheck,
   RefreshCw,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { authService } from "@/features/auth/services/auth-service"
-import { settingsService } from "@/features/settings/services/settings-service"
-import { APP_NAME } from "@/lib/utils"
-import { useAuthStore } from "@/store/use-auth-store"
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { authService } from '@/features/auth/services/auth-service';
+import { settingsService } from '@/features/settings/services/settings-service';
+import { APP_NAME } from '@/lib/utils';
+import { useAuthStore } from '@/store/use-auth-store';
 
 function maskEmail(val: string): string {
-  if (!val) return ""
-  const parts = val.split("@")
-  if (parts.length !== 2) return val
-  const [local, domain] = parts
-  const visible = local.slice(0, 3)
-  return `${visible}***@${domain}`
+  if (!val) return '';
+  const parts = val.split('@');
+  if (parts.length !== 2) return val;
+  const [local, domain] = parts;
+  const visible = local.slice(0, 3);
+  return `${visible}***@${domain}`;
 }
 
 const getRemainingCooldown = (targetEmail: string): number => {
-  if (!targetEmail) return 0
-  const storedUntil = localStorage.getItem(`verify_resend_until_${targetEmail.toLowerCase()}`)
-  if (!storedUntil) return 0
-  const until = parseInt(storedUntil, 10)
-  if (isNaN(until)) return 0
-  const diff = Math.ceil((until - Date.now()) / 1000)
-  return diff > 0 ? diff : 0
-}
+  if (!targetEmail) return 0;
+  const storedUntil = localStorage.getItem(`verify_resend_until_${targetEmail.toLowerCase()}`);
+  if (!storedUntil) return 0;
+  const until = parseInt(storedUntil, 10);
+  if (isNaN(until)) return 0;
+  const diff = Math.ceil((until - Date.now()) / 1000);
+  return diff > 0 ? diff : 0;
+};
 
 export default function VerifyEmailPage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
 
-  const setAuth = useAuthStore((state) => state.setAuth)
-  const setActiveStoreId = useAuthStore((state) => state.setActiveStoreId)
-  const setActiveStoreName = useAuthStore((state) => state.setActiveStoreName)
-  const setPermissions = useAuthStore((state) => state.setPermissions)
+  const setAuth = useAuthStore(state => state.setAuth);
+  const setActiveStoreId = useAuthStore(state => state.setActiveStoreId);
+  const setActiveStoreName = useAuthStore(state => state.setActiveStoreName);
+  const setPermissions = useAuthStore(state => state.setPermissions);
 
   const initialEmail =
-    searchParams.get("email") ||
+    searchParams.get('email') ||
     (location.state as { email?: string; message?: string } | null)?.email ||
-    sessionStorage.getItem("verify_email") ||
-    ""
+    sessionStorage.getItem('verify_email') ||
+    '';
   if (initialEmail) {
-    sessionStorage.setItem("verify_email", initialEmail)
+    sessionStorage.setItem('verify_email', initialEmail);
   }
   const initialMessage =
-    (location.state as { email?: string; message?: string } | null)?.message || ""
+    (location.state as { email?: string; message?: string } | null)?.message || '';
 
-  const [email] = React.useState<string>(initialEmail)
-  const [otp, setOtp] = React.useState<string[]>(["", "", "", "", "", ""])
-  const [loading, setLoading] = React.useState<boolean>(false)
-  const [resending, setResending] = React.useState<boolean>(false)
-  const [error, setError] = React.useState<string>("")
-  const [infoMessage, setInfoMessage] = React.useState<string>(initialMessage)
-  const [cooldown, setCooldown] = React.useState<number>(() => getRemainingCooldown(initialEmail))
+  const [email] = React.useState<string>(initialEmail);
+  const [otp, setOtp] = React.useState<string[]>(['', '', '', '', '', '']);
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [resending, setResending] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string>('');
+  const [infoMessage, setInfoMessage] = React.useState<string>(initialMessage);
+  const [cooldown, setCooldown] = React.useState<number>(() => getRemainingCooldown(initialEmail));
 
-  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([])
+  const inputRefs = React.useRef<(HTMLInputElement | null)[]>([]);
 
   // Cooldown countdown timer
   React.useEffect(() => {
-    if (cooldown <= 0) return
+    if (cooldown <= 0) return;
     const timer = setInterval(() => {
-      const remaining = getRemainingCooldown(email)
-      setCooldown(remaining)
+      const remaining = getRemainingCooldown(email);
+      setCooldown(remaining);
       if (remaining <= 0) {
-        localStorage.removeItem(`verify_resend_until_${email.trim().toLowerCase()}`)
+        localStorage.removeItem(`verify_resend_until_${email.trim().toLowerCase()}`);
       }
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [cooldown > 0, email])
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown > 0, email]);
 
   // Focus the first empty digit box on mount
   React.useEffect(() => {
-    const firstEmptyIndex = otp.findIndex((val) => val === "")
-    const targetIndex = firstEmptyIndex === -1 ? 0 : firstEmptyIndex
-    inputRefs.current[targetIndex]?.focus()
-  }, [])
+    const firstEmptyIndex = otp.findIndex(val => val === '');
+    const targetIndex = firstEmptyIndex === -1 ? 0 : firstEmptyIndex;
+    inputRefs.current[targetIndex]?.focus();
+  }, []);
 
   function handleDigitChange(index: number, value: string) {
     // Keep only the last character entered and ensure it's a digit
-    const cleaned = value.replace(/\D/g, "")
+    const cleaned = value.replace(/\D/g, '');
     if (!cleaned) {
-      const nextOtp = [...otp]
-      nextOtp[index] = ""
-      setOtp(nextOtp)
-      return
+      const nextOtp = [...otp];
+      nextOtp[index] = '';
+      setOtp(nextOtp);
+      return;
     }
 
-    const nextOtp = [...otp]
-    nextOtp[index] = cleaned[cleaned.length - 1]
-    setOtp(nextOtp)
-    setError("")
+    const nextOtp = [...otp];
+    nextOtp[index] = cleaned[cleaned.length - 1];
+    setOtp(nextOtp);
+    setError('');
 
     // Move focus to next input if available
     if (index < 5) {
-      inputRefs.current[index + 1]?.focus()
+      inputRefs.current[index + 1]?.focus();
     }
   }
 
   function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Backspace") {
+    if (e.key === 'Backspace') {
       if (!otp[index] && index > 0) {
         // Current input is already empty, move to previous
-        inputRefs.current[index - 1]?.focus()
+        inputRefs.current[index - 1]?.focus();
       }
-    } else if (e.key === "ArrowLeft" && index > 0) {
-      inputRefs.current[index - 1]?.focus()
-    } else if (e.key === "ArrowRight" && index < 5) {
-      inputRefs.current[index + 1]?.focus()
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
   }
 
   function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
-    e.preventDefault()
-    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
-    if (!pastedData) return
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pastedData) return;
 
-    const nextOtp = [...otp]
+    const nextOtp = [...otp];
     for (let i = 0; i < 6; i++) {
-      nextOtp[i] = pastedData[i] || ""
+      nextOtp[i] = pastedData[i] || '';
     }
-    setOtp(nextOtp)
-    setError("")
+    setOtp(nextOtp);
+    setError('');
 
-    const nextFocusIndex = Math.min(pastedData.length, 5)
-    inputRefs.current[nextFocusIndex]?.focus()
+    const nextFocusIndex = Math.min(pastedData.length, 5);
+    inputRefs.current[nextFocusIndex]?.focus();
   }
 
   async function handleVerify(e: React.FormEvent) {
-    e.preventDefault()
-    const fullCode = otp.join("")
+    e.preventDefault();
+    const fullCode = otp.join('');
 
     if (!email.trim()) {
-      setError("Alamat email wajib diisi.")
-      return
+      setError('Alamat email wajib diisi.');
+      return;
     }
 
     if (fullCode.length !== 6) {
-      setError("Silakan masukkan 6 digit kode verifikasi lengkap.")
-      return
+      setError('Silakan masukkan 6 digit kode verifikasi lengkap.');
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError('');
 
     try {
       const res = await authService.verifyEmail({
         email: email.trim(),
         code: fullCode,
-      })
+      });
 
-      setAuth(res.user, res.token)
-      const storeId = res.active_store_id ?? res.store?.id
+      setAuth(res.user, res.token);
+      const storeId = res.active_store_id ?? res.store?.id;
       if (storeId) {
-        setActiveStoreId(storeId)
+        setActiveStoreId(storeId);
       }
       if (res.permissions) {
-        setPermissions(res.permissions)
+        setPermissions(res.permissions);
       } else if (storeId) {
-        await settingsService.getStorePermissions(storeId)
+        await settingsService.getStorePermissions(storeId);
       }
       if (res.store?.name) {
-        setActiveStoreName(res.store.name)
+        setActiveStoreName(res.store.name);
       }
 
-      const isOwner = res.user.account_type !== 'STAFF' && ['OWNER', 'STORE_OWNER'].includes(res.user.role)
-      navigate(storeId ? (isOwner ? "/onboarding" : "/dashboard") : "/setup-store", { replace: true })
+      const isOwner =
+        res.user.account_type !== 'STAFF' && ['OWNER', 'STORE_OWNER'].includes(res.user.role);
+      navigate(storeId ? (isOwner ? '/onboarding' : '/dashboard') : '/setup-store', {
+        replace: true,
+      });
     } catch (err: unknown) {
       const msg =
-        err instanceof Error
-          ? err.message
-          : "Gagal memverifikasi kode. Periksa kembali kode Anda."
-      setError(msg)
+        err instanceof Error ? err.message : 'Gagal memverifikasi kode. Periksa kembali kode Anda.';
+      setError(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   async function handleResendCode() {
     if (!email.trim()) {
-      setError("Alamat email wajib diisi untuk mengirim ulang kode.")
-      return
+      setError('Alamat email wajib diisi untuk mengirim ulang kode.');
+      return;
     }
 
-    if (cooldown > 0) return
+    if (cooldown > 0) return;
 
-    setResending(true)
-    setError("")
-    setInfoMessage("")
+    setResending(true);
+    setError('');
+    setInfoMessage('');
 
     try {
-      await authService.resendVerification(email.trim())
-      setInfoMessage("Kode verifikasi baru telah dikirimkan ke email Anda.")
-      const until = Date.now() + 60 * 1000
-      localStorage.setItem(`verify_resend_until_${email.trim().toLowerCase()}`, until.toString())
-      setCooldown(60)
+      await authService.resendVerification(email.trim());
+      setInfoMessage('Kode verifikasi baru telah dikirimkan ke email Anda.');
+      const until = Date.now() + 60 * 1000;
+      localStorage.setItem(`verify_resend_until_${email.trim().toLowerCase()}`, until.toString());
+      setCooldown(60);
     } catch (err: unknown) {
       const msg =
-        err instanceof Error
-          ? err.message
-          : "Gagal mengirim ulang kode. Silakan coba lagi nanti."
-      setError(msg)
+        err instanceof Error ? err.message : 'Gagal mengirim ulang kode. Silakan coba lagi nanti.';
+      setError(msg);
     } finally {
-      setResending(false)
+      setResending(false);
     }
   }
 
@@ -231,7 +230,10 @@ export default function VerifyEmailPage() {
           {/* Mobile Header Logo */}
           <div className="lg:hidden flex items-center gap-2.5">
             <Link to="/" className="flex items-center gap-2">
-              <EkatraBrand className="gap-3 text-xl sm:text-2xl" logoClassName="h-10 w-14 sm:h-12 sm:w-[4.25rem]" />
+              <EkatraBrand
+                className="gap-3 text-xl sm:text-2xl"
+                logoClassName="h-10 w-14 sm:h-12 sm:w-[4.25rem]"
+              />
             </Link>
           </div>
 
@@ -283,7 +285,10 @@ export default function VerifyEmailPage() {
 
           <form onSubmit={handleVerify} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Label
+                htmlFor="email"
+                className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 Alamat Email
               </Label>
               <div className="relative">
@@ -307,16 +312,16 @@ export default function VerifyEmailPage() {
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    ref={(el) => {
-                      inputRefs.current[index] = el
+                    ref={el => {
+                      inputRefs.current[index] = el;
                     }}
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
                     maxLength={1}
                     value={digit}
-                    onChange={(e) => handleDigitChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    onChange={e => handleDigitChange(index, e.target.value)}
+                    onKeyDown={e => handleKeyDown(index, e)}
                     className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold rounded-xl border border-input bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-xs"
                     aria-label={`Digit ke-${index + 1}`}
                   />
@@ -326,7 +331,7 @@ export default function VerifyEmailPage() {
 
             <Button
               type="submit"
-              disabled={loading || otp.join("").length !== 6}
+              disabled={loading || otp.join('').length !== 6}
               className="w-full h-11 text-base font-semibold shadow-md"
             >
               {loading ? (
@@ -345,7 +350,7 @@ export default function VerifyEmailPage() {
 
           <div className="pt-4 text-center space-y-3">
             <div className="text-sm text-slate-500">
-              Tidak menerima kode?{" "}
+              Tidak menerima kode?{' '}
               <button
                 type="button"
                 onClick={handleResendCode}
@@ -353,9 +358,7 @@ export default function VerifyEmailPage() {
                 className="font-semibold text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 cursor-pointer"
               >
                 {resending && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
-                {cooldown > 0
-                  ? `Kirim ulang dalam ${cooldown}d`
-                  : "Kirim Ulang Kode"}
+                {cooldown > 0 ? `Kirim ulang dalam ${cooldown}d` : 'Kirim Ulang Kode'}
               </button>
             </div>
 
@@ -377,5 +380,5 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-import { AuthBrandPanel } from "@/features/auth/components/auth-brand-panel"
-import { EkatraBrand } from "@/components/brand/ekatra-logo"
-import * as React from "react"
-import { Link, useNavigate, useLocation } from "react-router-dom"
+import { AuthBrandPanel } from '@/features/auth/components/auth-brand-panel';
+import { EkatraBrand } from '@/components/brand/ekatra-logo';
+import * as React from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Factory,
   Mail,
@@ -25,164 +25,167 @@ import {
   ChefHat,
   Pizza,
   HelpCircle,
-} from "lucide-react"
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   PasswordStrengthIndicator,
   validatePassword,
-} from "@/components/ui/password-strength-indicator"
-import { APP_NAME, cn } from "@/lib/utils"
+} from '@/components/ui/password-strength-indicator';
+import { APP_NAME, cn } from '@/lib/utils';
 
-import { authService } from "@/features/auth/services/auth-service"
-import { settingsService } from "@/features/settings/services/settings-service"
-import { useAuthStore } from "@/store/use-auth-store"
-import { RegistrationAgreement } from "@/features/auth/components/registration-agreement"
-import { useServiceAgreement } from "@/features/auth/hooks/use-service-agreement"
-import { PhoneInput } from "@/components/ui/phone-input"
-import { normalizeOperationalPhoneInput } from "@/features/auth/lib/phone"
+import { authService } from '@/features/auth/services/auth-service';
+import { settingsService } from '@/features/settings/services/settings-service';
+import { useAuthStore } from '@/store/use-auth-store';
+import { RegistrationAgreement } from '@/features/auth/components/registration-agreement';
+import { useServiceAgreement } from '@/features/auth/hooks/use-service-agreement';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { normalizeOperationalPhoneInput } from '@/features/auth/lib/phone';
 
-const MAX_PHONE_DIGITS = 12
+const MAX_PHONE_DIGITS = 12;
 
 interface StoreCategoryOption {
-  id: string
-  name: string
-  icon: React.ComponentType<{ className?: string }>
-  desc: string
+  id: string;
+  name: string;
+  icon: React.ComponentType<{ className?: string }>;
+  desc: string;
 }
 
 const STORE_CATEGORIES: StoreCategoryOption[] = [
   {
-    id: "cafe",
-    name: "Cafe & Coffee Shop",
+    id: 'cafe',
+    name: 'Cafe & Coffee Shop',
     icon: Coffee,
-    desc: "Kopi, minuman, snack",
+    desc: 'Kopi, minuman, snack',
   },
   {
-    id: "bakery",
-    name: "Bakery & Pastry",
+    id: 'bakery',
+    name: 'Bakery & Pastry',
     icon: UtensilsCrossed,
-    desc: "Roti, kue, cookies",
+    desc: 'Roti, kue, cookies',
   },
   {
-    id: "restaurant",
-    name: "Restoran & Rumah Makan",
+    id: 'restaurant',
+    name: 'Restoran & Rumah Makan',
     icon: Utensils,
-    desc: "Dine-in, masakan lauk",
+    desc: 'Dine-in, masakan lauk',
   },
   {
-    id: "cloud_kitchen",
-    name: "Cloud Kitchen / Produksi",
+    id: 'cloud_kitchen',
+    name: 'Cloud Kitchen / Produksi',
     icon: Factory,
-    desc: "Delivery & produksi batch",
+    desc: 'Delivery & produksi batch',
   },
   {
-    id: "beverage",
-    name: "Minuman & Boba",
+    id: 'beverage',
+    name: 'Minuman & Boba',
     icon: CupSoda,
-    desc: "Boba, teh kekinian, jus",
+    desc: 'Boba, teh kekinian, jus',
   },
   {
-    id: "catering",
-    name: "Catering & Jasa Boga",
+    id: 'catering',
+    name: 'Catering & Jasa Boga',
     icon: ChefHat,
-    desc: "Prasmanan, nasi kotak",
+    desc: 'Prasmanan, nasi kotak',
   },
   {
-    id: "fastfood",
-    name: "Fast Food & Snack",
+    id: 'fastfood',
+    name: 'Fast Food & Snack',
     icon: Pizza,
-    desc: "Burger, gorengan, pizza",
+    desc: 'Burger, gorengan, pizza',
   },
   {
-    id: "retail",
-    name: "Retail & Toko Kelontong",
+    id: 'retail',
+    name: 'Retail & Toko Kelontong',
     icon: Store,
-    desc: "Toko kelontong, retail F&B",
+    desc: 'Toko kelontong, retail F&B',
   },
   {
-    id: "other",
-    name: "Other",
+    id: 'other',
+    name: 'Other',
     icon: HelpCircle,
-    desc: "Kategori bisnis lainnya",
+    desc: 'Kategori bisnis lainnya',
   },
-]
+];
 
 interface RegisterPageProps {
-  initialStep?: 1 | 2
+  initialStep?: 1 | 2;
 }
 
 export default function RegisterPage({ initialStep }: RegisterPageProps) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const user = useAuthStore((state) => state.user)
-  const token = useAuthStore((state) => state.token)
-  const setAuth = useAuthStore((state) => state.setAuth)
-  const setActiveStoreId = useAuthStore((state) => state.setActiveStoreId)
-  const logout = useAuthStore((state) => state.logout)
-  const registrationCompleted = React.useRef(false)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = useAuthStore(state => state.user);
+  const token = useAuthStore(state => state.token);
+  const setAuth = useAuthStore(state => state.setAuth);
+  const setActiveStoreId = useAuthStore(state => state.setActiveStoreId);
+  const logout = useAuthStore(state => state.logout);
+  const registrationCompleted = React.useRef(false);
 
   // Determine starting step: if on /setup-store or user already has token, start at step 2
-  const isSetupStoreRoute =
-    location.pathname === "/setup-store" || initialStep === 2
-  const [step, setStep] = React.useState<number>(
-    isSetupStoreRoute || (token && user) ? 2 : 1
-  )
+  const isSetupStoreRoute = location.pathname === '/setup-store' || initialStep === 2;
+  const [step, setStep] = React.useState<number>(isSetupStoreRoute || (token && user) ? 2 : 1);
 
   // Track tier parameter from query string (e.g. ?tier=GROWTH)
-  const searchParams = new URLSearchParams(location.search)
-  const tierParam = searchParams.get("tier")
+  const searchParams = new URLSearchParams(location.search);
+  const tierParam = searchParams.get('tier');
 
   React.useEffect(() => {
-    if (tierParam && (tierParam === "GROWTH" || tierParam === "MAX_GROWTH")) {
-      sessionStorage.setItem("pending_upgrade_tier", tierParam)
-      localStorage.setItem("pending_upgrade_tier", tierParam)
+    if (tierParam && (tierParam === 'GROWTH' || tierParam === 'MAX_GROWTH')) {
+      sessionStorage.setItem('pending_upgrade_tier', tierParam);
+      localStorage.setItem('pending_upgrade_tier', tierParam);
     }
-  }, [tierParam])
+  }, [tierParam]);
 
   // Step 1: Account State
-  const [name, setName] = React.useState<string>(user?.name || "")
-  const [email, setEmail] = React.useState<string>(user?.email || "")
-  const [password, setPassword] = React.useState<string>("")
-  const [confirmPassword, setConfirmPassword] = React.useState<string>("")
-  const [showPassword, setShowPassword] = React.useState<boolean>(false)
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState<boolean>(false)
-  const [agreeTerms, setAgreeTerms] = React.useState<boolean>(false)
-  const [hasReadTerms, setHasReadTerms] = React.useState(false)
-  const agreement = useServiceAgreement(!isSetupStoreRoute || !token)
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const [name, setName] = React.useState<string>(user?.name || '');
+  const [email, setEmail] = React.useState<string>(user?.email || '');
+  const [password, setPassword] = React.useState<string>('');
+  const [confirmPassword, setConfirmPassword] = React.useState<string>('');
+  const [showPassword, setShowPassword] = React.useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState<boolean>(false);
+  const [agreeTerms, setAgreeTerms] = React.useState<boolean>(false);
+  const [hasReadTerms, setHasReadTerms] = React.useState(false);
+  const agreement = useServiceAgreement(!isSetupStoreRoute || !token);
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const canContinue = Boolean(
-    name.trim() && validEmail && password && !validatePassword(password) &&
-    password === confirmPassword && agreement.document && hasReadTerms && agreeTerms
-  )
+    name.trim() &&
+    validEmail &&
+    password &&
+    !validatePassword(password) &&
+    password === confirmPassword &&
+    agreement.document &&
+    hasReadTerms &&
+    agreeTerms,
+  );
 
   // Step 2: Store State
-  const [storeName, setStoreName] = React.useState<string>("")
-  const [category, setCategory] = React.useState<string>("Cafe & Coffee Shop")
-  const [customCategory, setCustomCategory] = React.useState<string>("")
-  const [storeLocation, setStoreLocation] = React.useState<string>("")
-  const [phone, setPhone] = React.useState<string>("")
+  const [storeName, setStoreName] = React.useState<string>('');
+  const [category, setCategory] = React.useState<string>('Cafe & Coffee Shop');
+  const [customCategory, setCustomCategory] = React.useState<string>('');
+  const [storeLocation, setStoreLocation] = React.useState<string>('');
+  const [phone, setPhone] = React.useState<string>('');
 
   // Loading & Error State
-  const [loading, setLoading] = React.useState<boolean>(false)
-  const [error, setError] = React.useState<string>("")
+  const [loading, setLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string>('');
 
   React.useEffect(() => {
-    if (step !== 3) return
-    const timer = window.setTimeout(() => navigate("/onboarding", { replace: true }), 1500)
-    return () => window.clearTimeout(timer)
-  }, [step, navigate])
+    if (step !== 3) return;
+    const timer = window.setTimeout(() => navigate('/onboarding', { replace: true }), 1500);
+    return () => window.clearTimeout(timer);
+  }, [step, navigate]);
 
   // Check if authenticated user already has stores; if so, redirect to dashboard
   React.useEffect(() => {
     async function checkExistingStores() {
       if (token) {
         try {
-          const stores = await settingsService.getStoresList()
+          const stores = await settingsService.getStoresList();
           if (stores && stores.length > 0 && !registrationCompleted.current) {
-            navigate("/dashboard", { replace: true })
+            navigate('/dashboard', { replace: true });
           }
         } catch {
           // Stay on setup
@@ -190,84 +193,84 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
       }
     }
     if ((isSetupStoreRoute || token) && !registrationCompleted.current) {
-      checkExistingStores()
+      checkExistingStores();
     }
-  }, [token, isSetupStoreRoute, navigate])
+  }, [token, isSetupStoreRoute, navigate]);
 
   // Step 1: Validate Account and go to Step 2 (client-side only)
   async function handleContinueToStore(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (!name.trim() || !email.trim() || !password) {
-      setError("Nama lengkap, email bisnis, dan kata sandi wajib diisi.")
-      return
+      setError('Nama lengkap, email bisnis, dan kata sandi wajib diisi.');
+      return;
     }
 
     if (!validEmail) {
-      setError("Masukkan alamat email bisnis yang valid.")
-      return
+      setError('Masukkan alamat email bisnis yang valid.');
+      return;
     }
 
-    const passErr = validatePassword(password)
+    const passErr = validatePassword(password);
     if (passErr) {
-      setError(passErr)
-      return
+      setError(passErr);
+      return;
     }
 
     if (password !== confirmPassword) {
-      setError("Konfirmasi kata sandi tidak cocok dengan kata sandi.")
-      return
+      setError('Konfirmasi kata sandi tidak cocok dengan kata sandi.');
+      return;
     }
 
     if (!agreement.document || !hasReadTerms || !agreeTerms) {
-      setError("Anda harus menyetujui Ketentuan Layanan & Kebijakan Privasi.")
-      return
+      setError('Anda harus menyetujui Ketentuan Layanan & Kebijakan Privasi.');
+      return;
     }
 
-    setError("")
-    setStep(2)
+    setError('');
+    setStep(2);
   }
 
   // Step 2: Submit Bulk Registration or Create First Store
   async function handleSubmitRegistration(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (!(isSetupStoreRoute && token) && (!agreement.document || !hasReadTerms || !agreeTerms)) {
-      setError("Anda harus membaca dan menyetujui Ketentuan Layanan & Kebijakan Privasi.")
-      setStep(1)
-      return
+      setError('Anda harus membaca dan menyetujui Ketentuan Layanan & Kebijakan Privasi.');
+      setStep(1);
+      return;
     }
     if (!storeName.trim()) {
-      setError("Nama toko atau unit usaha wajib diisi.")
-      return
+      setError('Nama toko atau unit usaha wajib diisi.');
+      return;
     }
 
     if (!category) {
-      setError("Kategori bisnis wajib dipilih.")
-      return
+      setError('Kategori bisnis wajib dipilih.');
+      return;
     }
 
     const finalCategory =
-      category === "Other" && customCategory.trim()
-        ? customCategory.trim()
-        : category
+      category === 'Other' && customCategory.trim() ? customCategory.trim() : category;
 
     if (!finalCategory) {
-      setError("Kategori bisnis wajib dipilih.")
-      return
+      setError('Kategori bisnis wajib dipilih.');
+      return;
     }
 
     if (!storeLocation.trim()) {
-      setError("Kota atau lokasi gerai utama wajib diisi.")
-      return
+      setError('Kota atau lokasi gerai utama wajib diisi.');
+      return;
     }
 
-    const formattedPhone = phone ? `+62${phone}` : ""
+    const formattedPhone = phone ? `+62${phone}` : '';
     if (formattedPhone && !/^\+628[0-9]{8,11}$/.test(formattedPhone)) {
-      setError("Nomor WhatsApp harus diawali 8 dan terdiri dari 9–12 digit setelah +62. Contoh: 81234567890.")
-      return
+      setError(
+        'Nomor WhatsApp harus diawali 8 dan terdiri dari 9–12 digit setelah +62. Contoh: 81234567890.',
+      );
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError('');
 
     // Scenario A: User is already logged in on /setup-store
     if (isSetupStoreRoute && token) {
@@ -277,27 +280,25 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
           category: finalCategory,
           location: storeLocation.trim(),
           phone: formattedPhone,
-        })
+        });
 
-        registrationCompleted.current = true
-        setActiveStoreId(newStore.id)
-        setStep(3)
+        registrationCompleted.current = true;
+        setActiveStoreId(newStore.id);
+        setStep(3);
       } catch (err: unknown) {
         const msg =
-          err instanceof Error
-            ? err.message
-            : "Gagal menyimpan data toko. Silakan coba kembali."
-        setError(msg)
+          err instanceof Error ? err.message : 'Gagal menyimpan data toko. Silakan coba kembali.';
+        setError(msg);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-      return
+      return;
     }
 
     // Scenario B: Bulk registration (User + Store)
     try {
       if (!agreement.document || !hasReadTerms || !agreeTerms) {
-        throw new Error("Anda harus membaca dan menyetujui Ketentuan Layanan & Kebijakan Privasi.")
+        throw new Error('Anda harus membaca dan menyetujui Ketentuan Layanan & Kebijakan Privasi.');
       }
       const res = await authService.register({
         name: name.trim(),
@@ -314,36 +315,34 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
           address: storeLocation.trim(),
           phone: formattedPhone,
         },
-      })
+      });
 
       if (res.requires_verification || !res.token) {
         navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`, {
           replace: true,
           state: {
             email: email.trim(),
-            message: "Pendaftaran berhasil! Silakan periksa email Anda dan masukkan 6 digit kode verifikasi.",
+            message:
+              'Pendaftaran berhasil! Silakan periksa email Anda dan masukkan 6 digit kode verifikasi.',
           },
-        })
-        return
+        });
+        return;
       }
 
-      registrationCompleted.current = true
-      setAuth(res.user, res.token)
+      registrationCompleted.current = true;
+      setAuth(res.user, res.token);
       if (res.active_store_id) {
-        setActiveStoreId(res.active_store_id)
+        setActiveStoreId(res.active_store_id);
       } else if (res.store?.id) {
-        setActiveStoreId(res.store.id)
+        setActiveStoreId(res.store.id);
       }
 
-      setStep(3)
+      setStep(3);
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Pendaftaran gagal. Silakan coba kembali."
-      setError(msg)
+      const msg = err instanceof Error ? err.message : 'Pendaftaran gagal. Silakan coba kembali.';
+      setError(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -360,7 +359,10 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
           {/* Mobile Header Logo */}
           <div className="lg:hidden flex items-center gap-2.5">
             <Link to="/" className="flex items-center gap-2">
-              <EkatraBrand className="gap-3 text-xl sm:text-2xl" logoClassName="h-10 w-14 sm:h-12 sm:w-[4.25rem]" />
+              <EkatraBrand
+                className="gap-3 text-xl sm:text-2xl"
+                logoClassName="h-10 w-14 sm:h-12 sm:w-[4.25rem]"
+              />
             </Link>
           </div>
 
@@ -387,7 +389,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 <div
                   className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
                   style={{
-                    width: step === 1 ? "25%" : step === 2 ? "65%" : "100%",
+                    width: step === 1 ? '25%' : step === 2 ? '65%' : '100%',
                   }}
                 />
               </div>
@@ -399,20 +401,24 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   onClick={() => step > 1 && setStep(1)}
                   disabled={step === 3 || loading}
                   className={cn(
-                    "size-9 rounded-full flex items-center justify-center font-bold text-xs transition-all",
+                    'size-9 rounded-full flex items-center justify-center font-bold text-xs transition-all',
                     step > 1
-                      ? "bg-emerald-500 text-white shadow-xs cursor-pointer"
+                      ? 'bg-emerald-500 text-white shadow-xs cursor-pointer'
                       : step === 1
-                      ? "bg-primary text-white shadow-md shadow-primary/30 ring-4 ring-indigo-50 font-extrabold"
-                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                        ? 'bg-primary text-white shadow-md shadow-primary/30 ring-4 ring-indigo-50 font-extrabold'
+                        : 'bg-slate-100 text-slate-400 border border-slate-200',
                   )}
                 >
                   {step > 1 ? <Check className="size-4" /> : <User className="size-4" />}
                 </button>
                 <span
                   className={cn(
-                    "text-[11px] mt-1.5 font-semibold transition-colors",
-                    step === 1 ? "text-primary font-bold" : step > 1 ? "text-slate-800" : "text-slate-400"
+                    'text-[11px] mt-1.5 font-semibold transition-colors',
+                    step === 1
+                      ? 'text-primary font-bold'
+                      : step > 1
+                        ? 'text-slate-800'
+                        : 'text-slate-400',
                   )}
                 >
                   Akun
@@ -423,20 +429,24 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
               <div className="flex flex-col items-center relative z-10 bg-white px-2">
                 <div
                   className={cn(
-                    "size-9 rounded-full flex items-center justify-center font-bold text-xs transition-all",
+                    'size-9 rounded-full flex items-center justify-center font-bold text-xs transition-all',
                     step > 2
-                      ? "bg-emerald-500 text-white shadow-xs"
+                      ? 'bg-emerald-500 text-white shadow-xs'
                       : step === 2
-                      ? "bg-primary text-white shadow-md shadow-primary/30 ring-4 ring-indigo-50 font-extrabold"
-                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                        ? 'bg-primary text-white shadow-md shadow-primary/30 ring-4 ring-indigo-50 font-extrabold'
+                        : 'bg-slate-100 text-slate-400 border border-slate-200',
                   )}
                 >
                   {step > 2 ? <Check className="size-4" /> : <Store className="size-4" />}
                 </div>
                 <span
                   className={cn(
-                    "text-[11px] mt-1.5 font-semibold transition-colors",
-                    step === 2 ? "text-primary font-bold" : step > 2 ? "text-slate-800" : "text-slate-400"
+                    'text-[11px] mt-1.5 font-semibold transition-colors',
+                    step === 2
+                      ? 'text-primary font-bold'
+                      : step > 2
+                        ? 'text-slate-800'
+                        : 'text-slate-400',
                   )}
                 >
                   Profil Toko
@@ -447,18 +457,18 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
               <div className="flex flex-col items-center relative z-10 bg-white px-2">
                 <div
                   className={cn(
-                    "size-9 rounded-full flex items-center justify-center font-bold text-xs transition-all",
+                    'size-9 rounded-full flex items-center justify-center font-bold text-xs transition-all',
                     step === 3
-                      ? "bg-emerald-500 text-white shadow-md ring-4 ring-emerald-50 font-extrabold"
-                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                      ? 'bg-emerald-500 text-white shadow-md ring-4 ring-emerald-50 font-extrabold'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200',
                   )}
                 >
                   <CheckCircle2 className="size-4" />
                 </div>
                 <span
                   className={cn(
-                    "text-[11px] mt-1.5 font-semibold transition-colors",
-                    step === 3 ? "text-emerald-600 font-bold" : "text-slate-400"
+                    'text-[11px] mt-1.5 font-semibold transition-colors',
+                    step === 3 ? 'text-emerald-600 font-bold' : 'text-slate-400',
                   )}
                 >
                   Selesai
@@ -504,7 +514,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       id="fullname"
                       type="text"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={e => setName(e.target.value)}
                       placeholder="Contoh: Budi Santoso"
                       className="pl-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -523,7 +533,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       id="email"
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={e => setEmail(e.target.value)}
                       placeholder="budi@tokoroti.com"
                       className="pl-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -540,9 +550,9 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input
                       id="password"
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={e => setPassword(e.target.value)}
                       placeholder="Minimal 6 karakter"
                       className="pl-10 pr-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -568,9 +578,9 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <Input
                       id="confirm-password"
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={e => setConfirmPassword(e.target.value)}
                       placeholder="Ketik ulang kata sandi"
                       className="pl-10 pr-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -594,9 +604,9 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   loading={agreement.loading}
                   error={agreement.error}
                   onRetry={() => {
-                    setHasReadTerms(false)
-                    setAgreeTerms(false)
-                    agreement.retry()
+                    setHasReadTerms(false);
+                    setAgreeTerms(false);
+                    agreement.retry();
                   }}
                   hasRead={hasReadTerms}
                   agreed={agreeTerms}
@@ -652,45 +662,41 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                     Kategori Bisnis Utama <span className="text-rose-500">*</span>
                   </Label>
                   <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 no-scrollbar">
-                    {STORE_CATEGORIES.map((cat) => {
-                      const Icon = cat.icon
-                      const isSelected = category === cat.name
+                    {STORE_CATEGORIES.map(cat => {
+                      const Icon = cat.icon;
+                      const isSelected = category === cat.name;
                       return (
                         <button
                           key={cat.id}
                           type="button"
                           onClick={() => setCategory(cat.name)}
                           className={cn(
-                            "p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5",
+                            'p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2.5',
                             isSelected
-                              ? "border-primary bg-indigo-50/80 text-primary shadow-xs ring-2 ring-primary/20"
-                              : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700"
+                              ? 'border-primary bg-indigo-50/80 text-primary shadow-xs ring-2 ring-primary/20'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 text-slate-700',
                           )}
                         >
                           <div
                             className={cn(
-                              "size-7 rounded-lg flex items-center justify-center shrink-0",
-                              isSelected
-                                ? "bg-primary text-white"
-                                : "bg-slate-100 text-slate-600"
+                              'size-7 rounded-lg flex items-center justify-center shrink-0',
+                              isSelected ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600',
                             )}
                           >
                             <Icon className="size-3.5" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <span className="text-xs font-bold block truncate">
-                              {cat.name}
-                            </span>
+                            <span className="text-xs font-bold block truncate">{cat.name}</span>
                             <span className="text-[10px] text-slate-500 block truncate">
                               {cat.desc}
                             </span>
                           </div>
                         </button>
-                      )
+                      );
                     })}
                   </div>
 
-                  {category === "Other" && (
+                  {category === 'Other' && (
                     <div className="pt-1.5 space-y-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
                       <Label htmlFor="custom-category" className="text-xs font-bold text-slate-700">
                         Spesifikasi Kategori (Opsional)
@@ -699,7 +705,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                         id="custom-category"
                         type="text"
                         value={customCategory}
-                        onChange={(e) => setCustomCategory(e.target.value)}
+                        onChange={e => setCustomCategory(e.target.value)}
                         placeholder="Contoh: Distributor, Florist, Pet Shop, dll."
                         className="rounded-xl h-10 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       />
@@ -718,7 +724,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       id="store-name"
                       type="text"
                       value={storeName}
-                      onChange={(e) => setStoreName(e.target.value)}
+                      onChange={e => setStoreName(e.target.value)}
                       placeholder="Contoh: Dapur Roti Senopati"
                       className="pl-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -737,7 +743,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       id="store-loc"
                       type="text"
                       value={storeLocation}
-                      onChange={(e) => setStoreLocation(e.target.value)}
+                      onChange={e => setStoreLocation(e.target.value)}
                       placeholder="Contoh: Jakarta Selatan atau Jl. Senopati No. 12"
                       className="pl-10 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
                       required
@@ -748,17 +754,22 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 {/* WhatsApp Phone */}
                 <div className="space-y-1.5">
                   <Label htmlFor="store-phone" className="text-xs font-bold text-slate-700">
-                    No. WhatsApp Operasional <span className="text-slate-400 font-normal text-[11px]">(Opsional)</span>
+                    No. WhatsApp Operasional{' '}
+                    <span className="text-slate-400 font-normal text-[11px]">(Opsional)</span>
                   </Label>
                   <PhoneInput
                     id="store-phone"
                     aria-describedby="store-phone-help"
-                    value={phone ? `+62${phone}` : ""}
-                    onValueChange={(value) => setPhone(normalizeOperationalPhoneInput(value).slice(0, MAX_PHONE_DIGITS))}
+                    value={phone ? `+62${phone}` : ''}
+                    onValueChange={value =>
+                      setPhone(normalizeOperationalPhoneInput(value).slice(0, MAX_PHONE_DIGITS))
+                    }
                     placeholder="81234567890"
                     className="pl-14 rounded-xl h-11 text-sm bg-slate-50/50 border-slate-200 focus-visible:bg-white focus-visible:ring-primary"
-                    />
-                  <p id="store-phone-help" className="text-xs leading-relaxed text-slate-600">Kode negara +62 sudah ditambahkan. Masukkan nomor mulai dari 8.</p>
+                  />
+                  <p id="store-phone-help" className="text-xs leading-relaxed text-slate-600">
+                    Kode negara +62 sudah ditambahkan. Masukkan nomor mulai dari 8.
+                  </p>
                 </div>
 
                 {/* Action Buttons: Back & Complete */}
@@ -768,8 +779,8 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setError("")
-                        setStep(1)
+                        setError('');
+                        setStep(1);
                       }}
                       className="rounded-xl h-11 font-semibold border-slate-200 hover:bg-slate-50 px-4 cursor-pointer"
                       disabled={loading}
@@ -806,8 +817,8 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   <button
                     type="button"
                     onClick={() => {
-                      logout()
-                      setStep(1)
+                      logout();
+                      setStep(1);
                     }}
                     className="text-slate-500 hover:text-rose-600 underline text-xs cursor-pointer"
                   >
@@ -834,8 +845,9 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                   Ruang Kerja Anda Telah Siap!
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Selamat datang di <strong className="text-slate-900">{APP_NAME}</strong>. Gerai{" "}
-                  <strong className="text-primary font-bold">{storeName || "Toko Baru"}</strong> telah berhasil dibuat dan siap digunakan.
+                  Selamat datang di <strong className="text-slate-900">{APP_NAME}</strong>. Gerai{' '}
+                  <strong className="text-primary font-bold">{storeName || 'Toko Baru'}</strong>{' '}
+                  telah berhasil dibuat dan siap digunakan.
                 </p>
               </div>
 
@@ -862,7 +874,7 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
                 </div>
 
                 <Button
-                  onClick={() => navigate("/onboarding", { replace: true })}
+                  onClick={() => navigate('/onboarding', { replace: true })}
                   className="w-full rounded-xl h-10 font-bold bg-primary hover:bg-primary/90 text-white cursor-pointer"
                 >
                   Mulai Panduan Toko
@@ -874,17 +886,17 @@ export default function RegisterPage({ initialStep }: RegisterPageProps) {
 
         {/* Bottom Legal Notice */}
         <div className="text-center text-[11px] text-slate-400 py-2">
-          Dengan mendaftar, Anda menyetujui{" "}
+          Dengan mendaftar, Anda menyetujui{' '}
           <Link to="/" className="underline hover:text-slate-600">
             Ketentuan Layanan
-          </Link>{" "}
-          &{" "}
+          </Link>{' '}
+          &{' '}
           <Link to="/" className="underline hover:text-slate-600">
             Kebijakan Privasi
-          </Link>{" "}
+          </Link>{' '}
           {APP_NAME}.
         </div>
       </div>
     </div>
-  )
+  );
 }

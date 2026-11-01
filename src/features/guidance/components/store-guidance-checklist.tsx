@@ -36,7 +36,7 @@ export function StoreGuidanceChecklist() {
   });
 
   const toggleMinimized = () => {
-    setIsMinimized((prev) => {
+    setIsMinimized(prev => {
       const next = !prev;
       localStorage.setItem('ekatra_guidance_minimized', String(next));
       return next;
@@ -46,12 +46,12 @@ export function StoreGuidanceChecklist() {
   const handleDismissWelcome = () => {
     if (isWelcomeMode) {
       setSearchParams(
-        (prev) => {
+        prev => {
           const next = new URLSearchParams(prev);
           next.delete('welcome');
           return next;
         },
-        { replace: true }
+        { replace: true },
       );
     }
   };
@@ -80,8 +80,8 @@ export function StoreGuidanceChecklist() {
                   {isAllCompleted
                     ? 'Selamat! Panduan Toko Selesai 🎉'
                     : isWelcomeMode
-                    ? 'Selamat Datang di Ekatra! 🚀'
-                    : 'Panduan Penyiapan Toko'}
+                      ? 'Selamat Datang di Ekatra! 🚀'
+                      : 'Panduan Penyiapan Toko'}
                 </h2>
                 <Badge variant={isAllCompleted ? 'default' : 'secondary'} className="text-xs">
                   {completed}/{total} Selesai ({percent}%)
@@ -138,7 +138,7 @@ export function StoreGuidanceChecklist() {
         {/* Checklist Content */}
         {!isMinimized && (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 pt-2 border-t border-border/60">
-            {items.map((item) => {
+            {items.map(item => {
               const Icon = STEP_ICONS[item.key] ?? Circle;
               const isNext = nextGuidance?.key === item.key;
 
@@ -149,8 +149,8 @@ export function StoreGuidanceChecklist() {
                     item.isCompleted
                       ? 'border-border/60 bg-muted/20 opacity-80'
                       : isNext
-                      ? 'border-primary/50 bg-primary/5 ring-2 ring-primary/20 shadow-xs'
-                      : 'border-border bg-card'
+                        ? 'border-primary/50 bg-primary/5 ring-2 ring-primary/20 shadow-xs'
+                        : 'border-border bg-card'
                   }`}
                 >
                   <div>
@@ -161,19 +161,24 @@ export function StoreGuidanceChecklist() {
                             item.isCompleted
                               ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                               : isNext
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-muted text-muted-foreground'
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted text-muted-foreground'
                           }`}
                         >
                           <Icon className="size-3.5" />
                         </div>
-                        <span className="text-xs font-semibold line-clamp-1">{item.config.title}</span>
+                        <span className="text-xs font-semibold line-clamp-1">
+                          {item.config.title}
+                        </span>
                       </div>
 
                       {item.isCompleted ? (
                         <CheckCircle2 className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                       ) : isNext ? (
-                        <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] bg-primary/10 text-primary border-primary/30"
+                        >
                           Berikutnya
                         </Badge>
                       ) : null}

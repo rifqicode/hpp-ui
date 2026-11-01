@@ -1,4 +1,4 @@
-import * as React from "react"
+import * as React from 'react';
 import {
   Bell,
   AlertTriangle,
@@ -11,139 +11,139 @@ import {
   ShieldCheck,
   BellOff,
   Loader2,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { TablePagination } from "@/components/ui/table-pagination"
-import { cn } from "@/lib/utils"
-import { useNotifications } from "@/features/subscription"
-import { useStoresQuery } from "@/features/settings/hooks/use-stores-query"
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { TablePagination } from '@/components/ui/table-pagination';
+import { cn } from '@/lib/utils';
+import { useNotifications } from '@/features/subscription';
+import { useStoresQuery } from '@/features/settings/hooks/use-stores-query';
 
 export default function NotificationListPage() {
-  const { notifications, unreadCount, markAsRead, isMarkingAsRead, isLoading } = useNotifications()
-  const { data: stores = [] } = useStoresQuery()
+  const { notifications, unreadCount, markAsRead, isMarkingAsRead, isLoading } = useNotifications();
+  const { data: stores = [] } = useStoresQuery();
 
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const [statusFilter, setStatusFilter] = React.useState<"all" | "unread" | "read">("all")
-  const [selectedStoreId, setSelectedStoreId] = React.useState<string>("all")
-  const [isMarkingAll, setIsMarkingAll] = React.useState(false)
-  const [currentPage, setCurrentPage] = React.useState(1)
-  const pageSize = 10
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'unread' | 'read'>('all');
+  const [selectedStoreId, setSelectedStoreId] = React.useState<string>('all');
+  const [isMarkingAll, setIsMarkingAll] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 10;
 
   React.useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery, statusFilter, selectedStoreId])
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, selectedStoreId]);
 
   const storeMap = React.useMemo(() => {
-    const map = new Map<string, string>()
+    const map = new Map<string, string>();
     for (const s of stores) {
-      map.set(s.id, s.name)
+      map.set(s.id, s.name);
     }
-    return map
-  }, [stores])
+    return map;
+  }, [stores]);
 
   const handleMarkAllRead = async () => {
-    const unread = notifications.filter((n) => !n.is_read)
-    if (unread.length === 0) return
-    setIsMarkingAll(true)
+    const unread = notifications.filter(n => !n.is_read);
+    if (unread.length === 0) return;
+    setIsMarkingAll(true);
     try {
       for (const notif of unread) {
-        await markAsRead(notif.id)
+        await markAsRead(notif.id);
       }
     } finally {
-      setIsMarkingAll(false)
+      setIsMarkingAll(false);
     }
-  }
+  };
 
   const formatNotificationDate = (dateStr: string) => {
     try {
-      const date = new Date(dateStr)
-      const formatted = date.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-      return `${formatted} WIB`
+      const date = new Date(dateStr);
+      const formatted = date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      return `${formatted} WIB`;
     } catch {
-      return dateStr
+      return dateStr;
     }
-  }
+  };
 
   const getCategoryIcon = (type: string) => {
     switch (type) {
-      case "SUBSCRIPTION_EXPIRING_SOON":
-      case "SUBSCRIPTION_IN_GRACE_PERIOD":
-      case "warning":
-      case "alert":
+      case 'SUBSCRIPTION_EXPIRING_SOON':
+      case 'SUBSCRIPTION_IN_GRACE_PERIOD':
+      case 'warning':
+      case 'alert':
         return (
           <div className="h-9 w-9 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20">
             <AlertTriangle className="h-4.5 w-4.5" />
           </div>
-        )
-      case "SUBSCRIPTION_EXPIRED":
-      case "expired":
-      case "danger":
+        );
+      case 'SUBSCRIPTION_EXPIRED':
+      case 'expired':
+      case 'danger':
         return (
           <div className="h-9 w-9 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/20">
             <ShieldAlert className="h-4.5 w-4.5" />
           </div>
-        )
-      case "SUBSCRIPTION_RENEWED":
-      case "success":
+        );
+      case 'SUBSCRIPTION_RENEWED':
+      case 'success':
         return (
           <div className="h-9 w-9 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
             <CheckCircle2 className="h-4.5 w-4.5" />
           </div>
-        )
+        );
       default:
         return (
           <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 border border-primary/20">
             <Sparkles className="h-4.5 w-4.5" />
           </div>
-        )
+        );
     }
-  }
+  };
 
   const sortedNotifications = React.useMemo(() => {
     return [...notifications]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 100)
-  }, [notifications])
+      .slice(0, 100);
+  }, [notifications]);
 
   const filteredNotifications = React.useMemo(() => {
-    return sortedNotifications.filter((item) => {
+    return sortedNotifications.filter(item => {
       // Status filter
-      if (statusFilter === "unread" && item.is_read) return false
-      if (statusFilter === "read" && !item.is_read) return false
+      if (statusFilter === 'unread' && item.is_read) return false;
+      if (statusFilter === 'read' && !item.is_read) return false;
 
       // Store filter
-      if (selectedStoreId !== "all") {
-        if (item.store_id !== selectedStoreId) return false
+      if (selectedStoreId !== 'all') {
+        if (item.store_id !== selectedStoreId) return false;
       }
 
       // Search query
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase()
-        const storeName = item.store_id ? (storeMap.get(item.store_id) || "") : "Akun Utama"
-        const matchesTitle = item.title?.toLowerCase().includes(query)
-        const matchesMessage = item.message?.toLowerCase().includes(query)
-        const matchesStore = storeName.toLowerCase().includes(query)
-        if (!matchesTitle && !matchesMessage && !matchesStore) return false
+        const query = searchQuery.toLowerCase();
+        const storeName = item.store_id ? storeMap.get(item.store_id) || '' : 'Akun Utama';
+        const matchesTitle = item.title?.toLowerCase().includes(query);
+        const matchesMessage = item.message?.toLowerCase().includes(query);
+        const matchesStore = storeName.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesMessage && !matchesStore) return false;
       }
 
-      return true
-    })
-  }, [sortedNotifications, statusFilter, selectedStoreId, searchQuery, storeMap])
+      return true;
+    });
+  }, [sortedNotifications, statusFilter, selectedStoreId, searchQuery, storeMap]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / pageSize));
   const paginatedNotifications = React.useMemo(() => {
-    return filteredNotifications.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-  }, [filteredNotifications, currentPage, pageSize])
+    return filteredNotifications.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredNotifications, currentPage, pageSize]);
 
-  const readCount = notifications.length - unreadCount
+  const readCount = notifications.length - unreadCount;
 
   return (
     <div className="w-full space-y-6">
@@ -181,27 +181,27 @@ export default function NotificationListPage() {
         {/* Status Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
           <Button
-            variant={statusFilter === "all" ? "default" : "ghost"}
+            variant={statusFilter === 'all' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setStatusFilter("all")}
+            onClick={() => setStatusFilter('all')}
             className="text-xs h-8 cursor-pointer shrink-0"
           >
             Semua ({notifications.length})
           </Button>
           <Button
-            variant={statusFilter === "unread" ? "default" : "ghost"}
+            variant={statusFilter === 'unread' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setStatusFilter("unread")}
+            onClick={() => setStatusFilter('unread')}
             className="text-xs h-8 gap-1.5 cursor-pointer shrink-0"
           >
             <span>Belum Dibaca</span>
             {unreadCount > 0 && (
               <span
                 className={cn(
-                  "inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none",
-                  statusFilter === "unread"
-                    ? "bg-primary-foreground text-primary"
-                    : "bg-amber-500 text-white"
+                  'inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none',
+                  statusFilter === 'unread'
+                    ? 'bg-primary-foreground text-primary'
+                    : 'bg-amber-500 text-white',
                 )}
               >
                 {unreadCount}
@@ -209,9 +209,9 @@ export default function NotificationListPage() {
             )}
           </Button>
           <Button
-            variant={statusFilter === "read" ? "default" : "ghost"}
+            variant={statusFilter === 'read' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setStatusFilter("read")}
+            onClick={() => setStatusFilter('read')}
             className="text-xs h-8 cursor-pointer shrink-0"
           >
             Sudah Dibaca ({readCount})
@@ -225,19 +225,19 @@ export default function NotificationListPage() {
             <Input
               placeholder="Cari notifikasi..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
               className="h-8 pl-8 text-xs w-full sm:w-48 lg:w-60"
             />
           </div>
 
           <select
             value={selectedStoreId}
-            onChange={(e) => setSelectedStoreId(e.target.value)}
+            onChange={e => setSelectedStoreId(e.target.value)}
             className="h-8 rounded-md border border-input bg-background px-2.5 text-xs text-foreground shadow-xs focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
             aria-label="Filter Toko"
           >
             <option value="all">Semua Toko</option>
-            {stores.map((s) => (
+            {stores.map(s => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
@@ -258,20 +258,22 @@ export default function NotificationListPage() {
           <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground mb-3">
             <BellOff className="size-6" />
           </div>
-          <h3 className="text-sm font-semibold text-foreground">Tidak ada notifikasi yang ditemukan</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            Tidak ada notifikasi yang ditemukan
+          </h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-            {searchQuery || statusFilter !== "all" || selectedStoreId !== "all"
-              ? "Coba sesuaikan kata kunci pencarian atau ganti filter status dan toko."
-              : "Saat ini Anda belum memiliki riwayat pemberitahuan aktivitas atau langganan."}
+            {searchQuery || statusFilter !== 'all' || selectedStoreId !== 'all'
+              ? 'Coba sesuaikan kata kunci pencarian atau ganti filter status dan toko.'
+              : 'Saat ini Anda belum memiliki riwayat pemberitahuan aktivitas atau langganan.'}
           </p>
-          {(searchQuery || statusFilter !== "all" || selectedStoreId !== "all") && (
+          {(searchQuery || statusFilter !== 'all' || selectedStoreId !== 'all') && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                setSearchQuery("")
-                setStatusFilter("all")
-                setSelectedStoreId("all")
+                setSearchQuery('');
+                setStatusFilter('all');
+                setSelectedStoreId('all');
               }}
               className="mt-4 text-xs cursor-pointer"
             >
@@ -282,19 +284,19 @@ export default function NotificationListPage() {
       ) : (
         <div className="space-y-4">
           <div className="space-y-2.5">
-            {paginatedNotifications.map((item) => {
-              const storeName = item.store_id ? storeMap.get(item.store_id) : undefined
-              const isUnread = !item.is_read
+            {paginatedNotifications.map(item => {
+              const storeName = item.store_id ? storeMap.get(item.store_id) : undefined;
+              const isUnread = !item.is_read;
 
               return (
                 <div
                   key={item.id}
                   onClick={() => isUnread && markAsRead(item.id)}
                   className={cn(
-                    "flex items-start gap-3.5 p-4 rounded-xl border transition-all",
+                    'flex items-start gap-3.5 p-4 rounded-xl border transition-all',
                     isUnread
-                      ? "bg-card border-amber-500/30 hover:border-amber-500/50 shadow-xs cursor-pointer ring-1 ring-amber-500/10"
-                      : "bg-card/70 border-border/70 hover:bg-card text-muted-foreground"
+                      ? 'bg-card border-amber-500/30 hover:border-amber-500/50 shadow-xs cursor-pointer ring-1 ring-amber-500/10'
+                      : 'bg-card/70 border-border/70 hover:bg-card text-muted-foreground',
                   )}
                 >
                   {getCategoryIcon(item.type)}
@@ -304,8 +306,10 @@ export default function NotificationListPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <h4
                           className={cn(
-                            "text-sm leading-tight",
-                            isUnread ? "font-semibold text-foreground" : "font-medium text-foreground/80"
+                            'text-sm leading-tight',
+                            isUnread
+                              ? 'font-semibold text-foreground'
+                              : 'font-medium text-foreground/80',
                           )}
                         >
                           {item.title}
@@ -324,7 +328,7 @@ export default function NotificationListPage() {
                             className="gap-1 text-[11px] font-medium bg-muted/40 text-foreground border-border/80"
                           >
                             <Store className="size-3 text-primary" />
-                            {storeName || "Toko"}
+                            {storeName || 'Toko'}
                           </Badge>
                         ) : (
                           <Badge
@@ -343,13 +347,14 @@ export default function NotificationListPage() {
 
                     <p
                       className={cn(
-                        "text-xs leading-relaxed",
-                        isUnread ? "text-foreground/90" : "text-muted-foreground"
+                        'text-xs leading-relaxed',
+                        isUnread ? 'text-foreground/90' : 'text-muted-foreground',
                       )}
                     >
                       {storeName && !item.message.startsWith(`[${storeName}]`) ? (
                         <>
-                          <span className="font-semibold text-primary">[{storeName}]</span> {item.message}
+                          <span className="font-semibold text-primary">[{storeName}]</span>{' '}
+                          {item.message}
                         </>
                       ) : (
                         item.message
@@ -357,7 +362,7 @@ export default function NotificationListPage() {
                     </p>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
 
@@ -367,13 +372,13 @@ export default function NotificationListPage() {
               displayedCount={paginatedNotifications.length}
               page={currentPage}
               totalPages={totalPages}
-              onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onPrev={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               label="notifikasi"
             />
           )}
         </div>
       )}
     </div>
-  )
+  );
 }

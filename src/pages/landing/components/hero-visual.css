@@ -13,22 +13,28 @@
 }
 
 @keyframes hero-cashier-slide {
-  0%, 42%, 100% {
+  0%,
+  42%,
+  100% {
     opacity: 1;
     transform: translateX(0);
   }
-  50%, 92% {
+  50%,
+  92% {
     opacity: 0;
     transform: translateX(-18px);
   }
 }
 
 @keyframes hero-kitchen-slide {
-  0%, 42%, 100% {
+  0%,
+  42%,
+  100% {
     opacity: 0;
     transform: translateX(18px);
   }
-  50%, 92% {
+  50%,
+  92% {
     opacity: 1;
     transform: translateX(0);
   }
